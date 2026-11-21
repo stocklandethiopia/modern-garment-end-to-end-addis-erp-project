@@ -14,7 +14,7 @@
 
 ## 2. Angular and TypeScript
 
-- Angular 22 with Angular CLI is the frontend standard.
+- Angular 22 with Angular CLI and TypeScript 6.0.x is the frontend standard.
 - Use standalone components for new features; keep components focused on presentation and interaction.
 - Use strict TypeScript and strict template checking. Avoid any; use unknown at untrusted boundaries and narrow it safely.
 - Organize by business feature/domain. Shared UI must not become a dumping ground for business logic.

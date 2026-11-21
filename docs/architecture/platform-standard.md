@@ -17,7 +17,7 @@ Do not begin with dozens of microservices. A modular monolith is easier to devel
 | Layer | Baseline | Responsibility |
 |---|---|---|
 | Web application | Angular 22.x + Angular CLI 22.x | Enterprise web UI, routing, forms, accessibility and client state |
-| Web toolchain | Node.js 24 LTS, npm lockfile | Angular CLI, build, lint, test and asset compilation |
+| Web toolchain | Node.js 26.13.1 LTS, TypeScript 6.0.x, npm lockfile | Angular CLI, build, lint, test and asset compilation |
 | Main API | PHP 8.5 + Laravel 13.x | Transactional business rules, API, authorization, workflows and jobs |
 | Database | PostgreSQL 18.x, production patch pinned | System of record, constraints, transactions and tenant-scoped data |
 | Cache and queue broker | Redis 8.2 extended-support line | Cache, queue coordination, rate-limit counters and ephemeral state |
@@ -29,7 +29,7 @@ Do not begin with dozens of microservices. A modular monolith is easier to devel
 
 ### Compatibility and release policy
 
-- Angular 22 officially supports Node 22.22.3, 24.15.0 and 26.0.0 version lines; use Node 24 LTS as the initial toolchain baseline.
+- Angular 22 officially supports Node 22.22.3, 24.15.0 and 26.0.0 version lines; use Node 26.13.1 LTS as the initial toolchain baseline. Angular 22 requires TypeScript 6.0.x.
 - Laravel 13 requires PHP 8.3 or later and supports PHP 8.5.
 - Node is the Angular build/tooling runtime, not a second competing ERP API.
 - Python is an isolated specialist service, not a second owner of finance, payroll, stock or production transactions.

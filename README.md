@@ -14,7 +14,7 @@ The platform must support multiple tenants, companies, legal entities, factories
 
 - Web: Angular 22 + Angular CLI, TypeScript strict mode.
 - API: PHP 8.5 + Laravel 13, organized as a modular monolith with explicit business-domain boundaries.
-- Node.js: Node 24 LTS for Angular CLI, frontend tooling and build pipelines; not a second competing business API.
+- Node.js: Node 26.13.1 LTS for Angular CLI, frontend tooling and build pipelines; not a second competing business API.
 - Data: PostgreSQL 18.x as the transactional source of truth; Redis 8.2 extended-support line for cache, queues and short-lived coordination.
 - Specialist compute: Python 3.15 for isolated optimization, forecasting, document intelligence and AI workloads; it does not own ERP transactions.
 - Containers: Docker multi-stage builds and Docker Compose v2 for reproducible development; production deployment is an immutable-image pipeline.

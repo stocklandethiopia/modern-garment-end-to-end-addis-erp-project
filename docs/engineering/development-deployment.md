@@ -10,7 +10,7 @@ Every change is made on a named branch, reviewed, tested and merged through the 
 
 The intended developer environment provides:
 
-- Node.js 24 LTS and npm for Angular CLI.
+- Node.js 26.13.1 LTS and npm for Angular CLI.
 - PHP 8.5, Composer and Laravel 13 tooling.
 - Python 3.15 and a locked virtual environment for specialist services.
 - Docker Engine and Docker Compose v2.
