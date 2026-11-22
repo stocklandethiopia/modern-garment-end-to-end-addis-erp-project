@@ -472,7 +472,6 @@ return new class extends Migration
                 ->references(['tenant_id', 'id'])->on('promotions')->restrictOnDelete();
         });
 
-
         // Laravel Blueprint has no CHECK helper; install PostgreSQL-native
         // named constraints after the tables exist. These enforce data validity
         // independently of request validation and remain part of the schema.
