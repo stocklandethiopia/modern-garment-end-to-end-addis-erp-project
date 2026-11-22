@@ -13,7 +13,7 @@ api-key:
 	cd backend && php artisan key:generate
 
 api-migrate:
-	cd backend && DB_CONNECTION=pgsql_migrator php artisan migrate --force
+	cd backend && DB_CONNECTION=pgsql_migrator MIGRATION_DB_USERNAME=erp_migrator MIGRATION_DB_PASSWORD=local-migrator-password php artisan migrate --force
 
 api-test:
 	cd backend && php artisan test
