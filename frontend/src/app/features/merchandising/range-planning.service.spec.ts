@@ -66,4 +66,100 @@ describe('RangePlanningService', () => {
     expect(assortment.request.method).toBe('GET');
     assortment.flush({ data: { data: [{ id: 'allocation-1', planned_units: 75 }] } });
   });
+
+  it('loads published price-list and account-specific assortment terms', () => {
+    service.listPublishedPriceLists().subscribe((response) => {
+      expect(response.data.data[0]?.account_reference).toBe('DISTRIBUTOR-001');
+      expect(response.data.data[0]?.status).toBe('PUBLISHED');
+    });
+    const lists = http.expectOne('/api/v1/product/price-lists');
+    expect(lists.request.method).toBe('GET');
+    lists.flush({
+      data: {
+        data: [{
+          id: 'price-list-1',
+          code: 'WHOLESALE-ET',
+          version_no: 2,
+          channel_code: 'WHOLESALE',
+          market_scope: 'ETHIOPIA',
+          account_reference: 'DISTRIBUTOR-001',
+          currency: 'ETB',
+          effective_from: '2026-11-22T00:00:00Z',
+          effective_to: '2027-12-31T23:59:59Z',
+          status: 'PUBLISHED',
+        }],
+        current_page: 1,
+        last_page: 1,
+        total: 1,
+      },
+    });
+
+    service.listAssortmentAccountTerms('assortment-1').subscribe((response) => {
+      expect(response.data.data[0]?.price_list_id).toBe('price-list-1');
+      expect(response.data.data[0]?.status).toBe('APPROVED');
+    });
+    const terms = http.expectOne('/api/v1/product/assortment-plans/assortment-1/account-terms');
+    expect(terms.request.method).toBe('GET');
+    terms.flush({
+      data: {
+        data: [{
+          id: 'terms-1',
+          assortment_plan_id: 'assortment-1',
+          price_list_id: 'price-list-1',
+          price_list_code: 'WHOLESALE-ET',
+          price_list_currency: 'ETB',
+          version_no: 1,
+          channel_code: 'WHOLESALE',
+          market_scope: 'ETHIOPIA',
+          account_reference: 'DISTRIBUTOR-001',
+          account_tier: 'GOLD',
+          commercial_terms_reference: 'CONTRACT-001',
+          payment_terms_reference: 'PAYMENT-POLICY-NET30',
+          delivery_terms_reference: 'DELIVERY-POLICY-ADDIS',
+          returns_policy_reference: null,
+          currency: 'ETB',
+          minimum_order_units: 240,
+          order_multiple_units: 24,
+          effective_from: '2027-01-01',
+          effective_to: '2027-06-30',
+          change_reason: 'Initial account terms.',
+          status: 'APPROVED',
+          created_by: 'user-1',
+          submitted_by: 'user-1',
+          decided_by: 'user-2',
+          decision_reason: 'Independently approved.',
+          created_at: '2026-11-22T12:00:00+03:00',
+        }],
+        current_page: 1,
+        last_page: 1,
+        total: 1,
+      },
+    });
+  });
+
+  it('submits and independently approves an account terms version', () => {
+    service.submitAssortmentAccountTerms('assortment-1', 'terms-1').subscribe((response) => {
+      expect(response.data.status).toBe('PENDING_APPROVAL');
+    });
+    const submit = http.expectOne('/api/v1/product/assortment-plans/assortment-1/account-terms/terms-1/submit');
+    expect(submit.request.method).toBe('POST');
+    submit.flush({ data: { id: 'terms-1', status: 'PENDING_APPROVAL' } });
+
+    service.decideAssortmentAccountTerms(
+      'assortment-1',
+      'terms-1',
+      'APPROVE',
+      'The account and published price list have been independently reviewed.',
+    ).subscribe((response) => {
+      expect(response.data.status).toBe('APPROVED');
+    });
+    const decide = http.expectOne('/api/v1/product/assortment-plans/assortment-1/account-terms/terms-1/decisions');
+    expect(decide.request.method).toBe('POST');
+    expect(decide.request.body).toEqual({
+      decision: 'APPROVE',
+      reason: 'The account and published price list have been independently reviewed.',
+    });
+    decide.flush({ data: { id: 'terms-1', status: 'APPROVED' } });
+  });
+
 });
