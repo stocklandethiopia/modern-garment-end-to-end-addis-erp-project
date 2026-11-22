@@ -59,9 +59,8 @@ jobs:
       DB_DATABASE: garment_erp
       DB_USERNAME: app_runtime
       DB_PASSWORD: local-runtime-password
-      DB_ADMIN_PASSWORD: local-postgres-password
-      TEST_DB_ADMIN_USERNAME: postgres
-      TEST_DB_ADMIN_PASSWORD: local-postgres-password
+      TEST_DB_ADMIN_USERNAME: erp_test_admin
+      TEST_DB_ADMIN_PASSWORD: local-test-admin-password
       CACHE_STORE: array
       QUEUE_CONNECTION: sync
       SESSION_DRIVER: array
@@ -79,8 +78,9 @@ jobs:
           tools: composer:v2
 
       - name: Create restricted PostgreSQL roles
-        run: |
-          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -h 127.0.0.1 -U postgres -d garment_erp -v ON_ERROR_STOP=1 -f ../docker/postgres/init/010-create-roles.sql
+        env:
+          PGPASSWORD: local-postgres-password
+        run: psql -h 127.0.0.1 -U postgres -d garment_erp -v ON_ERROR_STOP=1 -f ../docker/postgres/init/010-create-roles.sql
 
       - name: Validate Composer manifest and resolve dependencies
         run: |
