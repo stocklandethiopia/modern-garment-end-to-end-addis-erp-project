@@ -23,7 +23,7 @@ class TenantIsolationTest extends TestCase
         $this->tenantB = (string) Str::uuid();
         $this->userId = (string) Str::uuid();
 
-        $admin = DB::connection('pgsql_admin');
+        $admin = DB::connection('pgsql_test_admin');
         $now = now();
 
         foreach ([$this->tenantA, $this->tenantB] as $index => $tenantId) {
@@ -126,7 +126,7 @@ class TenantIsolationTest extends TestCase
             ->assertJsonPath('data.base_currency', 'ETB');
 
         $entityId = $response->json('data.id');
-        $audit = DB::connection('pgsql_admin')->table('audit_events')
+        $audit = DB::connection('pgsql_test_admin')->table('audit_events')
             ->where('tenant_id', $this->tenantA)
             ->where('object_type', 'LEGAL_ENTITY')
             ->where('object_id', $entityId)
@@ -138,7 +138,7 @@ class TenantIsolationTest extends TestCase
 
     public function test_member_without_tenant_admin_role_cannot_create_legal_entity(): void
     {
-        DB::connection('pgsql_admin')->table('tenant_memberships')
+        DB::connection('pgsql_test_admin')->table('tenant_memberships')
             ->where('tenant_id', $this->tenantA)
             ->where('user_id', $this->userId)
             ->update(['membership_role' => 'MEMBER']);
