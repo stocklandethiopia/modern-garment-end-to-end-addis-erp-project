@@ -284,7 +284,13 @@ class MerchandisingPlanningController extends Controller
         $data = $request->validate([
             'brand_id' => ['required', 'uuid', Rule::exists('brands', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId)->where('status', 'ACTIVE'))],
             'season_id' => ['required', 'uuid', Rule::exists('seasons', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId)->where('status', 'ACTIVE'))],
-            'code' => ['required', 'string', 'max:80', 'regex:/^[A-Z0-9][A-Z0-9_-]{1,79}$/'],
+            'code' => [
+                'required',
+                'string',
+                'max:80',
+                'regex:/^[A-Z0-9][A-Z0-9_-]{1,79}$/',
+                Rule::unique('collections', 'code')->where(fn ($query) => $query->where('tenant_id', $tenantId)),
+            ],
             'name' => ['required', 'string', 'max:180'],
             'concept' => ['nullable', 'string', 'max:500'],
             'target_market' => ['required', 'string', 'max:160'],
@@ -441,53 +447,78 @@ class MerchandisingPlanningController extends Controller
         $data = $request->validate([
             'collection_id' => ['required', 'uuid', Rule::exists('collections', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId)->where('status', 'APPROVED'))],
             'collection_version' => ['required', 'integer', 'min:1'],
-            'code' => ['required', 'string', 'max:80', 'regex:/^[A-Z0-9][A-Z0-9_-]{1,79}$/'],
+            'code' => [
+                'required',
+                'string',
+                'max:80',
+                'regex:/^[A-Z0-9][A-Z0-9_-]{1,79}$/',
+                Rule::unique('range_plans', 'code')->where(fn ($query) => $query->where('tenant_id', $tenantId)),
+            ],
             'plan_start' => ['required', 'date'],
             'plan_end' => ['required', 'date', 'after_or_equal:plan_start'],
         ]);
-        $version = DB::table('collection_versions')->where('tenant_id', $tenantId)
-            ->where('collection_id', $data['collection_id'])
-            ->where('version_no', $data['collection_version'])
-            ->first();
-
-        abort_if($version === null, 422, 'The selected collection version does not exist.');
-
-        $versionApproved = DB::table('merchandising_decisions')
-            ->where('tenant_id', $tenantId)
-            ->where('object_type', 'COLLECTION_VERSION')
-            ->where('object_id', $version->id)
-            ->where('decision', 'APPROVE')
-            ->exists();
-
-        abort_unless($versionApproved, 422, 'The selected collection version must be approved.');
         $code = strtoupper($data['code']);
-        abort_if(DB::table('range_plans')->where('tenant_id', $tenantId)->where('code', $code)->exists(), 422, 'Range plan code already exists in this tenant.');
-
         $id = (string) Str::uuid();
         $actor = (string) $request->user()->getAuthIdentifier();
-        DB::table('range_plans')->insert([
-            'id' => $id,
-            'tenant_id' => $tenantId,
-            ...$data,
-            'code' => $code,
-            'status' => 'DRAFT',
-            'owner_user_id' => $actor,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-        $this->audit($tenantId, $actor, 'RANGE_PLAN_CREATED', 'RANGE_PLAN', $id, 'Range plan created against an approved collection version.');
 
-        return response()->json(['data' => DB::table('range_plans')->where('tenant_id', $tenantId)->where('id', $id)->first()], 201);
+        $rangePlan = DB::transaction(function () use ($tenantId, $data, $code, $id, $actor): object {
+            $collection = DB::table('collections')
+                ->where('tenant_id', $tenantId)
+                ->where('id', $data['collection_id'])
+                ->lockForUpdate()
+                ->first();
+
+            abort_if($collection === null, 404);
+            abort_unless($collection->status === 'APPROVED', 422, 'The collection must be approved before range planning.');
+
+            $version = DB::table('collection_versions')
+                ->where('tenant_id', $tenantId)
+                ->where('collection_id', $data['collection_id'])
+                ->where('version_no', $data['collection_version'])
+                ->first();
+
+            abort_if($version === null, 422, 'The selected collection version does not exist.');
+
+            $versionApproved = DB::table('merchandising_decisions')
+                ->where('tenant_id', $tenantId)
+                ->where('object_type', 'COLLECTION_VERSION')
+                ->where('object_id', $version->id)
+                ->where('decision', 'APPROVE')
+                ->exists();
+
+            abort_unless($versionApproved, 422, 'The selected collection version must be approved.');
+
+            DB::table('range_plans')->insert([
+                'id' => $id,
+                'tenant_id' => $tenantId,
+                ...$data,
+                'code' => $code,
+                'status' => 'DRAFT',
+                'owner_user_id' => $actor,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $this->audit($tenantId, $actor, 'RANGE_PLAN_CREATED', 'RANGE_PLAN', $id, 'Range plan created against an approved collection version.');
+
+            return DB::table('range_plans')->where('tenant_id', $tenantId)->where('id', $id)->first();
+        });
+
+        return response()->json(['data' => $rangePlan], 201);
     }
 
     public function createRangeLine(string $rangePlanId, Request $request, TenantContext $tenantContext): JsonResponse
     {
         $tenantId = $tenantContext->tenantId();
-        $plan = DB::table('range_plans')->where('tenant_id', $tenantId)->where('id', $rangePlanId)->first();
-        abort_if($plan === null, 404);
-        abort_unless($plan->status === 'DRAFT', 422, 'Range lines can only be added while a plan is in draft.');
         $data = $request->validate([
-            'line_code' => ['required', 'string', 'max:80'],
+            'line_code' => [
+                'required',
+                'string',
+                'max:80',
+                Rule::unique('range_lines', 'line_code')->where(fn ($query) => $query
+                    ->where('tenant_id', $tenantId)
+                    ->where('range_plan_id', $rangePlanId)),
+            ],
             'category_code' => ['required', 'string', 'max:80'],
             'target_tier' => ['nullable', 'string', 'max:80'],
             'product_hypothesis' => ['required', 'string', 'min:5', 'max:500'],
@@ -502,22 +533,38 @@ class MerchandisingPlanningController extends Controller
             'forecast_basis' => ['required', 'string', 'min:5', 'max:500'],
             'launch_date' => ['nullable', 'date'],
         ]);
+
         $id = (string) Str::uuid();
         $actor = (string) $request->user()->getAuthIdentifier();
-        DB::table('range_lines')->insert([
-            'id' => $id,
-            'tenant_id' => $tenantId,
-            'range_plan_id' => $rangePlanId,
-            ...$data,
-            'channel_scope' => json_encode($data['channel_scope'], JSON_THROW_ON_ERROR),
-            'size_colour_intent' => json_encode($data['size_colour_intent'], JSON_THROW_ON_ERROR),
-            'status' => 'DRAFT',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-        $this->audit($tenantId, $actor, 'RANGE_LINE_CREATED', 'RANGE_LINE', $id, 'Draft range line added.');
 
-        return response()->json(['data' => DB::table('range_lines')->where('tenant_id', $tenantId)->where('id', $id)->first()], 201);
+        $rangeLine = DB::transaction(function () use ($tenantId, $rangePlanId, $data, $id, $actor): object {
+            $plan = DB::table('range_plans')
+                ->where('tenant_id', $tenantId)
+                ->where('id', $rangePlanId)
+                ->lockForUpdate()
+                ->first();
+
+            abort_if($plan === null, 404);
+            abort_unless($plan->status === 'DRAFT', 422, 'Range lines can only be added while a plan is in draft.');
+
+            DB::table('range_lines')->insert([
+                'id' => $id,
+                'tenant_id' => $tenantId,
+                'range_plan_id' => $rangePlanId,
+                ...$data,
+                'channel_scope' => json_encode($data['channel_scope'], JSON_THROW_ON_ERROR),
+                'size_colour_intent' => json_encode($data['size_colour_intent'], JSON_THROW_ON_ERROR),
+                'status' => 'DRAFT',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $this->audit($tenantId, $actor, 'RANGE_LINE_CREATED', 'RANGE_LINE', $id, 'Draft range line added.');
+
+            return DB::table('range_lines')->where('tenant_id', $tenantId)->where('id', $id)->first();
+        });
+
+        return response()->json(['data' => $rangeLine], 201);
     }
 
     public function freezeRangePlan(string $rangePlanId, Request $request, TenantContext $tenantContext): JsonResponse
@@ -561,57 +608,111 @@ class MerchandisingPlanningController extends Controller
     {
         $tenantId = $tenantContext->tenantId();
         $data = $request->validate([
-            'range_plan_id' => ['required', 'uuid', Rule::exists('range_plans', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId)->where('status', 'FROZEN'))],
-            'code' => ['required', 'string', 'max:80'],
+            'range_plan_id' => ['required', 'uuid', Rule::exists('range_plans', 'id')->where(fn ($query) => $query
+                ->where('tenant_id', $tenantId)
+                ->where('status', 'FROZEN'))],
+            'code' => [
+                'required',
+                'string',
+                'max:80',
+                'regex:/^[A-Z0-9][A-Z0-9_-]{1,79}$/',
+                Rule::unique('assortment_plans', 'code')->where(fn ($query) => $query->where('tenant_id', $tenantId)),
+            ],
             'channel_code' => ['required', 'string', 'max:60'],
             'market_scope' => ['required', 'string', 'max:160'],
             'account_reference' => ['nullable', 'string', 'max:120'],
             'location_cluster_reference' => ['nullable', 'string', 'max:120'],
         ]);
+
         $id = (string) Str::uuid();
         $actor = (string) $request->user()->getAuthIdentifier();
-        DB::table('assortment_plans')->insert([
-            'id' => $id,
-            'tenant_id' => $tenantId,
-            ...$data,
-            'version_no' => 1,
-            'status' => 'DRAFT',
-            'owner_user_id' => $actor,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-        $this->audit($tenantId, $actor, 'ASSORTMENT_PLAN_CREATED', 'ASSORTMENT_PLAN', $id, 'Channel assortment plan created against a frozen range.');
 
-        return response()->json(['data' => DB::table('assortment_plans')->where('tenant_id', $tenantId)->where('id', $id)->first()], 201);
+        $assortmentPlan = DB::transaction(function () use ($tenantId, $data, $id, $actor): object {
+            $rangePlan = DB::table('range_plans')
+                ->where('tenant_id', $tenantId)
+                ->where('id', $data['range_plan_id'])
+                ->lockForUpdate()
+                ->first();
+
+            abort_if($rangePlan === null, 404);
+            abort_unless($rangePlan->status === 'FROZEN', 422, 'The range plan must be frozen before assortment planning.');
+
+            DB::table('assortment_plans')->insert([
+                'id' => $id,
+                'tenant_id' => $tenantId,
+                ...$data,
+                'version_no' => 1,
+                'status' => 'DRAFT',
+                'owner_user_id' => $actor,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $this->audit($tenantId, $actor, 'ASSORTMENT_PLAN_CREATED', 'ASSORTMENT_PLAN', $id, 'Channel assortment plan created against a frozen range.');
+
+            return DB::table('assortment_plans')->where('tenant_id', $tenantId)->where('id', $id)->first();
+        });
+
+        return response()->json(['data' => $assortmentPlan], 201);
     }
 
     public function createAssortmentLine(string $assortmentPlanId, Request $request, TenantContext $tenantContext): JsonResponse
     {
         $tenantId = $tenantContext->tenantId();
-        $plan = DB::table('assortment_plans')->where('tenant_id', $tenantId)->where('id', $assortmentPlanId)->first();
-        abort_if($plan === null, 404);
-        abort_unless($plan->status === 'DRAFT', 422, 'Only draft assortment plans can be edited.');
         $data = $request->validate([
-            'range_line_id' => ['required', 'uuid', Rule::exists('range_lines', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId)->where('range_plan_id', $plan->range_plan_id))],
+            'range_line_id' => [
+                'required',
+                'uuid',
+                Rule::exists('range_lines', 'id')->where(fn ($query) => $query
+                    ->where('tenant_id', $tenantId)),
+                Rule::unique('assortment_lines', 'range_line_id')->where(fn ($query) => $query
+                    ->where('tenant_id', $tenantId)
+                    ->where('assortment_plan_id', $assortmentPlanId)),
+            ],
             'variant_size_curve' => ['required', 'array'],
             'planned_units' => ['required', 'integer', 'min:0'],
             'launch_date' => ['nullable', 'date'],
             'minimum_depth' => ['nullable', 'integer', 'min:0'],
             'maximum_depth' => ['nullable', 'integer', 'min:0', 'gte:minimum_depth'],
         ]);
-        $id = (string) Str::uuid();
-        DB::table('assortment_lines')->insert([
-            'id' => $id,
-            'tenant_id' => $tenantId,
-            'assortment_plan_id' => $assortmentPlanId,
-            ...$data,
-            'variant_size_curve' => json_encode($data['variant_size_curve'], JSON_THROW_ON_ERROR),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-        $this->audit($tenantId, (string) $request->user()->getAuthIdentifier(), 'ASSORTMENT_LINE_CREATED', 'ASSORTMENT_LINE', $id, 'Channel assortment depth added.');
 
-        return response()->json(['data' => DB::table('assortment_lines')->where('tenant_id', $tenantId)->where('id', $id)->first()], 201);
+        $id = (string) Str::uuid();
+        $actor = (string) $request->user()->getAuthIdentifier();
+
+        $assortmentLine = DB::transaction(function () use ($tenantId, $assortmentPlanId, $data, $id, $actor): object {
+            $plan = DB::table('assortment_plans')
+                ->where('tenant_id', $tenantId)
+                ->where('id', $assortmentPlanId)
+                ->lockForUpdate()
+                ->first();
+
+            abort_if($plan === null, 404);
+            abort_unless($plan->status === 'DRAFT', 422, 'Only draft assortment plans can be edited.');
+
+            $rangeLine = DB::table('range_lines')
+                ->where('tenant_id', $tenantId)
+                ->where('range_plan_id', $plan->range_plan_id)
+                ->where('id', $data['range_line_id'])
+                ->first();
+
+            abort_if($rangeLine === null, 422, 'The selected range line does not belong to the frozen range plan.');
+
+            DB::table('assortment_lines')->insert([
+                'id' => $id,
+                'tenant_id' => $tenantId,
+                'assortment_plan_id' => $assortmentPlanId,
+                ...$data,
+                'variant_size_curve' => json_encode($data['variant_size_curve'], JSON_THROW_ON_ERROR),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $this->audit($tenantId, $actor, 'ASSORTMENT_LINE_CREATED', 'ASSORTMENT_LINE', $id, 'Channel assortment depth added.');
+
+            return DB::table('assortment_lines')->where('tenant_id', $tenantId)->where('id', $id)->first();
+        });
+
+        return response()->json(['data' => $assortmentLine], 201);
     }
 
     private function audit(string $tenantId, string $actorId, string $action, string $objectType, string $objectId, string $reason): void
