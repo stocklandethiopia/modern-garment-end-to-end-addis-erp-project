@@ -28,7 +28,7 @@
   }
 
   @if (showSiteForm() && canManage()) {
-    <form class="site-form" [formGroup]="siteForm" (ngSubmit)="createSite" novalidate>
+    <form class="site-form" [formGroup]="siteForm" (ngSubmit)="createSite()" novalidate>
       <div class="form-heading">
         <div>
           <h2>Register physical premises</h2>
@@ -104,7 +104,7 @@
           <h2 id="site-list-heading">Physical sites</h2>
           <p>{{ sites().length }} loaded</p>
         </div>
-        <button type="button" class="secondary-button" (click)="selectSite(activeSite()!)" [disabled]="!activeSite() || loading()">Refresh</button>
+        <button type="button" class="secondary-button" (click)="refreshActiveSite()" [disabled]="!activeSite() || loading()">Refresh</button>
       </div>
 
       @if (loading()) {
