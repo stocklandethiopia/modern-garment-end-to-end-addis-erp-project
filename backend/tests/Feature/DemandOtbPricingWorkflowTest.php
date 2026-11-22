@@ -335,7 +335,7 @@ class DemandOtbPricingWorkflowTest extends TestCase
             'valuation_basis' => 'COST',
             'effective_from' => '2027-01-01',
             'inclusion_rules' => ['commitments_mode' => 'ADDITIONAL', 'actual_receipts_reduce_otb' => true],
-            'approval_thresholds' => [],
+            'approval_thresholds' => ['manager_review_at' => '100000.0000'],
         ])->assertUnprocessable();
 
         $this->createActiveOtbPolicy('OTB-ONE');
