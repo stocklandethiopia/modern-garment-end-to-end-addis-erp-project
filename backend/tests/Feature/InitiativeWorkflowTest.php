@@ -327,6 +327,163 @@ class InitiativeWorkflowTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_approved_evidence_policy_requires_distinct_current_sources_before_assessment(): void
+    {
+        $initiativeResponse = $this->withHeader('X-Tenant-Id', $this->tenantId)
+            ->postJson('/api/v1/product/initiatives', [
+                'code' => 'EVIDENCE-POLICY-01',
+                'initiative_type' => 'NEW_COLLECTION',
+                'title' => 'Evidence-gated collection proposal',
+                'problem_statement' => 'A new collection requires current and independently sourced market evidence.',
+                'objective' => 'Verify tenant-approved evidence requirements before assessment.',
+                'target_market' => 'Ethiopia',
+            ])
+            ->assertCreated();
+
+        $initiativeId = $initiativeResponse->json('data.id');
+
+        $this->withHeader('X-Tenant-Id', $this->tenantId)
+            ->postJson('/api/v1/product/initiatives/'.$initiativeId.'/submit', [])
+            ->assertOk();
+
+        Sanctum::actingAs(User::query()->findOrFail($this->approverId), ['tenant:select', 'erp:access']);
+
+        $this->withHeader('X-Tenant-Id', $this->tenantId)
+            ->postJson('/api/v1/product/initiatives/'.$initiativeId.'/decisions', [
+                'decision' => 'APPROVE_RESEARCH',
+                'reason' => 'The proposal may proceed to structured research.',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'RESEARCH');
+
+        Sanctum::actingAs(User::query()->findOrFail($this->userId), ['tenant:select', 'erp:access']);
+
+        $policyResponse = $this->withHeader('X-Tenant-Id', $this->tenantId)
+            ->postJson('/api/v1/product/evidence-policies', [
+                'code' => 'NEW_COLLECTION_ASSESSMENT',
+                'name' => 'New collection assessment evidence',
+                'initiative_type' => 'NEW_COLLECTION',
+                'stage' => 'ASSESSMENT',
+                'target_market' => 'Ethiopia',
+                'effective_from' => now()->toDateString(),
+                'change_reason' => 'Initial tenant evidence threshold for a new collection assessment.',
+                'rules' => [[
+                    'requirement_code' => 'CURRENT_STORE_OBSERVATIONS',
+                    'insight_type' => 'OBSERVED_FACT',
+                    'minimum_records' => 2,
+                    'minimum_distinct_sources' => 2,
+                    'minimum_confidence' => 0.70,
+                    'minimum_source_reliability' => 0.80,
+                    'max_age_days' => 30,
+                    'require_geography' => true,
+                    'require_target_segment' => true,
+                    'require_sample_denominator' => true,
+                    'is_mandatory' => true,
+                ]],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.policy.status', 'DRAFT')
+            ->assertJsonPath('data.policy.version_no', 1)
+            ->assertJsonPath('data.rules.0.minimum_records', 2);
+
+        $policyId = $policyResponse->json('data.policy.id');
+
+        $this->withHeader('X-Tenant-Id', $this->tenantId)
+            ->postJson('/api/v1/product/evidence-policies/'.$policyId.'/submit', [])
+            ->assertOk()
+            ->assertJsonPath('data.policy.status', 'PENDING_APPROVAL');
+
+        $this->withHeader('X-Tenant-Id', $this->tenantId)
+            ->postJson('/api/v1/product/evidence-policies/'.$policyId.'/decisions', [
+                'decision' => 'APPROVE',
+                'reason' => 'The policy author cannot approve their own evidence thresholds.',
+            ])
+            ->assertForbidden();
+
+        Sanctum::actingAs(User::query()->findOrFail($this->approverId), ['tenant:select', 'erp:access']);
+
+        $this->withHeader('X-Tenant-Id', $this->tenantId)
+            ->postJson('/api/v1/product/evidence-policies/'.$policyId.'/decisions', [
+                'decision' => 'APPROVE',
+                'reason' => 'The evidence thresholds are approved for the stated initiative type, stage and market.',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.policy.status', 'APPROVED')
+            ->assertJsonPath('data.policy.approved_by', $this->approverId);
+
+        $coverage = $this->withHeader('X-Tenant-Id', $this->tenantId)
+            ->getJson('/api/v1/product/initiatives/'.$initiativeId.'/evidence-coverage?stage=ASSESSMENT')
+            ->assertOk()
+            ->assertJsonPath('data.evidence_coverage.status', 'GAP')
+            ->assertJsonPath('data.evidence_coverage.coverage_percent', 0)
+            ->assertJsonPath('data.evidence_coverage.rules.0.gaps.0', 'NO_MATCHING_INSIGHTS');
+
+        $this->assertSame($initiativeId, $coverage->json('data.initiative_id'));
+
+        try {
+            DB::connection('pgsql_test_admin')
+                ->table('initiative_evidence_policy_rules')
+                ->where('tenant_id', $this->tenantId)
+                ->where('policy_id', $policyId)
+                ->update(['minimum_records' => 1]);
+            $this->fail('Approved evidence rules must be immutable.');
+        } catch (QueryException) {
+            $this->assertTrue(true);
+        }
+
+        Sanctum::actingAs(User::query()->findOrFail($this->userId), ['tenant:select', 'erp:access']);
+
+        foreach ([1, 2] as $index) {
+            $source = $this->withHeader('X-Tenant-Id', $this->tenantId)
+                ->postJson('/api/v1/product/insight-sources', [
+                    'source_type' => 'STORE_OBSERVATION',
+                    'source_name' => 'Approved evidence source '.$index,
+                    'source_reference' => 'internal-research://evidence-policy/'.$index,
+                    'capture_method' => 'STRUCTURED_STORE_OBSERVATION',
+                    'geography' => 'Addis Ababa',
+                    'reliability_score' => 0.90,
+                    'permitted_use_basis' => 'Aggregated internal market research',
+                ])
+                ->assertCreated();
+
+            $insight = $this->withHeader('X-Tenant-Id', $this->tenantId)
+                ->postJson('/api/v1/product/market-insights', [
+                    'source_id' => $source->json('data.id'),
+                    'initiative_id' => $initiativeId,
+                    'insight_type' => 'OBSERVED_FACT',
+                    'title' => 'Current store observation '.$index,
+                    'summary' => 'A structured, independently sourced observation for the policy gate.',
+                    'observed_at' => now()->subDays(1)->toIso8601String(),
+                    'geography' => 'Addis Ababa',
+                    'target_segment' => 'Urban adults',
+                    'channel_code' => 'OWN_RETAIL',
+                    'category_code' => 'CASUALWEAR',
+                    'sample_size' => 12,
+                    'denominator' => 30,
+                    'confidence' => 0.85,
+                    'privacy_basis' => 'Aggregated research; no personal consumer identifiers are collected.',
+                ]);
+
+            $insight->assertCreated();
+
+            if ($index === 1) {
+                $this->withHeader('X-Tenant-Id', $this->tenantId)
+                    ->postJson('/api/v1/product/initiatives/'.$initiativeId.'/advance-to-assessment', [])
+                    ->assertUnprocessable()
+                    ->assertJsonPath('message', 'Configured assessment evidence requirements are not satisfied.');
+            }
+        }
+
+        $this->withHeader('X-Tenant-Id', $this->tenantId)
+            ->postJson('/api/v1/product/initiatives/'.$initiativeId.'/advance-to-assessment', [])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'ASSESSMENT')
+            ->assertJsonPath('evidence_coverage.status', 'MET')
+            ->assertJsonPath('evidence_coverage.coverage_percent', 100)
+            ->assertJsonPath('evidence_coverage.rules.0.qualifying_records', 2)
+            ->assertJsonPath('evidence_coverage.rules.0.distinct_sources', 2);
+    }
+
     public function test_initiative_tables_force_rls_and_history_is_immutable(): void
     {
         $tables = [
