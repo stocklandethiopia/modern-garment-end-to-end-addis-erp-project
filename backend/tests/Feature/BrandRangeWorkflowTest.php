@@ -758,6 +758,162 @@ class BrandRangeWorkflowTest extends TestCase
         ], 'pgsql_test_admin');
     }
 
+    public function test_wholesale_and_reseller_assortments_keep_independent_approved_account_terms_versions(): void
+    {
+        $range = $this->createDraftRangePlanForAcceptance();
+
+        $this->actAsApprover();
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product/range-plans/'.$range['range_plan_id'].'/freeze', [])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'FROZEN');
+        $this->actAsOwner();
+
+        $entityId = (string) Str::uuid();
+        DB::connection('pgsql_test_admin')->table('legal_entities')->insert([
+            'id' => $entityId,
+            'tenant_id' => $this->tenantId,
+            'registration_number' => 'ATMER-TERMS-'.Str::upper(Str::random(6)),
+            'legal_name' => 'Acceptance Wholesale Trading Entity',
+            'country_code' => 'ET',
+            'base_currency' => 'ETB',
+            'status' => 'ACTIVE',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $createPublishedPriceList = function (string $channel, string $account, string $code) use ($entityId, $range): string {
+            $list = $this->withHeaders($this->tenantHeader())
+                ->postJson('/api/v1/product/price-lists', [
+                    'legal_entity_id' => $entityId,
+                    'brand_id' => $range['brand_id'],
+                    'code' => $code,
+                    'channel_code' => $channel,
+                    'market_scope' => 'ETHIOPIA',
+                    'account_reference' => $account,
+                    'currency' => 'ETB',
+                    'effective_from' => '2026-11-22T00:00:00Z',
+                    'effective_to' => '2027-12-31T23:59:59Z',
+                ])
+                ->assertCreated();
+
+            $listId = $list->json('data.id');
+            $this->withHeaders($this->tenantHeader())
+                ->postJson('/api/v1/product/price-lists/'.$listId.'/lines', [
+                    'product_reference' => 'ATMER-STYLE-01',
+                    'list_price' => '1800.0000',
+                    'wholesale_price' => '1200.0000',
+                    'price_floor' => '1100.0000',
+                    'cost_basis' => '800.0000',
+                ])
+                ->assertCreated();
+
+            $this->actAsApprover();
+            $this->withHeaders($this->tenantHeader())
+                ->postJson('/api/v1/product/price-lists/'.$listId.'/publish', [])
+                ->assertOk()
+                ->assertJsonPath('data.status', 'PUBLISHED');
+            $this->actAsOwner();
+
+            return $listId;
+        };
+
+        $wholesalePriceListId = $createPublishedPriceList(
+            'WHOLESALE',
+            'DISTRIBUTOR-001',
+            'ATMER-WHOLESALE-'.Str::upper(Str::random(5)),
+        );
+        $resellerPriceListId = $createPublishedPriceList(
+            'RESELLER',
+            'RESELLER-002',
+            'ATMER-RESELLER-'.Str::upper(Str::random(5)),
+        );
+
+        $wholesalePlan = $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product/assortment-plans', [
+                'range_plan_id' => $range['range_plan_id'],
+                'code' => 'ATMER-WHOLESALE-ASSORTMENT-'.Str::upper(Str::random(4)),
+                'channel_code' => 'WHOLESALE',
+                'market_scope' => 'ETHIOPIA',
+                'account_reference' => 'DISTRIBUTOR-001',
+                'location_cluster_reference' => 'NORTH',
+            ])
+            ->assertCreated();
+        $wholesalePlanId = $wholesalePlan->json('data.id');
+
+        $resellerPlan = $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product/assortment-plans', [
+                'range_plan_id' => $range['range_plan_id'],
+                'code' => 'ATMER-RESELLER-ASSORTMENT-'.Str::upper(Str::random(4)),
+                'channel_code' => 'RESELLER',
+                'market_scope' => 'ETHIOPIA',
+                'account_reference' => 'RESELLER-002',
+                'location_cluster_reference' => 'ADDIS',
+            ])
+            ->assertCreated();
+        $resellerPlanId = $resellerPlan->json('data.id');
+
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product/assortment-plans/'.$wholesalePlanId.'/account-terms', [
+                'price_list_id' => $resellerPriceListId,
+                'commercial_terms_reference' => 'CONTRACT-RESELLER-002',
+                'payment_terms_reference' => 'PAYMENT-POLICY-NET30',
+                'delivery_terms_reference' => 'DELIVERY-POLICY-DC-ADDIS',
+                'effective_from' => '2027-01-01',
+                'effective_to' => '2027-06-30',
+                'change_reason' => 'Verify that a reseller price book cannot be assigned to a wholesale account.',
+            ])
+            ->assertUnprocessable();
+
+        $terms = $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product/assortment-plans/'.$wholesalePlanId.'/account-terms', [
+                'price_list_id' => $wholesalePriceListId,
+                'account_tier' => 'GOLD',
+                'commercial_terms_reference' => 'CONTRACT-DISTRIBUTOR-001',
+                'payment_terms_reference' => 'PAYMENT-POLICY-NET30',
+                'delivery_terms_reference' => 'DELIVERY-POLICY-DC-ADDIS',
+                'returns_policy_reference' => 'RETURNS-POLICY-WHOLESALE',
+                'minimum_order_units' => 240,
+                'order_multiple_units' => 24,
+                'effective_from' => '2027-01-01',
+                'effective_to' => '2027-06-30',
+                'change_reason' => 'Initial approved wholesale account terms for the planned assortment.',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.status', 'DRAFT')
+            ->assertJsonPath('data.version_no', 1)
+            ->assertJsonPath('data.currency', 'ETB')
+            ->assertJsonPath('data.account_reference', 'DISTRIBUTOR-001');
+        $termsId = $terms->json('data.id');
+
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product/assortment-plans/'.$wholesalePlanId.'/account-terms/'.$termsId.'/submit', [])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'PENDING_APPROVAL');
+
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product/assortment-plans/'.$wholesalePlanId.'/account-terms/'.$termsId.'/decisions', [
+                'decision' => 'APPROVE',
+                'reason' => 'The terms author cannot approve their own wholesale commercial terms.',
+            ])
+            ->assertForbidden();
+
+        $this->actAsApprover();
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product/assortment-plans/'.$wholesalePlanId.'/account-terms/'.$termsId.'/decisions', [
+                'decision' => 'APPROVE',
+                'reason' => 'The wholesale account, price list and effective terms have been independently reviewed.',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'APPROVED');
+
+        $this->expectException(QueryException::class);
+        DB::connection('pgsql_test_admin')->table('assortment_account_terms')
+            ->where('tenant_id', $this->tenantId)
+            ->where('id', $termsId)
+            ->update(['payment_terms_reference' => 'UNCONTROLLED-CHANGE']);
+    }
+
     public function test_approved_range_line_requires_an_accepted_brief_before_version_pinned_style_development(): void
     {
         $brandId = $this->createApprovedBrand();
