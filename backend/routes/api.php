@@ -1,9 +1,9 @@
 <?php
 
 use App\Http\Controllers\Auth\TokenController;
-use App\Http\Controllers\Enterprise\LegalEntityController;
 use App\Http\Controllers\Enterprise\BusinessSiteController;
 use App\Http\Controllers\Enterprise\InventoryLocationController;
+use App\Http\Controllers\Enterprise\LegalEntityController;
 use App\Http\Controllers\Enterprise\TenantController;
 use App\Support\TenantContext;
 use Illuminate\Http\Request;
