@@ -27,11 +27,11 @@ Exact supported patch versions are recorded in the platform standard and must be
 1. Platform architecture and technology standard: docs/architecture/platform-standard.md
 2. End-to-end business domain map: docs/product/domain-map.md
 3. Distribution network, order management and channel commerce: docs/product/distribution-and-channel-commerce.md
-3. Engineering, syntax and code quality rules: docs/engineering/code-quality.md
-4. Development, container and deployment standard: docs/engineering/development-deployment.md
-5. Security and SaaS tenancy standard: docs/security/saas-security.md
-6. Ethiopia localization and statutory controls: docs/localization/ethiopia.md
-7. Approved reference repository review: docs/references/reference-repositories.md
+4. Engineering, syntax and code quality rules: docs/engineering/code-quality.md
+5. Development, container and deployment standard: docs/engineering/development-deployment.md
+6. Security and SaaS tenancy standard: docs/security/saas-security.md
+7. Ethiopia localization and statutory controls: docs/localization/ethiopia.md
+8. Approved reference repository review: docs/references/reference-repositories.md
 
 ## Delivery rule
 
