@@ -90,6 +90,11 @@ jobs:
       - name: Audit PHP dependencies
         run: composer audit
 
+      - name: Diagnose initiative test formatting
+        run: |
+          vendor/bin/pint tests/Feature/InitiativeWorkflowTest.php
+          git diff -- tests/Feature/InitiativeWorkflowTest.php
+
       - name: Check PHP style and syntax
         run: |
           vendor/bin/pint --test
