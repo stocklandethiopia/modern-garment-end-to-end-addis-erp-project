@@ -210,12 +210,98 @@
                 </div>
                 @if (node.stock_holding_enabled) {
                   <span class="stock-badge">Stock capable</span>
+                  <button type="button" class="manage-location-button" (click)="selectNode(node)">Locations</button>
                 } @else {
                   <span class="plain-badge">No stock</span>
                 }
               </article>
             }
           </div>
+        }
+
+        @if (activeNode(); as node) {
+          <section class="location-panel" aria-labelledby="location-heading">
+            <div class="node-list-heading">
+              <div>
+                <h3 id="location-heading">Inventory locations · {{ node.name }}</h3>
+                <span>{{ locations().length }} loaded</span>
+              </div>
+              @if (canManage() && node.stock_holding_enabled) {
+                <button type="button" class="secondary-button" (click)="showLocationForm.set(!showLocationForm())">
+                  {{ showLocationForm() ? 'Close' : 'Add location' }}
+                </button>
+              }
+            </div>
+
+            @if (showLocationForm() && canManage()) {
+              <form class="location-form" [formGroup]="locationForm" (ngSubmit)="createLocation()">
+                <div class="form-grid">
+                  <div class="field">
+                    <label for="location-code">Unique location code</label>
+                    <input id="location-code" formControlName="code" maxlength="100" required>
+                  </div>
+                  <div class="field">
+                    <label for="location-type">Location type</label>
+                    <select id="location-type" formControlName="location_type">
+                      <option value="AREA">Area</option>
+                      <option value="ZONE">Zone</option>
+                      <option value="AISLE">Aisle</option>
+                      <option value="RACK">Rack</option>
+                      <option value="SHELF">Shelf</option>
+                      <option value="BIN">Bin</option>
+                      <option value="FLOOR">Floor</option>
+                      <option value="STAGING">Staging</option>
+                      <option value="QUARANTINE">Quarantine</option>
+                      <option value="RETURNS">Returns</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="location-parent">Parent location</label>
+                    <select id="location-parent" formControlName="parent_id">
+                      <option value="">No parent (root location)</option>
+                      @for (parent of locations(); track parent.id) {
+                        <option [value]="parent.id">{{ parent.code }} · {{ parent.location_type }}</option>
+                      }
+                    </select>
+                  </div>
+                  <label class="checkbox-field">
+                    <input type="checkbox" formControlName="allow_stock">
+                    <span>Allow stock to be stored at this location</span>
+                  </label>
+                </div>
+                <div class="form-actions">
+                  <span class="form-hint">A location/bin is a stock ledger location. Draft locations do not receive inventory.</span>
+                  <button type="submit" class="primary-button" [disabled]="locationForm.invalid || savingLocation()">
+                    @if (savingLocation()) { Saving… } @else { Save draft location }
+                  </button>
+                </div>
+              </form>
+            }
+
+            @if (loadingLocations()) {
+              <div class="loading-state" role="status">Loading inventory locations…</div>
+            } @else if (locations().length === 0) {
+              <div class="empty-state compact">
+                <strong>No inventory locations registered</strong>
+                <p>Create root zones, aisles, racks, shelves, bins, quarantine or staging locations for this stock-capable node.</p>
+              </div>
+            } @else {
+              <div class="location-list">
+                @for (location of locations(); track location.id) {
+                  <article class="location-item">
+                    <span class="location-code">{{ location.code }}</span>
+                    <span class="location-type">{{ location.location_type }}</span>
+                    <span class="location-state">{{ location.status }}</span>
+                    @if (location.allow_stock) {
+                      <span class="stock-badge">Stock allowed</span>
+                    } @else {
+                      <span class="plain-badge">No stock</span>
+                    }
+                  </article>
+                }
+              </div>
+            }
+          </section>
         }
       } @else {
         <div class="empty-state node-empty">
