@@ -24,6 +24,7 @@ class BusinessSiteController extends Controller
     private const NODE_TYPES = [
         'FACTORY',
         'WAREHOUSE',
+        'BRANCH',
         'DISTRIBUTION_CENTER',
         'BRANCH',
         'RETAIL_STORE',
@@ -187,7 +188,7 @@ class BusinessSiteController extends Controller
         if ($stockHolding && ! in_array($data['node_type'], self::STOCK_CAPABLE_NODE_TYPES, true)) {
             return response()->json([
                 'message' => 'This node type cannot hold inventory. Create a separate stock-capable operational node where appropriate.',
-                'errors' => ['stock_holding_enabled' => ['Branch, office and subcontractor nodes do not become warehouses by default.']],
+                'errors' => ['stock_holding_enabled' => ['Office and subcontractor nodes cannot hold stock. A branch requires an explicit stock-holding decision.']],
             ], 422);
         }
 
