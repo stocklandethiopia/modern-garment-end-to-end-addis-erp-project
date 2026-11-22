@@ -158,20 +158,20 @@ return new class extends Migration
         });
 
         DB::statement('ALTER TABLE sample_requests ADD CONSTRAINT sample_requests_quantity_check CHECK (requested_quantity > 0 AND current_round_no > 0)');
-        DB::statement('ALTER TABLE sample_requests ADD CONSTRAINT sample_requests_sample_type_check CHECK (sample_type IN ('PROTOTYPE', 'FIT', 'SIZE_SET', 'SALESMAN', 'PHOTO', 'PRE_PRODUCTION', 'WASH_TEST', 'STRIKE_OFF', 'PILOT', 'COUNTER'))');
-        DB::statement('ALTER TABLE sample_requests ADD CONSTRAINT sample_requests_status_check CHECK (status IN ('REQUESTED', 'SAMPLE_IN_PROGRESS', 'AWAITING_FIT', 'CORRECTION_REQUIRED', 'FIT_APPROVED', 'REJECTED'))');
-        DB::statement('ALTER TABLE sample_requests ADD CONSTRAINT sample_requests_size_array_check CHECK (jsonb_typeof(requested_size_codes) = 'array' AND jsonb_array_length(requested_size_codes) > 0 AND jsonb_typeof(requested_colour_codes) = 'array')');
+        DB::statement('ALTER TABLE sample_requests ADD CONSTRAINT sample_requests_sample_type_check CHECK (sample_type IN (\'PROTOTYPE\', \'FIT\', \'SIZE_SET\', \'SALESMAN\', \'PHOTO\', \'PRE_PRODUCTION\', \'WASH_TEST\', \'STRIKE_OFF\', \'PILOT\', \'COUNTER\'))');
+        DB::statement('ALTER TABLE sample_requests ADD CONSTRAINT sample_requests_status_check CHECK (status IN (\'REQUESTED\', \'SAMPLE_IN_PROGRESS\', \'AWAITING_FIT\', \'CORRECTION_REQUIRED\', \'FIT_APPROVED\', \'REJECTED\'))');
+        DB::statement('ALTER TABLE sample_requests ADD CONSTRAINT sample_requests_size_array_check CHECK (jsonb_typeof(requested_size_codes) = \'array\' AND jsonb_array_length(requested_size_codes) > 0 AND jsonb_typeof(requested_colour_codes) = \'array\')');
         DB::statement('ALTER TABLE sample_rounds ADD CONSTRAINT sample_rounds_quantity_check CHECK (round_no > 0 AND planned_quantity > 0 AND (actual_quantity IS NULL OR (actual_quantity > 0 AND actual_quantity <= planned_quantity)))');
-        DB::statement('ALTER TABLE sample_rounds ADD CONSTRAINT sample_rounds_status_check CHECK (status IN ('REQUESTED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'))');
-        DB::statement('ALTER TABLE fit_sessions ADD CONSTRAINT fit_sessions_status_check CHECK (status IN ('DRAFT', 'SUBMITTED_FOR_REVIEW', 'DECIDED'))');
-        DB::statement('ALTER TABLE fit_sessions ADD CONSTRAINT fit_sessions_posture_check CHECK (posture_code IN ('STANDING', 'SITTING', 'MOVING', 'OTHER'))');
+        DB::statement('ALTER TABLE sample_rounds ADD CONSTRAINT sample_rounds_status_check CHECK (status IN (\'REQUESTED\', \'IN_PROGRESS\', \'COMPLETED\', \'CANCELLED\'))');
+        DB::statement('ALTER TABLE fit_sessions ADD CONSTRAINT fit_sessions_status_check CHECK (status IN (\'DRAFT\', \'SUBMITTED_FOR_REVIEW\', \'DECIDED\'))');
+        DB::statement('ALTER TABLE fit_sessions ADD CONSTRAINT fit_sessions_posture_check CHECK (posture_code IN (\'STANDING\', \'SITTING\', \'MOVING\', \'OTHER\'))');
         DB::statement('ALTER TABLE fit_observations ADD CONSTRAINT fit_observations_values_check CHECK (nominal_value >= 0 AND tolerance_minus >= 0 AND tolerance_plus >= 0 AND observed_value >= 0)');
-        DB::statement('ALTER TABLE fit_observations ADD CONSTRAINT fit_observations_severity_check CHECK (severity IN ('NONE', 'MINOR', 'MAJOR', 'CRITICAL'))');
-        DB::statement('ALTER TABLE fit_decisions ADD CONSTRAINT fit_decisions_type_check CHECK (decision IN ('APPROVE', 'APPROVE_WITH_COMMENTS', 'CORRECTION_REQUIRED', 'REJECT'))');
+        DB::statement('ALTER TABLE fit_observations ADD CONSTRAINT fit_observations_severity_check CHECK (severity IN (\'NONE\', \'MINOR\', \'MAJOR\', \'CRITICAL\'))');
+        DB::statement('ALTER TABLE fit_decisions ADD CONSTRAINT fit_decisions_type_check CHECK (decision IN (\'APPROVE\', \'APPROVE_WITH_COMMENTS\', \'CORRECTION_REQUIRED\', \'REJECT\'))');
 
         foreach ($this->tables as $table) {
-            DB::statement('ALTER TABLE {$table} ENABLE ROW LEVEL SECURITY');
-            DB::statement('ALTER TABLE {$table} FORCE ROW LEVEL SECURITY');
+            DB::statement(sprintf('ALTER TABLE %s ENABLE ROW LEVEL SECURITY', $table));
+            DB::statement(sprintf('ALTER TABLE %s FORCE ROW LEVEL SECURITY', $table));
             DB::statement(
                 "CREATE POLICY tenant_isolation_{$table} ON {$table}
                  USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid)
@@ -194,17 +194,17 @@ return new class extends Migration
         DB::statement('GRANT SELECT, INSERT ON fit_observations, fit_decisions TO app_runtime');
         DB::statement('REVOKE UPDATE, DELETE ON fit_observations, fit_decisions FROM app_runtime');
 
-        DB::statement("CREATE OR REPLACE FUNCTION prevent_sample_fit_history_mutation() RETURNS trigger LANGUAGE plpgsql AS 'BEGIN RAISE EXCEPTION ''fit observations and decisions are append-only''; END;'");
+        DB::statement('CREATE OR REPLACE FUNCTION prevent_sample_fit_history_mutation() RETURNS trigger LANGUAGE plpgsql AS \'BEGIN RAISE EXCEPTION \'\'fit observations and decisions are append-only\'\'; END;\'');
 
         foreach (['fit_observations', 'fit_decisions'] as $table) {
-            DB::statement("CREATE TRIGGER {$table}_append_only BEFORE UPDATE OR DELETE ON {$table} FOR EACH ROW EXECUTE FUNCTION prevent_sample_fit_history_mutation()");
+            DB::statement(sprintf('CREATE TRIGGER %s_append_only BEFORE UPDATE OR DELETE ON %s FOR EACH ROW EXECUTE FUNCTION prevent_sample_fit_history_mutation()', $table, $table));
         }
     }
 
     public function down(): void
     {
         foreach (['fit_observations', 'fit_decisions'] as $table) {
-            DB::statement("DROP TRIGGER IF EXISTS {$table}_append_only ON {$table}");
+            DB::statement(sprintf('DROP TRIGGER IF EXISTS %s_append_only ON %s', $table, $table));
         }
 
         DB::statement('DROP FUNCTION IF EXISTS prevent_sample_fit_history_mutation()');
