@@ -106,7 +106,7 @@
 
   @if (selectedPattern(); as pattern) {
     <section class="panel revision-panel">
-      <div class="panel-heading"><div><span class="panel-kicker">PATTERN REVISION WORKSPACE</span><h2>{{ pattern.pattern_code }} · New revision</h2><p>Prior pattern revisions and their approvals remain immutable.</p></div><button class="text-button" type="button" (click)="selectPattern(null as any)">Close</button></div>
+      <div class="panel-heading"><div><span class="panel-kicker">PATTERN REVISION WORKSPACE</span><h2>{{ pattern.pattern_code }} · New revision</h2><p>Prior pattern revisions and their approvals remain immutable.</p></div><button class="text-button" type="button" (click)="selectPattern(null)">Close</button></div>
       <form [formGroup]="patternRevisionForm" (ngSubmit)="createPatternRevision()" class="form-grid">
         <label class="full-span">Approved measurement specification<select formControlName="measurement_spec_version_id"><option value="">Select approved current spec</option>@for (spec of approvedMeasurementSpecs(); track spec.id) { <option [value]="spec.id">{{ spec.size_system_code }} · v{{ spec.version_no }}</option> }</select></label>
         <label class="full-span">Pattern pieces (JSON array)<textarea rows="7" formControlName="pieces_json" spellcheck="false"></textarea></label>

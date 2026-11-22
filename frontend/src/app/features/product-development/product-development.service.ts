@@ -141,63 +141,6 @@ export interface StyleInput {
 
 export type StyleRevisionInput = Omit<StyleInput, 'product_brief_id' | 'style_code' | 'name' | 'category_code'>;
 
-@Injectable({ providedIn: 'root' })
-export class ProductDevelopmentService {
-  private readonly http = inject(HttpClient);
-  private readonly base = '/api/v1';
-
-  listProductBriefs(): Observable<ProductDevelopmentPage<ProductBrief>> {
-    return this.http.get<ProductDevelopmentPage<ProductBrief>>(this.base + '/product-briefs');
-  }
-
-  getProductBrief(id: string): Observable<ProductBriefDetail> {
-    return this.http.get<ProductBriefDetail>(this.base + '/product-briefs/' + encodeURIComponent(id));
-  }
-
-  createProductBrief(input: ProductBriefInput): Observable<ProductDevelopmentResource<ProductBrief> & { version: number }> {
-    return this.http.post<ProductDevelopmentResource<ProductBrief> & { version: number }>(this.base + '/product-briefs', input);
-  }
-
-  createProductBriefVersion(id: string, input: ProductBriefVersionInput): Observable<ProductDevelopmentResource<ProductBrief>> {
-    return this.http.post<ProductDevelopmentResource<ProductBrief>>(
-      this.base + '/product-briefs/' + encodeURIComponent(id) + '/versions',
-      input,
-    );
-  }
-
-  submitProductBrief(id: string): Observable<ProductDevelopmentResource<ProductBrief>> {
-    return this.http.post<ProductDevelopmentResource<ProductBrief>>(
-      this.base + '/product-briefs/' + encodeURIComponent(id) + '/submit',
-      {},
-    );
-  }
-
-  decideProductBrief(id: string, input: ProductBriefDecisionInput): Observable<ProductDevelopmentResource<ProductBrief>> {
-    return this.http.post<ProductDevelopmentResource<ProductBrief>>(
-      this.base + '/product-briefs/' + encodeURIComponent(id) + '/decisions',
-      input,
-    );
-  }
-
-  listStyles(): Observable<ProductDevelopmentPage<StyleRecord>> {
-    return this.http.get<ProductDevelopmentPage<StyleRecord>>(this.base + '/styles');
-  }
-
-  getStyle(id: string): Observable<StyleDetail> {
-    return this.http.get<StyleDetail>(this.base + '/styles/' + encodeURIComponent(id));
-  }
-
-  createStyle(input: StyleInput): Observable<ProductDevelopmentResource<StyleRecord> & { revision: StyleRevision }> {
-    return this.http.post<ProductDevelopmentResource<StyleRecord> & { revision: StyleRevision }>(this.base + '/styles', input);
-  }
-
-  createStyleRevision(id: string, input: StyleRevisionInput): Observable<ProductDevelopmentResource<StyleRecord>> {
-    return this.http.post<ProductDevelopmentResource<StyleRecord>>(
-      this.base + '/styles/' + encodeURIComponent(id) + '/revisions',
-      input,
-    );
-  }
-
 export interface MeasurementSpecValue {
   id: string;
   size_code: string;
@@ -300,6 +243,62 @@ export interface PatternSetInput {
 
 export type PatternRevisionInput = Omit<PatternSetInput, 'pattern_code' | 'name'>;
 
+@Injectable({ providedIn: 'root' })
+export class ProductDevelopmentService {
+  private readonly http = inject(HttpClient);
+  private readonly base = '/api/v1';
+
+  listProductBriefs(): Observable<ProductDevelopmentPage<ProductBrief>> {
+    return this.http.get<ProductDevelopmentPage<ProductBrief>>(this.base + '/product-briefs');
+  }
+
+  getProductBrief(id: string): Observable<ProductBriefDetail> {
+    return this.http.get<ProductBriefDetail>(this.base + '/product-briefs/' + encodeURIComponent(id));
+  }
+
+  createProductBrief(input: ProductBriefInput): Observable<ProductDevelopmentResource<ProductBrief> & { version: number }> {
+    return this.http.post<ProductDevelopmentResource<ProductBrief> & { version: number }>(this.base + '/product-briefs', input);
+  }
+
+  createProductBriefVersion(id: string, input: ProductBriefVersionInput): Observable<ProductDevelopmentResource<ProductBrief>> {
+    return this.http.post<ProductDevelopmentResource<ProductBrief>>(
+      this.base + '/product-briefs/' + encodeURIComponent(id) + '/versions',
+      input,
+    );
+  }
+
+  submitProductBrief(id: string): Observable<ProductDevelopmentResource<ProductBrief>> {
+    return this.http.post<ProductDevelopmentResource<ProductBrief>>(
+      this.base + '/product-briefs/' + encodeURIComponent(id) + '/submit',
+      {},
+    );
+  }
+
+  decideProductBrief(id: string, input: ProductBriefDecisionInput): Observable<ProductDevelopmentResource<ProductBrief>> {
+    return this.http.post<ProductDevelopmentResource<ProductBrief>>(
+      this.base + '/product-briefs/' + encodeURIComponent(id) + '/decisions',
+      input,
+    );
+  }
+
+  listStyles(): Observable<ProductDevelopmentPage<StyleRecord>> {
+    return this.http.get<ProductDevelopmentPage<StyleRecord>>(this.base + '/styles');
+  }
+
+  getStyle(id: string): Observable<StyleDetail> {
+    return this.http.get<StyleDetail>(this.base + '/styles/' + encodeURIComponent(id));
+  }
+
+  createStyle(input: StyleInput): Observable<ProductDevelopmentResource<StyleRecord> & { revision: StyleRevision }> {
+    return this.http.post<ProductDevelopmentResource<StyleRecord> & { revision: StyleRevision }>(this.base + '/styles', input);
+  }
+
+  createStyleRevision(id: string, input: StyleRevisionInput): Observable<ProductDevelopmentResource<StyleRecord>> {
+    return this.http.post<ProductDevelopmentResource<StyleRecord>>(
+      this.base + '/styles/' + encodeURIComponent(id) + '/revisions',
+      input,
+    );
+  }
 
   listMeasurementSpecs(styleId: string): Observable<ProductDevelopmentResource<MeasurementSpecVersion[]>> {
     return this.http.get<ProductDevelopmentResource<MeasurementSpecVersion[]>>(
@@ -307,8 +306,8 @@ export type PatternRevisionInput = Omit<PatternSetInput, 'pattern_code' | 'name'
     );
   }
 
-  createMeasurementSpec(styleId: string, input: MeasurementSpecInput): Observable<ProductDevelopmentResource<MeasurementSpecVersion>> {
-    return this.http.post<ProductDevelopmentResource<MeasurementSpecVersion>>(
+  createMeasurementSpec(styleId: string, input: MeasurementSpecInput): Observable<ProductDevelopmentResource<Omit<MeasurementSpecVersion, 'points'>>> {
+    return this.http.post<ProductDevelopmentResource<Omit<MeasurementSpecVersion, 'points'>>>(
       this.base + '/styles/' + encodeURIComponent(styleId) + '/measurement-specs',
       input,
     );

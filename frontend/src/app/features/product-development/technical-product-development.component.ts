@@ -93,6 +93,7 @@ export class TechnicalProductDevelopmentComponent {
   selectStyle(styleId: string): void {
     const tenantId = this.session.activeTenant()?.id;
     if (!tenantId || !styleId) return;
+    this.clearMessages();
     const sequence = this.workspaceSequence;
     const detail = ++this.detailSequence;
     this.selectedStyle.set(null);
@@ -111,7 +112,6 @@ export class TechnicalProductDevelopmentComponent {
         this.measurementSpecs.set(response.specs.data);
         this.patternSets.set(response.patterns.data);
         this.loading.set(false);
-        this.clearMessages();
       },
       error: (error: HttpErrorResponse) => {
         if (!this.isCurrent(tenantId, sequence) || detail !== this.detailSequence) return;
@@ -189,7 +189,7 @@ export class TechnicalProductDevelopmentComponent {
     });
   }
 
-  selectPattern(pattern: PatternSetRecord): void {
+  selectPattern(pattern: PatternSetRecord | null): void {
     this.selectedPattern.set(pattern);
     this.patternRevisionForm.reset({
       measurement_spec_version_id: this.approvedMeasurementSpecs()[0]?.id ?? '',
@@ -269,8 +269,8 @@ export class TechnicalProductDevelopmentComponent {
       next: () => {
         if (!this.isCurrent(tenantId, sequence)) return;
         this.saving.set(false);
-        this.successMessage.set(success);
         afterSuccess();
+        this.successMessage.set(success);
       },
       error: (error: HttpErrorResponse) => {
         if (!this.isCurrent(tenantId, sequence)) return;
