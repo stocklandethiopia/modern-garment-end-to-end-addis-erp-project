@@ -38,7 +38,7 @@ class LegalEntityController extends Controller
             ],
             'legal_name' => ['required', 'string', 'max:255'],
             'legal_form' => ['nullable', 'string', 'max:100'],
-            'country_code' => ['required', 'string', 'size:2', 'alpha:upper'],
+            'country_code' => ['required', 'string', 'size:2', 'alpha:ascii', 'uppercase'],
             'tax_identifier' => ['nullable', 'string', 'max:100'],
             'base_currency' => ['required', 'string', 'size:3', 'alpha:upper'],
         ]);
