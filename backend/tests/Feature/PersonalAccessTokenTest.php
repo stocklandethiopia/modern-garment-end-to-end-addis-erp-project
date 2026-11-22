@@ -21,7 +21,7 @@ class PersonalAccessTokenTest extends TestCase
         $this->tenantId = (string) Str::uuid();
         $this->userId = (string) Str::uuid();
         $now = now();
-        $admin = DB::connection('pgsql_admin');
+        $admin = DB::connection('pgsql_test_admin');
 
         $admin->table('tenants')->insert([
             'id' => $this->tenantId,
@@ -75,7 +75,7 @@ class PersonalAccessTokenTest extends TestCase
         $response->assertOk()
             ->assertJsonFragment(['id' => $this->tenantId]);
 
-        $storedToken = DB::connection('pgsql_admin')->table('personal_access_tokens')
+        $storedToken = DB::connection('pgsql_test_admin')->table('personal_access_tokens')
             ->where('tokenable_id', $this->userId)
             ->first();
 
