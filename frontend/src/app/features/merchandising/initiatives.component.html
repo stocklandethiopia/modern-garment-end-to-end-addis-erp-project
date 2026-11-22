@@ -277,7 +277,7 @@
                 </div>
               } @else {
                 <div class="coverage-summary">
-                  <strong>{{ coverageRecord.evidence_coverage.coverage_percent ?? 0 | number:'1.0-2' }}%</strong>
+                  <strong>{{ (coverageRecord.evidence_coverage.coverage_percent ?? 0) | number:'1.0-2' }}%</strong>
                   <span>{{ coverageRecord.evidence_coverage.mandatory_rules_met }} of {{ coverageRecord.evidence_coverage.mandatory_rules }} mandatory requirements met</span>
                   <small>{{ coverageRecord.evidence_coverage.policy?.code }} · v{{ coverageRecord.evidence_coverage.policy?.version_no }} · {{ coverageRecord.evidence_coverage.policy?.target_market || 'Tenant-wide policy' }}</small>
                 </div>
