@@ -814,6 +814,184 @@ class BrandRangeWorkflowTest extends TestCase
             ->assertJsonPath('data.0.current_revision', 2)
             ->assertJsonPath('data.0.latest_revision_status', 'APPROVED');
 
+        $sample = $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/styles/'.$styleId.'/sample-requests', [
+                'pattern_set_id' => $patternSetId,
+                'pattern_revision_id' => $correctedPatternRevisionId,
+                'sample_type' => 'FIT',
+                'purpose' => 'Validate the approved overshirt fit before technical release.',
+                'requested_quantity' => 1,
+                'requested_size_codes' => ['M'],
+                'requested_colour_codes' => ['NAVY'],
+                'required_by' => '2027-03-25',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.status', 'REQUESTED')
+            ->assertJsonPath('data.pattern_revision_id', $correctedPatternRevisionId)
+            ->assertJsonPath('data.measurement_spec_version_id', $specId)
+            ->assertJsonPath('round.round_no', 1);
+        $sampleRequestId = $sample->json('data.id');
+        $sampleRoundId = $sample->json('round.id');
+
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/sample-requests/'.$sampleRequestId.'/rounds/'.$sampleRoundId.'/start', [])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'IN_PROGRESS');
+
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/sample-requests/'.$sampleRequestId.'/rounds/'.$sampleRoundId.'/complete', [
+                'actual_quantity' => 1,
+                'completion_summary' => 'First fit sample built with the approved pattern revision; ready for physical fit review.',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'COMPLETED');
+
+        $fitSession = $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/sample-rounds/'.$sampleRoundId.'/fit-sessions', [
+                'fit_size_code' => 'M',
+                'fit_model_code' => 'FIT-M-01',
+                'posture_code' => 'STANDING',
+                'condition_notes' => 'Garment worn over a light base layer after pressing.',
+                'session_date' => '2026-11-22',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.status', 'DRAFT');
+        $fitSessionId = $fitSession->json('data.id');
+
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/fit-sessions/'.$fitSessionId.'/observations', [
+                'observations' => [
+                    [
+                        'point_code' => 'CHEST_CIRC',
+                        'observed_value' => 108,
+                        'issue_code' => 'CHEST_EASE',
+                        'severity' => 'MAJOR',
+                        'finding' => 'Chest circumference is above the approved upper tolerance.',
+                        'corrective_action' => 'Reduce chest ease and recheck body balance.',
+                    ],
+                    [
+                        'point_code' => 'BODY_LENGTH',
+                        'observed_value' => 70,
+                        'issue_code' => 'NONE',
+                        'severity' => 'NONE',
+                        'finding' => null,
+                        'corrective_action' => null,
+                    ],
+                ],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.0.within_tolerance', false)
+            ->assertJsonPath('data.1.within_tolerance', true);
+
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/fit-sessions/'.$fitSessionId.'/submit', [])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'SUBMITTED_FOR_REVIEW');
+
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/fit-sessions/'.$fitSessionId.'/decisions', [
+                'decision' => 'CORRECTION_REQUIRED',
+                'reason' => 'The chest circumference exceeds its approved size tolerance and requires pattern correction.',
+                'actions' => ['Reduce chest ease and submit a corrected fit sample.'],
+            ])
+            ->assertForbidden();
+
+        $this->actAsApprover();
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/fit-sessions/'.$fitSessionId.'/decisions', [
+                'decision' => 'CORRECTION_REQUIRED',
+                'reason' => 'The chest circumference exceeds its approved size tolerance and requires pattern correction.',
+                'actions' => ['Reduce chest ease and submit a corrected fit sample.'],
+            ])
+            ->assertOk()
+            ->assertJsonPath('sample_request.status', 'CORRECTION_REQUIRED');
+        $this->actAsOwner();
+
+        $correctionRound = $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/sample-requests/'.$sampleRequestId.'/rounds', [
+                'round_reason' => 'Build a corrected fit sample after the chest-ease correction.',
+                'planned_quantity' => 1,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('round.round_no', 2)
+            ->assertJsonPath('round.status', 'REQUESTED');
+        $correctionRoundId = $correctionRound->json('round.id');
+
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/sample-requests/'.$sampleRequestId.'/rounds/'.$correctionRoundId.'/start', [])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'IN_PROGRESS');
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/sample-requests/'.$sampleRequestId.'/rounds/'.$correctionRoundId.'/complete', [
+                'actual_quantity' => 1,
+                'completion_summary' => 'Corrected fit sample built and ready for a second fit review.',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'COMPLETED');
+
+        $correctedFit = $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/sample-rounds/'.$correctionRoundId.'/fit-sessions', [
+                'fit_size_code' => 'M',
+                'fit_model_code' => 'FIT-M-01',
+                'posture_code' => 'STANDING',
+                'condition_notes' => 'Same fit conditions used for the corrected comparison.',
+                'session_date' => '2026-11-22',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.status', 'DRAFT');
+        $correctedFitId = $correctedFit->json('data.id');
+
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/fit-sessions/'.$correctedFitId.'/observations', [
+                'observations' => [
+                    [
+                        'point_code' => 'CHEST_CIRC',
+                        'observed_value' => 100,
+                        'issue_code' => 'NONE',
+                        'severity' => 'NONE',
+                        'finding' => null,
+                        'corrective_action' => null,
+                    ],
+                    [
+                        'point_code' => 'BODY_LENGTH',
+                        'observed_value' => 70,
+                        'issue_code' => 'NONE',
+                        'severity' => 'NONE',
+                        'finding' => null,
+                        'corrective_action' => null,
+                    ],
+                ],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.0.within_tolerance', true)
+            ->assertJsonPath('data.1.within_tolerance', true);
+
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/fit-sessions/'.$correctedFitId.'/submit', [])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'SUBMITTED_FOR_REVIEW');
+
+        $this->actAsApprover();
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/fit-sessions/'.$correctedFitId.'/decisions', [
+                'decision' => 'APPROVE',
+                'reason' => 'The corrected sample is within the approved chest and body-length measurement tolerances.',
+            ])
+            ->assertOk()
+            ->assertJsonPath('sample_request.status', 'FIT_APPROVED');
+        $this->actAsOwner();
+
+        $this->withHeaders($this->tenantHeader())
+            ->getJson('/api/v1/sample-requests/'.$sampleRequestId)
+            ->assertOk()
+            ->assertJsonPath('data.status', 'FIT_APPROVED')
+            ->assertJsonCount(2, 'rounds')
+            ->assertJsonCount(2, 'fit_sessions')
+            ->assertJsonPath('fit_sessions.0.status', 'DECIDED')
+            ->assertJsonPath('fit_sessions.1.status', 'DECIDED')
+            ->assertJsonPath('fit_sessions.0.decisions.0.decision', 'CORRECTION_REQUIRED')
+            ->assertJsonPath('fit_sessions.1.decisions.0.decision', 'APPROVE');
+
         $versionPayload = $briefPayload;
         unset($versionPayload['range_line_id']);
         $versionPayload['target_consumer'] = 'Urban adults seeking longer-wear garments.';

@@ -26,6 +26,7 @@ export class AppComponent {
     { label: 'Brand & range planning', path: '/product/brand-range', icon: '◇' },
     { label: 'Product development studio', path: '/product/product-development', icon: '✳' },
     { label: 'Measurement & pattern engineering', path: '/product/technical-development', icon: '▦' },
+    { label: 'Sample room & fit review', path: '/product/sample-fit', icon: '✓' },
     { label: 'Demand & commercial planning', path: '/product/planning-workbench', icon: '∑' },
   ];
 

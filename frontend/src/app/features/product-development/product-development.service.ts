@@ -243,6 +243,129 @@ export interface PatternSetInput {
 
 export type PatternRevisionInput = Omit<PatternSetInput, 'pattern_code' | 'name'>;
 
+
+
+export interface SampleRequestRecord {
+  id: string;
+  style_id: string;
+  style_revision_no: number;
+  pattern_set_id: string;
+  pattern_revision_id: string;
+  measurement_spec_version_id: string;
+  pattern_code?: string;
+  pattern_name?: string;
+  sample_type: string;
+  purpose: string;
+  requested_quantity: number;
+  requested_size_codes: string[] | string;
+  requested_colour_codes: string[] | string;
+  required_by: string | null;
+  status: 'REQUESTED' | 'SAMPLE_IN_PROGRESS' | 'AWAITING_FIT' | 'CORRECTION_REQUIRED' | 'FIT_APPROVED' | 'REJECTED';
+  current_round_no: number;
+  owner_user_id: string;
+}
+
+export interface SampleRoundRecord {
+  id: string;
+  sample_request_id: string;
+  round_no: number;
+  planned_quantity: number;
+  actual_quantity: number | null;
+  status: 'REQUESTED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  round_reason: string;
+  completion_summary: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  created_by: string;
+}
+
+export interface FitObservationRecord {
+  id: string;
+  measurement_point_id: string;
+  size_code: string;
+  nominal_value: string;
+  tolerance_minus: string;
+  tolerance_plus: string;
+  observed_value: string;
+  unit_code: string;
+  issue_code: string;
+  severity: 'NONE' | 'MINOR' | 'MAJOR' | 'CRITICAL';
+  within_tolerance: boolean;
+  finding: string | null;
+  corrective_action: string | null;
+}
+
+export interface FitDecisionRecord {
+  id: string;
+  fit_session_id: string;
+  decision: 'APPROVE' | 'APPROVE_WITH_COMMENTS' | 'CORRECTION_REQUIRED' | 'REJECT';
+  reason: string;
+  actions: string[] | string;
+  decided_by: string;
+  decided_at: string;
+}
+
+export interface FitSessionRecord {
+  id: string;
+  sample_request_id: string;
+  sample_round_id: string;
+  measurement_spec_version_id: string;
+  fit_size_code: string;
+  fit_model_code: string;
+  posture_code: 'STANDING' | 'SITTING' | 'MOVING' | 'OTHER';
+  condition_notes: string;
+  session_date: string;
+  status: 'DRAFT' | 'SUBMITTED_FOR_REVIEW' | 'DECIDED';
+  created_by: string;
+  observations?: FitObservationRecord[];
+  decisions?: FitDecisionRecord[];
+}
+
+export interface SampleRequestDetail {
+  data: SampleRequestRecord;
+  rounds: SampleRoundRecord[];
+  fit_sessions: FitSessionRecord[];
+}
+
+export interface SampleRequestInput {
+  pattern_set_id: string;
+  pattern_revision_id: string;
+  sample_type: string;
+  purpose: string;
+  requested_quantity: number;
+  requested_size_codes: string[];
+  requested_colour_codes: string[];
+  required_by: string | null;
+}
+
+export interface SampleRoundInput {
+  round_reason: string;
+  planned_quantity: number | null;
+}
+
+export interface FitSessionInput {
+  fit_size_code: string;
+  fit_model_code: string;
+  posture_code: 'STANDING' | 'SITTING' | 'MOVING' | 'OTHER';
+  condition_notes: string;
+  session_date: string;
+}
+
+export interface FitObservationInput {
+  point_code: string;
+  observed_value: number;
+  issue_code: string;
+  severity: 'NONE' | 'MINOR' | 'MAJOR' | 'CRITICAL';
+  finding: string | null;
+  corrective_action: string | null;
+}
+
+export interface FitDecisionInput {
+  decision: 'APPROVE' | 'APPROVE_WITH_COMMENTS' | 'CORRECTION_REQUIRED' | 'REJECT';
+  reason: string;
+  actions: string[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class ProductDevelopmentService {
   private readonly http = inject(HttpClient);
@@ -344,6 +467,75 @@ export class ProductDevelopmentService {
     return this.http.post<ProductDevelopmentResource<{ id: string; revision_no: number; status: string }> & { pattern_set: PatternSetRecord }>(
       this.base + '/patterns/' + encodeURIComponent(patternSetId) + '/revisions/' + encodeURIComponent(revisionId) + '/approve',
       {},
+    );
+  }
+
+
+  listSampleRequests(styleId: string): Observable<ProductDevelopmentPage<SampleRequestRecord>> {
+    return this.http.get<ProductDevelopmentPage<SampleRequestRecord>>(
+      this.base + '/styles/' + encodeURIComponent(styleId) + '/sample-requests',
+    );
+  }
+
+  getSampleRequest(id: string): Observable<SampleRequestDetail> {
+    return this.http.get<SampleRequestDetail>(
+      this.base + '/sample-requests/' + encodeURIComponent(id),
+    );
+  }
+
+  createSampleRequest(styleId: string, input: SampleRequestInput): Observable<ProductDevelopmentResource<SampleRequestRecord> & { round: SampleRoundRecord }> {
+    return this.http.post<ProductDevelopmentResource<SampleRequestRecord> & { round: SampleRoundRecord }>(
+      this.base + '/styles/' + encodeURIComponent(styleId) + '/sample-requests',
+      input,
+    );
+  }
+
+  createSampleRound(sampleRequestId: string, input: SampleRoundInput): Observable<ProductDevelopmentResource<SampleRequestRecord> & { round: SampleRoundRecord }> {
+    return this.http.post<ProductDevelopmentResource<SampleRequestRecord> & { round: SampleRoundRecord }>(
+      this.base + '/sample-requests/' + encodeURIComponent(sampleRequestId) + '/rounds',
+      input,
+    );
+  }
+
+  startSampleRound(sampleRequestId: string, roundId: string): Observable<ProductDevelopmentResource<SampleRoundRecord>> {
+    return this.http.post<ProductDevelopmentResource<SampleRoundRecord>>(
+      this.base + '/sample-requests/' + encodeURIComponent(sampleRequestId) + '/rounds/' + encodeURIComponent(roundId) + '/start',
+      {},
+    );
+  }
+
+  completeSampleRound(sampleRequestId: string, roundId: string, input: { actual_quantity: number; completion_summary: string }): Observable<ProductDevelopmentResource<SampleRoundRecord>> {
+    return this.http.post<ProductDevelopmentResource<SampleRoundRecord>>(
+      this.base + '/sample-requests/' + encodeURIComponent(sampleRequestId) + '/rounds/' + encodeURIComponent(roundId) + '/complete',
+      input,
+    );
+  }
+
+  createFitSession(roundId: string, input: FitSessionInput): Observable<ProductDevelopmentResource<FitSessionRecord>> {
+    return this.http.post<ProductDevelopmentResource<FitSessionRecord>>(
+      this.base + '/sample-rounds/' + encodeURIComponent(roundId) + '/fit-sessions',
+      input,
+    );
+  }
+
+  recordFitObservations(fitSessionId: string, observations: FitObservationInput[]): Observable<ProductDevelopmentResource<FitObservationRecord[]>> {
+    return this.http.post<ProductDevelopmentResource<FitObservationRecord[]>>(
+      this.base + '/fit-sessions/' + encodeURIComponent(fitSessionId) + '/observations',
+      { observations },
+    );
+  }
+
+  submitFitSession(fitSessionId: string): Observable<ProductDevelopmentResource<FitSessionRecord>> {
+    return this.http.post<ProductDevelopmentResource<FitSessionRecord>>(
+      this.base + '/fit-sessions/' + encodeURIComponent(fitSessionId) + '/submit',
+      {},
+    );
+  }
+
+  decideFitSession(fitSessionId: string, input: FitDecisionInput): Observable<ProductDevelopmentResource<FitSessionRecord> & { sample_request: SampleRequestRecord }> {
+    return this.http.post<ProductDevelopmentResource<FitSessionRecord> & { sample_request: SampleRequestRecord }>(
+      this.base + '/fit-sessions/' + encodeURIComponent(fitSessionId) + '/decisions',
+      input,
     );
   }
 

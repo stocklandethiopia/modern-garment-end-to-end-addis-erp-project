@@ -171,4 +171,76 @@ describe('ProductDevelopmentService', () => {
     approval.flush({ data: { id: 'pattern-rev-2', revision_no: 2, status: 'APPROVED' }, pattern_set: { id: 'pattern-1', current_revision: 2 } });
   });
 
+
+  it('creates sample requests and correction rounds through the controlled sample-room commands', () => {
+    service.createSampleRequest('style-1', {
+      pattern_set_id: 'pattern-1',
+      pattern_revision_id: 'pattern-rev-2',
+      sample_type: 'FIT',
+      purpose: 'Validate the approved fit baseline before sample release.',
+      requested_quantity: 1,
+      requested_size_codes: ['M'],
+      requested_colour_codes: ['NAVY'],
+      required_by: '2027-03-20',
+    }).subscribe((response) => {
+      expect(response.data.status).toBe('REQUESTED');
+      expect(response.data.pattern_revision_id).toBe('pattern-rev-2');
+      expect(response.round.round_no).toBe(1);
+    });
+
+    const create = http.expectOne('/api/v1/styles/style-1/sample-requests');
+    expect(create.request.method).toBe('POST');
+    create.flush({
+      data: { id: 'sample-1', status: 'REQUESTED', pattern_revision_id: 'pattern-rev-2' },
+      round: { id: 'round-1', round_no: 1, status: 'REQUESTED' },
+    });
+
+    service.createSampleRound('sample-1', {
+      round_reason: 'Correct chest balance after the first fit review.',
+      planned_quantity: 1,
+    }).subscribe((response) => expect(response.round.round_no).toBe(2));
+    const round = http.expectOne('/api/v1/sample-requests/sample-1/rounds');
+    expect(round.request.method).toBe('POST');
+    round.flush({ data: { id: 'sample-1', status: 'REQUESTED' }, round: { id: 'round-2', round_no: 2 } });
+  });
+
+  it('records a fit session, measurement observations and maker-checker disposition', () => {
+    service.createFitSession('round-1', {
+      fit_size_code: 'M',
+      fit_model_code: 'FIT-M-01',
+      posture_code: 'STANDING',
+      condition_notes: 'Garment worn over a light base layer after pressing.',
+      session_date: '2027-03-10',
+    }).subscribe((response) => expect(response.data.status).toBe('DRAFT'));
+    const create = http.expectOne('/api/v1/sample-rounds/round-1/fit-sessions');
+    expect(create.request.method).toBe('POST');
+    create.flush({ data: { id: 'fit-1', status: 'DRAFT', fit_size_code: 'M' } });
+
+    service.recordFitObservations('fit-1', [{
+      point_code: 'CHEST_CIRC',
+      observed_value: 100,
+      issue_code: 'NONE',
+      severity: 'NONE',
+      finding: null,
+      corrective_action: null,
+    }]).subscribe((response) => expect(response.data[0]?.within_tolerance).toBe(true));
+    const observations = http.expectOne('/api/v1/fit-sessions/fit-1/observations');
+    expect(observations.request.body.observations[0].point_code).toBe('CHEST_CIRC');
+    observations.flush({ data: [{ id: 'obs-1', within_tolerance: true }] });
+
+    service.submitFitSession('fit-1').subscribe((response) => expect(response.data.status).toBe('SUBMITTED_FOR_REVIEW'));
+    const submit = http.expectOne('/api/v1/fit-sessions/fit-1/submit');
+    expect(submit.request.method).toBe('POST');
+    submit.flush({ data: { id: 'fit-1', status: 'SUBMITTED_FOR_REVIEW' } });
+
+    service.decideFitSession('fit-1', {
+      decision: 'APPROVE',
+      reason: 'All required measurement points are within the approved size tolerance.',
+      actions: [],
+    }).subscribe((response) => expect(response.sample_request.status).toBe('FIT_APPROVED'));
+    const decide = http.expectOne('/api/v1/fit-sessions/fit-1/decisions');
+    expect(decide.request.method).toBe('POST');
+    decide.flush({ data: { id: 'fit-1', status: 'DECIDED' }, sample_request: { id: 'sample-1', status: 'FIT_APPROVED' } });
+  });
+
 });
