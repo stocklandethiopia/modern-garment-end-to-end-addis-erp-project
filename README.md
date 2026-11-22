@@ -41,6 +41,24 @@ Exact supported patch versions are recorded in the platform standard and must be
 10. Payroll and differentiated variable-compensation schemes: docs/hr/payroll-and-variable-compensation.md
 11. Approved reference repository review: docs/references/reference-repositories.md
 
+## Application foundation
+
+The first executable foundation is now present on `delivery/autonomous-wp-01-16`:
+- Laravel API scaffold with token authentication, health endpoint, tenant context and legal-entity onboarding.
+- PostgreSQL 18 foundation migrations for tenants, memberships, legal entities, sites, operational nodes, branch-registration evidence, inventory locations and append-only audit events.
+- Forced row-level security (RLS) policies on tenant-owned foundation tables.
+- Local PostgreSQL/Redis Compose infrastructure and a one-time interactive first-owner provisioning command.
+- Angular 22 workspace with a live API-health connection check and implementation-status overview.
+- CI workflow for PHP 8.5/PostgreSQL 18 and Node 26.13.1.
+
+**This is not the full ERP yet.** The first scaffold implements only platform foundation and a small API surface; operational modules WP-04–WP-15 remain to be implemented as executable domain slices. Build/test/deploy status must be read from GitHub Actions and the handover register, never inferred from file presence.
+
+- [Local development guide](docs/development/local-development.md)
+- [Laravel backend](backend/)
+- [Angular frontend](frontend/)
+- [Local infrastructure](docker-compose.yml)
+- [CI workflow](.github/workflows/ci.yml)
+
 ## Work-package delivery status
 
 The numbered design packages WP-00 through WP-16 have been prepared and internally reviewed under the Product Owner's autonomous delegation. See the [handover register](docs/work-packages/handover-register.md) for exact commits, limitations and implementation status.
