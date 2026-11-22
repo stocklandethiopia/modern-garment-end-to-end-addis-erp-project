@@ -108,4 +108,57 @@ class TenantIsolationTest extends TestCase
             'RLS must deny reads when transaction-local tenant context is absent.',
         );
     }
+    public function test_tenant_admin_can_create_a_draft_legal_entity_with_audit_evidence(): void
+    {
+        $response = $this->withHeader('X-Tenant-Id', $this->tenantA)
+            ->postJson('/api/v1/enterprise/legal-entities', [
+                'registration_number' => 'TEST-REG-'.Str::upper(Str::random(8)),
+                'legal_name' => 'Draft Garment Manufacturing PLC',
+                'legal_form' => 'PLC',
+                'country_code' => 'ET',
+                'tax_identifier' => 'TEST-TIN-'.Str::upper(Str::random(6)),
+                'base_currency' => 'ETB',
+            ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.status', 'DRAFT')
+            ->assertJsonPath('data.country_code', 'ET')
+            ->assertJsonPath('data.base_currency', 'ETB');
+
+        $entityId = $response->json('data.id');
+        $audit = DB::connection('pgsql_admin')->table('audit_events')
+            ->where('tenant_id', $this->tenantA)
+            ->where('object_type', 'LEGAL_ENTITY')
+            ->where('object_id', $entityId)
+            ->first();
+
+        $this->assertNotNull($audit);
+        $this->assertSame('LEGAL_ENTITY_DRAFT_CREATED', $audit->action);
+    }
+
+    public function test_member_without_tenant_admin_role_cannot_create_legal_entity(): void
+    {
+        DB::connection('pgsql_admin')->table('tenant_memberships')
+            ->where('tenant_id', $this->tenantA)
+            ->where('user_id', $this->userId)
+            ->update(['membership_role' => 'MEMBER']);
+
+        $this->withHeader('X-Tenant-Id', $this->tenantA)
+            ->postJson('/api/v1/enterprise/legal-entities', [
+                'registration_number' => 'TEST-REG-'.Str::upper(Str::random(8)),
+                'legal_name' => 'Unauthorized Entity',
+                'country_code' => 'ET',
+                'base_currency' => 'ETB',
+            ])
+            ->assertForbidden();
+    }
+
+    public function test_tenant_selector_returns_only_active_memberships_for_current_user(): void
+    {
+        $this->getJson('/api/v1/tenants')
+            ->assertOk()
+            ->assertJsonFragment(['id' => $this->tenantA])
+            ->assertJsonMissing(['id' => $this->tenantB]);
+    }
+
 }
