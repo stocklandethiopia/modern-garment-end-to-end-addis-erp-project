@@ -10,8 +10,11 @@ use Tests\TestCase;
 class PersonalAccessTokenTest extends TestCase
 {
     private string $tenantId;
+
     private string $userId;
+
     private string $email;
+
     private string $password = 'a-long-test-password';
 
     protected function setUp(): void
