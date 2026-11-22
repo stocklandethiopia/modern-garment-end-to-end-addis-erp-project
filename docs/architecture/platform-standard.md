@@ -62,14 +62,14 @@ Initial bounded contexts:
 2. Organization, legal entities, branches, factories, locations and calendars.
 3. Identity, authentication, authorization, roles, delegated administration and audit.
 4. CRM, customer, supplier, agent, buyer and partner management.
-5. Merchandising, enquiry, sample, style, collection and critical path.
-6. Product lifecycle, tech packs, measurements, grading, BOM, routing and revisions.
+5. Business initiative, brand strategy, market insight, collection/range planning, assortment and merchandising.
+6. Design studio, product development, PLM, 2D/3D design assets, patterns, grading, sample room, fit sessions, tech packs, BOM, costing handover and revisions.
 7. Costing, pricing, margin, quotation and profitability.
 8. Procurement, supplier sourcing, contracts, purchase requisitions and purchase orders.
 9. Materials planning, MRP, demand, reservations and shortage management.
 10. Warehouse and inventory control across raw materials, WIP, finished goods, central/regional DCs, depots, branch stockrooms, stores, lots/batches, ownership, custody, transfers and valuation.
-11. Production planning, capacity, line balancing, work centres and subcontracting.
-12. Cutting, spreading, marker, bundle, sewing, WIP, finishing and packing execution.
+11. Industrial engineering, method/time study, SMV/SAM governance, production planning, capacity optimization, line balancing, skill-based deployment and subcontracting.
+12. Departmental manufacturing execution: fabric issue/cutting/bundling, separate trim issue, print/embroidery, sewing lines, optional wash/dye/special processes, finishing/pressing, packing and WIP.
 13. Quality, inspection, defects, rework, CAPA and compliance evidence.
 14. Distribution network management, DC/depot operations, stock allocation, branch/store replenishment and inter-node transfer control.
 15. Order management, ATP/CTP, wholesale, retailer/reseller accounts, company-owned retail, POS, D2C and channel commerce.
@@ -134,3 +134,18 @@ Distribution, order management and channel commerce are first-class bounded cont
 - POS and digital order integrations must be idempotent and reconcile payment/tender, inventory and finance exactly once, including retry and offline-sync scenarios.
 - Customer returns and reverse logistics must produce linked inspection, inventory disposition, refund/credit and financial records.
 - Cross-context communication uses versioned contracts and outbox events; the distribution domain must not bypass inventory, pricing or finance ownership through direct table writes.
+
+
+## 11. Apparel product and process orchestration
+
+- Product strategy, internal initiative, brand, idea, collection, range/assortment and design workflows precede buyer orders and production orders. Store/channel data and customer feedback must close the loop into product planning.
+- Product routes are effective-dated and selected by style revision, material, construction, finish, site capability and commercial requirement. Route graphs can include conditional, parallel, outsourced and rework paths; no universal hard-coded sequence.
+- Department SOP/work instructions are separate governed artifacts with inputs, outputs, method, equipment, skills, parameters, quality gates, tolerances, sample evidence, responsibilities and exceptions.
+- Fabric roll issue, trim/accessory issue, cut bundle movement, operation WIP and finished-goods receipt are distinct inventory events with linked genealogy and separate reconciliation.
+- IE owns versioned method/time study and SMV/SAM evidence. Planning combines target efficiency, net available labor minutes, skill coverage, machine/attachment capacity, materials, learning curve, changeover, maintenance and due dates. Targets are explainable planning outputs with reason-coded revisions.
+- The production control system exposes line/department daily and hourly plan-versus-actual, output, earned minutes, direct-labor minutes, WIP, first-pass quality, defects, rework, downtime, shortage, bottlenecks and expected completion.
+- Skill matrices connect validated competencies and authorizations to operation assignment, coverage, training and cross-skilling proposals. Worker-related analytics must be contextual, explainable, access-controlled and governed by fair-work policy.
+- Quality gates operate at source: first-piece, incoming, in-process/inline, end-line, specialized process, final and shipment checks as applicable. Defects create containment, rework/reinspection, root-cause and CAPA trails.
+- Daily management includes visual boards, Andon, 5S, worker suggestions, team meetings, Kaizen actions and measured before/after results.
+- Any incentive calculation is optional, policy-versioned and approved; it balances accepted output, quality, rework, safety, compliance and team contribution, and never rewards unsafe speed or defect concealment.
+- 3D assets, technical revisions, sample/fit comments, work instructions and in-process dashboards must share product context and version identity. Virtual fitting supports physical fit review rather than automatically replacing it.
