@@ -351,7 +351,7 @@ export class PlanningWorkbenchComponent {
     if (value.planned_sales.trim()) assumptions['planned_sales'] = value.planned_sales.trim();
 
     this.perform(() => this.api.simulateOtb(value.period_id, { assumptions }), 'OTB scenario saved as a non-posting simulation.', (scenario) => {
-      this.lastScenario.set(scenario);
+      this.lastScenario.set(scenario.data);
       this.loadAll();
     });
   }
