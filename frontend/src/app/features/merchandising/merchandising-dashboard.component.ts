@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
@@ -62,7 +62,7 @@ interface DashboardEnvelope {
 @Component({
   selector: 'app-merchandising-dashboard',
   standalone: true,
-  imports: [DatePipe, RouterLink],
+  imports: [DatePipe, DecimalPipe, RouterLink],
   templateUrl: './merchandising-dashboard.component.html',
   styleUrl: './merchandising-dashboard.component.css',
 })
