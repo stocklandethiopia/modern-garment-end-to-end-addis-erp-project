@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { DatePipe, JsonPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, effect, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -27,7 +27,7 @@ type PlanningTab = 'FORECAST' | 'OTB' | 'PRICING';
 @Component({
   selector: 'app-planning-workbench',
   standalone: true,
-  imports: [DatePipe, ReactiveFormsModule],
+  imports: [DatePipe, JsonPipe, ReactiveFormsModule],
   templateUrl: './planning-workbench.component.html',
   styleUrl: './planning-workbench.component.css',
 })
@@ -364,6 +364,45 @@ export class PlanningWorkbenchComponent {
     this.perform(() => this.api.approveOtbScenario(scenarioId), 'Scenario approved for planning use only; no purchase order or journal was created.', () => this.loadAll());
   }
 
+  scenarioResult(): { available_budget: string; interpretation: string; formula_version: string; budget_basis: string; valuation_basis: string; warning: string } | null {
+    const result = this.lastScenario()?.result;
+
+    if (!result) return null;
+    if (typeof result === 'string') {
+      try {
+        const parsed = JSON.parse(result) as {
+          calculation?: { available_budget: string; interpretation: string };
+          formula_version?: string;
+          budget_basis?: string;
+          valuation_basis?: string;
+          warning?: string;
+        };
+
+        if (!parsed.calculation) return null;
+
+        return {
+          available_budget: parsed.calculation.available_budget,
+          interpretation: parsed.calculation.interpretation,
+          formula_version: parsed.formula_version ?? '',
+          budget_basis: parsed.budget_basis ?? '',
+          valuation_basis: parsed.valuation_basis ?? '',
+          warning: parsed.warning ?? '',
+        };
+      } catch {
+        return null;
+      }
+    }
+
+    return {
+      available_budget: result.calculation.available_budget,
+      interpretation: result.calculation.interpretation,
+      formula_version: result.formula_version,
+      budget_basis: result.budget_basis,
+      valuation_basis: result.valuation_basis,
+      warning: result.warning,
+    };
+  }
+
   createPriceList(): void {
     if (!this.valid(this.priceListForm)) return;
     const value = this.priceListForm.getRawValue();
@@ -406,7 +445,11 @@ export class PlanningWorkbenchComponent {
   }
 
   publishPriceList(priceListId: string): void {
-    this.perform(() => this.api.publishPriceList(priceListId), 'Price list published with independent approval.', () => this.loadAll());
+    this.perform(() => this.api.publishPriceList(priceListId), 'Price list published with independent approval.', () => {
+      this.selectedPriceList.set(null);
+      this.priceListLines.set([]);
+      this.loadAll();
+    });
   }
 
   createPromotion(): void {
@@ -485,6 +528,7 @@ export class PlanningWorkbenchComponent {
   }
 
   private clearData(): void {
+    this.saving.set(false);
     this.legalEntities.set([]);
     this.forecastRuns.set([]);
     this.selectedForecast.set(null);
