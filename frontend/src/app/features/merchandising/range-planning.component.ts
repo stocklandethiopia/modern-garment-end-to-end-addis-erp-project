@@ -378,13 +378,19 @@ export class RangePlanningComponent {
   }
 
   selectRangePlan(plan: RangePlanRecord): void {
+    const tenantId = this.session.activeTenant()?.id;
+    if (!tenantId) return;
     this.selectedRangePlan.set(plan);
     this.rangeLines.set([]);
     this.api.listRangeLines(plan.id).subscribe({
       next: (response) => {
-        if (this.selectedRangePlan()?.id === plan.id) this.rangeLines.set(response.data.data);
+        if (this.isCurrent(tenantId, this.sequence) && this.selectedRangePlan()?.id === plan.id) {
+          this.rangeLines.set(response.data.data);
+        }
       },
-      error: () => this.errorMessage.set('Range lines could not be loaded for this plan.'),
+      error: () => {
+        if (this.isCurrent(tenantId, this.sequence)) this.errorMessage.set('Range lines could not be loaded for this plan.');
+      },
     });
     this.clearMessages();
   }
@@ -460,17 +466,27 @@ export class RangePlanningComponent {
       range_line_id: '', variant_size_curve_json: '', planned_units: '0',
       launch_date: '', minimum_depth: '', maximum_depth: '',
     });
+    const tenantId = this.session.activeTenant()?.id;
+    if (!tenantId) return;
     this.api.listRangeLines(plan.range_plan_id).subscribe({
       next: (response) => {
-        if (this.selectedAssortment()?.id === plan.id) this.rangeLines.set(response.data.data);
+        if (this.isCurrent(tenantId, this.sequence) && this.selectedAssortment()?.id === plan.id) {
+          this.rangeLines.set(response.data.data);
+        }
       },
-      error: () => this.errorMessage.set('The frozen range lines could not be loaded for this assortment.'),
+      error: () => {
+        if (this.isCurrent(tenantId, this.sequence)) this.errorMessage.set('The frozen range lines could not be loaded for this assortment.');
+      },
     });
     this.api.listAssortmentLines(plan.id).subscribe({
       next: (response) => {
-        if (this.selectedAssortment()?.id === plan.id) this.assortmentLines.set(response.data.data);
+        if (this.isCurrent(tenantId, this.sequence) && this.selectedAssortment()?.id === plan.id) {
+          this.assortmentLines.set(response.data.data);
+        }
       },
-      error: () => this.errorMessage.set('Assortment lines could not be loaded.'),
+      error: () => {
+        if (this.isCurrent(tenantId, this.sequence)) this.errorMessage.set('Assortment lines could not be loaded.');
+      },
     });
     this.clearMessages();
   }
@@ -581,6 +597,15 @@ export class RangePlanningComponent {
     this.selectedCollection.set(null);
     this.selectedRangePlan.set(null);
     this.selectedAssortment.set(null);
+    this.brandForm.reset();
+    this.strategyForm.reset();
+    this.seasonForm.reset();
+    this.collectionForm.reset();
+    this.collectionVersionForm.reset();
+    this.rangePlanForm.reset();
+    this.rangeLineForm.reset();
+    this.assortmentForm.reset();
+    this.assortmentLineForm.reset();
     this.loading.set(false);
     this.saving.set(false);
     this.clearMessages();
