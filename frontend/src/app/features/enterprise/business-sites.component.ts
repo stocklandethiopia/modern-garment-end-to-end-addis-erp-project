@@ -51,6 +51,10 @@ export class BusinessSitesComponent {
     this.activeSite.set(null);
     this.errorMessage.set(null);
     this.successMessage.set(null);
+    this.loading.set(false);
+    this.loadingNodes.set(false);
+    this.savingSite.set(false);
+    this.savingNode.set(false);
 
     if (tenantId) {
       this.loadSites(tenantId, requestId);
