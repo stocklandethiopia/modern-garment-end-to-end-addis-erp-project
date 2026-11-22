@@ -80,6 +80,8 @@ return new class extends Migration
             $table->foreign('tenant_id')->references('id')->on('tenants')->restrictOnDelete();
             $table->foreign(['tenant_id', 'initiative_id'])
                 ->references(['tenant_id', 'id'])->on('initiatives')->restrictOnDelete();
+            $table->foreign(['tenant_id', 'initiative_id', 'initiative_version'])
+                ->references(['tenant_id', 'initiative_id', 'version_no'])->on('initiative_versions')->restrictOnDelete();
             $table->foreign('decided_by')->references('id')->on('users')->restrictOnDelete();
             $table->index(['tenant_id', 'initiative_id', 'decided_at']);
         });
