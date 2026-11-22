@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\ResolveTenantContext;
+use App\Http\Middleware\EnsureTokenAbility;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -15,7 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'tenant.context' => ResolveTenantContext::class,
-            'token.ability' => \\App\\Http\\Middleware\\EnsureTokenAbility::class,
+            'token.ability' => EnsureTokenAbility::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
