@@ -6,8 +6,11 @@ import { Observable } from 'rxjs';
 
 import { AuthSessionService } from '../../core/auth/auth-session.service';
 import {
+  AssortmentAccountTermsInput,
+  AssortmentAccountTermsRecord,
   AssortmentLineRecord,
   AssortmentPlanRecord,
+  PublishedPriceListOption,
   BrandRecord,
   CollectionRecord,
   RangeLineRecord,
@@ -37,6 +40,10 @@ export class RangePlanningComponent {
   readonly rangeLines = signal<RangeLineRecord[]>([]);
   readonly assortmentPlans = signal<AssortmentPlanRecord[]>([]);
   readonly assortmentLines = signal<AssortmentLineRecord[]>([]);
+  readonly accountTerms = signal<AssortmentAccountTermsRecord[]>([]);
+  readonly publishedPriceLists = signal<PublishedPriceListOption[]>([]);
+  readonly decisionTerms = signal<AssortmentAccountTermsRecord | null>(null);
+  readonly termsDecision = signal<'APPROVE' | 'REJECT'>('APPROVE');
   readonly selectedBrand = signal<BrandRecord | null>(null);
   readonly selectedCollection = signal<CollectionRecord | null>(null);
   readonly selectedRangePlan = signal<RangePlanRecord | null>(null);
@@ -144,6 +151,24 @@ export class RangePlanningComponent {
     minimum_depth: new FormControl('', { nonNullable: true }),
     maximum_depth: new FormControl('', { nonNullable: true }),
   });
+  readonly accountTermsForm = new FormGroup({
+    price_list_id: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    account_tier: new FormControl('', { nonNullable: true }),
+    commercial_terms_reference: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(2), Validators.maxLength(160)] }),
+    payment_terms_reference: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(2), Validators.maxLength(120)] }),
+    delivery_terms_reference: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(2), Validators.maxLength(120)] }),
+    returns_policy_reference: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(120)] }),
+    minimum_order_units: new FormControl('0', { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
+    order_multiple_units: new FormControl('1', { nonNullable: true, validators: [Validators.required, Validators.min(1)] }),
+    effective_from: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    effective_to: new FormControl('', { nonNullable: true }),
+    change_reason: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(10), Validators.maxLength(3000)] }),
+  });
+
+  readonly accountTermsDecisionForm = new FormGroup({
+    reason: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(10), Validators.maxLength(3000)] }),
+  });
+
 
   private readonly tenantEffect = effect(() => {
     const tenantId = this.session.activeTenant()?.id;
@@ -442,6 +467,16 @@ export class RangePlanningComponent {
   }
 
   createAssortmentPlan(): void {
+    const channel = this.assortmentForm.controls.channel_code.value.trim().toUpperCase();
+    const needsAccount = ['WHOLESALE', 'RESELLER', 'EXPORT', 'CUSTOMER_PROGRAMME'].includes(channel);
+    const accountControl = this.assortmentForm.controls.account_reference;
+    if (needsAccount) {
+      accountControl.addValidators(Validators.required);
+      accountControl.updateValueAndValidity();
+    } else {
+      accountControl.removeValidators(Validators.required);
+      accountControl.updateValueAndValidity();
+    }
     if (!this.valid(this.assortmentForm)) return;
     const value = this.assortmentForm.getRawValue();
     this.perform(() => this.api.createAssortmentPlan({
@@ -488,6 +523,17 @@ export class RangePlanningComponent {
         if (this.isCurrent(tenantId, this.sequence)) this.errorMessage.set('Assortment lines could not be loaded.');
       },
     });
+    this.api.listPublishedPriceLists().subscribe({
+      next: (response) => {
+        if (this.isCurrent(tenantId, this.sequence) && this.selectedAssortment()?.id === plan.id) {
+          this.publishedPriceLists.set(response.data.data.filter((list) => list.status === 'PUBLISHED'));
+        }
+      },
+      error: () => {
+        if (this.isCurrent(tenantId, this.sequence)) this.publishedPriceLists.set([]);
+      },
+    });
+    this.loadAccountTerms(plan, tenantId);
     this.clearMessages();
   }
 
@@ -514,6 +560,123 @@ export class RangePlanningComponent {
       minimum_depth: value.minimum_depth.trim() ? Number(value.minimum_depth) : null,
       maximum_depth: value.maximum_depth.trim() ? Number(value.maximum_depth) : null,
     }), 'Assortment depth added; core range intent remains unchanged.', () => this.selectAssortment(plan));
+  }
+
+  isExternalAccountChannel(channel: string): boolean {
+    return ['WHOLESALE', 'RESELLER', 'CUSTOMER_PROGRAMME', 'EXPORT'].includes(channel);
+  }
+
+  matchingPublishedPriceLists(plan: AssortmentPlanRecord): PublishedPriceListOption[] {
+    return this.publishedPriceLists().filter((list) =>
+      list.status === 'PUBLISHED'
+      && list.channel_code === plan.channel_code
+      && list.market_scope === plan.market_scope
+      && list.account_reference === plan.account_reference,
+    );
+  }
+
+  canSubmitAccountTerms(terms: AssortmentAccountTermsRecord): boolean {
+    return terms.status === 'DRAFT'
+      && (
+        terms.created_by === this.session.user()?.id
+        || this.session.activeTenant()?.membership_role === 'OWNER'
+        || this.session.activeTenant()?.membership_role === 'ADMIN'
+      );
+  }
+
+  canDecideAccountTerms(terms: AssortmentAccountTermsRecord): boolean {
+    return terms.status === 'PENDING_APPROVAL' && this.canApprove(terms.created_by);
+  }
+
+  private loadAccountTerms(plan: AssortmentPlanRecord, tenantId: string): void {
+    this.accountTerms.set([]);
+    this.decisionTerms.set(null);
+    if (!this.isExternalAccountChannel(plan.channel_code)) return;
+
+    this.api.listAssortmentAccountTerms(plan.id).subscribe({
+      next: (response) => {
+        if (this.isCurrent(tenantId, this.sequence) && this.selectedAssortment()?.id === plan.id) {
+          this.accountTerms.set(response.data.data);
+        }
+      },
+      error: (error: HttpErrorResponse) => {
+        if (!this.isCurrent(tenantId, this.sequence)) return;
+        this.accountTerms.set([]);
+        this.errorMessage.set(error.status === 404
+          ? 'Account terms are unavailable for this assortment.'
+          : 'Account-specific terms could not be loaded.');
+      },
+    });
+  }
+
+  createAccountTerms(): void {
+    const plan = this.selectedAssortment();
+    if (!plan || !this.valid(this.accountTermsForm)) return;
+    const value = this.accountTermsForm.getRawValue();
+    const input: AssortmentAccountTermsInput = {
+      price_list_id: value.price_list_id,
+      account_tier: value.account_tier.trim() || null,
+      commercial_terms_reference: value.commercial_terms_reference.trim(),
+      payment_terms_reference: value.payment_terms_reference.trim(),
+      delivery_terms_reference: value.delivery_terms_reference.trim(),
+      returns_policy_reference: value.returns_policy_reference.trim() || null,
+      minimum_order_units: Number(value.minimum_order_units),
+      order_multiple_units: Number(value.order_multiple_units),
+      effective_from: value.effective_from,
+      effective_to: value.effective_to || null,
+      change_reason: value.change_reason.trim(),
+    };
+
+    this.perform(
+      () => this.api.createAssortmentAccountTerms(plan.id, input),
+      'Account terms saved as a versioned draft. No order, invoice or payment was created.',
+      () => {
+        this.accountTermsForm.reset({
+          price_list_id: '', account_tier: '', commercial_terms_reference: '',
+          payment_terms_reference: '', delivery_terms_reference: '', returns_policy_reference: '',
+          minimum_order_units: '0', order_multiple_units: '1', effective_from: '', effective_to: '', change_reason: '',
+        });
+        this.selectAssortment(plan);
+      },
+    );
+  }
+
+  submitAccountTerms(terms: AssortmentAccountTermsRecord): void {
+    const plan = this.selectedAssortment();
+    if (!plan) return;
+    this.perform(
+      () => this.api.submitAssortmentAccountTerms(plan.id, terms.id),
+      'Account terms submitted for independent approval; content is now immutable.',
+      () => this.selectAssortment(plan),
+    );
+  }
+
+  beginAccountTermsDecision(terms: AssortmentAccountTermsRecord, decision: 'APPROVE' | 'REJECT'): void {
+    this.decisionTerms.set(terms);
+    this.termsDecision.set(decision);
+    this.accountTermsDecisionForm.reset({ reason: '' });
+  }
+
+  cancelAccountTermsDecision(): void {
+    this.decisionTerms.set(null);
+    this.accountTermsDecisionForm.reset({ reason: '' });
+  }
+
+  decideAccountTerms(): void {
+    const plan = this.selectedAssortment();
+    const terms = this.decisionTerms();
+    if (!plan || !terms || !this.valid(this.accountTermsDecisionForm)) return;
+    const decision = this.termsDecision();
+    const reason = this.accountTermsDecisionForm.controls.reason.value.trim();
+    this.perform(
+      () => this.api.decideAssortmentAccountTerms(plan.id, terms.id, decision, reason),
+      'Independent account-terms decision recorded.',
+      () => {
+        this.decisionTerms.set(null);
+        this.accountTermsDecisionForm.reset({ reason: '' });
+        this.selectAssortment(plan);
+      },
+    );
   }
 
   canApprove(createdBy: string | null): boolean {
@@ -593,6 +756,9 @@ export class RangePlanningComponent {
     this.rangeLines.set([]);
     this.assortmentPlans.set([]);
     this.assortmentLines.set([]);
+    this.accountTerms.set([]);
+    this.publishedPriceLists.set([]);
+    this.decisionTerms.set(null);
     this.selectedBrand.set(null);
     this.selectedCollection.set(null);
     this.selectedRangePlan.set(null);
@@ -606,6 +772,8 @@ export class RangePlanningComponent {
     this.rangeLineForm.reset();
     this.assortmentForm.reset();
     this.assortmentLineForm.reset();
+    this.accountTermsForm.reset();
+    this.accountTermsDecisionForm.reset();
     this.loading.set(false);
     this.saving.set(false);
     this.clearMessages();
