@@ -678,6 +678,119 @@ class BrandRangeWorkflowTest extends TestCase
             ->assertJsonPath('revisions.0.revision_no', 2)
             ->assertJsonPath('revisions.1.revision_no', 1);
 
+        $measurementSpec = $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/styles/'.$styleId.'/measurement-specs', [
+                'size_system_code' => 'BRAND-ADULT-CM',
+                'size_sequence' => ['XS', 'S', 'M', 'L'],
+                'base_size_code' => 'M',
+                'measurement_condition' => 'Garment measured flat and circumference doubled; relaxed condition.',
+                'change_reason' => 'Initial approved size specification for the development pattern.',
+                'points' => [
+                    [
+                        'point_code' => 'CHEST_CIRC',
+                        'name' => 'Chest circumference',
+                        'measurement_method' => 'Measure horizontally around the garment at the underarm level.',
+                        'unit_code' => 'CM',
+                        'is_required' => true,
+                        'values' => [
+                            ['size_code' => 'XS', 'nominal_value' => 92, 'tolerance_minus' => 1, 'tolerance_plus' => 1],
+                            ['size_code' => 'S', 'nominal_value' => 96, 'tolerance_minus' => 1, 'tolerance_plus' => 1],
+                            ['size_code' => 'M', 'nominal_value' => 100, 'tolerance_minus' => 1, 'tolerance_plus' => 1],
+                            ['size_code' => 'L', 'nominal_value' => 104, 'tolerance_minus' => 1, 'tolerance_plus' => 1],
+                        ],
+                    ],
+                    [
+                        'point_code' => 'BODY_LENGTH',
+                        'name' => 'Body length',
+                        'measurement_method' => 'Measure from high point shoulder to finished hem.',
+                        'unit_code' => 'CM',
+                        'is_required' => true,
+                        'values' => [
+                            ['size_code' => 'XS', 'nominal_value' => 66, 'tolerance_minus' => 0.5, 'tolerance_plus' => 0.5],
+                            ['size_code' => 'S', 'nominal_value' => 68, 'tolerance_minus' => 0.5, 'tolerance_plus' => 0.5],
+                            ['size_code' => 'M', 'nominal_value' => 70, 'tolerance_minus' => 0.5, 'tolerance_plus' => 0.5],
+                            ['size_code' => 'L', 'nominal_value' => 72, 'tolerance_minus' => 0.5, 'tolerance_plus' => 0.5],
+                        ],
+                    ],
+                ],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.status', 'DRAFT');
+        $specId = $measurementSpec->json('data.id');
+
+        $this->withHeaders($this->tenantHeader())
+            ->getJson('/api/v1/styles/'.$styleId.'/measurement-specs')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $specId)
+            ->assertJsonCount(2, 'data.0.points')
+            ->assertJsonCount(4, 'data.0.points.0.values');
+
+        $this->actAsApprover();
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/styles/'.$styleId.'/measurement-specs/'.$specId.'/approve', [])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'APPROVED');
+        $this->actAsOwner();
+
+        $pieces = [
+            ['piece_code' => 'FRONT', 'description' => 'Left and right front body panels.', 'material_reference' => 'MAIN_FABRIC', 'grain_direction' => 'LENGTHWISE', 'seam_allowance' => ['side' => 1, 'shoulder' => 1, 'hem' => 3], 'piece_count' => 2],
+            ['piece_code' => 'BACK', 'description' => 'Back body panel.', 'material_reference' => 'MAIN_FABRIC', 'grain_direction' => 'LENGTHWISE', 'seam_allowance' => ['side' => 1, 'shoulder' => 1, 'hem' => 3], 'piece_count' => 1],
+            ['piece_code' => 'SLEEVE', 'description' => 'Long sleeve panels.', 'material_reference' => 'MAIN_FABRIC', 'grain_direction' => 'LENGTHWISE', 'seam_allowance' => ['underarm' => 1, 'cuff' => 3], 'piece_count' => 2],
+        ];
+        $completeGradeRules = [
+            ['point_code' => 'CHEST_CIRC', 'from_size_code' => 'XS', 'to_size_code' => 'S', 'increment' => 4, 'unit_code' => 'CM'],
+            ['point_code' => 'CHEST_CIRC', 'from_size_code' => 'S', 'to_size_code' => 'M', 'increment' => 4, 'unit_code' => 'CM'],
+            ['point_code' => 'CHEST_CIRC', 'from_size_code' => 'M', 'to_size_code' => 'L', 'increment' => 4, 'unit_code' => 'CM'],
+            ['point_code' => 'BODY_LENGTH', 'from_size_code' => 'XS', 'to_size_code' => 'S', 'increment' => 2, 'unit_code' => 'CM'],
+            ['point_code' => 'BODY_LENGTH', 'from_size_code' => 'S', 'to_size_code' => 'M', 'increment' => 2, 'unit_code' => 'CM'],
+            ['point_code' => 'BODY_LENGTH', 'from_size_code' => 'M', 'to_size_code' => 'L', 'increment' => 2, 'unit_code' => 'CM'],
+        ];
+        const patternSet = $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/styles/'.$styleId.'/patterns', [
+                'pattern_code' => 'OVERSHIRT-MAIN',
+                'name' => 'Main overshirt pattern',
+                'measurement_spec_version_id' => $specId,
+                'pieces' => $pieces,
+                'grade_rules' => array_slice($completeGradeRules, 0, 5),
+                'change_summary' => 'Initial pattern architecture for the approved measurement revision.',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('revision.status', 'DRAFT');
+        $patternSetId = $patternSet->json('data.id');
+        $patternRevisionId = $patternSet->json('revision.id');
+
+        $this->actAsApprover();
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/patterns/'.$patternSetId.'/revisions/'.$patternRevisionId.'/approve', [])
+            ->assertUnprocessable()
+            ->assertJsonFragment(['grade_rules' => 'Every required measurement point needs an approved grade increment for adjacent sizes; missing BODY_LENGTH: M to L.']);
+        $this->actAsOwner();
+
+        $correctedPattern = $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/patterns/'.$patternSetId.'/revisions', [
+                'measurement_spec_version_id' => $specId,
+                'pieces' => $pieces,
+                'grade_rules' => $completeGradeRules,
+                'change_summary' => 'Complete all mandatory grade points and correct the size progression.',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.revision_no', 2);
+        $correctedPatternRevisionId = $correctedPattern->json('data.id');
+
+        $this->actAsApprover();
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/patterns/'.$patternSetId.'/revisions/'.$correctedPatternRevisionId.'/approve', [])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'APPROVED')
+            ->assertJsonPath('pattern_set.current_revision', 2);
+        $this->actAsOwner();
+
+        $this->withHeaders($this->tenantHeader())->getJson('/api/v1/styles/'.$styleId.'/patterns')
+            ->assertOk()
+            ->assertJsonPath('data.0.status', 'APPROVED')
+            ->assertJsonPath('data.0.current_revision', 2)
+            ->assertJsonPath('data.0.latest_revision_status', 'APPROVED');
+
         $versionPayload = $briefPayload;
         unset($versionPayload['range_line_id']);
         $versionPayload['target_consumer'] = 'Urban adults seeking longer-wear garments.';
