@@ -8,6 +8,7 @@ use App\Http\Controllers\Enterprise\LicensingEvidenceController;
 use App\Http\Controllers\Enterprise\TenantController;
 use App\Http\Controllers\Merchandising\CommercialPricingController;
 use App\Http\Controllers\Merchandising\DemandPlanningController;
+use App\Http\Controllers\Merchandising\EvidencePolicyController;
 use App\Http\Controllers\Merchandising\InitiativeController;
 use App\Http\Controllers\Merchandising\InsightSourceController;
 use App\Http\Controllers\Merchandising\MarketInsightController;
@@ -65,6 +66,12 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/enterprise/sites/{siteId}/branch-registrations', [LicensingEvidenceController::class, 'createBranchRegistration']);
         Route::get('/enterprise/legal-entities/{entityId}/licences', [LicensingEvidenceController::class, 'listLicences']);
         Route::post('/enterprise/legal-entities/{entityId}/licences', [LicensingEvidenceController::class, 'createLicence']);
+
+        Route::get('/product/evidence-policies', [EvidencePolicyController::class, 'index']);
+        Route::post('/product/evidence-policies', [EvidencePolicyController::class, 'store']);
+        Route::post('/product/evidence-policies/{policyId}/submit', [EvidencePolicyController::class, 'submit']);
+        Route::post('/product/evidence-policies/{policyId}/decisions', [EvidencePolicyController::class, 'decide']);
+        Route::get('/product/initiatives/{initiativeId}/evidence-coverage', [EvidencePolicyController::class, 'coverage']);
 
         Route::get('/product/merchandising-dashboard', [MerchandisingReportingController::class, 'dashboard']);
         Route::get('/product/initiatives', [InitiativeController::class, 'index']);
