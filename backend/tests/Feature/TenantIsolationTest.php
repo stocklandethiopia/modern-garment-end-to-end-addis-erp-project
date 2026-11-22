@@ -149,6 +149,20 @@ class TenantIsolationTest extends TestCase
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
+            [
+                'id' => $this->warehouseNodeB,
+                'tenant_id' => $this->tenantA,
+                'business_site_id' => $this->siteA,
+                'legal_entity_id' => $this->legalEntityA,
+                'code' => 'TEST-WH2-'.Str::upper(Str::random(6)),
+                'node_type' => 'WAREHOUSE',
+                'name' => 'Second Test Warehouse',
+                'capabilities' => json_encode(['STOCK_HOLDING'], JSON_THROW_ON_ERROR),
+                'stock_holding_enabled' => true,
+                'status' => 'DRAFT',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
         ]);
 
         $user = User::query()->findOrFail($this->userId);
@@ -518,7 +532,7 @@ class TenantIsolationTest extends TestCase
             ->postJson('/api/v1/enterprise/nodes/'.$this->warehouseNodeB.'/inventory-locations', [
                 'code' => 'ZONE-CHILD-01',
                 'location_type' => 'BIN',
-                'parent_id' => $this->branchNodeA,
+                'parent_id' => $parent,
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('parent_id');
