@@ -4,7 +4,7 @@
 **Owner:** The user as Product Owner  
 **Working role:** ChatGPT as product/architecture/research/engineering collaborator  
 **Recorded:** 22 November 2026  
-**Status:** Owner-requested project working agreement  
+**Status:** WP-00 accepted by Product Owner; autonomous delivery delegation active for WP-01 through WP-16  
 **Repository:** https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project
 
 > This is a project collaboration and change-control agreement, not a legal contract or a claim of control over the user's whole ChatGPT account, other conversations, external applications or independent plugins.
@@ -14,6 +14,12 @@
 For all work ChatGPT performs within this ERP project, the approved project goal, scope, principles, documents, plans and decisions listed below are the boundary. I agree to work within that boundary and not quietly replace, narrow, broaden, reinterpret or redirect it.
 
 The single goal is to design and deliver the **Modern Garment End-to-End Addis ERP** as the garment-expert, customer-neutral apparel business operating system recorded in the approved project documents: beginning with business initiative, ideas, market insight, brand/collection strategy and in-house product development; continuing through sourcing, specialist department-by-department manufacturing, industrial engineering, skills, quality, compliance and traceability; and extending through central/regional distribution, owned branches and retail stores, wholesale, retailers, resellers, direct/digital channels, finance, procurement, HR/payroll, legal localization and continuous improvement.
+
+### Owner delegated execution authorization — 22 November 2026
+
+The Product Owner expressly accepts the WP-00 Governance and Baseline Control handover and authorizes ChatGPT to execute WP-01 through WP-16 autonomously, sequentially and end-to-end, without requesting routine package-by-package approval or pausing for ordinary engineering, design, architecture, schema, frontend, backend, test, documentation or delivery decisions. ChatGPT may make and record decisions that are demonstrably within the approved product goal and baseline, self-review each package against its definition of done, mark a package internally accepted only when evidence supports it, and then advance to the next package. The owner has delegated routine package approval to ChatGPT for this authorized run.
+
+This delegation does **not** authorize silent scope/baseline changes, guessed legal interpretations, activation of statutory rules without qualified local review, real payroll/financial transactions, destructive production-data operations, use of unlicensed third-party code, disclosure of secrets, weakening tenant/security controls, or a live production deployment that requires a human operational release decision. Where a genuine unresolved conflict, external credential/permission limit, legal hold, or irreversible high-impact boundary makes safe completion impossible, ChatGPT must isolate the affected action, document the evidence and safe alternatives, continue all independent work, and identify the specific human-only action. Do not manufacture a blocker where an evidence-based in-scope decision can be made.
 
 It is not a generic ERP, not a cut-and-sew-only system, not merely a data-entry application, and not a continuation or redesign of the historical Stockland 16.x ERP. ERP 16.2.18 and sample repositories remain reference material only, subject to the approved reference policy and source/licence review.
 
@@ -83,11 +89,11 @@ For a proposed change, ChatGPT must:
 
 Silence, an unanswered message, a suggestion, a research finding or a tool's recommendation is not approval. Do not interpret a request to investigate as permission to change the product baseline. Do not overwrite or delete prior approved rationale; preserve a dated decision/change history.
 
-Routine implementation details and defect fixes that are demonstrably inside the approved requirements may be handled autonomously, but must not alter the accepted behaviour, legal interpretation or scope. When in doubt, stop and ask.
+Routine and substantial engineering decisions inside the approved requirements may be made autonomously under the Product Owner's delegation, including data modelling, bounded-context design, API contracts, UI workflows, implementation patterns, test design and delivery sequencing within the fixed WP-00 to WP-16 order. Record material decisions and their rationale. A baseline amendment remains prohibited unless expressly approved; when an apparent conflict is not resolvable by interpreting the approved documents, isolate and document that exact decision rather than silently changing the baseline.
 
 ## 5. Numbered work-package and handover discipline
 
-Work is delivered in numbered work packages. Do not skip, merge, reorder or silently expand a package. A package is handed over when its scope is finalized and its acceptance evidence is complete. The Product Owner reviews that handover before the next package begins.
+Work is delivered in the fixed numbered sequence. Do not skip, merge, reorder or silently expand a package. For this owner-authorized run, ChatGPT completes each package, records its numbered handover and evidence, performs an independent self-review against the definition of done, and advances to the next package when the package passes. Do not pause for routine Product Owner acceptance between packages. Keep all handovers visible in GitHub and the Notion project record. A failed or blocked acceptance criterion must be recorded honestly; continue independent work while preventing dependent unsafe work from being misrepresented as complete.
 
 | ID | Work package | Required completion outcome |
 |---|---|---|
@@ -125,7 +131,7 @@ A package is not complete merely because code, a page, table, form or document e
 8. **Security:** role, tenant, legal-entity, site/branch and data-scope verification.
 9. **Documentation:** updated approved specification, operator/admin guidance and support/recovery notes.
 10. **Evidence:** exact commit, files changed, commands, test results, build/artifact identifiers and known limitations.
-11. **Handover:** completed numbered report, open risks, decisions required and the next package—without starting it before Product Owner review.
+11. **Handover:** completed numbered report, open risks, unresolved human-only actions and the next package; under the explicit delegation, ChatGPT may proceed after its evidence-based self-review without waiting for routine owner review.
 
 Use evidence labels precisely: **PASS**, **FAIL**, **NOT RUN**, **BLOCKED**, **NOT APPLICABLE**, or **PENDING OWNER APPROVAL**. Never claim a test, source review, legal validation, release or deployment that did not occur.
 
@@ -176,5 +182,6 @@ Maintain a dated record in this document or a linked decision log for:
 
 - Product Owner requested one-goal-only project discipline, strict adherence to all approved documents/plans, numbered stepwise work, complete handover after each finalized step, and express approval before any change to the agreed baseline.
 - This document records that operating instruction. The agreement itself and its links are being added to the canonical repository and Notion project memory.
-- Current work-package position: **WP-00 — Governance and baseline control**. The agreement, root agent instructions and README entry have been committed; the **WP-00 handover is submitted and awaiting Product Owner acceptance**.
-- Next package: **WP-01 — Requirements and traceability**, held until the Product Owner expressly accepts the WP-00 handover.
+- WP-00 was accepted by the Product Owner on 22 November 2026, who expressly delegated autonomous execution, routine package decisions and internal package approval for WP-01 through WP-16 to ChatGPT.
+- Execution authorization: proceed sequentially from **WP-01 — Requirements and traceability** through **WP-16 — End-to-end verification and release**, with numbered evidence handovers and no routine stop between packages.
+- Human-only gates remain limited to genuine legal/professional sign-off, live statutory activation, actual payroll/financial execution, destructive production changes, protected credentials/secrets and a production deployment/release requiring an accountable operator.
