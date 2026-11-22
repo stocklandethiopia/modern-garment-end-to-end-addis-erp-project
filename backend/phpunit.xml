@@ -23,8 +23,6 @@
         <env name="DB_DATABASE" value="garment_erp"/>
         <env name="DB_USERNAME" value="app_runtime"/>
         <env name="DB_PASSWORD" value="local-runtime-password"/>
-        <env name="MIGRATION_DB_USERNAME" value="erp_migrator"/>
-        <env name="MIGRATION_DB_PASSWORD" value="local-migrator-password"/>
         <env name="TEST_DB_ADMIN_USERNAME" value="postgres"/>
         <env name="TEST_DB_ADMIN_PASSWORD" value="local-postgres-password"/>
         <env name="CACHE_STORE" value="array"/>
