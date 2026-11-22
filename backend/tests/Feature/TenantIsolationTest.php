@@ -16,6 +16,9 @@ class TenantIsolationTest extends TestCase
     private string $userId;
     private string $legalEntityA;
     private string $legalEntityB;
+    private string $siteA;
+    private string $warehouseNodeA;
+    private string $branchNodeA;
 
     protected function setUp(): void
     {
@@ -82,6 +85,55 @@ class TenantIsolationTest extends TestCase
                 'updated_at' => $now,
             ]);
         }
+
+        $this->siteA = (string) Str::uuid();
+        $this->warehouseNodeA = (string) Str::uuid();
+        $this->branchNodeA = (string) Str::uuid();
+
+        $admin->table('business_sites')->insert([
+            'id' => $this->siteA,
+            'tenant_id' => $this->tenantA,
+            'legal_entity_id' => $this->legalEntityA,
+            'code' => 'TEST-SITE-'.Str::upper(Str::random(6)),
+            'site_type' => 'WAREHOUSE_CAMPUS',
+            'name' => 'Test Site A',
+            'country_code' => 'ET',
+            'timezone' => 'Africa/Addis_Ababa',
+            'status' => 'DRAFT',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        $admin->table('operational_nodes')->insert([
+            [
+                'id' => $this->warehouseNodeA,
+                'tenant_id' => $this->tenantA,
+                'business_site_id' => $this->siteA,
+                'legal_entity_id' => $this->legalEntityA,
+                'code' => 'TEST-WH-'.Str::upper(Str::random(6)),
+                'node_type' => 'WAREHOUSE',
+                'name' => 'Test Warehouse',
+                'capabilities' => json_encode(['STOCK_HOLDING'], JSON_THROW_ON_ERROR),
+                'stock_holding_enabled' => true,
+                'status' => 'DRAFT',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'id' => $this->branchNodeA,
+                'tenant_id' => $this->tenantA,
+                'business_site_id' => $this->siteA,
+                'legal_entity_id' => $this->legalEntityA,
+                'code' => 'TEST-BR-'.Str::upper(Str::random(6)),
+                'node_type' => 'BRANCH',
+                'name' => 'Test Branch',
+                'capabilities' => json_encode([], JSON_THROW_ON_ERROR),
+                'stock_holding_enabled' => false,
+                'status' => 'DRAFT',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+        ]);
 
         $user = User::query()->findOrFail($this->userId);
         Sanctum::actingAs($user, ['tenant:select', 'erp:access']);
@@ -362,6 +414,69 @@ class TenantIsolationTest extends TestCase
                 'timezone' => 'Africa/Addis_Ababa',
             ])
             ->assertForbidden();
+    }
+
+    public function test_stock_capable_node_can_create_an_inventory_location(): void
+    {
+        $response = $this->withHeader('X-Tenant-Id', $this->tenantA)
+            ->postJson('/api/v1/enterprise/nodes/'.$this->warehouseNodeA.'/inventory-locations', [
+                'code' => 'A-01-BIN-01',
+                'location_type' => 'BIN',
+                'allow_stock' => true,
+            ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.status', 'DRAFT')
+            ->assertJsonPath('data.allow_stock', true)
+            ->assertJsonPath('data.operational_node_id', $this->warehouseNodeA);
+
+        $locationId = $response->json('data.id');
+        $audit = DB::connection('pgsql_test_admin')->table('audit_events')
+            ->where('tenant_id', $this->tenantA)
+            ->where('object_type', 'INVENTORY_LOCATION')
+            ->where('object_id', $locationId)
+            ->first();
+
+        $this->assertNotNull($audit);
+        $this->assertSame('INVENTORY_LOCATION_DRAFT_CREATED', $audit->action);
+    }
+
+    public function test_branch_cannot_create_inventory_locations_without_stock_capability(): void
+    {
+        $this->withHeader('X-Tenant-Id', $this->tenantA)
+            ->postJson('/api/v1/enterprise/nodes/'.$this->branchNodeA.'/inventory-locations', [
+                'code' => 'BRANCH-BIN-01',
+                'location_type' => 'BIN',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('operational_node');
+    }
+
+    public function test_inventory_location_parent_must_belong_to_same_node(): void
+    {
+        $parent = (string) Str::uuid();
+        $now = now();
+
+        DB::connection('pgsql_test_admin')->table('inventory_locations')->insert([
+            'id' => $parent,
+            'tenant_id' => $this->tenantA,
+            'operational_node_id' => $this->warehouseNodeA,
+            'code' => 'ZONE-01',
+            'location_type' => 'ZONE',
+            'allow_stock' => false,
+            'status' => 'DRAFT',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        $this->withHeader('X-Tenant-Id', $this->tenantA)
+            ->postJson('/api/v1/enterprise/nodes/'.$this->warehouseNodeA.'/inventory-locations', [
+                'code' => 'ZONE-CHILD-01',
+                'location_type' => 'BIN',
+                'parent_id' => $this->branchNodeA,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('parent_id');
     }
 
 }
