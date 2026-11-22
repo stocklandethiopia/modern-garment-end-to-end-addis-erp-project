@@ -348,7 +348,7 @@ class DemandOtbPricingWorkflowTest extends TestCase
             'effective_from' => '2027-06-01',
             'effective_to' => '2028-06-30',
             'inclusion_rules' => ['commitments_mode' => 'ADDITIONAL', 'actual_receipts_reduce_otb' => true],
-            'approval_thresholds' => [],
+            'approval_thresholds' => ['manager_review_at' => '100000.0000'],
         ])->assertCreated();
 
         $this->actAsApprover();
