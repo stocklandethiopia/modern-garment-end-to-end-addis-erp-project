@@ -18,6 +18,9 @@ return new class extends Migration
             $table->timestampTz('expires_at')->nullable()->index();
             $table->timestampsTz();
         });
+
+        DB::statement('REVOKE UPDATE ON personal_access_tokens FROM app_runtime');
+        DB::statement('GRANT DELETE ON personal_access_tokens TO app_runtime');
     }
 
     public function down(): void
