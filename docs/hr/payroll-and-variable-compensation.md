@@ -19,6 +19,14 @@ The ERP must decide which financial/HR domain owns the payee before calculating 
 
 If the facts are mixed or uncertain, set the relationship to **classification review required** and block automatic payment/tax treatment until HR/legal/accounting review. Record the contract, actual control/independence, duration, tools/resources, deliverables, business risk, exclusivity and authority.
 
+## Pension coverage and remittance control
+
+Under Private Organization Employees’ Pension Proclamation No. 1268/2022, the statutory definition of a private-organization employee includes a salaried person employed for at least 45 days, whether for a definite or indefinite period or piece of work, and includes managerial employees. Do not automatically exclude temporary, seasonal, part-time, piece-work or managerial roles based only on their contract label; record service duration and apply the approved legal coverage test.
+
+For covered employees, the current statutory source states employer contribution 11% and employee contribution 7% on the statutory salary base. The employer must remit contributions monthly within 30 days from the last day of the month in which salary is paid. If the employer fails to deduct the employee contribution, the employer remains liable for it; late payment can generate interest and a monthly penalty.
+
+The payroll engine must store the effective-dated coverage decision, salary base, employee/employer amount, payment month, due date, actual remittance, payment receipt, arrears, correction and rule version. The 11%/7% rates and 45-day test are source checkpoints; qualified local payroll review must verify the current law, amendment and POESSA implementation directives before production activation.
+
 ## 2. Common pay architecture
 
 A compensation scheme is assembled from effective-dated earning/deduction components. Do not use one global “salary + bonus” formula for all roles.
