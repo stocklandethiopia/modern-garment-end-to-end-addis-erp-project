@@ -102,7 +102,7 @@ class OtbPlanningController extends Controller
             abort_if($policySeed === null, 404);
 
             DB::select(
-                "SELECT pg_advisory_xact_lock(hashtext(?))",
+                'SELECT pg_advisory_xact_lock(hashtext(?))',
                 ['otb-policy-entity:'.$tenantId.':'.$policySeed->legal_entity_id],
             );
 
@@ -208,7 +208,7 @@ class OtbPlanningController extends Controller
         $actor = (string) $request->user()->getAuthIdentifier();
 
         $period = DB::transaction(function () use ($tenantId, $data, $id, $actor): object {
-            DB::select("SELECT pg_advisory_xact_lock(hashtext(?))", [
+            DB::select('SELECT pg_advisory_xact_lock(hashtext(?))', [
                 'otb-period:'.$tenantId.':'.$data['otb_policy_id'].':'.$data['period_start'],
             ]);
 
@@ -360,7 +360,7 @@ class OtbPlanningController extends Controller
         abort_unless($tenantContext->canAdministerTenant(), 403, 'A tenant administrator must approve an OTB scenario.');
 
         DB::transaction(function () use ($tenantId, $scenarioId, $approver): void {
-            DB::select("SELECT pg_advisory_xact_lock(hashtext(?))", ['otb-scenario:'.$tenantId.':'.$scenarioId]);
+            DB::select('SELECT pg_advisory_xact_lock(hashtext(?))', ['otb-scenario:'.$tenantId.':'.$scenarioId]);
 
             $scenario = DB::table('otb_scenarios')
                 ->where('tenant_id', $tenantId)
