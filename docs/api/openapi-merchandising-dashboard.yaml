@@ -47,6 +47,13 @@ components:
       type: http
       scheme: bearer
       bearerFormat: Laravel Sanctum personal access token
+  parameters:
+    TenantId:
+      name: X-Tenant-Id
+      in: header
+      required: true
+      description: Tenant UUID selected for the authenticated membership.
+      schema: { type: string, format: uuid }
   schemas:
     MerchandisingDashboardEnvelope:
       type: object
@@ -178,3 +185,246 @@ components:
         key: { type: string }
         reason: { type: string }
         dependency: { type: string }
+
+  /api/v1/product/evidence-policies:
+    get:
+      operationId: listEvidencePolicies
+      summary: List tenant-scoped versioned evidence policies
+      security:
+        - sanctumBearer: []
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: Paginated tenant policy register.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvidencePolicyPageEnvelope'
+        '401': { description: Authentication required. }
+        '403': { description: Tenant membership or ERP scope denied. }
+    post:
+      operationId: createEvidencePolicyDraft
+      summary: Create a new evidence policy version in draft state
+      description: >
+        Tenant owner/administrator only. Rules are configurable per initiative
+        type, stage and optional target market. No universal threshold is
+        assumed. At least one rule must be mandatory; minimum distinct sources
+        cannot exceed minimum records.
+      security:
+        - sanctumBearer: []
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvidencePolicyInput'
+      responses:
+        '201':
+          description: Draft policy and rules created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvidencePolicyEnvelope'
+        '403': { description: Tenant owner/administrator required. }
+        '422': { description: Validation or policy scope error. }
+  /api/v1/product/evidence-policies/{policyId}/submit:
+    post:
+      operationId: submitEvidencePolicy
+      summary: Freeze a draft policy and submit it for independent approval
+      security:
+        - sanctumBearer: []
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - name: policyId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Policy enters PENDING_APPROVAL; rule content is frozen.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvidencePolicyEnvelope'
+        '403': { description: Only the author or tenant owner/administrator may submit. }
+        '422': { description: Policy is not a draft or has no mandatory rules. }
+  /api/v1/product/evidence-policies/{policyId}/decisions:
+    post:
+      operationId: decideEvidencePolicy
+      summary: Independently approve or reject a submitted evidence policy
+      security:
+        - sanctumBearer: []
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - name: policyId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision, reason]
+              properties:
+                decision: { type: string, enum: [APPROVE, REJECT] }
+                reason: { type: string, minLength: 10, maxLength: 5000 }
+      responses:
+        '200':
+          description: Immutable append-only maker-checker decision recorded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvidencePolicyEnvelope'
+        '403': { description: Tenant owner/administrator required; author cannot decide own policy. }
+        '422': { description: Policy is not pending or an approved effective scope already overlaps. }
+  /api/v1/product/initiatives/{initiativeId}/evidence-coverage:
+    get:
+      operationId: getInitiativeEvidenceCoverage
+      summary: Evaluate the initiative against its matching effective approved evidence policy
+      security:
+        - sanctumBearer: []
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - name: initiativeId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: stage
+          in: query
+          required: false
+          schema: { type: string, enum: [RESEARCH, ASSESSMENT], default: ASSESSMENT }
+      responses:
+        '200':
+          description: Per-initiative rule status, denominators and evidence gaps.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvidenceCoverageEnvelope'
+        '404': { description: Initiative is not in the selected tenant. }
+    EvidencePolicyPageEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [data, current_page, last_page, total]
+          properties:
+            data:
+              type: array
+              items: { $ref: '#/components/schemas/EvidencePolicy' }
+            current_page: { type: integer }
+            last_page: { type: integer }
+            total: { type: integer }
+    EvidencePolicyEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [policy, rules]
+          properties:
+            policy: { $ref: '#/components/schemas/EvidencePolicy' }
+            rules:
+              type: array
+              items: { $ref: '#/components/schemas/EvidencePolicyRule' }
+    EvidencePolicy:
+      type: object
+      required: [id, tenant_id, code, name, initiative_type, stage, version_no, effective_from, status, change_reason, created_by]
+      properties:
+        id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        code: { type: string, maxLength: 80 }
+        name: { type: string, maxLength: 180 }
+        initiative_type:
+          type: string
+          enum: [NEW_BRAND, NEW_COLLECTION, CATEGORY_EXPANSION, MARKET_ENTRY, PRODUCT_INNOVATION, CUSTOMER_OPPORTUNITY, CAPABILITY_LED, REPLENISHMENT, SUSTAINABILITY_IMPROVEMENT, QUALITY_IMPROVEMENT]
+        stage: { type: string, enum: [RESEARCH, ASSESSMENT] }
+        target_market: { type: [string, 'null'] }
+        version_no: { type: integer, minimum: 1 }
+        effective_from: { type: string, format: date }
+        effective_to: { type: [string, 'null'], format: date }
+        status: { type: string, enum: [DRAFT, PENDING_APPROVAL, APPROVED, REJECTED] }
+        change_reason: { type: string }
+        created_by: { type: string, format: uuid }
+        approved_by: { type: [string, 'null'], format: uuid }
+        approved_at: { type: [string, 'null'], format: date-time }
+        rule_count: { type: integer, minimum: 0 }
+    EvidencePolicyInput:
+      type: object
+      required: [code, name, initiative_type, stage, effective_from, change_reason, rules]
+      properties:
+        code: { type: string, minLength: 2, maxLength: 80 }
+        name: { type: string, minLength: 3, maxLength: 180 }
+        initiative_type: { $ref: '#/components/schemas/EvidencePolicy/properties/initiative_type' }
+        stage: { type: string, enum: [RESEARCH, ASSESSMENT] }
+        target_market: { type: [string, 'null'], maxLength: 160 }
+        effective_from: { type: string, format: date }
+        effective_to: { type: [string, 'null'], format: date }
+        change_reason: { type: string, minLength: 10, maxLength: 5000 }
+        rules:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items: { $ref: '#/components/schemas/EvidencePolicyRuleInput' }
+    EvidencePolicyRuleInput:
+      type: object
+      required: [requirement_code, insight_type, minimum_records, minimum_distinct_sources]
+      properties:
+        requirement_code: { type: string, maxLength: 80 }
+        insight_type:
+          type: string
+          enum: [OBSERVED_FACT, SURVEY_RESULT, QUALITATIVE_EVIDENCE, EXTERNAL_BENCHMARK, HYPOTHESIS, FORECAST_SIGNAL, CUSTOMER_REQUEST, FIT_OR_QUALITY_FEEDBACK, SUPPLY_OR_CAPACITY_SIGNAL]
+        minimum_records: { type: integer, minimum: 1, maximum: 500 }
+        minimum_distinct_sources: { type: integer, minimum: 1, maximum: 500 }
+        minimum_confidence: { type: [number, 'null'], minimum: 0, maximum: 1 }
+        minimum_source_reliability: { type: [number, 'null'], minimum: 0, maximum: 1 }
+        max_age_days: { type: [integer, 'null'], minimum: 1, maximum: 3650 }
+        require_geography: { type: boolean, default: false }
+        require_target_segment: { type: boolean, default: false }
+        require_sample_denominator: { type: boolean, default: false }
+        is_mandatory: { type: boolean, default: true }
+    EvidencePolicyRule:
+      allOf:
+        - $ref: '#/components/schemas/EvidencePolicyRuleInput'
+        - type: object
+          required: [id]
+          properties:
+            id: { type: string, format: uuid }
+    EvidenceCoverageEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [initiative_id, stage, evidence_coverage]
+          properties:
+            initiative_id: { type: string, format: uuid }
+            stage: { type: string, enum: [RESEARCH, ASSESSMENT] }
+            evidence_coverage:
+              type: object
+              required: [status, coverage_percent, mandatory_rules, mandatory_rules_met, policy, rules, message]
+              properties:
+                status: { type: string, enum: [MET, GAP, NOT_CONFIGURED] }
+                coverage_percent: { type: [number, 'null'] }
+                mandatory_rules: { type: integer, minimum: 0 }
+                mandatory_rules_met: { type: integer, minimum: 0 }
+                policy: { oneOf: [{ $ref: '#/components/schemas/EvidencePolicy' }, { type: 'null' }] }
+                rules:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      requirement_code: { type: string }
+                      insight_type: { type: string }
+                      mandatory: { type: boolean }
+                      status: { type: string, enum: [MET, GAP] }
+                      observed_records: { type: integer }
+                      qualifying_records: { type: integer }
+                      distinct_sources: { type: integer }
+                      gaps: { type: array, items: { type: string } }
+                message: { type: string }
