@@ -46,10 +46,29 @@ class ProductDevelopmentController extends Controller
     public function showProductBrief(string $productBriefId, TenantContext $tenantContext): JsonResponse
     {
         $tenantId = $tenantContext->tenantId();
-        $brief = DB::table('product_briefs')
-            ->where('tenant_id', $tenantId)
-            ->where('id', $productBriefId)
-            ->first();
+        $brief = DB::table('product_briefs as pb')
+            ->join('range_lines as rl', function ($join): void {
+                $join->on('rl.tenant_id', '=', 'pb.tenant_id')
+                    ->on('rl.id', '=', 'pb.range_line_id');
+            })
+            ->join('range_plans as rp', function ($join): void {
+                $join->on('rp.tenant_id', '=', 'pb.tenant_id')
+                    ->on('rp.id', '=', 'pb.range_plan_id');
+            })
+            ->join('collections as c', function ($join): void {
+                $join->on('c.tenant_id', '=', 'pb.tenant_id')
+                    ->on('c.id', '=', 'pb.collection_id');
+            })
+            ->where('pb.tenant_id', $tenantId)
+            ->where('pb.id', $productBriefId)
+            ->first([
+                'pb.*',
+                'rl.line_code',
+                'rl.category_code',
+                'rp.code as range_plan_code',
+                'c.code as collection_code',
+                'c.name as collection_name',
+            ]);
 
         abort_if($brief === null, 404);
 

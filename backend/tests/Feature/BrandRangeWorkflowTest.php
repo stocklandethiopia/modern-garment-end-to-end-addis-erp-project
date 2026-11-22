@@ -722,6 +722,9 @@ class BrandRangeWorkflowTest extends TestCase
 
         $this->withHeaders($this->tenantHeader())->getJson('/api/v1/product-briefs/'.$briefId)
             ->assertOk()
+            ->assertJsonPath('data.line_code', 'PLM-STYLE-FAMILY-01')
+            ->assertJsonPath('data.range_plan_code', $range->json('data.code'))
+            ->assertJsonPath('data.collection_name', 'Product development collection')
             ->assertJsonCount(2, 'versions')
             ->assertJsonCount(2, 'decisions')
             ->assertJsonCount(2, 'styles');
