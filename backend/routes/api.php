@@ -13,6 +13,7 @@ use App\Http\Controllers\Merchandising\InsightSourceController;
 use App\Http\Controllers\Merchandising\MarketInsightController;
 use App\Http\Controllers\Merchandising\MerchandisingPlanningController;
 use App\Http\Controllers\Merchandising\OtbPlanningController;
+use App\Http\Controllers\ProductDevelopment\ProductDevelopmentController;
 use App\Support\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
