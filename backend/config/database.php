@@ -24,10 +24,6 @@ return [
             'username' => env('MIGRATION_DB_USERNAME', 'erp_migrator'),
             'password' => env('MIGRATION_DB_PASSWORD', ''),
         ]),
-        'pgsql_admin' => array_merge($pgsql, [
-            'username' => env('DB_ADMIN_USERNAME', 'postgres'),
-            'password' => env('DB_ADMIN_PASSWORD', ''),
-        ]),
     ],
     'migrations' => [
         'table' => 'migrations',
