@@ -58,8 +58,9 @@ describe('MerchandisingDashboardComponent', () => {
         evidence_register: {
           source_count: 2,
           insight_count: 5,
-          sufficiency_status: 'UNAVAILABLE',
-          sufficiency_reason: 'No evidence requirement catalogue is configured.',
+          approved_policy_count: 0,
+          sufficiency_status: 'NOT_CONFIGURED',
+          sufficiency_reason: 'No approved, effective tenant evidence policy is currently active.',
         },
         work_queue: {
           approval_scope: 'TENANT_APPROVALS',
