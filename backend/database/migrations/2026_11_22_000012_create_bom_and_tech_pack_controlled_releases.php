@@ -433,7 +433,6 @@ return new class extends Migration
                     AND NEW.created_at IS NOT DISTINCT FROM OLD.created_at
                     AND NEW.submitted_by IS NOT DISTINCT FROM OLD.submitted_by
                     AND NEW.submitted_at IS NOT DISTINCT FROM OLD.submitted_at
-                    AND NEW.decided_by IS NOT DISTINCT FROM OLD.decided_by
                     AND NEW.decided_at IS NOT DISTINCT FROM OLD.decided_at
                     AND NEW.decision_reason IS NOT DISTINCT FROM OLD.decision_reason
                     AND NEW.asset_manifest_sha256 IS NOT DISTINCT FROM OLD.asset_manifest_sha256
@@ -533,12 +532,11 @@ return new class extends Migration
         DB::statement('GRANT SELECT, INSERT ON tech_pack_decisions TO app_runtime');
         DB::statement('GRANT SELECT, INSERT ON tech_pack_delivery_receipts TO app_runtime');
 
-        DB::statement('GRANT UPDATE (status, submitted_by, submitted_at, decided_by, decided_at, decision_reason, material_resolution_status, updated_at) ON style_bom_versions TO app_runtime');
+        DB::statement('GRANT UPDATE (status, submitted_by, submitted_at, decided_by, decided_at, decision_reason, updated_at) ON style_bom_versions TO app_runtime');
         DB::statement('GRANT UPDATE (status, submitted_by, submitted_at, decided_by, decided_at, decision_reason, asset_manifest_sha256, released_by, released_at, release_manifest_sha256, updated_at) ON tech_pack_versions TO app_runtime');
         DB::statement('GRANT UPDATE (review_status, reviewed_by, reviewed_at, review_reason, updated_at) ON tech_pack_assets TO app_runtime');
 
         DB::statement('CREATE TRIGGER style_bom_versions_append_only BEFORE DELETE ON style_bom_versions FOR EACH ROW EXECUTE FUNCTION prevent_merchandising_history_mutation()');
-        DB::statement('CREATE TRIGGER style_bom_lines_append_only BEFORE DELETE ON style_bom_lines FOR EACH ROW EXECUTE FUNCTION prevent_merchandising_history_mutation()');
         DB::statement('CREATE TRIGGER style_bom_subst_append_only BEFORE DELETE ON style_bom_substitution_candidates FOR EACH ROW EXECUTE FUNCTION prevent_merchandising_history_mutation()');
         DB::statement('CREATE TRIGGER style_bom_decisions_append_only BEFORE UPDATE OR DELETE ON style_bom_decisions FOR EACH ROW EXECUTE FUNCTION prevent_merchandising_history_mutation()');
         DB::statement('CREATE TRIGGER tech_pack_versions_append_only BEFORE DELETE ON tech_pack_versions FOR EACH ROW EXECUTE FUNCTION prevent_merchandising_history_mutation()');
@@ -555,7 +553,6 @@ return new class extends Migration
         DB::statement('DROP TRIGGER IF EXISTS tech_pack_versions_append_only ON tech_pack_versions');
         DB::statement('DROP TRIGGER IF EXISTS style_bom_decisions_append_only ON style_bom_decisions');
         DB::statement('DROP TRIGGER IF EXISTS style_bom_subst_append_only ON style_bom_substitution_candidates');
-        DB::statement('DROP TRIGGER IF EXISTS style_bom_lines_append_only ON style_bom_lines');
         DB::statement('DROP TRIGGER IF EXISTS style_bom_versions_append_only ON style_bom_versions');
         DB::statement('DROP TRIGGER IF EXISTS tech_pack_assets_state_guard ON tech_pack_assets');
         DB::statement('DROP TRIGGER IF EXISTS tech_pack_version_state_guard ON tech_pack_versions');
