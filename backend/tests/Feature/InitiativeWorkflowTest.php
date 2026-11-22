@@ -723,10 +723,12 @@ class InitiativeWorkflowTest extends TestCase
                 has_table_privilege('app_runtime', 'initiative_evidence_policy_rules', 'DELETE') AS can_delete_evidence_rule,
                 has_table_privilege('app_runtime', 'tenant_access_scope_modes', 'UPDATE') AS can_update_scope_mode,
                 has_table_privilege('app_runtime', 'tenant_access_scopes', 'INSERT') AS can_insert_scope,
-                has_table_privilege('app_runtime', 'tenant_access_scopes', 'UPDATE') AS can_revoke_scope,
+                has_column_privilege('app_runtime', 'tenant_access_scopes', 'status', 'UPDATE') AS can_revoke_scope,
+                has_column_privilege('app_runtime', 'tenant_access_scopes', 'scope_id', 'UPDATE') AS can_change_scope_target,
                 has_table_privilege('app_runtime', 'tenant_access_scopes', 'DELETE') AS can_delete_scope,
                 has_table_privilege('app_runtime', 'market_insight_event_receipts', 'INSERT') AS can_insert_event_receipt,
-                has_table_privilege('app_runtime', 'market_insight_event_receipts', 'UPDATE') AS can_update_event_receipt,
+                has_column_privilege('app_runtime', 'market_insight_event_receipts', 'duplicate_count', 'UPDATE') AS can_update_event_receipt,
+                has_column_privilege('app_runtime', 'market_insight_event_receipts', 'payload_sha256', 'UPDATE') AS can_change_event_payload_hash,
                 has_table_privilege('app_runtime', 'market_insight_event_receipts', 'DELETE') AS can_delete_event_receipt",
         );
 
@@ -741,9 +743,11 @@ class InitiativeWorkflowTest extends TestCase
         $this->assertTrue($versionPrivileges->can_update_scope_mode);
         $this->assertTrue($versionPrivileges->can_insert_scope);
         $this->assertTrue($versionPrivileges->can_revoke_scope);
+        $this->assertFalse($versionPrivileges->can_change_scope_target);
         $this->assertFalse($versionPrivileges->can_delete_scope);
         $this->assertTrue($versionPrivileges->can_insert_event_receipt);
         $this->assertTrue($versionPrivileges->can_update_event_receipt);
+        $this->assertFalse($versionPrivileges->can_change_event_payload_hash);
         $this->assertFalse($versionPrivileges->can_delete_event_receipt);
     }
 
