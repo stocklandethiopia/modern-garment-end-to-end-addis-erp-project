@@ -605,7 +605,7 @@ class BomTechnicalPackService
             ->get();
 
         $blockers = [];
-        if ($pack->status !== 'APPROVED') {
+        if (! in_array($pack->status, ['APPROVED', 'RELEASED'], true)) {
             $blockers[] = ['code' => 'TECH_PACK_NOT_APPROVED', 'dependency' => 'WP05', 'reason' => 'The technical pack must receive independent approval before release.'];
         }
         if ($bom->status !== 'APPROVED') {
@@ -710,7 +710,10 @@ class BomTechnicalPackService
             $query->lockForUpdate();
         }
 
-        return $query->first();
+        $record = $query->first();
+        abort_if($record === null, 404);
+
+        return $record;
     }
 
     private function bom(string $tenantId, string $bomVersionId, bool $lock = false): ?object
@@ -720,7 +723,10 @@ class BomTechnicalPackService
             $query->lockForUpdate();
         }
 
-        return $query->first();
+        $record = $query->first();
+        abort_if($record === null, 404);
+
+        return $record;
     }
 
     private function techPack(string $tenantId, string $id, bool $lock = false): ?object
@@ -730,7 +736,10 @@ class BomTechnicalPackService
             $query->lockForUpdate();
         }
 
-        return $query->first();
+        $record = $query->first();
+        abort_if($record === null, 404);
+
+        return $record;
     }
 
     private function assertAcceptedBrief(string $tenantId, object $style): void
