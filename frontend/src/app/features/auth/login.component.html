@@ -1,0 +1,79 @@
+<main class="login-page">
+  <section class="login-panel" aria-labelledby="login-title">
+    <div class="brand-lockup">
+      <span class="brand-mark" aria-hidden="true">M</span>
+      <span>
+        <strong>MODERN GARMENT</strong>
+        <small>ADDIS ERP</small>
+      </span>
+    </div>
+
+    <div class="login-heading">
+      <span class="eyebrow">SECURE WORKSPACE ACCESS</span>
+      <h1 id="login-title">Welcome back</h1>
+      <p>Sign in to access your organization's apparel operations workspace.</p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="form-field">
+        <label for="login-email">Work email</label>
+        <input
+          id="login-email"
+          type="email"
+          formControlName="email"
+          autocomplete="username"
+          inputmode="email"
+          spellcheck="false"
+          required
+          aria-describedby="login-email-hint"
+        >
+        <span id="login-email-hint" class="field-hint">Use the email registered by your workspace administrator.</span>
+        @if (form.controls.email.touched && form.controls.email.invalid) {
+          <span class="field-error" role="alert">Enter a valid email address.</span>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="login-password">Password</label>
+        <input
+          id="login-password"
+          type="password"
+          formControlName="password"
+          autocomplete="current-password"
+          required
+        >
+        @if (form.controls.password.touched && form.controls.password.invalid) {
+          <span class="field-error" role="alert">Password is required.</span>
+        }
+      </div>
+
+      @if (errorMessage()) {
+        <div class="form-error" role="alert" aria-live="assertive">{{ errorMessage() }}</div>
+      }
+
+      <button class="sign-in-button" type="submit" [disabled]="form.invalid || busy()">
+        @if (busy()) { Signing in… } @else { Sign in securely }
+      </button>
+    </form>
+
+    <div class="security-note">
+      <span class="security-icon" aria-hidden="true">⌑</span>
+      <p>For this development build, your access token stays in memory and is cleared when you sign out or refresh the page. Do not use production credentials here.</p>
+    </div>
+  </section>
+
+  <aside class="login-aside" aria-label="Platform overview">
+    <div class="aside-content">
+      <span class="aside-kicker">APPAREL BUSINESS OPERATING SYSTEM</span>
+      <h2>From the first product idea to the customer.</h2>
+      <p>Connect product development, sourcing, factory operations, quality, distribution, channels and enterprise control in one governed platform.</p>
+      <div class="journey-list">
+        <span><b>01</b> Initiative & product</span>
+        <span><b>02</b> Materials & manufacturing</span>
+        <span><b>03</b> Quality & distribution</span>
+        <span><b>04</b> Commerce & finance</span>
+      </div>
+    </div>
+    <div class="aside-footer">MODERN GARMENT ADDIS ERP · DEVELOPMENT FOUNDATION</div>
+  </aside>
+</main>
