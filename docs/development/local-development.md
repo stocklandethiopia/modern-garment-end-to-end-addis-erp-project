@@ -42,7 +42,7 @@ The copied \`.env\` is local-only and ignored by Git. For local Compose defaults
 Run schema migrations using the migration role, not the runtime role:
 
 \`\`\`bash
-DB_CONNECTION=pgsql_migrator php artisan migrate:fresh --force
+DB_CONNECTION=pgsql_migrator MIGRATION_DB_USERNAME=erp_migrator MIGRATION_DB_PASSWORD=local-migrator-password php artisan migrate:fresh --force
 \`\`\`
 
 The migration creates:
@@ -57,7 +57,7 @@ The migration creates:
 This initial bootstrap command is deliberately interactive and succeeds only while the tenant table is empty:
 
 \`\`\`bash
-php artisan platform:provision-tenant-owner stockland-dev "Local Garment ERP Workspace"
+MIGRATION_DB_USERNAME=erp_migrator MIGRATION_DB_PASSWORD=local-migrator-password php artisan platform:provision-tenant-owner stockland-dev "Local Garment ERP Workspace"
 \`\`\`
 
 Enter the initial owner email/name and a password of at least 16 characters when prompted. The password is hashed before insert and is never written to command output. Record the generated tenant UUID securely for local API calls.
