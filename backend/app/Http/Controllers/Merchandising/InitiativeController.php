@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Merchandising;
 
 use App\Http\Controllers\Controller;
+use App\Services\Merchandising\EvidenceSufficiencyService;
 use App\Support\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -209,12 +210,12 @@ class InitiativeController extends Controller
         return response()->json(['data' => $initiative]);
     }
 
-    public function advanceToAssessment(string $initiativeId, Request $request, TenantContext $tenantContext): JsonResponse
+    public function advanceToAssessment(string $initiativeId, Request $request, TenantContext $tenantContext, EvidenceSufficiencyService $evidenceSufficiency): JsonResponse
     {
         $tenantId = $tenantContext->tenantId();
         $actorId = (string) $request->user()->getAuthIdentifier();
 
-        $initiative = DB::transaction(function () use ($initiativeId, $tenantId, $actorId): object {
+        $result = DB::transaction(function () use ($initiativeId, $tenantId, $actorId, $evidenceSufficiency): array {
             $initiative = DB::table('initiatives')
                 ->where('tenant_id', $tenantId)
                 ->where('id', $initiativeId)
@@ -224,12 +225,22 @@ class InitiativeController extends Controller
             abort_if($initiative === null, 404);
             abort_unless($initiative->status === 'RESEARCH', 422, 'Only an initiative approved for research can enter assessment.');
 
-            $hasEvidence = DB::table('market_insights')
-                ->where('tenant_id', $tenantId)
-                ->where('initiative_id', $initiativeId)
-                ->exists();
+            $coverage = $evidenceSufficiency->evaluate($tenantId, $initiative, 'ASSESSMENT');
 
-            abort_unless($hasEvidence, 422, 'At least one sourced market insight is required before assessment.');
+            if ($coverage['status'] === 'NOT_CONFIGURED') {
+                $hasEvidence = DB::table('market_insights')
+                    ->where('tenant_id', $tenantId)
+                    ->where('initiative_id', $initiativeId)
+                    ->exists();
+
+                abort_unless($hasEvidence, 422, 'At least one sourced market insight is required before assessment.');
+            } else {
+                abort_unless(
+                    $coverage['status'] === 'MET',
+                    422,
+                    'Configured assessment evidence requirements are not satisfied.',
+                );
+            }
 
             DB::table('initiatives')->where('tenant_id', $tenantId)->where('id', $initiativeId)->update([
                 'status' => 'ASSESSMENT',
@@ -238,10 +249,16 @@ class InitiativeController extends Controller
 
             $this->writeAudit($tenantId, $actorId, 'INITIATIVE_MOVED_TO_ASSESSMENT', 'INITIATIVE', $initiativeId, 'Research evidence attached; assessment started');
 
-            return DB::table('initiatives')->where('tenant_id', $tenantId)->where('id', $initiativeId)->first();
+            return [
+                'initiative' => DB::table('initiatives')->where('tenant_id', $tenantId)->where('id', $initiativeId)->first(),
+                'evidence_coverage' => $coverage,
+            ];
         });
 
-        return response()->json(['data' => $initiative]);
+        return response()->json([
+            'data' => $result['initiative'],
+            'evidence_coverage' => $result['evidence_coverage'],
+        ]);
     }
 
     public function decide(string $initiativeId, Request $request, TenantContext $tenantContext): JsonResponse
