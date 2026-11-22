@@ -164,30 +164,12 @@ return new class extends Migration
         DB::statement('ALTER TABLE market_insights ADD CONSTRAINT market_insights_confidence_range CHECK (confidence IS NULL OR confidence BETWEEN 0 AND 1)');
         DB::statement('ALTER TABLE market_insights ADD CONSTRAINT market_insights_sample_denominator_check CHECK (sample_size IS NULL OR denominator IS NULL OR denominator >= sample_size)');
 
-        DB::unprepared(<<<'SQL'
-            CREATE OR REPLACE FUNCTION prevent_initiative_history_mutation()
-            RETURNS trigger AS $
-            BEGIN
-                RAISE EXCEPTION 'initiative history and captured market evidence are append-only';
-            END;
-            $ LANGUAGE plpgsql;
+        DB::statement("CREATE OR REPLACE FUNCTION prevent_initiative_history_mutation() RETURNS trigger LANGUAGE plpgsql AS 'BEGIN RAISE EXCEPTION ''initiative history and captured market evidence are append-only''; END;'");
 
-            CREATE TRIGGER initiative_versions_append_only
-            BEFORE UPDATE OR DELETE ON initiative_versions
-            FOR EACH ROW EXECUTE FUNCTION prevent_initiative_history_mutation();
-
-            CREATE TRIGGER initiative_decisions_append_only
-            BEFORE UPDATE OR DELETE ON initiative_decisions
-            FOR EACH ROW EXECUTE FUNCTION prevent_initiative_history_mutation();
-
-            CREATE TRIGGER insight_sources_append_only
-            BEFORE UPDATE OR DELETE ON insight_sources
-            FOR EACH ROW EXECUTE FUNCTION prevent_initiative_history_mutation();
-
-            CREATE TRIGGER market_insights_append_only
-            BEFORE UPDATE OR DELETE ON market_insights
-            FOR EACH ROW EXECUTE FUNCTION prevent_initiative_history_mutation();
-        SQL);
+        DB::statement('CREATE TRIGGER initiative_versions_append_only BEFORE UPDATE OR DELETE ON initiative_versions FOR EACH ROW EXECUTE FUNCTION prevent_initiative_history_mutation()');
+        DB::statement('CREATE TRIGGER initiative_decisions_append_only BEFORE UPDATE OR DELETE ON initiative_decisions FOR EACH ROW EXECUTE FUNCTION prevent_initiative_history_mutation()');
+        DB::statement('CREATE TRIGGER insight_sources_append_only BEFORE UPDATE OR DELETE ON insight_sources FOR EACH ROW EXECUTE FUNCTION prevent_initiative_history_mutation()');
+        DB::statement('CREATE TRIGGER market_insights_append_only BEFORE UPDATE OR DELETE ON market_insights FOR EACH ROW EXECUTE FUNCTION prevent_initiative_history_mutation()');
     }
 
     public function down(): void
