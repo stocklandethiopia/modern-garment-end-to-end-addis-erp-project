@@ -5,21 +5,17 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 
 import { AuthSessionService } from '../../core/auth/auth-session.service';
 import {
+  ForecastDetail,
+  ForecastItem,
   ForecastRun,
   LegalEntityOption,
   OtbPeriod,
   OtbPolicy,
   OtbScenario,
-  PageEnvelope,
   PlanningWorkbenchService,
   PriceList,
   PriceListLine,
   Promotion,
-  ResourceEnvelope,
-  ForecastDetail,
-  ForecastItem,
-  ForecastRun,
-  ForecastAdjustment,
 } from './planning-workbench.service';
 
 type PlanningTab = 'FORECAST' | 'OTB' | 'PRICING';
