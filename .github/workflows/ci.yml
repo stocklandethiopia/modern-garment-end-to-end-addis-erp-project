@@ -59,10 +59,9 @@ jobs:
       DB_DATABASE: garment_erp
       DB_USERNAME: app_runtime
       DB_PASSWORD: local-runtime-password
-      MIGRATION_DB_USERNAME: erp_migrator
-      MIGRATION_DB_PASSWORD: local-migrator-password
-      DB_ADMIN_USERNAME: postgres
       DB_ADMIN_PASSWORD: local-postgres-password
+      TEST_DB_ADMIN_USERNAME: postgres
+      TEST_DB_ADMIN_PASSWORD: local-postgres-password
       CACHE_STORE: array
       QUEUE_CONNECTION: sync
       SESSION_DRIVER: array
@@ -97,7 +96,7 @@ jobs:
           find app bootstrap config database routes tests -type f -name '*.php' -print0 | xargs -0 -n1 php -l
 
       - name: Run migrations as the restricted migration role
-        run: DB_CONNECTION=pgsql_migrator php artisan migrate:fresh --force
+        run: DB_CONNECTION=pgsql_migrator MIGRATION_DB_USERNAME=erp_migrator MIGRATION_DB_PASSWORD=local-migrator-password php artisan migrate:fresh --force
 
       - name: Run backend feature and RLS integration tests
         run: php artisan test --colors=never
