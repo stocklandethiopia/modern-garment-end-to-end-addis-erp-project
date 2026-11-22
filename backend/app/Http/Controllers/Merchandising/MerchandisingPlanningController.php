@@ -716,6 +716,17 @@ class MerchandisingPlanningController extends Controller
     public function createAssortmentPlan(Request $request, TenantContext $tenantContext, ScopedAccessService $scopedAccess): JsonResponse
     {
         $tenantId = $tenantContext->tenantId();
+        foreach (['channel_code', 'market_scope', 'account_reference', 'location_cluster_reference'] as $field) {
+            $value = $request->input($field);
+            if (is_string($value)) {
+                $normalized = trim($value);
+                if (in_array($field, ['channel_code', 'market_scope'], true)) {
+                    $normalized = strtoupper($normalized);
+                }
+                $request->merge([$field => $normalized === '' ? null : $normalized]);
+            }
+        }
+
         $data = $request->validate([
             'range_plan_id' => ['required', 'uuid', Rule::exists('range_plans', 'id')->where(fn ($query) => $query
                 ->where('tenant_id', $tenantId)
@@ -727,10 +738,10 @@ class MerchandisingPlanningController extends Controller
                 'regex:/^[A-Z0-9][A-Z0-9_-]{1,79}$/',
                 Rule::unique('assortment_plans', 'code')->where(fn ($query) => $query->where('tenant_id', $tenantId)),
             ],
-            'channel_code' => ['required', 'string', 'max:60'],
+            'channel_code' => ['required', Rule::in(['OWN_RETAIL', 'WHOLESALE', 'RESELLER', 'MARKETPLACE', 'D2C', 'EXPORT', 'CUSTOMER_PROGRAMME'])],
             'market_scope' => ['required', 'string', 'max:160'],
             'business_site_id' => ['nullable', 'uuid', Rule::exists('business_sites', 'id')->where(fn ($query) => $query->where('tenant_id', $tenantId))],
-            'account_reference' => ['nullable', 'string', 'max:120'],
+            'account_reference' => [Rule::requiredIf(fn () => in_array($request->input('channel_code'), ['WHOLESALE', 'RESELLER', 'EXPORT', 'CUSTOMER_PROGRAMME'], true)), 'nullable', 'string', 'max:120'],
             'location_cluster_reference' => ['nullable', 'string', 'max:120'],
         ]);
 
