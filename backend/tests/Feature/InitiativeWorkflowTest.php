@@ -363,4 +363,60 @@ class InitiativeWorkflowTest extends TestCase
         $this->assertTrue($versionPrivileges->can_insert_insight);
         $this->assertFalse($versionPrivileges->can_update_insight);
     }
+
+    public function test_insight_source_provenance_is_append_only(): void
+    {
+        $response = $this->withHeader('X-Tenant-Id', $this->tenantId)
+            ->postJson('/api/v1/product/insight-sources', [
+                'source_type' => 'SURVEY',
+                'source_name' => 'Customer survey wave one',
+                'source_reference' => 'internal-research://survey/wave-one',
+                'capture_method' => 'CONTROLLED_SURVEY',
+                'permitted_use_basis' => 'Internal aggregate merchandising research',
+            ])
+            ->assertCreated();
+
+        $sourceId = $response->json('data.id');
+
+        $this->expectException(\Illuminate\Database\QueryException::class);
+        DB::connection('pgsql_test_admin')->table('insight_sources')
+            ->where('tenant_id', $this->tenantId)
+            ->where('id', $sourceId)
+            ->update(['source_name' => 'Silently overwritten source']);
+    }
+
+    public function test_database_rejects_market_insight_confidence_outside_zero_to_one(): void
+    {
+        $admin = DB::connection('pgsql_test_admin');
+        $now = now();
+        $sourceId = (string) Str::uuid();
+
+        $admin->table('insight_sources')->insert([
+            'id' => $sourceId,
+            'tenant_id' => $this->tenantId,
+            'source_type' => 'EXTERNAL_BENCHMARK',
+            'source_name' => 'Test benchmark source',
+            'capture_method' => 'SOURCE_REVIEW',
+            'permitted_use_basis' => 'Test-only market research',
+            'created_by' => $this->userId,
+            'created_at' => $now,
+        ]);
+
+        $this->expectException(\Illuminate\Database\QueryException::class);
+        $admin->table('market_insights')->insert([
+            'id' => (string) Str::uuid(),
+            'tenant_id' => $this->tenantId,
+            'source_id' => $sourceId,
+            'insight_type' => 'EXTERNAL_BENCHMARK',
+            'title' => 'Invalid confidence boundary',
+            'summary' => 'This row must be rejected by the database constraint.',
+            'observed_at' => $now,
+            'captured_at' => $now,
+            'confidence' => 1.2,
+            'privacy_basis' => 'Test-only validation',
+            'analyst_user_id' => $this->userId,
+            'created_at' => $now,
+        ]);
+    }
+
 }
