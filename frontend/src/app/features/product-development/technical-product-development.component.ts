@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, effect, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -21,7 +21,7 @@ import {
 @Component({
   selector: 'app-technical-product-development',
   standalone: true,
-  imports: [DatePipe, ReactiveFormsModule],
+  imports: [DecimalPipe, ReactiveFormsModule],
   templateUrl: './technical-product-development.component.html',
   styleUrl: './technical-product-development.component.css',
 })
