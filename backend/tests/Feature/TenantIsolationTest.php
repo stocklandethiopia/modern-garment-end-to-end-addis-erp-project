@@ -264,6 +264,7 @@ class TenantIsolationTest extends TestCase
             'branch_registrations',
             'inventory_locations',
             'audit_events',
+            'entity_licences',
         ];
 
         $rows = DB::connection('pgsql_test_admin')->select(
@@ -317,6 +318,15 @@ class TenantIsolationTest extends TestCase
         $this->assertFalse($privileges->can_update_audit);
         $this->assertTrue($privileges->can_revoke_token);
         $this->assertTrue($privileges->can_update_token_last_used);
+        $licencePrivileges = DB::connection('pgsql_test_admin')->selectOne(
+            "SELECT
+                has_table_privilege('app_runtime', 'entity_licences', 'SELECT') AS can_read_licences,
+                has_table_privilege('app_runtime', 'entity_licences', 'INSERT') AS can_submit_licences,
+                has_table_privilege('app_runtime', 'entity_licences', 'UPDATE') AS can_activate_licences",
+        );
+        $this->assertTrue($licencePrivileges->can_read_licences);
+        $this->assertTrue($licencePrivileges->can_submit_licences);
+        $this->assertFalse($licencePrivileges->can_activate_licences);
     }
 
     public function test_tenant_admin_can_create_a_draft_business_site_and_audit_event(): void
@@ -468,6 +478,110 @@ class TenantIsolationTest extends TestCase
             ])
             ->assertUnprocessable()
             ->assertUnprocessable();
+    }
+
+
+    public function test_branch_registration_evidence_is_saved_for_review_not_activated(): void
+    {
+        $response = $this->withHeader('X-Tenant-Id', $this->tenantA)
+            ->postJson('/api/v1/enterprise/sites/'.$this->siteA.'/branch-registrations', [
+                'commercial_register_reference' => 'BR-REG-'.Str::upper(Str::random(8)),
+                'activity_codes' => ['MANUFACTURING', 'WHOLESALE'],
+                'issuing_authority' => 'Commercial Register Authority',
+                'registered_at' => '2026-11-22',
+                'valid_from' => '2026-11-22',
+            ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.status', 'REVIEW_REQUIRED')
+            ->assertJsonPath('data.legal_entity_id', $this->legalEntityA)
+            ->assertJsonPath('data.activity_codes.0', 'MANUFACTURING');
+
+        $registrationId = $response->json('data.id');
+        $audit = DB::connection('pgsql_test_admin')->table('audit_events')
+            ->where('tenant_id', $this->tenantA)
+            ->where('object_type', 'BRANCH_REGISTRATION')
+            ->where('object_id', $registrationId)
+            ->first();
+
+        $this->assertNotNull($audit);
+        $this->assertSame('BRANCH_REGISTRATION_EVIDENCE_SUBMITTED', $audit->action);
+    }
+
+    public function test_activity_licence_evidence_is_saved_as_review_required(): void
+    {
+        $response = $this->withHeader('X-Tenant-Id', $this->tenantA)
+            ->postJson('/api/v1/enterprise/legal-entities/'.$this->legalEntityA.'/licences', [
+                'site_id' => $this->siteA,
+                'activity_code' => 'MANUFACTURING',
+                'licence_number' => 'LIC-'.Str::upper(Str::random(8)),
+                'issuing_authority' => 'Regional Trade Bureau',
+                'issue_date' => '2026-11-01',
+                'valid_from' => '2026-11-01',
+                'valid_to' => '2027-10-31',
+                'evidence_reference' => 'customer-vault://licence/one',
+            ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.status', 'REVIEW_REQUIRED')
+            ->assertJsonPath('data.legal_entity_id', $this->legalEntityA)
+            ->assertJsonPath('data.site_id', $this->siteA);
+
+        $licenceId = $response->json('data.id');
+        $audit = DB::connection('pgsql_test_admin')->table('audit_events')
+            ->where('tenant_id', $this->tenantA)
+            ->where('object_type', 'ENTITY_LICENCE')
+            ->where('object_id', $licenceId)
+            ->first();
+
+        $this->assertNotNull($audit);
+        $this->assertSame('ENTITY_LICENCE_EVIDENCE_SUBMITTED', $audit->action);
+    }
+
+    public function test_activity_licence_cannot_link_a_site_owned_by_another_entity(): void
+    {
+        $otherSiteId = (string) Str::uuid();
+        $now = now();
+
+        DB::connection('pgsql_test_admin')->table('business_sites')->insert([
+            'id' => $otherSiteId,
+            'tenant_id' => $this->tenantA,
+            'legal_entity_id' => $this->legalEntityB,
+            'code' => 'OTHER-ENTITY-SITE',
+            'site_type' => 'FACTORY_CAMPUS',
+            'name' => 'Other Entity Site',
+            'country_code' => 'ET',
+            'timezone' => 'Africa/Addis_Ababa',
+            'status' => 'DRAFT',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        $this->withHeader('X-Tenant-Id', $this->tenantA)
+            ->postJson('/api/v1/enterprise/legal-entities/'.$this->legalEntityA.'/licences', [
+                'site_id' => $otherSiteId,
+                'activity_code' => 'RETAIL',
+                'licence_number' => 'LIC-CROSS-ENTITY',
+                'issuing_authority' => 'Regional Trade Bureau',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('site_id');
+    }
+
+    public function test_user_cannot_submit_licence_evidence_without_tenant_admin_role(): void
+    {
+        DB::connection('pgsql_test_admin')->table('tenant_memberships')
+            ->where('tenant_id', $this->tenantA)
+            ->where('user_id', $this->userId)
+            ->update(['membership_role' => 'MEMBER']);
+
+        $this->withHeader('X-Tenant-Id', $this->tenantA)
+            ->postJson('/api/v1/enterprise/legal-entities/'.$this->legalEntityA.'/licences', [
+                'activity_code' => 'RETAIL',
+                'licence_number' => 'LIC-NO-ADMIN',
+                'issuing_authority' => 'Regional Trade Bureau',
+            ])
+            ->assertForbidden();
     }
 
     public function test_stock_capable_node_can_create_an_inventory_location(): void
