@@ -492,6 +492,8 @@ class InitiativeWorkflowTest extends TestCase
             'initiative_decisions',
             'insight_sources',
             'market_insights',
+            'initiative_evidence_policies',
+            'initiative_evidence_policy_rules',
         ];
 
         $rows = DB::connection('pgsql_test_admin')
@@ -513,13 +515,21 @@ class InitiativeWorkflowTest extends TestCase
                 has_table_privilege('app_runtime', 'initiative_versions', 'INSERT') AS can_insert_version,
                 has_table_privilege('app_runtime', 'initiative_versions', 'UPDATE') AS can_update_version,
                 has_table_privilege('app_runtime', 'market_insights', 'INSERT') AS can_insert_insight,
-                has_table_privilege('app_runtime', 'market_insights', 'UPDATE') AS can_update_insight",
+                has_table_privilege('app_runtime', 'market_insights', 'UPDATE') AS can_update_insight,
+                has_table_privilege('app_runtime', 'initiative_evidence_policies', 'INSERT') AS can_insert_evidence_policy,
+                has_table_privilege('app_runtime', 'initiative_evidence_policies', 'DELETE') AS can_delete_evidence_policy,
+                has_table_privilege('app_runtime', 'initiative_evidence_policy_rules', 'INSERT') AS can_insert_evidence_rule,
+                has_table_privilege('app_runtime', 'initiative_evidence_policy_rules', 'DELETE') AS can_delete_evidence_rule",
         );
 
         $this->assertTrue($versionPrivileges->can_insert_version);
         $this->assertFalse($versionPrivileges->can_update_version);
         $this->assertTrue($versionPrivileges->can_insert_insight);
         $this->assertFalse($versionPrivileges->can_update_insight);
+        $this->assertTrue($versionPrivileges->can_insert_evidence_policy);
+        $this->assertFalse($versionPrivileges->can_delete_evidence_policy);
+        $this->assertTrue($versionPrivileges->can_insert_evidence_rule);
+        $this->assertTrue($versionPrivileges->can_delete_evidence_rule);
     }
 
     public function test_insight_source_provenance_is_append_only(): void
