@@ -9,6 +9,7 @@ use App\Http\Controllers\Enterprise\TenantController;
 use App\Http\Controllers\Merchandising\InitiativeController;
 use App\Http\Controllers\Merchandising\InsightSourceController;
 use App\Http\Controllers\Merchandising\MarketInsightController;
+use App\Http\Controllers\Merchandising\MerchandisingPlanningController;
 use App\Support\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -70,5 +71,26 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/product/insight-sources', [InsightSourceController::class, 'store']);
         Route::get('/product/market-insights', [MarketInsightController::class, 'index']);
         Route::post('/product/market-insights', [MarketInsightController::class, 'store']);
+
+        Route::get('/product/brands', [MerchandisingPlanningController::class, 'brands']);
+        Route::post('/product/brands', [MerchandisingPlanningController::class, 'createBrand']);
+        Route::post('/product/brands/{brandId}/strategy-versions', [MerchandisingPlanningController::class, 'createBrandStrategy']);
+        Route::post('/product/brands/{brandId}/strategy-versions/{versionId}/approve', [MerchandisingPlanningController::class, 'approveBrandStrategy']);
+
+        Route::get('/product/seasons', [MerchandisingPlanningController::class, 'seasons']);
+        Route::post('/product/seasons', [MerchandisingPlanningController::class, 'createSeason']);
+
+        Route::get('/product/collections', [MerchandisingPlanningController::class, 'collections']);
+        Route::post('/product/collections', [MerchandisingPlanningController::class, 'createCollection']);
+        Route::post('/product/collections/{collectionId}/versions', [MerchandisingPlanningController::class, 'createCollectionVersion']);
+        Route::post('/product/collections/{collectionId}/versions/{versionId}/approve', [MerchandisingPlanningController::class, 'approveCollectionVersion']);
+
+        Route::get('/product/range-plans', [MerchandisingPlanningController::class, 'rangePlans']);
+        Route::post('/product/range-plans', [MerchandisingPlanningController::class, 'createRangePlan']);
+        Route::post('/product/range-plans/{rangePlanId}/lines', [MerchandisingPlanningController::class, 'createRangeLine']);
+        Route::post('/product/range-plans/{rangePlanId}/freeze', [MerchandisingPlanningController::class, 'freezeRangePlan']);
+
+        Route::post('/product/assortment-plans', [MerchandisingPlanningController::class, 'createAssortmentPlan']);
+        Route::post('/product/assortment-plans/{assortmentPlanId}/lines', [MerchandisingPlanningController::class, 'createAssortmentLine']);
     });
 });
