@@ -234,13 +234,14 @@ components:
               planned_units: { type: integer, minimum: 0 }
         evidence_register:
           type: object
-          required: [source_count, insight_count, sufficiency_status, sufficiency_reason]
+          required: [source_count, insight_count, approved_policy_count, sufficiency_status, sufficiency_reason]
           properties:
             source_count: { type: integer, minimum: 0 }
             insight_count: { type: integer, minimum: 0 }
+            approved_policy_count: { type: integer, minimum: 0 }
             sufficiency_status:
               type: string
-              enum: [UNAVAILABLE]
+              enum: [POLICY_CATALOGUE_ACTIVE_COVERAGE_PER_INITIATIVE, NOT_CONFIGURED]
             sufficiency_reason: { type: string }
         work_queue:
           type: object
@@ -360,7 +361,9 @@ components:
       properties:
         code: { type: string, minLength: 2, maxLength: 80 }
         name: { type: string, minLength: 3, maxLength: 180 }
-        initiative_type: { $ref: '#/components/schemas/EvidencePolicy/properties/initiative_type' }
+        initiative_type:
+          type: string
+          enum: [NEW_BRAND, NEW_COLLECTION, CATEGORY_EXPANSION, MARKET_ENTRY, PRODUCT_INNOVATION, CUSTOMER_OPPORTUNITY, CAPABILITY_LED, REPLENISHMENT, SUSTAINABILITY_IMPROVEMENT, QUALITY_IMPROVEMENT]
         stage: { type: string, enum: [RESEARCH, ASSESSMENT] }
         target_market: { type: [string, 'null'], maxLength: 160 }
         effective_from: { type: string, format: date }
@@ -395,6 +398,19 @@ components:
           required: [id]
           properties:
             id: { type: string, format: uuid }
+    EvidencePolicySummary:
+      type: object
+      required: [id, code, name, version_no, initiative_type, stage, effective_from]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        version_no: { type: integer, minimum: 1 }
+        initiative_type: { type: string }
+        stage: { type: string, enum: [RESEARCH, ASSESSMENT] }
+        target_market: { type: [string, 'null'] }
+        effective_from: { type: string, format: date }
+        effective_to: { type: [string, 'null'], format: date }
     EvidenceCoverageEnvelope:
       type: object
       required: [data]
@@ -413,7 +429,7 @@ components:
                 coverage_percent: { type: [number, 'null'] }
                 mandatory_rules: { type: integer, minimum: 0 }
                 mandatory_rules_met: { type: integer, minimum: 0 }
-                policy: { oneOf: [{ $ref: '#/components/schemas/EvidencePolicy' }, { type: 'null' }] }
+                policy: { oneOf: [{ $ref: '#/components/schemas/EvidencePolicySummary' }, { type: 'null' }] }
                 rules:
                   type: array
                   items:
