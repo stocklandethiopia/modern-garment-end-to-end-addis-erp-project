@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\TokenController;
 use App\Http\Controllers\Enterprise\LegalEntityController;
 use App\Http\Controllers\Enterprise\BusinessSiteController;
+use App\Http\Controllers\Enterprise\InventoryLocationController;
 use App\Http\Controllers\Enterprise\TenantController;
 use App\Support\TenantContext;
 use Illuminate\Http\Request;
@@ -47,5 +48,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/enterprise/sites', [BusinessSiteController::class, 'store']);
         Route::get('/enterprise/sites/{siteId}/nodes', [BusinessSiteController::class, 'nodes']);
         Route::post('/enterprise/sites/{siteId}/nodes', [BusinessSiteController::class, 'storeNode']);
+        Route::get('/enterprise/nodes/{nodeId}/inventory-locations', [InventoryLocationController::class, 'index']);
+        Route::post('/enterprise/nodes/{nodeId}/inventory-locations', [InventoryLocationController::class, 'store']);
     });
 });
