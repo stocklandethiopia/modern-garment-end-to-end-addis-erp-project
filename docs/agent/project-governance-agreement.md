@@ -21,9 +21,9 @@ It is not a generic ERP, not a cut-and-sew-only system, not merely a data-entry 
 
 These documents collectively define the current baseline. Read them before proposing or implementing a change in their subject area.
 
-1. [End-to-End Garment ERP Domain Map](product/domain-map.md) — initiative-first, 12-domain scope and complete value stream.
-2. [Apparel Business Operating System Charter](product/apparel-business-operating-system-charter.md) — garment-expert culture, design/product development, specialist manufacturing processes, line planning, industrial engineering, skill matrix, quality and continuous improvement.
-3. [Distribution Network, Order Management and Channel Commerce](product/distribution-and-channel-commerce.md) — central/regional DCs, depots, branches, own retail, wholesale, retailer/reseller, D2C, POS, transport and reverse logistics.
+1. [End-to-End Garment ERP Domain Map](../product/domain-map.md) — initiative-first, 12-domain scope and complete value stream.
+2. [Apparel Business Operating System Charter](../product/apparel-business-operating-system-charter.md) — garment-expert culture, design/product development, specialist manufacturing processes, line planning, industrial engineering, skill matrix, quality and continuous improvement.
+3. [Distribution Network, Order Management and Channel Commerce](../product/distribution-and-channel-commerce.md) — central/regional DCs, depots, branches, own retail, wholesale, retailer/reseller, D2C, POS, transport and reverse logistics.
 4. [Platform Architecture Standard](../architecture/platform-standard.md) — bounded contexts, technical stack, data ownership, API/event and tenant boundaries.
 5. [Engineering, Syntax and Code Quality Standard](../engineering/code-quality.md) — code and test quality gates.
 6. [Development, Container and Deployment Standard](../engineering/development-deployment.md) — development and release discipline.
@@ -176,5 +176,5 @@ Maintain a dated record in this document or a linked decision log for:
 
 - Product Owner requested one-goal-only project discipline, strict adherence to all approved documents/plans, numbered stepwise work, complete handover after each finalized step, and express approval before any change to the agreed baseline.
 - This document records that operating instruction. The agreement itself and its links are being added to the canonical repository and Notion project memory.
-- Current work-package position: **WP-00 — Governance and baseline control**.
-- Next package: **WP-01 — Requirements and traceability**, only after this governance handover is reviewed and accepted by the Product Owner.
+- Current work-package position: **WP-00 — Governance and baseline control**. The agreement, root agent instructions and README entry have been committed; the **WP-00 handover is submitted and awaiting Product Owner acceptance**.
+- Next package: **WP-01 — Requirements and traceability**, held until the Product Owner expressly accepts the WP-00 handover.
