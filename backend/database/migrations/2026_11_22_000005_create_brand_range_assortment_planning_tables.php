@@ -551,7 +551,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        foreach (['brand_strategy_versions', 'collection_versions', 'demand_forecast_runs', 'demand_forecasts', 'forecast_adjustments', 'otb_scenarios'] as $table) {
+        foreach (['brand_strategy_versions', 'merchandising_decisions', 'collection_versions', 'demand_forecast_runs', 'demand_forecasts', 'forecast_adjustments', 'otb_scenarios'] as $table) {
             DB::statement("DROP TRIGGER IF EXISTS {$table}_append_only ON {$table}");
         }
         DB::statement('DROP FUNCTION IF EXISTS prevent_merchandising_history_mutation()');
