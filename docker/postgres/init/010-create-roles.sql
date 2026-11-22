@@ -6,7 +6,3 @@ GRANT CONNECT ON DATABASE garment_erp TO erp_migrator, app_runtime;
 GRANT USAGE, CREATE ON SCHEMA public TO erp_migrator;
 GRANT USAGE ON SCHEMA public TO app_runtime;
 
-ALTER DEFAULT PRIVILEGES FOR ROLE erp_migrator IN SCHEMA public
-    GRANT SELECT, INSERT, UPDATE ON TABLES TO app_runtime;
-ALTER DEFAULT PRIVILEGES FOR ROLE erp_migrator IN SCHEMA public
-    GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO app_runtime;
