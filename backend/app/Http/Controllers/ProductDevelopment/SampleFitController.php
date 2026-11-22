@@ -142,7 +142,7 @@ class SampleFitController extends Controller
         $sampleRoundId = (string) Str::uuid();
         $now = now();
 
-        DB::transaction(function () use ($tenantId, $actorId, $styleId, $style, $source, $spec, $data, $requestedSizes, $sampleRequestId, $sampleRoundId, $now): void {
+        DB::transaction(function () use ($tenantId, $actorId, $styleId, $source, $spec, $data, $requestedSizes, $sampleRequestId, $sampleRoundId, $now): void {
             DB::table('sample_requests')->insert([
                 'id' => $sampleRequestId,
                 'tenant_id' => $tenantId,
