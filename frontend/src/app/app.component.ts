@@ -21,6 +21,7 @@ export class AppComponent {
     { label: 'Business sites & nodes', path: '/enterprise/sites', icon: '⌖' },
     { label: 'Initiatives & opportunities', path: '/product/initiatives', icon: '⌁' },
     { label: 'Market insight register', path: '/product/market-insights', icon: '◉' },
+    { label: 'Demand & commercial planning', path: '/product/planning-workbench', icon: '∑' },
   ];
 
   readonly domainGroups = [
