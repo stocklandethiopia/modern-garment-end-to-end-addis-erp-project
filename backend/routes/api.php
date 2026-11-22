@@ -12,6 +12,7 @@ use App\Http\Controllers\Merchandising\InitiativeController;
 use App\Http\Controllers\Merchandising\InsightSourceController;
 use App\Http\Controllers\Merchandising\MarketInsightController;
 use App\Http\Controllers\Merchandising\MerchandisingPlanningController;
+use App\Http\Controllers\Merchandising\MerchandisingReportingController;
 use App\Http\Controllers\Merchandising\OtbPlanningController;
 use App\Http\Controllers\ProductDevelopment\MeasurementPatternController;
 use App\Http\Controllers\ProductDevelopment\ProductDevelopmentController;
@@ -65,6 +66,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/enterprise/legal-entities/{entityId}/licences', [LicensingEvidenceController::class, 'listLicences']);
         Route::post('/enterprise/legal-entities/{entityId}/licences', [LicensingEvidenceController::class, 'createLicence']);
 
+        Route::get('/product/merchandising-dashboard', [MerchandisingReportingController::class, 'dashboard']);
         Route::get('/product/initiatives', [InitiativeController::class, 'index']);
         Route::post('/product/initiatives', [InitiativeController::class, 'store']);
         Route::get('/product/initiatives/{initiativeId}', [InitiativeController::class, 'show']);
