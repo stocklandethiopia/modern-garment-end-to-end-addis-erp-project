@@ -7,6 +7,7 @@ import { InitiativesComponent } from './features/merchandising/initiatives.compo
 import { MarketInsightsComponent } from './features/merchandising/market-insights.component';
 import { PlanningWorkbenchComponent } from './features/merchandising/planning-workbench.component';
 import { RangePlanningComponent } from './features/merchandising/range-planning.component';
+import { ProductDevelopmentComponent } from './features/product-development/product-development.component';
 
 export const routes: Routes = [
   { path: '', component: OverviewComponent, title: 'Overview · Modern Garment ERP' },
@@ -15,6 +16,7 @@ export const routes: Routes = [
   { path: 'product/initiatives', component: InitiativesComponent, title: 'Initiatives · Modern Garment ERP' },
   { path: 'product/market-insights', component: MarketInsightsComponent, title: 'Market insights · Modern Garment ERP' },
   { path: 'product/brand-range', component: RangePlanningComponent, title: 'Brand & range planning · Modern Garment ERP' },
+  { path: 'product/product-development', component: ProductDevelopmentComponent, title: 'Product development studio · Modern Garment ERP' },
   { path: 'product/planning-workbench', component: PlanningWorkbenchComponent, title: 'Demand & commercial planning · Modern Garment ERP' },
   { path: '**', redirectTo: '' },
 ];
