@@ -173,6 +173,8 @@ The historical Stockland ERP acceptance runbook provides useful finance/workflow
 
 Do not copy its historic/synthetic PAYE example or pension-before-tax arithmetic as an authoritative current formula. Its example predates the 2025 Income Tax Amendment and 2026 implementing regulation. Recompute the legal tax/pension basis from the current official sources and obtain local payroll review before activation.
 
+**Unresolved official clarification:** Proclamation No. 1395/2025 Article 22(3) requires a Tax Authority directive defining when digital-content creation is a business activity. The directive was not located in the official-source search completed on 22 November 2026. Regulation No. 597/2026 references the business-income test in Article 55 and provides Schedule C/Schedule D treatment. Until the Article 22(3) directive or an official Tax Authority confirmation is obtained, the creator classification workflow must remain **review required** for cases that are not unambiguously covered by the published text.
+
 ## 8. Payroll and commission integrity controls
 
 - Classification review before onboarding or first payment.
