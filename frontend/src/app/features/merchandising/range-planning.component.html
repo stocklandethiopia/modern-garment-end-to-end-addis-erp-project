@@ -272,6 +272,96 @@
           <div class="form-footer full-span"><p>Duplicate range-line allocation and invalid min/max depth are rejected by the API/database.</p><button class="primary-button" type="submit" [disabled]="saving()">Add assortment line</button></div>
         </form>
       </div>
+      @if (isExternalAccountChannel(plan.channel_code)) {
+        <div class="subsection account-terms-section">
+          <div class="subsection-heading">
+            <h3>Account-specific commercial terms</h3>
+            <p>Each wholesale, reseller, export or customer-programme assortment has its own published price-list version and independently approved terms. Contract and payment fields below are references only; they do not execute orders or payments.</p>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Version</th><th>Account / tier</th><th>Published price list</th><th>Commercial / payment references</th><th>MOQ / multiple</th><th>Effective period</th><th>Status</th><th>Actions</th></tr>
+              </thead>
+              <tbody>
+                @for (terms of accountTerms(); track terms.id) {
+                  <tr>
+                    <td>v{{ terms.version_no }}</td>
+                    <td>{{ terms.account_reference }} · {{ terms.account_tier || 'No tier' }}</td>
+                    <td>{{ terms.price_list_code }} · {{ terms.currency }}</td>
+                    <td>
+                      <strong>{{ terms.commercial_terms_reference }}</strong>
+                      <small>{{ terms.payment_terms_reference }} · {{ terms.delivery_terms_reference }}</small>
+                      @if (terms.returns_policy_reference) { <small>{{ terms.returns_policy_reference }}</small> }
+                    </td>
+                    <td class="numeric">{{ terms.minimum_order_units }} / {{ terms.order_multiple_units }}</td>
+                    <td>{{ terms.effective_from | date:'mediumDate' }} – {{ terms.effective_to ? (terms.effective_to | date:'mediumDate') : 'Open end' }}</td>
+                    <td><span class="status-pill">{{ terms.status }}</span></td>
+                    <td>
+                      @if (canSubmitAccountTerms(terms)) {
+                        <button type="button" class="text-button" (click)="submitAccountTerms(terms)" [disabled]="saving()">Submit</button>
+                      }
+                      @if (canDecideAccountTerms(terms)) {
+                        <div class="terms-actions">
+                          <button type="button" class="text-button" (click)="beginAccountTermsDecision(terms, 'APPROVE')">Approve</button>
+                          <button type="button" class="text-button danger" (click)="beginAccountTermsDecision(terms, 'REJECT')">Reject</button>
+                        </div>
+                      }
+                    </td>
+                  </tr>
+                  @if (decisionTerms()?.id === terms.id) {
+                    <tr>
+                      <td colspan="8">
+                        <form [formGroup]="accountTermsDecisionForm" (ngSubmit)="decideAccountTerms()" class="terms-decision-form">
+                          <strong>{{ termsDecision() }} account terms v{{ terms.version_no }}</strong>
+                          <label>Decision reason<textarea rows="2" formControlName="reason" minlength="10" maxlength="3000"></textarea></label>
+                          <div class="terms-actions">
+                            <button class="primary-button" type="submit" [disabled]="saving()">Record decision</button>
+                            <button class="secondary-button" type="button" (click)="cancelAccountTermsDecision()">Cancel</button>
+                          </div>
+                        </form>
+                      </td>
+                    </tr>
+                  }
+                }
+                @if (accountTerms().length === 0) {
+                  <tr><td colspan="8" class="empty-cell">No account terms have been created for this channel/customer yet.</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          @if (plan.status === 'DRAFT' && plan.account_reference) {
+            <form [formGroup]="accountTermsForm" (ngSubmit)="createAccountTerms()" class="form-grid account-terms-form">
+              <label>Matching published price list
+                <select formControlName="price_list_id">
+                  <option value="">Select published price list</option>
+                  @for (list of matchingPublishedPriceLists(plan); track list.id) {
+                    <option [value]="list.id">{{ list.code }} · v{{ list.version_no }} · {{ list.currency }} · {{ list.effective_from | date:'mediumDate' }} to {{ list.effective_to ? (list.effective_to | date:'mediumDate') : 'Open end' }}</option>
+                  }
+                </select>
+              </label>
+              <label>Account tier<input formControlName="account_tier" placeholder="GOLD / SILVER / KEY ACCOUNT"></label>
+              <label>Commercial contract / terms reference<input formControlName="commercial_terms_reference" maxlength="160" placeholder="Approved agreement reference"></label>
+              <label>Payment policy reference<input formControlName="payment_terms_reference" maxlength="120" placeholder="Reference only; no payment executed"></label>
+              <label>Delivery policy reference<input formControlName="delivery_terms_reference" maxlength="120" placeholder="Delivery policy / route reference"></label>
+              <label>Returns policy reference<input formControlName="returns_policy_reference" maxlength="120" placeholder="Optional upstream returns policy reference"></label>
+              <label>Minimum order units<input type="number" min="0" formControlName="minimum_order_units"></label>
+              <label>Order multiple units<input type="number" min="1" formControlName="order_multiple_units"></label>
+              <label>Terms effective from<input type="date" formControlName="effective_from"></label>
+              <label>Terms effective to<input type="date" formControlName="effective_to"></label>
+              <label class="full-span">Change reason<textarea rows="2" formControlName="change_reason" minlength="10" maxlength="3000"></textarea></label>
+              <div class="form-footer full-span">
+                <p>Only a published price list matching this assortment's tenant, brand, channel, market, account and effective window is accepted. Submitted terms are immutable and require a different owner/admin to approve. No contract is generated, order placed or payment processed.</p>
+                <button class="primary-button" type="submit" [disabled]="saving() || matchingPublishedPriceLists(plan).length === 0">Save account terms draft</button>
+              </div>
+            </form>
+          } @else if (!plan.account_reference) {
+            <div class="empty-state"><strong>Account reference required</strong><p>Assign this assortment to a wholesale/reseller/export/customer-programme account before configuring account-specific terms.</p></div>
+          }
+        </div>
+      }
     </section>
   }
 }
