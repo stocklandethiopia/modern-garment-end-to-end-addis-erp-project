@@ -1,5 +1,5 @@
 -- Local/CI-only database roles. Replace credentials through your deployment secret manager in real environments.
-CREATE ROLE erp_migrator LOGIN PASSWORD 'local-migrator-password' NOSUPERUSER NOCREATEDB NOCREATEROLE;
+CREATE ROLE erp_migrator LOGIN PASSWORD 'local-migrator-password' NOSUPERUSER NOCREATEDB NOCREATEROLE BYPASSRLS;
 CREATE ROLE app_runtime LOGIN PASSWORD 'local-runtime-password' NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;
 CREATE ROLE erp_test_admin LOGIN PASSWORD 'local-test-admin-password' NOSUPERUSER NOCREATEDB NOCREATEROLE BYPASSRLS;
 
