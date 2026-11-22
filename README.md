@@ -43,21 +43,16 @@ Exact supported patch versions are recorded in the platform standard and must be
 
 ## Application foundation — CI verified
 
-The executable **WP-03 enterprise/platform foundation** is implemented and verified by GitHub Actions run [#190](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45016393009) on commit `6e231926762f6fb8f6891b30677f1ddf17bfa716`.
+The executable **WP-03 enterprise/platform foundation** and the current **WP-04 implemented backend slice** are verified by two successful GitHub Actions runs: [#288](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45025072785) and [#289](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45025076840), both on commit `6ea74813d79ebdf0a4cfd2e5912373c3daad395c`.
 
-- Laravel API: health, Sanctum token issue/revoke, authenticated tenant selection, tenant context and draft legal-entity/site/node/licence/branch/inventory-location onboarding.
-- PostgreSQL 18: tenant and enterprise tables, composite tenant-scoped foreign keys, forced RLS, restricted runtime grants and append-only audit events.
-- Angular 22: login, tenant selection, overview/API health and enterprise setup screens.
-- Local PostgreSQL/Redis Compose, interactive first-owner provisioning and setup guide.
+- Laravel 13 API: health, Sanctum token issue/revoke, authenticated tenant selection, tenant context, legal-entity/site/node/licence/branch/inventory-location onboarding, initiatives, insight sources and market insights, brand strategies, seasons, collections and version approvals, range plans/lines/freeze, assortment plans/lines.
+- PostgreSQL 18: tenant-composite foreign keys, forced RLS, restricted runtime grants, append-only audit and evidence, immutable strategy/collection version histories, approved-decision records, 24 named PostgreSQL CHECK constraints and merchandising schema.
+- Angular 22: login, tenant selection, overview/API health, enterprise setup, initiative pipeline/detail and market-insight source/evidence screens.
+- Local PostgreSQL/Redis Compose, interactive first-owner provisioning, PHP/Node lockfiles and setup guide.
 
-The first **WP-04 business vertical slice** (initiative lifecycle and sourced market insights) is now implemented and verified by clean GitHub Actions run [#257](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45018051606) on commit `4c963e730dad9565cfbef6a5c6579d1e5001f193`:
-- PostgreSQL initiative/version/decision/source/insight schema with tenant isolation, constraints and append-only evidence.
-- Laravel APIs for draft initiative, screening, independent approval, research evidence and assessment gate.
-- Angular initiative pipeline/detail and market insight source/evidence screens.
-- Backend: Composer validation/audit, Pint/PHP syntax, migrations, **32 PHPUnit tests / 165 assertions — passed**.
-- Frontend: dependency audit, Angular unit tests and production build — passed.
+**Latest CI evidence:** Composer validation and audit, Pint, PHP syntax, PostgreSQL migrations executed as the restricted `erp_migrator`, **35 PHPUnit tests / 213 assertions — passed**, npm dependency audit, Angular unit tests and production build all passed on PHP 8.5.13 / PostgreSQL 18.7 / Node 26.13.1.
 
-**Important:** This remains an incremental ERP implementation, not the finished garment operating system. WP-04 still needs brand, season, collection, range, assortment, forecasting, OTB, pricing and promotions; WP-05–WP-15 domain runtimes are also pending. Full E2E-001–E2E-008, security/performance hardening, staging/UAT, backup/restore rehearsal and production release are not complete. Pull request [#1](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/pull/1) remains draft and unmerged; `main` is unchanged.
+**Scope still pending:** brand/season/collection/range/assortment Angular screens; WP-04 forecast/OTB/pricing/promotion services and complete commercial acceptance; WP-05–WP-15 runtime domain modules; full E2E-001–E2E-008, security/performance hardening, backup/restore rehearsal, staging/UAT and production release. Pull request [#1](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/pull/1) remains draft and unmerged; `main` is unchanged.
 
 - [Local development guide](docs/development/local-development.md)
 - [Laravel backend](backend/)
@@ -95,4 +90,4 @@ A feature is not complete because a screen exists. It must include its business 
 
 ## Current status
 
-This initial repository foundation records the architecture and quality standard. It is not yet a runnable ERP application, production installer or deployable SaaS release. Application modules will be delivered incrementally as tested vertical slices.
+The repository now contains a runnable **development foundation** and CI-verified executable slices for enterprise onboarding and early merchandising workflows. It is **not** a finished end-to-end ERP, production installer, UAT-approved system or deployable SaaS release. Continue delivering the approved WP-04 and WP-05–WP-16 workflows as tested vertical slices; never describe a design document or a passing foundation build as proof of full business-process completion.
