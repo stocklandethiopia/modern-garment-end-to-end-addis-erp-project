@@ -504,4 +504,227 @@ class BrandRangeWorkflowTest extends TestCase
             ->getJson('/api/v1/product/assortment-plans/'.Str::uuid().'/lines')
             ->assertNotFound();
     }
+
+    public function test_approved_range_line_requires_an_accepted_brief_before_version_pinned_style_development(): void
+    {
+        $brandId = $this->createApprovedBrand();
+
+        $season = $this->withHeaders($this->tenantHeader())->postJson('/api/v1/product/seasons', [
+            'code' => 'PLM-SEASON-'.Str::upper(Str::random(4)),
+            'name' => 'Product development season',
+            'calendar_type' => 'FASHION',
+            'timezone' => 'Africa/Addis_Ababa',
+        ])->assertCreated();
+
+        $collection = $this->withHeaders($this->tenantHeader())->postJson('/api/v1/product/collections', [
+            'brand_id' => $brandId,
+            'season_id' => $season->json('data.id'),
+            'code' => 'PLM-COLLECTION-'.Str::upper(Str::random(4)),
+            'name' => 'Product development collection',
+            'target_market' => 'Ethiopia',
+        ])->assertCreated();
+        $collectionId = $collection->json('data.id');
+
+        $collectionVersion = $this->withHeaders($this->tenantHeader())->postJson('/api/v1/product/collections/'.$collectionId.'/versions', [
+            'story' => 'Functional everyday garments designed for local climate and use.',
+            'target_consumer' => 'Urban adults seeking durable clothing.',
+            'category_architecture' => ['CASUALWEAR'],
+            'price_margin_envelope' => ['currency' => 'ETB', 'margin_floor' => 25],
+            'change_reason' => 'Approve the seasonal product architecture for development.',
+        ])->assertCreated();
+
+        $this->actAsApprover();
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product/collections/'.$collectionId.'/versions/'.$collectionVersion->json('data.id').'/approve', [])
+            ->assertOk();
+        $this->actAsOwner();
+
+        $range = $this->withHeaders($this->tenantHeader())->postJson('/api/v1/product/range-plans', [
+            'collection_id' => $collectionId,
+            'collection_version' => 1,
+            'code' => 'PLM-RANGE-'.Str::upper(Str::random(4)),
+            'plan_start' => '2027-01-01',
+            'plan_end' => '2027-03-31',
+        ])->assertCreated();
+
+        $rangePlanId = $range->json('data.id');
+        $line = $this->withHeaders($this->tenantHeader())->postJson('/api/v1/product/range-plans/'.$rangePlanId.'/lines', [
+            'line_code' => 'PLM-STYLE-FAMILY-01',
+            'category_code' => 'CASUALWEAR',
+            'product_hypothesis' => 'An everyday overshirt with durable construction and versatile use.',
+            'planned_units' => 500,
+            'channel_scope' => ['OWN_RETAIL', 'WHOLESALE'],
+            'size_colour_intent' => ['sizes' => ['S', 'M', 'L'], 'colours' => ['NAVY', 'OLIVE']],
+            'lifecycle_type' => 'NEW',
+            'forecast_basis' => 'Initial range hypothesis pending product development validation.',
+        ])->assertCreated();
+
+        $briefPayload = [
+            'range_line_id' => $line->json('data.id'),
+            'target_consumer' => 'Urban adults needing durable everyday garments.',
+            'product_need' => 'A versatile overshirt that handles daily wear and repeated laundering.',
+            'intended_use' => 'Daily commuting, casual work and weekend wear.',
+            'target_price' => 1800,
+            'target_cost' => 720,
+            'target_currency' => 'ETB',
+            'quality_tier' => 'GOOD',
+            'delivery_need_by' => '2027-03-15',
+            'sustainability_intent' => ['Prefer traceable fibre sources', 'Minimize avoidable cutting waste'],
+            'change_reason' => 'Initial development brief linked to an approved frozen range line.',
+        ];
+
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product-briefs', $briefPayload)
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'A product brief requires a frozen range line from the current approved collection and an active brand strategy.');
+
+        $this->actAsApprover();
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product/range-plans/'.$rangePlanId.'/freeze', [])
+            ->assertOk();
+        $this->actAsOwner();
+
+        $brief = $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product-briefs', $briefPayload)
+            ->assertCreated()
+            ->assertJsonPath('data.status', 'DRAFT')
+            ->assertJsonPath('data.current_version', 1)
+            ->assertJsonPath('data.accepted_version', null);
+        $briefId = $brief->json('data.id');
+
+        $this->withHeaders($this->tenantHeader())->getJson('/api/v1/product-briefs')
+            ->assertOk()
+            ->assertJsonPath('data.data.0.id', $briefId)
+            ->assertJsonPath('data.data.0.line_code', 'PLM-STYLE-FAMILY-01');
+
+        $stylePayload = [
+            'product_brief_id' => $briefId,
+            'style_code' => 'PLM-STYLE-001',
+            'name' => 'Everyday overshirt',
+            'category_code' => 'CASUALWEAR',
+            'design_direction' => 'A clean, versatile overshirt with a practical everyday silhouette.',
+            'silhouette' => 'Relaxed straight fit',
+            'fit_intent' => 'Allow comfortable movement over a light base layer.',
+            'construction_intent' => 'Use durable seams and reinforced stress points suitable for repeated wear.',
+            'material_direction' => ['preferred_fibre' => 'Cotton blend', 'handle' => 'Midweight, breathable'],
+            'colour_direction' => ['core' => ['NAVY', 'OLIVE']],
+            'target_size_range' => ['system' => 'TENANT_DEFINED', 'sizes' => ['S', 'M', 'L']],
+            'change_summary' => 'Initial creative and fit direction for the accepted product brief.',
+        ];
+
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/styles', $stylePayload)
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'A style can only be created from the currently accepted product brief version.');
+
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product-briefs/'.$briefId.'/submit', [])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'SUBMITTED_FOR_REVIEW');
+
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product-briefs/'.$briefId.'/decisions', [
+                'decision' => 'ACCEPT',
+                'reason' => 'The brief creator cannot accept their own development request.',
+            ])
+            ->assertForbidden();
+
+        $this->actAsApprover();
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product-briefs/'.$briefId.'/decisions', [
+                'decision' => 'ACCEPT',
+                'reason' => 'The commercial and consumer need is clear enough to authorize product development.',
+                'actions' => ['Validate fit and construction during sample review'],
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'ACCEPTED')
+            ->assertJsonPath('data.accepted_version', 1);
+        $this->actAsOwner();
+
+        $style = $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/styles', $stylePayload)
+            ->assertCreated()
+            ->assertJsonPath('data.status', 'DESIGN_IN_PROGRESS')
+            ->assertJsonPath('data.current_revision', 1)
+            ->assertJsonPath('data.product_brief_version', 1);
+        $styleId = $style->json('data.id');
+
+        $this->withHeaders($this->tenantHeader())->getJson('/api/v1/styles/'.$styleId)
+            ->assertOk()
+            ->assertJsonPath('data.product_brief_version', 1)
+            ->assertJsonCount(1, 'revisions')
+            ->assertJsonPath('revisions.0.revision_no', 1);
+
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/styles/'.$styleId.'/revisions', [
+                'design_direction' => 'Refined everyday overshirt with reduced bulk at high-movement points.',
+                'silhouette' => 'Relaxed straight fit, refined shoulder balance',
+                'fit_intent' => 'Maintain ease through shoulder and chest while improving sleeve movement.',
+                'construction_intent' => 'Reinforce pocket corners and stress points while controlling seam bulk.',
+                'material_direction' => ['preferred_fibre' => 'Cotton blend', 'weight_target' => 'Midweight'],
+                'colour_direction' => ['core' => ['NAVY'], 'seasonal' => ['OLIVE']],
+                'target_size_range' => ['system' => 'TENANT_DEFINED', 'sizes' => ['S', 'M', 'L', 'XL']],
+                'change_summary' => 'Refine shoulder balance and reinforce high-stress construction points.',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.current_revision', 2);
+
+        $this->withHeaders($this->tenantHeader())->getJson('/api/v1/styles')
+            ->assertOk()
+            ->assertJsonPath('data.data.0.latest_revision_no', 2);
+        $this->withHeaders($this->tenantHeader())->getJson('/api/v1/styles/'.$styleId)
+            ->assertOk()
+            ->assertJsonCount(2, 'revisions')
+            ->assertJsonPath('revisions.0.revision_no', 2)
+            ->assertJsonPath('revisions.1.revision_no', 1);
+
+        $versionPayload = $briefPayload;
+        unset($versionPayload['range_line_id']);
+        $versionPayload['target_consumer'] = 'Urban adults seeking longer-wear garments.';
+        $versionPayload['product_need'] = 'A versatile overshirt with improved movement and lower lifecycle impact.';
+        $versionPayload['change_reason'] = 'Revise the development brief after initial design review feedback.';
+
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product-briefs/'.$briefId.'/versions', $versionPayload)
+            ->assertOk()
+            ->assertJsonPath('data.current_version', 2)
+            ->assertJsonPath('data.accepted_version', 1)
+            ->assertJsonPath('data.status', 'DRAFT');
+
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/styles', array_merge($stylePayload, ['style_code' => 'PLM-STYLE-002']))
+            ->assertUnprocessable();
+
+        $this->withHeaders($this->tenantHeader())
+            ->getJson('/api/v1/styles/'.$styleId)
+            ->assertOk()
+            ->assertJsonPath('data.product_brief_version', 1)
+            ->assertJsonCount(2, 'revisions');
+
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product-briefs/'.$briefId.'/submit', [])
+            ->assertOk();
+
+        $this->actAsApprover();
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product-briefs/'.$briefId.'/decisions', [
+                'decision' => 'ACCEPT',
+                'reason' => 'The revised product need and use case are acceptable for a new style.',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.accepted_version', 2);
+        $this->actAsOwner();
+
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/styles', array_merge($stylePayload, ['style_code' => 'PLM-STYLE-002']))
+            ->assertCreated()
+            ->assertJsonPath('data.product_brief_version', 2);
+
+        $this->withHeaders($this->tenantHeader())->getJson('/api/v1/product-briefs/'.$briefId)
+            ->assertOk()
+            ->assertJsonCount(2, 'versions')
+            ->assertJsonCount(2, 'decisions')
+            ->assertJsonCount(2, 'styles');
+    }
+
 }
