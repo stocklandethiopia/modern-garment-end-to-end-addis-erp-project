@@ -185,7 +185,6 @@ return new class extends Migration
 
         // Audit events are append-only. The trigger and SQL grants both deny mutation.
         DB::statement('GRANT SELECT, INSERT ON audit_events TO app_runtime');
-        DB::statement('REVOKE ALL ON migrations FROM app_runtime');
 
         // Tenant roots are visible only for the selected tenant or to a user
         // with an active membership. This protects the tenant selector itself.
