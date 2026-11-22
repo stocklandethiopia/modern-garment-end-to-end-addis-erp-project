@@ -167,6 +167,12 @@ Therefore:
 - Product-in-kind/barter, free product, affiliate and sponsorship income need treatment from the full current legal text and approved interpretation.
 - Do not hard-code this note as a legal calculation engine; require a reviewed tax classification rule, current directive and accountant sign-off.
 
+### Internal ERP comparison — what to reuse and what not to reuse
+
+The historical Stockland ERP acceptance runbook provides useful finance/workflow patterns: separate PO, AP supplier invoice, AR customer balance, stock movement, balanced GL journal and audit evidence; independent approval; actual warehouse receipt quantity and documented variance; idempotent inventory posting; and location-scoped finance views. These are process controls to consider, not a reason to copy its legacy database schema or customer-specific workflow unchanged.
+
+Do not copy its historic/synthetic PAYE example or pension-before-tax arithmetic as an authoritative current formula. Its example predates the 2025 Income Tax Amendment and 2026 implementing regulation. Recompute the legal tax/pension basis from the current official sources and obtain local payroll review before activation.
+
 ## 8. Payroll and commission integrity controls
 
 - Classification review before onboarding or first payment.
