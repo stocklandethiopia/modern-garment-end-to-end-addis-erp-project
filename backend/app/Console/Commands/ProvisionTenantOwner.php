@@ -28,7 +28,7 @@ class ProvisionTenantOwner extends Command
             return self::FAILURE;
         }
 
-        if (DB::connection('pgsql_admin')->table('users')->where('email', $email)->exists()) {
+        if ($connection->table('users')->where('email', $email)->exists()) {
             $this->error('This email is already registered.');
             return self::FAILURE;
         }
@@ -43,9 +43,25 @@ class ProvisionTenantOwner extends Command
 
         $tenantId = (string) Str::uuid();
         $userId = (string) Str::uuid();
+        $ownerName = trim((string) $this->ask('Owner full name'));
+        if ($ownerName === '' || mb_strlen($ownerName) > 160) {
+            $this->error('Owner full name is required and must not exceed 160 characters.');
+            return self::FAILURE;
+        }
+
         $now = now();
 
-        $connection->transaction(function () use ($connection, $tenantId, $userId, $email, $password, $now): void {
+        $connection->transaction(function () use ($connection, $tenantId, $userId, $email, $password, $ownerName, $now): void {
+            $connection->select("select pg_advisory_xact_lock(hashtext('modern-garment-erp-initial-owner'))");
+
+            if ($connection->table('tenants')->exists()) {
+                throw new \\RuntimeException('A tenant was provisioned by another process.');
+            }
+
+            if ($connection->table('users')->where('email', $email)->exists()) {
+                throw new \\RuntimeException('This owner email is already registered.');
+            }
+
             $connection->table('tenants')->insert([
                 'id' => $tenantId,
                 'code' => $this->argument('tenant_code'),
@@ -61,7 +77,7 @@ class ProvisionTenantOwner extends Command
 
             $connection->table('users')->insert([
                 'id' => $userId,
-                'name' => $this->ask('Owner full name'),
+                'name' => $ownerName,
                 'email' => $email,
                 'password' => Hash::make($password),
                 'status' => 'ACTIVE',
