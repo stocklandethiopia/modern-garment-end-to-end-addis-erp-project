@@ -121,6 +121,17 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/product/promotions', [CommercialPricingController::class, 'promotions']);
         Route::post('/product/promotions', [CommercialPricingController::class, 'createPromotion']);
         Route::post('/product/promotions/{promotionId}/eligibility', [CommercialPricingController::class, 'addPromotionEligibility']);
+        Route::get('/product-briefs', [ProductDevelopmentController::class, 'productBriefs']);
+        Route::post('/product-briefs', [ProductDevelopmentController::class, 'createProductBrief']);
+        Route::get('/product-briefs/{productBriefId}', [ProductDevelopmentController::class, 'showProductBrief']);
+        Route::post('/product-briefs/{productBriefId}/versions', [ProductDevelopmentController::class, 'createProductBriefVersion']);
+        Route::post('/product-briefs/{productBriefId}/submit', [ProductDevelopmentController::class, 'submitProductBrief']);
+        Route::post('/product-briefs/{productBriefId}/decisions', [ProductDevelopmentController::class, 'decideProductBrief']);
+
+        Route::get('/styles', [ProductDevelopmentController::class, 'styles']);
+        Route::post('/styles', [ProductDevelopmentController::class, 'createStyle']);
+        Route::get('/styles/{styleId}', [ProductDevelopmentController::class, 'showStyle']);
+        Route::post('/styles/{styleId}/revisions', [ProductDevelopmentController::class, 'createStyleRevision']);
         Route::post('/product/promotions/{promotionId}/approve', [CommercialPricingController::class, 'approvePromotion']);
     });
 });
