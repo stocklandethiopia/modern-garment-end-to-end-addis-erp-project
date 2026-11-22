@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 
@@ -12,7 +12,7 @@ import { LegalEntity, LegalEntityService } from './legal-entity.service';
   templateUrl: './legal-entities.component.html',
   styleUrl: './legal-entities.component.css',
 })
-export class LegalEntitiesComponent implements OnInit {
+export class LegalEntitiesComponent {
   private readonly api = inject(LegalEntityService);
   readonly session = inject(AuthSessionService);
 
@@ -22,6 +22,21 @@ export class LegalEntitiesComponent implements OnInit {
   readonly showForm = signal(false);
   readonly errorMessage = signal<string | null>(null);
   readonly successMessage = signal<string | null>(null);
+  private requestSequence = 0;
+
+  private readonly tenantReloadEffect = effect(() => {
+    const tenantId = this.session.activeTenant()?.id;
+    this.requestSequence += 1;
+    this.entities.set([]);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    if (tenantId) {
+      this.load(tenantId, this.requestSequence);
+    } else {
+      this.loading.set(false);
+    }
+  });
 
   readonly canManage = computed(() => {
     const role = this.session.activeTenant()?.membership_role;
@@ -55,20 +70,31 @@ export class LegalEntitiesComponent implements OnInit {
     }),
   });
 
-  ngOnInit(): void {
-    this.load();
-  }
+  load(expectedTenantId?: string, expectedSequence?: number): void {
+    const tenantId = expectedTenantId ?? this.session.activeTenant()?.id;
+    if (!tenantId) {
+      this.entities.set([]);
+      this.loading.set(false);
+      return;
+    }
 
-  load(): void {
+    const requestSequence = expectedSequence ?? ++this.requestSequence;
     this.loading.set(true);
     this.errorMessage.set(null);
 
     this.api.list().subscribe({
       next: (response) => {
+        if (requestSequence !== this.requestSequence || this.session.activeTenant()?.id !== tenantId) {
+          return;
+        }
         this.entities.set(response.data);
         this.loading.set(false);
       },
       error: () => {
+        if (requestSequence !== this.requestSequence || this.session.activeTenant()?.id !== tenantId) {
+          return;
+        }
+        this.entities.set([]);
         this.errorMessage.set('Legal entities could not be loaded. Check your tenant access and API connection.');
         this.loading.set(false);
       },
