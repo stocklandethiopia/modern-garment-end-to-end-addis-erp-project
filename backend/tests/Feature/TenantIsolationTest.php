@@ -14,6 +14,8 @@ class TenantIsolationTest extends TestCase
     private string $tenantA;
     private string $tenantB;
     private string $userId;
+    private string $legalEntityA;
+    private string $legalEntityB;
 
     protected function setUp(): void
     {
@@ -61,8 +63,15 @@ class TenantIsolationTest extends TestCase
         ]);
 
         foreach ([$this->tenantA => 'A Entity', $this->tenantB => 'B Entity'] as $tenantId => $name) {
+            $entityId = (string) Str::uuid();
+            if ($tenantId === $this->tenantA) {
+                $this->legalEntityA = $entityId;
+            } else {
+                $this->legalEntityB = $entityId;
+            }
+
             $admin->table('legal_entities')->insert([
-                'id' => (string) Str::uuid(),
+                'id' => $entityId,
                 'tenant_id' => $tenantId,
                 'registration_number' => 'REG-'.$tenantId,
                 'legal_name' => $name,
@@ -230,6 +239,128 @@ class TenantIsolationTest extends TestCase
         $this->assertFalse($privileges->can_update_audit);
         $this->assertTrue($privileges->can_revoke_token);
         $this->assertTrue($privileges->can_update_token_last_used);
+    }
+
+    public function test_tenant_admin_can_create_a_draft_business_site_and_audit_event(): void
+    {
+        $response = $this->withHeader('X-Tenant-Id', $this->tenantA)
+            ->postJson('/api/v1/enterprise/sites', [
+                'legal_entity_id' => $this->legalEntityA,
+                'code' => 'FACTORY-ADDIS-01',
+                'site_type' => 'FACTORY_CAMPUS',
+                'name' => 'Addis Apparel Factory Campus',
+                'country_code' => 'ET',
+                'region' => 'Addis Ababa',
+                'city' => 'Addis Ababa',
+                'address_line' => 'Test industrial area',
+                'timezone' => 'Africa/Addis_Ababa',
+            ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.status', 'DRAFT')
+            ->assertJsonPath('data.legal_entity_id', $this->legalEntityA);
+
+        $siteId = $response->json('data.id');
+        $audit = DB::connection('pgsql_test_admin')->table('audit_events')
+            ->where('tenant_id', $this->tenantA)
+            ->where('object_type', 'BUSINESS_SITE')
+            ->where('object_id', $siteId)
+            ->first();
+
+        $this->assertNotNull($audit);
+        $this->assertSame('BUSINESS_SITE_DRAFT_CREATED', $audit->action);
+    }
+
+    public function test_business_site_cannot_reference_another_tenants_legal_entity(): void
+    {
+        $this->withHeader('X-Tenant-Id', $this->tenantA)
+            ->postJson('/api/v1/enterprise/sites', [
+                'legal_entity_id' => $this->legalEntityB,
+                'code' => 'CROSS-TENANT-SITE',
+                'site_type' => 'FACTORY_CAMPUS',
+                'name' => 'Cross Tenant Site',
+                'country_code' => 'ET',
+                'timezone' => 'Africa/Addis_Ababa',
+            ])
+            ->assertUnprocessable();
+    }
+
+    public function test_branch_node_does_not_hold_stock_by_default(): void
+    {
+        $siteId = (string) Str::uuid();
+        $now = now();
+        DB::connection('pgsql_test_admin')->table('business_sites')->insert([
+            'id' => $siteId,
+            'tenant_id' => $this->tenantA,
+            'legal_entity_id' => $this->legalEntityA,
+            'code' => 'BRANCH-SITE-01',
+            'site_type' => 'STORE_PREMISES',
+            'name' => 'Retail Branch Premises',
+            'country_code' => 'ET',
+            'timezone' => 'Africa/Addis_Ababa',
+            'status' => 'DRAFT',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        $response = $this->withHeader('X-Tenant-Id', $this->tenantA)
+            ->postJson('/api/v1/enterprise/sites/'.$siteId.'/nodes', [
+                'code' => 'BRANCH-01',
+                'node_type' => 'BRANCH',
+                'name' => 'Branch One',
+            ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.stock_holding_enabled', false)
+            ->assertJsonPath('data.status', 'DRAFT');
+    }
+
+    public function test_branch_node_cannot_be_configured_as_stock_holding(): void
+    {
+        $siteId = (string) Str::uuid();
+        $now = now();
+        DB::connection('pgsql_test_admin')->table('business_sites')->insert([
+            'id' => $siteId,
+            'tenant_id' => $this->tenantA,
+            'legal_entity_id' => $this->legalEntityA,
+            'code' => 'BRANCH-SITE-02',
+            'site_type' => 'STORE_PREMISES',
+            'name' => 'Branch Two Premises',
+            'country_code' => 'ET',
+            'timezone' => 'Africa/Addis_Ababa',
+            'status' => 'DRAFT',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        $this->withHeader('X-Tenant-Id', $this->tenantA)
+            ->postJson('/api/v1/enterprise/sites/'.$siteId.'/nodes', [
+                'code' => 'BRANCH-02',
+                'node_type' => 'BRANCH',
+                'name' => 'Branch Two',
+                'stock_holding_enabled' => true,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('stock_holding_enabled');
+    }
+
+    public function test_non_admin_member_cannot_create_business_site(): void
+    {
+        DB::connection('pgsql_test_admin')->table('tenant_memberships')
+            ->where('tenant_id', $this->tenantA)
+            ->where('user_id', $this->userId)
+            ->update(['membership_role' => 'MEMBER']);
+
+        $this->withHeader('X-Tenant-Id', $this->tenantA)
+            ->postJson('/api/v1/enterprise/sites', [
+                'legal_entity_id' => $this->legalEntityA,
+                'code' => 'MEMBER-SITE-01',
+                'site_type' => 'OFFICE',
+                'name' => 'Member Site',
+                'country_code' => 'ET',
+                'timezone' => 'Africa/Addis_Ababa',
+            ])
+            ->assertForbidden();
     }
 
 }
