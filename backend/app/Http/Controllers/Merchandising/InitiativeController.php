@@ -261,8 +261,12 @@ class InitiativeController extends Controller
         ]);
     }
 
-    public function decide(string $initiativeId, Request $request, TenantContext $tenantContext): JsonResponse
-    {
+    public function decide(
+        string $initiativeId,
+        Request $request,
+        TenantContext $tenantContext,
+        EvidenceSufficiencyService $evidenceSufficiency,
+    ): JsonResponse {
         abort_unless($tenantContext->canAdministerTenant(), 403, 'Tenant owner or admin approval is required.');
 
         $tenantId = $tenantContext->tenantId();
@@ -282,7 +286,13 @@ class InitiativeController extends Controller
             'review_date' => ['nullable', 'date'],
         ]);
 
-        $initiative = DB::transaction(function () use ($initiativeId, $tenantId, $actorId, $data): object {
+        $result = DB::transaction(function () use (
+            $initiativeId,
+            $tenantId,
+            $actorId,
+            $data,
+            $evidenceSufficiency,
+        ): array {
             $initiative = DB::table('initiatives')
                 ->where('tenant_id', $tenantId)
                 ->where('id', $initiativeId)
@@ -311,6 +321,17 @@ class InitiativeController extends Controller
 
             abort_if($nextStatus === null, 422, 'This decision is not allowed at the current initiative stage.');
 
+            $evidenceCoverage = null;
+            if ($stage === 'SCREENING' && $data['decision'] === 'APPROVE_RESEARCH') {
+                $evidenceCoverage = $evidenceSufficiency->evaluate($tenantId, $initiative, 'RESEARCH');
+
+                abort_unless(
+                    in_array($evidenceCoverage['status'], ['NOT_CONFIGURED', 'MET'], true),
+                    422,
+                    'Configured research evidence requirements are not satisfied.',
+                );
+            }
+
             DB::table('initiative_decisions')->insert([
                 'id' => (string) Str::uuid(),
                 'tenant_id' => $tenantId,
@@ -332,10 +353,21 @@ class InitiativeController extends Controller
 
             $this->writeAudit($tenantId, $actorId, 'INITIATIVE_DECISION_RECORDED', 'INITIATIVE', $initiativeId, $data['reason']);
 
-            return DB::table('initiatives')->where('tenant_id', $tenantId)->where('id', $initiativeId)->first();
+            return [
+                'initiative' => DB::table('initiatives')
+                    ->where('tenant_id', $tenantId)
+                    ->where('id', $initiativeId)
+                    ->first(),
+                'evidence_coverage' => $evidenceCoverage,
+            ];
         });
 
-        return response()->json(['data' => $initiative]);
+        $response = ['data' => $result['initiative']];
+        if ($result['evidence_coverage'] !== null) {
+            $response['evidence_coverage'] = $result['evidence_coverage'];
+        }
+
+        return response()->json($response);
     }
 
     private function writeAudit(
