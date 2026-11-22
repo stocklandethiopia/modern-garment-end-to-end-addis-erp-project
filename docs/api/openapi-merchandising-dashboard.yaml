@@ -41,6 +41,127 @@ paths:
           description: Authenticated actor lacks ERP access or selected tenant membership.
         '422':
           description: Tenant selection header is missing or invalid.
+  /api/v1/product/evidence-policies:
+    get:
+      operationId: listEvidencePolicies
+      summary: List tenant-scoped versioned evidence policies
+      security:
+        - sanctumBearer: []
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: Paginated tenant policy register.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvidencePolicyPageEnvelope'
+        '401': { description: Authentication required. }
+        '403': { description: Tenant membership or ERP scope denied. }
+    post:
+      operationId: createEvidencePolicyDraft
+      summary: Create a new evidence policy version in draft state
+      description: >
+        Tenant owner/administrator only. Rules are configurable per initiative
+        type, stage and optional target market. No universal threshold is
+        assumed. At least one rule must be mandatory; minimum distinct sources
+        cannot exceed minimum records.
+      security:
+        - sanctumBearer: []
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvidencePolicyInput'
+      responses:
+        '201':
+          description: Draft policy and rules created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvidencePolicyEnvelope'
+        '403': { description: Tenant owner/administrator required. }
+        '422': { description: Validation or policy scope error. }
+  /api/v1/product/evidence-policies/{policyId}/submit:
+    post:
+      operationId: submitEvidencePolicy
+      summary: Freeze a draft policy and submit it for independent approval
+      security:
+        - sanctumBearer: []
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - name: policyId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Policy enters PENDING_APPROVAL; rule content is frozen.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvidencePolicyEnvelope'
+        '403': { description: Only the author or tenant owner/administrator may submit. }
+        '422': { description: Policy is not a draft or has no mandatory rules. }
+  /api/v1/product/evidence-policies/{policyId}/decisions:
+    post:
+      operationId: decideEvidencePolicy
+      summary: Independently approve or reject a submitted evidence policy
+      security:
+        - sanctumBearer: []
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - name: policyId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision, reason]
+              properties:
+                decision: { type: string, enum: [APPROVE, REJECT] }
+                reason: { type: string, minLength: 10, maxLength: 5000 }
+      responses:
+        '200':
+          description: Immutable append-only maker-checker decision recorded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvidencePolicyEnvelope'
+        '403': { description: Tenant owner/administrator required; author cannot decide own policy. }
+        '422': { description: Policy is not pending or an approved effective scope already overlaps. }
+  /api/v1/product/initiatives/{initiativeId}/evidence-coverage:
+    get:
+      operationId: getInitiativeEvidenceCoverage
+      summary: Evaluate the initiative against its matching effective approved evidence policy
+      security:
+        - sanctumBearer: []
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - name: initiativeId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: stage
+          in: query
+          required: false
+          schema: { type: string, enum: [RESEARCH, ASSESSMENT], default: ASSESSMENT }
+      responses:
+        '200':
+          description: Per-initiative rule status, denominators and evidence gaps.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvidenceCoverageEnvelope'
+        '404': { description: Initiative is not in the selected tenant. }
+
 components:
   securitySchemes:
     sanctumBearer:
@@ -185,127 +306,6 @@ components:
         key: { type: string }
         reason: { type: string }
         dependency: { type: string }
-
-  /api/v1/product/evidence-policies:
-    get:
-      operationId: listEvidencePolicies
-      summary: List tenant-scoped versioned evidence policies
-      security:
-        - sanctumBearer: []
-      parameters:
-        - $ref: '#/components/parameters/TenantId'
-      responses:
-        '200':
-          description: Paginated tenant policy register.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EvidencePolicyPageEnvelope'
-        '401': { description: Authentication required. }
-        '403': { description: Tenant membership or ERP scope denied. }
-    post:
-      operationId: createEvidencePolicyDraft
-      summary: Create a new evidence policy version in draft state
-      description: >
-        Tenant owner/administrator only. Rules are configurable per initiative
-        type, stage and optional target market. No universal threshold is
-        assumed. At least one rule must be mandatory; minimum distinct sources
-        cannot exceed minimum records.
-      security:
-        - sanctumBearer: []
-      parameters:
-        - $ref: '#/components/parameters/TenantId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/EvidencePolicyInput'
-      responses:
-        '201':
-          description: Draft policy and rules created.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EvidencePolicyEnvelope'
-        '403': { description: Tenant owner/administrator required. }
-        '422': { description: Validation or policy scope error. }
-  /api/v1/product/evidence-policies/{policyId}/submit:
-    post:
-      operationId: submitEvidencePolicy
-      summary: Freeze a draft policy and submit it for independent approval
-      security:
-        - sanctumBearer: []
-      parameters:
-        - $ref: '#/components/parameters/TenantId'
-        - name: policyId
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      responses:
-        '200':
-          description: Policy enters PENDING_APPROVAL; rule content is frozen.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EvidencePolicyEnvelope'
-        '403': { description: Only the author or tenant owner/administrator may submit. }
-        '422': { description: Policy is not a draft or has no mandatory rules. }
-  /api/v1/product/evidence-policies/{policyId}/decisions:
-    post:
-      operationId: decideEvidencePolicy
-      summary: Independently approve or reject a submitted evidence policy
-      security:
-        - sanctumBearer: []
-      parameters:
-        - $ref: '#/components/parameters/TenantId'
-        - name: policyId
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [decision, reason]
-              properties:
-                decision: { type: string, enum: [APPROVE, REJECT] }
-                reason: { type: string, minLength: 10, maxLength: 5000 }
-      responses:
-        '200':
-          description: Immutable append-only maker-checker decision recorded.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EvidencePolicyEnvelope'
-        '403': { description: Tenant owner/administrator required; author cannot decide own policy. }
-        '422': { description: Policy is not pending or an approved effective scope already overlaps. }
-  /api/v1/product/initiatives/{initiativeId}/evidence-coverage:
-    get:
-      operationId: getInitiativeEvidenceCoverage
-      summary: Evaluate the initiative against its matching effective approved evidence policy
-      security:
-        - sanctumBearer: []
-      parameters:
-        - $ref: '#/components/parameters/TenantId'
-        - name: initiativeId
-          in: path
-          required: true
-          schema: { type: string, format: uuid }
-        - name: stage
-          in: query
-          required: false
-          schema: { type: string, enum: [RESEARCH, ASSESSMENT], default: ASSESSMENT }
-      responses:
-        '200':
-          description: Per-initiative rule status, denominators and evidence gaps.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/EvidenceCoverageEnvelope'
-        '404': { description: Initiative is not in the selected tenant. }
     EvidencePolicyPageEnvelope:
       type: object
       required: [data]
@@ -428,3 +428,4 @@ components:
                       distinct_sources: { type: integer }
                       gaps: { type: array, items: { type: string } }
                 message: { type: string }
+
