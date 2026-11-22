@@ -41,18 +41,21 @@ Exact supported patch versions are recorded in the platform standard and must be
 10. Payroll and differentiated variable-compensation schemes: docs/hr/payroll-and-variable-compensation.md
 11. Approved reference repository review: docs/references/reference-repositories.md
 
-## Application foundation — CI verified
+## Application foundation and executable domain slices — CI verified
 
-The executable **WP-03 enterprise/platform foundation** and the current **WP-04 implemented backend slice** are verified by two successful GitHub Actions runs: [#288](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45025072785) and [#289](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45025076840), both on commit `6ea74813d79ebdf0a4cfd2e5912373c3daad395c`.
+The execution branch contains a runnable development foundation and CI-verified executable slices across WP-03, WP-04 and the first controlled WP-05 product-development handoff. Pull request [#1](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/pull/1) remains **DRAFT, OPEN and UNMERGED**; the default `main` branch is unchanged.
 
-- Laravel 13 API: health, Sanctum token issue/revoke, authenticated tenant selection, tenant context, legal-entity/site/node/licence/branch/inventory-location onboarding, initiatives, insight sources and market insights, brand strategies, seasons, collections and version approvals, range plans/lines/freeze, assortment plans/lines.
-- PostgreSQL 18: tenant-composite foreign keys, forced RLS, restricted runtime grants, append-only audit and evidence, immutable strategy/collection version histories, approved-decision records, 24 named PostgreSQL CHECK constraints and merchandising schema.
-- Angular 22: login, tenant selection, overview/API health, enterprise setup, initiative pipeline/detail and market-insight source/evidence screens.
-- Local PostgreSQL/Redis Compose, interactive first-owner provisioning, PHP/Node lockfiles and setup guide.
+**Latest verified checkpoint:** commit `0c2c0801c761fa889f7f20b8b4e7f9b5337e33fb`; [GitHub Actions run 45030693607](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45030693607).
 
-**Latest CI evidence:** Composer validation and audit, Pint, PHP syntax, PostgreSQL migrations executed as the restricted `erp_migrator`, **35 PHPUnit tests / 213 assertions — passed**, npm dependency audit, Angular unit tests and production build all passed on PHP 8.5.13 / PostgreSQL 18.7 / Node 26.13.1.
+- **WP-03 — enterprise foundation:** Laravel 13 API, Sanctum authentication, tenant selection/context, legal entities/sites/nodes/licence evidence and inventory-location onboarding; Angular login, tenant picker, overview and enterprise setup.
+- **WP-04 — merchandising vertical slices:** initiatives and market-insight evidence, brand strategy versions and approvals, season calendars, collection/version approvals, range plans/lines/freeze, channel assortment, and demand/OTB/commercial planning workflows. Angular includes initiative, market-insight, planning-workbench and brand/range screens.
+- **WP-05 — first product-development slice:** product briefs linked to frozen WP-04 range lines; independent brief acceptance; immutable brief decisions and versions; styles pinned to the exact accepted brief revision; append-only design revision history. Angular product-development studio is available at `/product/product-development`.
+- **PostgreSQL 18:** tenant-composite foreign keys, forced row-level security, restricted runtime/migration roles, append-only revision/decision history, audit events and domain constraints.
+- **Local infrastructure:** PostgreSQL/Redis Compose, first-owner provisioning, PHP/Node lockfiles and local development guide.
 
-**Scope still pending:** brand/season/collection/range/assortment Angular screens; WP-04 forecast/OTB/pricing/promotion services and complete commercial acceptance; WP-05–WP-15 runtime domain modules; full E2E-001–E2E-008, security/performance hardening, backup/restore rehearsal, staging/UAT and production release. Pull request [#1](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/pull/1) remains draft and unmerged; `main` is unchanged.
+**Latest branch quality evidence:** Composer validation/audit, Pint (**53 files**), PHP syntax, PostgreSQL migrations as restricted `erp_migrator`, **42 backend tests / 363 assertions**, npm dependency audit, **17 Angular tests across 5 files**, and Angular production build all passed on the current commit.
+
+**Still in progress:** completion of the remaining WP-04 commercial and initiative-to-sale acceptance coverage; remaining WP-05 design/technical development (2D/3D and controlled asset storage, patterns/grading, measurement, samples/fit, technical packs, BOM, costing and release gates); WP-06–WP-15 executable domain workflows; and WP-16 full E2E-001–E2E-008, security/performance hardening, backup/restore rehearsal, staging/UAT and production readiness. The passing branch CI is not proof of a complete ERP or production release. No live deployment, real payroll/remittance, tax activation, bank/payment execution or external production integration has occurred.
 
 - [Local development guide](docs/development/local-development.md)
 - [Laravel backend](backend/)
@@ -90,4 +93,4 @@ A feature is not complete because a screen exists. It must include its business 
 
 ## Current status
 
-The repository now contains a runnable **development foundation** and CI-verified executable slices for enterprise onboarding and early merchandising workflows. It is **not** a finished end-to-end ERP, production installer, UAT-approved system or deployable SaaS release. Continue delivering the approved WP-04 and WP-05–WP-16 workflows as tested vertical slices; never describe a design document or a passing foundation build as proof of full business-process completion.
+The repository now contains a runnable **development foundation** and CI-verified executable slices for WP-03, WP-04 and the first WP-05 product-development handoff. It is **not** a finished end-to-end ERP, production installer, UAT-approved system or deployable SaaS release. Continue the fixed WP-04 onward sequence as tested vertical slices; never describe a design document or a passing foundation build as proof of full business-process completion.
