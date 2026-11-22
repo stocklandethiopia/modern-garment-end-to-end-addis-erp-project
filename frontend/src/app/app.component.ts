@@ -21,13 +21,14 @@ export class AppComponent {
     { label: 'Business sites & nodes', path: '/enterprise/sites', icon: '⌖' },
     { label: 'Initiatives & opportunities', path: '/product/initiatives', icon: '⌁' },
     { label: 'Market insight register', path: '/product/market-insights', icon: '◉' },
+    { label: 'Brand & range planning', path: '/product/brand-range', icon: '◇' },
     { label: 'Demand & commercial planning', path: '/product/planning-workbench', icon: '∑' },
   ];
 
   readonly domainGroups = [
     {
       label: 'Product & commercial',
-      items: ['Initiatives & market insight', 'Brand & merchandising', 'Design studio & PLM', 'Industrial engineering'],
+      items: ['Design studio & PLM', 'Industrial engineering'],
     },
     {
       label: 'Supply & operations',

@@ -1,0 +1,279 @@
+<header class="page-heading">
+  <div>
+    <span class="eyebrow">WP-04 · PRODUCT AND COMMERCIAL FOUNDATION</span>
+    <h1>Brand, collection & range planning</h1>
+    <p>Build the commercial foundation from brand strategy and seasonal collections through product range and channel assortment.</p>
+  </div>
+  <button type="button" class="secondary-button" (click)="loadAll()" [disabled]="loading()">Refresh records</button>
+</header>
+
+@if (errorMessage()) {
+  <p class="notice error" role="alert">{{ errorMessage() }}</p>
+}
+@if (successMessage()) {
+  <p class="notice success" role="status">{{ successMessage() }}</p>
+}
+@if (loading()) {
+  <p class="loading-note" role="status">Loading tenant planning records…</p>
+}
+
+<nav class="workbench-tabs" aria-label="Brand and range workflow steps">
+  <button type="button" [class.active]="activeTab() === 'FOUNDATION'" [attr.aria-pressed]="activeTab() === 'FOUNDATION'" (click)="setTab('FOUNDATION')">Brand & season <span>{{ brands().length + seasons().length }}</span></button>
+  <button type="button" [class.active]="activeTab() === 'COLLECTIONS'" [attr.aria-pressed]="activeTab() === 'COLLECTIONS'" (click)="setTab('COLLECTIONS')">Collections <span>{{ collections().length }}</span></button>
+  <button type="button" [class.active]="activeTab() === 'RANGE'" [attr.aria-pressed]="activeTab() === 'RANGE'" (click)="setTab('RANGE')">Product range <span>{{ rangePlans().length }}</span></button>
+  <button type="button" [class.active]="activeTab() === 'ASSORTMENT'" [attr.aria-pressed]="activeTab() === 'ASSORTMENT'" (click)="setTab('ASSORTMENT')">Channel assortment <span>{{ assortmentPlans().length }}</span></button>
+</nav>
+
+@if (activeTab() === 'FOUNDATION') {
+  <div class="workflow-grid">
+    <section class="panel">
+      <div class="panel-heading">
+        <div><span class="panel-kicker">01 · BRAND MASTER</span><h2>Create a brand</h2><p>Tenant-owned brand records start as drafts.</p></div>
+      </div>
+      <form [formGroup]="brandForm" (ngSubmit)="createBrand()" class="form-grid">
+        <label>Brand code<input formControlName="code" autocomplete="off" placeholder="e.g. BRAND-01"></label>
+        <label>Brand name<input formControlName="name" placeholder="Brand name"></label>
+        <div class="form-footer full-span"><p>Brand strategy, target consumer, value proposition, categories and approved channels are governed by a separate version.</p><button class="primary-button" type="submit" [disabled]="saving()">Create draft brand</button></div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading"><div><span class="panel-kicker">02 · SEASON CALENDAR</span><h2>Create a season</h2><p>Overlapping calendars are permitted; the dates remain explicit.</p></div></div>
+      <form [formGroup]="seasonForm" (ngSubmit)="createSeason()" class="form-grid">
+        <label>Season code<input formControlName="code" placeholder="SEASON-27"></label>
+        <label>Season name<input formControlName="name" placeholder="Season name"></label>
+        <label>Calendar type<select formControlName="calendar_type"><option value="FASHION">Fashion</option><option value="SCHOOL">School</option><option value="UNIFORM">Uniform</option><option value="CLIMATE">Climate</option><option value="HOLIDAY">Holiday</option><option value="WHOLESALE">Wholesale</option><option value="CUSTOM">Custom</option></select></label>
+        <label>Market scope<input formControlName="market_scope" placeholder="Market, region or customer programme"></label>
+        <label>Timezone<input formControlName="timezone"></label>
+        <label>Design starts<input type="date" formControlName="design_start"></label>
+        <label>Buy starts<input type="date" formControlName="buy_start"></label>
+        <label>Production starts<input type="date" formControlName="production_start"></label>
+        <label>Production ends<input type="date" formControlName="production_end"></label>
+        <label>Delivery starts<input type="date" formControlName="delivery_start"></label>
+        <label>Delivery ends<input type="date" formControlName="delivery_end"></label>
+        <label>Selling starts<input type="date" formControlName="selling_start"></label>
+        <label>Selling ends<input type="date" formControlName="selling_end"></label>
+        <div class="form-footer full-span"><p>Season windows help coordinate design, buying, production, delivery and selling.</p><button class="primary-button" type="submit" [disabled]="saving()">Save season calendar</button></div>
+      </form>
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="panel-heading"><div><span class="panel-kicker">BRAND REGISTER</span><h2>Brand strategy and approvals</h2><p>Select a brand to create a new strategy version. A different tenant administrator must approve it.</p></div><span class="count-tag">{{ brands().length }} records</span></div>
+    @if (brands().length === 0) {
+      <div class="empty-state"><strong>No brands created</strong><p>Create a brand to start its strategy and commercial governance.</p></div>
+    } @else {
+      <div class="record-list">
+        @for (brand of brands(); track brand.id) {
+          <div class="record-row">
+            <div class="record-main"><strong>{{ brand.name }} · {{ brand.code }}</strong><span>Master: {{ brand.status }} · Strategy v{{ brand.latest_strategy_version_no ?? '—' }}: {{ brand.current_strategy_status }}</span></div>
+            <button type="button" class="text-button" (click)="selectBrand(brand)">Select</button>
+            @if (brand.current_strategy_status === 'PENDING_APPROVAL' && brand.latest_strategy_version_id) {
+              <button type="button" class="secondary-button" (click)="approveBrandStrategy(brand)" [disabled]="saving() || !canApprove(brand.latest_strategy_created_by)">Approve version</button>
+            }
+          </div>
+        }
+      </div>
+    }
+  </section>
+
+  @if (selectedBrand(); as brand) {
+    <section class="panel detail-panel">
+      <div class="panel-heading"><div><span class="panel-kicker">SELECTED BRAND</span><h2>{{ brand.name }} · {{ brand.code }}</h2><p>Drafting a version never overwrites a prior approved strategy.</p></div><span class="status-pill">{{ brand.current_strategy_status }}</span></div>
+      <form [formGroup]="strategyForm" (ngSubmit)="createBrandStrategy()" class="form-grid">
+        <label>Positioning<textarea rows="2" formControlName="positioning" placeholder="Market position, differentiation and brand promise"></textarea></label>
+        <label>Target consumer<input formControlName="target_consumer" placeholder="Target consumer segment"></label>
+        <label class="full-span">Value proposition<textarea rows="3" formControlName="value_proposition" placeholder="What the brand promises and why customers should choose it"></textarea></label>
+        <label>Quality tier<input formControlName="quality_tier" placeholder="Optional tier"></label>
+        <label>Approved categories<input formControlName="approved_categories" placeholder="CASUALWEAR, KNITWEAR"></label>
+        <label>Approved channels<input formControlName="approved_channels" placeholder="OWN_RETAIL, WHOLESALE, D2C"></label>
+        <label>Price architecture (JSON object)<textarea rows="3" formControlName="price_architecture_json" placeholder='{"currency":"ETB","good_better_best":true}'></textarea></label>
+        <label>Effective from<input type="date" formControlName="effective_from"></label>
+        <label>Effective to<input type="date" formControlName="effective_to"></label>
+        <label class="full-span">Change reason<textarea rows="2" formControlName="change_reason" placeholder="Why is this brand strategy version being created?"></textarea></label>
+        <div class="form-footer full-span"><p>Comma-separated categories/channels are stored as controlled arrays. Price architecture must be valid JSON.</p><button class="primary-button" type="submit" [disabled]="saving()">Submit strategy for approval</button></div>
+      </form>
+    </section>
+  }
+
+  <section class="panel">
+    <div class="panel-heading"><div><span class="panel-kicker">SEASON REGISTER</span><h2>Season calendars</h2><p>Effective business windows for each seasonal or customer programme.</p></div><span class="count-tag">{{ seasons().length }} records</span></div>
+    <div class="record-list">
+      @for (season of seasons(); track season.id) {
+        <div class="record-row"><div class="record-main"><strong>{{ season.name }} · {{ season.code }}</strong><span>{{ season.calendar_type }} · {{ season.market_scope || 'All configured markets' }} · {{ season.timezone }}</span><small>Design {{ season.design_start || '—' }} · Production {{ season.production_start || '—' }} to {{ season.production_end || '—' }} · Selling {{ season.selling_start || '—' }} to {{ season.selling_end || '—' }}</small></div><span class="status-pill">{{ season.status }}</span></div>
+      }
+      @if (seasons().length === 0) { <div class="empty-state"><strong>No season calendars yet</strong></div> }
+    </div>
+  </section>
+}
+
+@if (activeTab() === 'COLLECTIONS') {
+  <div class="workflow-grid">
+    <section class="panel">
+      <div class="panel-heading"><div><span class="panel-kicker">03 · COLLECTION MASTER</span><h2>Create collection</h2><p>Collection requires an active brand strategy and season calendar.</p></div></div>
+      <form [formGroup]="collectionForm" (ngSubmit)="createCollection()" class="form-grid">
+        <label>Approved brand<select formControlName="brand_id"><option value="">Select approved brand</option>@for (brand of brands(); track brand.id) { @if (brand.status === 'ACTIVE' && brand.current_strategy_status === 'APPROVED') { <option [value]="brand.id">{{ brand.name }} · {{ brand.code }}</option> } }</select></label>
+        <label>Season<select formControlName="season_id"><option value="">Select season</option>@for (season of seasons(); track season.id) { <option [value]="season.id">{{ season.name }} · {{ season.code }}</option> }</select></label>
+        <label>Collection code<input formControlName="code" placeholder="COLLECTION-01"></label>
+        <label>Collection name<input formControlName="name" placeholder="Collection name"></label>
+        <label>Target market<input formControlName="target_market" placeholder="Market or customer segment"></label>
+        <label>Concept<textarea rows="2" formControlName="concept" placeholder="Optional creative concept"></textarea></label>
+        <div class="form-footer full-span"><p>The brand strategy and season are validated again by the API.</p><button class="primary-button" type="submit" [disabled]="saving()">Create collection draft</button></div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading"><div><span class="panel-kicker">COLLECTION REGISTER</span><h2>Collection versions</h2><p>Select a collection to add a story and commercial envelope.</p></div><span class="count-tag">{{ collections().length }} records</span></div>
+      <div class="record-list">
+        @for (collection of collections(); track collection.id) {
+          <div class="record-row">
+            <div class="record-main"><strong>{{ collection.name }} · {{ collection.code }}</strong><span>{{ collection.brand_name }} · {{ collection.season_name }}</span><small>Current approved v{{ collection.current_version }} · Latest v{{ collection.latest_version_no ?? '—' }}: {{ collection.latest_version_status }}</small></div>
+            <button type="button" class="text-button" (click)="selectCollection(collection)">Select</button>
+            @if (collection.latest_version_status === 'PENDING_APPROVAL' && collection.latest_version_id) {
+              <button type="button" class="secondary-button" (click)="approveCollectionVersion(collection)" [disabled]="saving() || !canApprove(collection.latest_version_created_by)">Approve v{{ collection.latest_version_no }}</button>
+            }
+          </div>
+        }
+        @if (collections().length === 0) { <div class="empty-state"><strong>No collections yet</strong><p>Approve a brand strategy and create a season first.</p></div> }
+      </div>
+    </section>
+  </div>
+
+  @if (selectedCollection(); as collection) {
+    <section class="panel detail-panel">
+      <div class="panel-heading"><div><span class="panel-kicker">SELECTED COLLECTION</span><h2>{{ collection.name }} · {{ collection.code }}</h2><p>Create a new immutable collection version. Approval is a separate action.</p></div><span class="status-pill">{{ collection.latest_version_status }}</span></div>
+      <form [formGroup]="collectionVersionForm" (ngSubmit)="createCollectionVersion()" class="form-grid">
+        <label class="full-span">Collection story<textarea rows="3" formControlName="story" placeholder="Seasonal theme, customer use occasion and product direction"></textarea></label>
+        <label>Target consumer<input formControlName="target_consumer" placeholder="Target consumer"></label>
+        <label>Category architecture (JSON array)<textarea rows="2" formControlName="category_architecture_json" placeholder='["CASUALWEAR","KNITWEAR"]'></textarea></label>
+        <label>Price and margin envelope (JSON object)<textarea rows="2" formControlName="price_margin_envelope_json" placeholder='{"currency":"ETB","margin_floor":25}'></textarea></label>
+        <label>Budget amount<input type="number" min="0" step="0.01" formControlName="budget_amount"></label>
+        <label>Budget currency<input formControlName="budget_currency" maxlength="3" placeholder="ETB"></label>
+        <label>Delivery starts<input type="date" formControlName="delivery_start"></label>
+        <label>Delivery ends<input type="date" formControlName="delivery_end"></label>
+        <label class="full-span">Change reason<textarea rows="2" formControlName="change_reason" placeholder="Reason for this collection version"></textarea></label>
+        <div class="form-footer full-span"><p>Range planning is blocked until an authorized user approves a specific collection version.</p><button class="primary-button" type="submit" [disabled]="saving()">Create collection version</button></div>
+      </form>
+    </section>
+  }
+}
+
+@if (activeTab() === 'RANGE') {
+  <div class="workflow-grid">
+    <section class="panel">
+      <div class="panel-heading"><div><span class="panel-kicker">04 · RANGE PLAN</span><h2>Create product range plan</h2><p>Build from an approved collection version; the range plan starts in draft.</p></div></div>
+      <form [formGroup]="rangePlanForm" (ngSubmit)="createRangePlan()" class="form-grid">
+        <label>Approved collection<select formControlName="collection_id"><option value="">Select collection</option>@for (collection of collections(); track collection.id) { @if (collection.status === 'APPROVED' && collection.current_version > 0) { <option [value]="collection.id">{{ collection.name }} · {{ collection.code }}</option> } }</select></label>
+        <label>Approved collection version<input type="number" min="1" formControlName="collection_version"></label>
+        <label>Range plan code<input formControlName="code" placeholder="RANGE-01"></label>
+        <label>Plan starts<input type="date" formControlName="plan_start"></label>
+        <label>Plan ends<input type="date" formControlName="plan_end"></label>
+        <div class="form-footer full-span"><p>Approved collection revision and tenant scope are checked on the server.</p><button class="primary-button" type="submit" [disabled]="saving()">Create range plan</button></div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading"><div><span class="panel-kicker">RANGE REGISTER</span><h2>Range plans and freeze gates</h2><p>A different authorized administrator freezes a non-empty draft.</p></div><span class="count-tag">{{ rangePlans().length }} records</span></div>
+      <div class="record-list">
+        @for (plan of rangePlans(); track plan.id) {
+          <div class="record-row">
+            <div class="record-main"><strong>{{ plan.code }}</strong><span>{{ plan.plan_start | date:'mediumDate' }} – {{ plan.plan_end | date:'mediumDate' }}</span><small>Collection v{{ plan.collection_version }} · {{ plan.status }}</small></div>
+            <button type="button" class="text-button" (click)="selectRangePlan(plan)">View lines</button>
+            @if (plan.status === 'DRAFT') { <button type="button" class="secondary-button" (click)="freezeRangePlan(plan)" [disabled]="saving() || !canApprove(plan.owner_user_id)">Freeze plan</button> }
+            <span class="status-pill">{{ plan.status }}</span>
+          </div>
+        }
+        @if (rangePlans().length === 0) { <div class="empty-state"><strong>No range plans yet</strong></div> }
+      </div>
+    </section>
+  </div>
+
+  @if (selectedRangePlan(); as plan) {
+    <section class="panel detail-panel">
+      <div class="panel-heading"><div><span class="panel-kicker">SELECTED RANGE</span><h2>{{ plan.code }}</h2><p>Each range line is a commercial product hypothesis before a full PLM style/SKU exists.</p></div><span class="status-pill">{{ plan.status }}</span></div>
+      <div class="subsection">
+        <div class="subsection-heading"><h3>Range lines</h3><p>Target tier, planned units, channel scope, size/colour intent, lifecycle and forecast basis.</p></div>
+        <div class="table-wrap"><table><thead><tr><th>Line</th><th>Category</th><th>Lifecycle</th><th class="numeric">Planned units</th><th>Channel scope</th></tr></thead><tbody>
+          @for (line of rangeLines(); track line.id) { <tr><td>{{ line.line_code }}</td><td>{{ line.category_code }}</td><td>{{ line.lifecycle_type }}</td><td class="numeric">{{ line.planned_units }}</td><td>{{ line.channel_scope }}</td></tr> }
+          @if (rangeLines().length === 0) { <tr><td class="empty-cell" colspan="5">No lines recorded for this range plan.</td></tr> }
+        </tbody></table></div>
+      </div>
+      @if (plan.status === 'DRAFT') {
+        <div class="subsection">
+          <div class="subsection-heading"><h3>Add product hypothesis</h3><p>Core product intent remains independent from channel-specific assortment depth.</p></div>
+          <form [formGroup]="rangeLineForm" (ngSubmit)="createRangeLine()" class="form-grid">
+            <label>Line code<input formControlName="line_code" placeholder="STYLE-FAMILY-01"></label>
+            <label>Category code<input formControlName="category_code" placeholder="CATEGORY"></label>
+            <label>Target price tier<input formControlName="target_tier" placeholder="Optional"></label>
+            <label>Lifecycle<select formControlName="lifecycle_type"><option value="NEW">New</option><option value="CARRY_OVER">Carry over</option><option value="REPLENISHMENT">Replenishment</option></select></label>
+            <label class="full-span">Product hypothesis<textarea rows="2" formControlName="product_hypothesis" placeholder="What product need, use occasion or customer proposition will this line address?"></textarea></label>
+            <label>Planned units<input type="number" min="0" formControlName="planned_units"></label>
+            <label>Target retail price<input type="number" min="0" step="0.01" formControlName="target_retail_price"></label>
+            <label>Target wholesale price<input type="number" min="0" step="0.01" formControlName="target_wholesale_price"></label>
+            <label>Price currency<input formControlName="price_currency" maxlength="3" placeholder="ETB"></label>
+            <label>Target margin %<input type="number" min="-100" max="100" step="0.01" formControlName="target_margin_percent"></label>
+            <label>Channel scope<input formControlName="channel_scope" placeholder="OWN_RETAIL, WHOLESALE"></label>
+            <label>Size and colour intent (JSON object)<textarea rows="2" formControlName="size_colour_intent_json" placeholder='{"sizes":["S","M","L"],"colours":["NAVY"]}'></textarea></label>
+            <label class="full-span">Forecast basis<textarea rows="2" formControlName="forecast_basis" placeholder="Evidence and assumptions behind the planned depth"></textarea></label>
+            <label>Launch date<input type="date" formControlName="launch_date"></label>
+            <div class="form-footer full-span"><p>Adding lines is disabled once the range is frozen.</p><button class="primary-button" type="submit" [disabled]="saving()">Add range line</button></div>
+          </form>
+        </div>
+      }
+    </section>
+  }
+}
+
+@if (activeTab() === 'ASSORTMENT') {
+  <div class="workflow-grid">
+    <section class="panel">
+      <div class="panel-heading"><div><span class="panel-kicker">05 · CHANNEL ASSORTMENT</span><h2>Create channel assortment</h2><p>Distribute a frozen core range into a channel and market; do not rewrite the core product plan.</p></div></div>
+      <form [formGroup]="assortmentForm" (ngSubmit)="createAssortmentPlan()" class="form-grid">
+        <label>Frozen range<select formControlName="range_plan_id"><option value="">Select frozen range</option>@for (plan of rangePlans(); track plan.id) { @if (plan.status === 'FROZEN') { <option [value]="plan.id">{{ plan.code }}</option> } }</select></label>
+        <label>Assortment code<input formControlName="code" placeholder="ASSORTMENT-01"></label>
+        <label>Channel code<input formControlName="channel_code" placeholder="OWN_RETAIL / WHOLESALE"></label>
+        <label>Market scope<input formControlName="market_scope" placeholder="Market, region or customer segment"></label>
+        <label>Account reference (optional)<input formControlName="account_reference"></label>
+        <label>Location cluster (optional)<input formControlName="location_cluster_reference"></label>
+        <div class="form-footer full-span"><p>The service does not create a sale, purchase order or inventory allocation.</p><button class="primary-button" type="submit" [disabled]="saving()">Create assortment draft</button></div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading"><div><span class="panel-kicker">ASSORTMENT REGISTER</span><h2>Channel and market plans</h2><p>Open a plan to manage variant size curves and depth.</p></div><span class="count-tag">{{ assortmentPlans().length }} records</span></div>
+      <div class="record-list">
+        @for (plan of assortmentPlans(); track plan.id) {
+          <div class="record-row"><div class="record-main"><strong>{{ plan.code }}</strong><span>{{ plan.channel_code }} · {{ plan.market_scope }} · Range {{ plan.range_plan_code }}</span><small>{{ plan.status }}</small></div><button type="button" class="text-button" (click)="selectAssortment(plan)">Manage depth</button><span class="status-pill">{{ plan.status }}</span></div>
+        }
+        @if (assortmentPlans().length === 0) { <div class="empty-state"><strong>No assortment plans yet</strong><p>Freeze a non-empty core range before creating a channel assortment.</p></div> }
+      </div>
+    </section>
+  </div>
+
+  @if (selectedAssortment(); as plan) {
+    <section class="panel detail-panel">
+      <div class="panel-heading"><div><span class="panel-kicker">SELECTED ASSORTMENT</span><h2>{{ plan.code }} · {{ plan.channel_code }}</h2><p>{{ plan.market_scope }} · Based on {{ plan.range_plan_code }}</p></div><span class="status-pill">{{ plan.status }}</span></div>
+      <div class="subsection">
+        <div class="subsection-heading"><h3>Allocated range lines</h3><p>Planned units and variant/size curve are distinct from the core range line intent.</p></div>
+        <div class="table-wrap"><table><thead><tr><th>Range line</th><th>Category</th><th class="numeric">Planned units</th><th>Launch</th></tr></thead><tbody>
+          @for (line of assortmentLines(); track line.id) { <tr><td>{{ line.line_code }}</td><td>{{ line.category_code }}</td><td class="numeric">{{ line.planned_units }}</td><td>{{ line.launch_date || '—' }}</td></tr> }
+          @if (assortmentLines().length === 0) { <tr><td class="empty-cell" colspan="4">No assortment lines yet.</td></tr> }
+        </tbody></table></div>
+      </div>
+      <div class="subsection">
+        <div class="subsection-heading"><h3>Add range line depth</h3><p>Only range lines belonging to this frozen range can be selected.</p></div>
+        <form [formGroup]="assortmentLineForm" (ngSubmit)="createAssortmentLine()" class="form-grid">
+          <label>Range line<select formControlName="range_line_id"><option value="">Select a line</option>@for (line of rangeLinesForSelectedAssortment(); track line.id) { <option [value]="line.id">{{ line.line_code }} · {{ line.category_code }}</option> }</select></label>
+          <label>Planned units<input type="number" min="0" formControlName="planned_units"></label>
+          <label>Variant size curve (JSON object)<textarea rows="2" formControlName="variant_size_curve_json" placeholder='{"S":40,"M":60}'></textarea></label>
+          <label>Launch date<input type="date" formControlName="launch_date"></label>
+          <label>Minimum depth<input type="number" min="0" formControlName="minimum_depth"></label>
+          <label>Maximum depth<input type="number" min="0" formControlName="maximum_depth"></label>
+          <div class="form-footer full-span"><p>Duplicate range-line allocation and invalid min/max depth are rejected by the API/database.</p><button class="primary-button" type="submit" [disabled]="saving()">Add assortment line</button></div>
+        </form>
+      </div>
+    </section>
+  }
+}
+
+<div class="footer-note"><span class="info-icon">i</span><p>Approval gates are enforced by the API and PostgreSQL. An administrator cannot approve their own strategy, collection version or range freeze. These records are planning inputs—not a purchase commitment, production order, inventory movement or customer sale.</p></div>
