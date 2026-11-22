@@ -48,7 +48,7 @@ class DemandPlanningController extends Controller
             ->where('a.tenant_id', $tenantId)
             ->whereIn('a.forecast_id', $forecasts->pluck('id'))
             ->orderByDesc('a.created_at')
-            ->select(['a.*', DB::raw("CASE WHEN d.id IS NULL THEN false ELSE true END AS is_approved")])
+            ->select(['a.*', DB::raw('CASE WHEN d.id IS NULL THEN false ELSE true END AS is_approved')])
             ->get();
 
         return response()->json([
@@ -209,7 +209,7 @@ class DemandPlanningController extends Controller
         abort_unless($tenantContext->canAdministerTenant(), 403, 'A tenant administrator must approve forecast adjustments.');
 
         DB::transaction(function () use ($tenantId, $adjustmentId, $approver): void {
-            DB::select("SELECT pg_advisory_xact_lock(hashtext(?))", ['forecast-adjustment:'.$tenantId.':'.$adjustmentId]);
+            DB::select('SELECT pg_advisory_xact_lock(hashtext(?))', ['forecast-adjustment:'.$tenantId.':'.$adjustmentId]);
 
             $adjustment = DB::table('forecast_adjustments')
                 ->where('tenant_id', $tenantId)
