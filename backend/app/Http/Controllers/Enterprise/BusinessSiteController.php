@@ -24,7 +24,6 @@ class BusinessSiteController extends Controller
     private const NODE_TYPES = [
         'FACTORY',
         'WAREHOUSE',
-        'BRANCH',
         'DISTRIBUTION_CENTER',
         'BRANCH',
         'RETAIL_STORE',
@@ -37,6 +36,7 @@ class BusinessSiteController extends Controller
     private const STOCK_CAPABLE_NODE_TYPES = [
         'FACTORY',
         'WAREHOUSE',
+        'BRANCH',
         'DISTRIBUTION_CENTER',
         'RETAIL_STORE',
         'WHOLESALE_DEPOT',
@@ -147,6 +147,12 @@ class BusinessSiteController extends Controller
             ->orderBy('name')
             ->paginate(50);
 
+        $nodes->setCollection($nodes->getCollection()->map(function (object $node): object {
+            $node->capabilities = json_decode((string) $node->capabilities, true, flags: JSON_THROW_ON_ERROR);
+
+            return $node;
+        }));
+
         return response()->json($nodes);
     }
 
@@ -244,10 +250,14 @@ class BusinessSiteController extends Controller
                 ],
             );
 
-            return DB::table('operational_nodes')
+            $node = DB::table('operational_nodes')
                 ->where('tenant_id', $tenantId)
                 ->where('id', $id)
                 ->first();
+
+            $node->capabilities = json_decode((string) $node->capabilities, true, flags: JSON_THROW_ON_ERROR);
+
+            return $node;
         });
 
         return response()->json(['data' => $node], 201);
