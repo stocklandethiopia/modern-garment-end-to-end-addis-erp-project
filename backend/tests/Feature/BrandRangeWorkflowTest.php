@@ -607,6 +607,13 @@ class BrandRangeWorkflowTest extends TestCase
         $range = $this->createDraftRangePlanForAcceptance();
 
         $this->withHeaders($this->tenantHeader())
+            ->putJson('/api/v1/enterprise/members/'.Str::uuid().'/access-scope-mode', [
+                'scope_mode' => 'SCOPED',
+                'reason' => 'An unrelated non-member must not receive a tenant access profile.',
+            ])
+            ->assertNotFound();
+
+        $this->withHeaders($this->tenantHeader())
             ->putJson('/api/v1/enterprise/members/'.$this->approverId.'/access-scope-mode', [
                 'scope_mode' => 'SCOPED',
                 'reason' => 'Restrict this approver to explicitly assigned brands and markets.',
@@ -639,6 +646,12 @@ class BrandRangeWorkflowTest extends TestCase
                 'grant_reason' => 'The approver is assigned to this target market.',
             ])
             ->assertCreated();
+
+        $this->withHeaders($this->tenantHeader())
+            ->getJson('/api/v1/enterprise/members/'.$this->approverId.'/access-scopes')
+            ->assertOk()
+            ->assertJsonPath('data.scope_mode', 'SCOPED')
+            ->assertJsonCount(2, 'data.grants');
 
         $this->actAsApprover();
         $this->withHeaders($this->tenantHeader())
