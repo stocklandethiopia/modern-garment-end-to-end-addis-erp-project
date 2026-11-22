@@ -33,11 +33,13 @@ class MeasurementPatternController extends Controller
                 ->get();
 
             foreach ($points as $point) {
+                $sizeOrder = array_flip($version->size_sequence);
                 $point->values = DB::table('measurement_spec_values')
                     ->where('tenant_id', $tenantId)
                     ->where('measurement_point_id', $point->id)
-                    ->orderByRaw('array_position(?::text[], size_code)', [DB::raw('ARRAY[]::text[]')])
-                    ->get();
+                    ->get()
+                    ->sortBy(fn (object $value): int => $sizeOrder[$value->size_code] ?? PHP_INT_MAX)
+                    ->values();
             }
 
             $version->points = $points;
@@ -149,38 +151,42 @@ class MeasurementPatternController extends Controller
         return response()->json(['data' => $result], 201);
     }
 
-    public function approveMeasurementSpec(string $styleId, string $specVersionId, TenantContext $tenantContext): JsonResponse
+    public function approveMeasurementSpec(string $styleId, string $specVersionId, Request $request, TenantContext $tenantContext): JsonResponse
     {
         abort_unless($tenantContext->canAdministerTenant(), 403, 'Tenant owner or admin approval is required.');
 
         $tenantId = $tenantContext->tenantId();
-        $actorId = (string) request()->user()->getAuthIdentifier();
-        $spec = DB::table('measurement_spec_versions')
-            ->where('tenant_id', $tenantId)
-            ->where('style_id', $styleId)
-            ->where('id', $specVersionId)
-            ->lockForUpdate()
-            ->first();
+        $actorId = (string) $request->user()->getAuthIdentifier();
+        $result = DB::transaction(function () use ($tenantId, $styleId, $specVersionId, $actorId): object {
+            $spec = DB::table('measurement_spec_versions')
+                ->where('tenant_id', $tenantId)
+                ->where('style_id', $styleId)
+                ->where('id', $specVersionId)
+                ->lockForUpdate()
+                ->first();
 
-        abort_if($spec === null, 404);
-        abort_unless($spec->created_by !== $actorId, 403, 'The measurement specification creator cannot approve their own version.');
-        abort_unless($spec->status === 'DRAFT', 422, 'Only a draft measurement specification can be approved.');
+            abort_if($spec === null, 404);
+            abort_unless($spec->created_by !== $actorId, 403, 'The measurement specification creator cannot approve their own version.');
+            abort_unless($spec->status === 'DRAFT', 422, 'Only a draft measurement specification can be approved.');
 
-        $pointsCount = DB::table('measurement_spec_points')
-            ->where('tenant_id', $tenantId)
-            ->where('measurement_spec_version_id', $specVersionId)
-            ->count();
-        abort_unless($pointsCount > 0, 422, 'A measurement specification requires at least one point.');
+            $pointsCount = DB::table('measurement_spec_points')
+                ->where('tenant_id', $tenantId)
+                ->where('measurement_spec_version_id', $specVersionId)
+                ->count();
+            abort_unless($pointsCount > 0, 422, 'A measurement specification requires at least one point.');
 
-        DB::table('measurement_spec_versions')->where('tenant_id', $tenantId)->where('id', $specVersionId)->update([
-            'status' => 'APPROVED',
-            'approved_by' => $actorId,
-            'approved_at' => now(),
-        ]);
+            DB::table('measurement_spec_versions')->where('tenant_id', $tenantId)->where('id', $specVersionId)->update([
+                'status' => 'APPROVED',
+                'approved_by' => $actorId,
+                'approved_at' => now(),
+            ]);
 
-        $this->writeAudit($tenantId, $actorId, 'MEASUREMENT_SPEC_VERSION_APPROVED', 'MEASUREMENT_SPEC', $specVersionId, 'Independent approval of the measurement specification version.');
+            $this->writeAudit($tenantId, $actorId, 'MEASUREMENT_SPEC_VERSION_APPROVED', 'MEASUREMENT_SPEC', $specVersionId, 'Independent approval of the measurement specification version.');
 
-        return response()->json(['data' => DB::table('measurement_spec_versions')->where('tenant_id', $tenantId)->where('id', $specVersionId)->first()]);
+            return DB::table('measurement_spec_versions')->where('tenant_id', $tenantId)->where('id', $specVersionId)->first();
+        });
+
+        return response()->json(['data' => $result]);
     }
 
     public function patternSets(string $styleId, TenantContext $tenantContext): JsonResponse
@@ -326,44 +332,45 @@ class MeasurementPatternController extends Controller
         return response()->json(['data' => $result], 201);
     }
 
-    public function approvePatternRevision(string $patternSetId, string $revisionId, TenantContext $tenantContext): JsonResponse
+    public function approvePatternRevision(string $patternSetId, string $revisionId, Request $request, TenantContext $tenantContext): JsonResponse
     {
         abort_unless($tenantContext->canAdministerTenant(), 403, 'Tenant owner or admin approval is required.');
 
         $tenantId = $tenantContext->tenantId();
-        $actorId = (string) request()->user()->getAuthIdentifier();
-        $revision = DB::table('pattern_revisions as pr')
-            ->join('pattern_sets as ps', function ($join): void {
-                $join->on('ps.tenant_id', '=', 'pr.tenant_id')
-                    ->on('ps.id', '=', 'pr.pattern_set_id');
-            })
-            ->where('pr.tenant_id', $tenantId)
-            ->where('pr.pattern_set_id', $patternSetId)
-            ->where('pr.id', $revisionId)
-            ->first(['pr.*', 'ps.style_id']);
+        $actorId = (string) $request->user()->getAuthIdentifier();
+        $result = DB::transaction(function () use ($tenantId, $actorId, $patternSetId, $revisionId): array {
+            $revision = DB::table('pattern_revisions as pr')
+                ->join('pattern_sets as ps', function ($join): void {
+                    $join->on('ps.tenant_id', '=', 'pr.tenant_id')
+                        ->on('ps.id', '=', 'pr.pattern_set_id');
+                })
+                ->where('pr.tenant_id', $tenantId)
+                ->where('pr.pattern_set_id', $patternSetId)
+                ->where('pr.id', $revisionId)
+                ->lockForUpdate()
+                ->first(['pr.*', 'ps.style_id']);
 
-        abort_if($revision === null, 404);
-        abort_unless($revision->created_by !== $actorId, 403, 'The pattern revision creator cannot approve their own revision.');
-        abort_unless($revision->status === 'DRAFT', 422, 'Only a draft pattern revision can be approved.');
+            abort_if($revision === null, 404);
+            abort_unless($revision->created_by !== $actorId, 403, 'The pattern revision creator cannot approve their own revision.');
+            abort_unless($revision->status === 'DRAFT', 422, 'Only a draft pattern revision can be approved.');
 
-        $spec = $this->findApprovedMeasurementSpec($tenantId, $revision->style_id, $revision->measurement_spec_version_id);
-        $pieceCount = DB::table('pattern_pieces')->where('tenant_id', $tenantId)->where('pattern_revision_id', $revisionId)->count();
-        abort_unless($pieceCount > 0, 422, 'A pattern revision requires at least one pattern piece.');
+            $spec = $this->findApprovedMeasurementSpec($tenantId, $revision->style_id, $revision->measurement_spec_version_id);
+            $pieceCount = DB::table('pattern_pieces')->where('tenant_id', $tenantId)->where('pattern_revision_id', $revisionId)->count();
+            abort_unless($pieceCount > 0, 422, 'A pattern revision requires at least one pattern piece.');
 
-        $rules = DB::table('grade_rules as gr')
-            ->join('measurement_spec_points as mp', function ($join): void {
-                $join->on('mp.tenant_id', '=', 'gr.tenant_id')
-                    ->on('mp.id', '=', 'gr.measurement_point_id');
-            })
-            ->where('gr.tenant_id', $tenantId)
-            ->where('gr.pattern_revision_id', $revisionId)
-            ->get(['mp.point_code', 'gr.from_size_code', 'gr.to_size_code', 'gr.increment', 'gr.unit_code'])
-            ->map(fn (object $rule): array => (array) $rule)
-            ->all();
-        $this->normalizeGradeRules($tenantId, $spec, $rules, true);
+            $rules = DB::table('grade_rules as gr')
+                ->join('measurement_spec_points as mp', function ($join): void {
+                    $join->on('mp.tenant_id', '=', 'gr.tenant_id')
+                        ->on('mp.id', '=', 'gr.measurement_point_id');
+                })
+                ->where('gr.tenant_id', $tenantId)
+                ->where('gr.pattern_revision_id', $revisionId)
+                ->get(['mp.point_code', 'gr.from_size_code', 'gr.to_size_code', 'gr.increment', 'gr.unit_code'])
+                ->map(fn (object $rule): array => (array) $rule)
+                ->all();
+            $this->normalizeGradeRules($tenantId, $spec, $rules, true);
 
-        $now = now();
-        DB::transaction(function () use ($tenantId, $actorId, $revision, $patternSetId, $revisionId, $now): void {
+            $now = now();
             DB::table('pattern_revisions')->where('tenant_id', $tenantId)->where('id', $revisionId)->update([
                 'status' => 'APPROVED',
                 'approved_by' => $actorId,
@@ -379,12 +386,14 @@ class MeasurementPatternController extends Controller
                 'updated_at' => $now,
             ]);
             $this->writeAudit($tenantId, $actorId, 'PATTERN_REVISION_APPROVED', 'PATTERN_SET', $patternSetId, 'Independent approval of a pattern revision with complete validated grade coverage.');
+
+            return [
+                'data' => DB::table('pattern_revisions')->where('tenant_id', $tenantId)->where('id', $revisionId)->first(),
+                'pattern_set' => DB::table('pattern_sets')->where('tenant_id', $tenantId)->where('id', $patternSetId)->first(),
+            ];
         });
 
-        return response()->json([
-            'data' => DB::table('pattern_revisions')->where('tenant_id', $tenantId)->where('id', $revisionId)->first(),
-            'pattern_set' => DB::table('pattern_sets')->where('tenant_id', $tenantId)->where('id', $patternSetId)->first(),
-        ]);
+        return response()->json($result);
     }
 
     private function validateMeasurementPayload(array $data): void
@@ -490,6 +499,7 @@ class MeasurementPatternController extends Controller
             }
 
             $normalized[] = [
+                'measurement_spec_version_id' => $spec->id,
                 'measurement_point_id' => $point->id,
                 'from_size_code' => $from,
                 'to_size_code' => $to,
@@ -568,6 +578,7 @@ class MeasurementPatternController extends Controller
                 'id' => (string) Str::uuid(),
                 'tenant_id' => $tenantId,
                 'pattern_revision_id' => $revisionId,
+                'measurement_spec_version_id' => $rule['measurement_spec_version_id'],
                 'measurement_point_id' => $rule['measurement_point_id'],
                 'from_size_code' => $rule['from_size_code'],
                 'to_size_code' => $rule['to_size_code'],

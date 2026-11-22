@@ -745,7 +745,7 @@ class BrandRangeWorkflowTest extends TestCase
             ['point_code' => 'BODY_LENGTH', 'from_size_code' => 'S', 'to_size_code' => 'M', 'increment' => 2, 'unit_code' => 'CM'],
             ['point_code' => 'BODY_LENGTH', 'from_size_code' => 'M', 'to_size_code' => 'L', 'increment' => 2, 'unit_code' => 'CM'],
         ];
-        const patternSet = $this->withHeaders($this->tenantHeader())
+        $patternSet = $this->withHeaders($this->tenantHeader())
             ->postJson('/api/v1/styles/'.$styleId.'/patterns', [
                 'pattern_code' => 'OVERSHIRT-MAIN',
                 'name' => 'Main overshirt pattern',
@@ -763,7 +763,7 @@ class BrandRangeWorkflowTest extends TestCase
         $this->withHeaders($this->tenantHeader())
             ->postJson('/api/v1/patterns/'.$patternSetId.'/revisions/'.$patternRevisionId.'/approve', [])
             ->assertUnprocessable()
-            ->assertJsonFragment(['grade_rules' => 'Every required measurement point needs an approved grade increment for adjacent sizes; missing BODY_LENGTH: M to L.']);
+            ->assertJsonPath('errors.grade_rules.0', 'Every required measurement point needs an approved grade increment for adjacent sizes; missing BODY_LENGTH: M to L.');
         $this->actAsOwner();
 
         $correctedPattern = $this->withHeaders($this->tenantHeader())

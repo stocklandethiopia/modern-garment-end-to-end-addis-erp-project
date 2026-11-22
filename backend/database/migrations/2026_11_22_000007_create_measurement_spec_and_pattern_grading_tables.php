@@ -61,6 +61,7 @@ return new class extends Migration
             $table->string('diagram_reference', 240)->nullable();
             $table->timestampTz('created_at');
             $table->unique(['tenant_id', 'id']);
+            $table->unique(['tenant_id', 'measurement_spec_version_id', 'id']);
             $table->unique(['tenant_id', 'measurement_spec_version_id', 'point_code']);
             $table->foreign('tenant_id')->references('id')->on('tenants')->restrictOnDelete();
             $table->foreign(['tenant_id', 'measurement_spec_version_id'])
@@ -96,6 +97,7 @@ return new class extends Migration
             $table->uuid('owner_user_id');
             $table->timestampsTz();
             $table->unique(['tenant_id', 'id']);
+            $table->unique(['tenant_id', 'id', 'style_id']);
             $table->unique(['tenant_id', 'style_id', 'pattern_code']);
             $table->foreign('tenant_id')->references('id')->on('tenants')->restrictOnDelete();
             $table->foreign(['tenant_id', 'style_id'])
@@ -121,10 +123,11 @@ return new class extends Migration
             $table->timestampTz('approved_at')->nullable();
             $table->timestampTz('created_at');
             $table->unique(['tenant_id', 'id']);
+            $table->unique(['tenant_id', 'id', 'measurement_spec_version_id']);
             $table->unique(['tenant_id', 'pattern_set_id', 'revision_no']);
             $table->foreign('tenant_id')->references('id')->on('tenants')->restrictOnDelete();
-            $table->foreign(['tenant_id', 'pattern_set_id'])
-                ->references(['tenant_id', 'id'])->on('pattern_sets')->restrictOnDelete();
+            $table->foreign(['tenant_id', 'pattern_set_id', 'style_id'])
+                ->references(['tenant_id', 'id', 'style_id'])->on('pattern_sets')->restrictOnDelete();
             $table->foreign(['tenant_id', 'style_id', 'style_revision_no'])
                 ->references(['tenant_id', 'style_id', 'revision_no'])->on('style_revisions')->restrictOnDelete();
             $table->foreign(['tenant_id', 'measurement_spec_version_id'])
@@ -157,6 +160,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->uuid('tenant_id');
             $table->uuid('pattern_revision_id');
+            $table->uuid('measurement_spec_version_id');
             $table->uuid('measurement_point_id');
             $table->string('from_size_code', 32);
             $table->string('to_size_code', 32);
@@ -166,10 +170,10 @@ return new class extends Migration
             $table->unique(['tenant_id', 'id']);
             $table->unique(['tenant_id', 'pattern_revision_id', 'measurement_point_id', 'from_size_code', 'to_size_code']);
             $table->foreign('tenant_id')->references('id')->on('tenants')->restrictOnDelete();
-            $table->foreign(['tenant_id', 'pattern_revision_id'])
-                ->references(['tenant_id', 'id'])->on('pattern_revisions')->restrictOnDelete();
-            $table->foreign(['tenant_id', 'measurement_point_id'])
-                ->references(['tenant_id', 'id'])->on('measurement_spec_points')->restrictOnDelete();
+            $table->foreign(['tenant_id', 'pattern_revision_id', 'measurement_spec_version_id'])
+                ->references(['tenant_id', 'id', 'measurement_spec_version_id'])->on('pattern_revisions')->restrictOnDelete();
+            $table->foreign(['tenant_id', 'measurement_spec_version_id', 'measurement_point_id'])
+                ->references(['tenant_id', 'measurement_spec_version_id', 'id'])->on('measurement_spec_points')->restrictOnDelete();
             $table->index(['tenant_id', 'pattern_revision_id', 'measurement_point_id']);
         });
 
