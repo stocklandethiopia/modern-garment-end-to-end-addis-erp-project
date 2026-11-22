@@ -161,4 +161,56 @@ class TenantIsolationTest extends TestCase
             ->assertJsonMissing(['id' => $this->tenantB]);
     }
 
+    public function test_tenant_tables_force_row_level_security(): void
+    {
+        $tables = [
+            'tenant_memberships',
+            'legal_entities',
+            'business_sites',
+            'operational_nodes',
+            'branch_registrations',
+            'inventory_locations',
+            'audit_events',
+        ];
+
+        $rows = DB::connection('pgsql_test_admin')->select(
+            'SELECT c.relname, c.relrowsecurity, c.relforcerowsecurity
+             FROM pg_class c
+             JOIN pg_namespace n ON n.oid = c.relnamespace
+             WHERE n.nspname = ? AND c.relname = ANY(?)',
+            ['public', '{'.implode(',', $tables).'}'],
+        );
+
+        $this->assertCount(count($tables), $rows);
+
+        foreach ($rows as $row) {
+            $this->assertTrue($row->relrowsecurity, $row->relname.' must enable RLS.');
+            $this->assertTrue($row->relforcerowsecurity, $row->relname.' must force RLS.');
+        }
+    }
+
+    public function test_runtime_role_has_only_explicit_minimum_table_privileges(): void
+    {
+        $privileges = DB::connection('pgsql_test_admin')->selectOne(
+            "SELECT
+                has_table_privilege('app_runtime', 'tenant_memberships', 'SELECT') AS can_read_memberships,
+                has_table_privilege('app_runtime', 'tenant_memberships', 'INSERT') AS can_insert_memberships,
+                has_table_privilege('app_runtime', 'legal_entities', 'INSERT') AS can_insert_entities,
+                has_table_privilege('app_runtime', 'legal_entities', 'UPDATE') AS can_update_entities,
+                has_table_privilege('app_runtime', 'audit_events', 'INSERT') AS can_append_audit,
+                has_table_privilege('app_runtime', 'audit_events', 'UPDATE') AS can_update_audit,
+                has_table_privilege('app_runtime', 'personal_access_tokens', 'DELETE') AS can_revoke_token,
+                has_column_privilege('app_runtime', 'personal_access_tokens', 'last_used_at', 'UPDATE') AS can_update_token_last_used",
+        );
+
+        $this->assertTrue($privileges->can_read_memberships);
+        $this->assertFalse($privileges->can_insert_memberships);
+        $this->assertTrue($privileges->can_insert_entities);
+        $this->assertFalse($privileges->can_update_entities);
+        $this->assertTrue($privileges->can_append_audit);
+        $this->assertFalse($privileges->can_update_audit);
+        $this->assertTrue($privileges->can_revoke_token);
+        $this->assertTrue($privileges->can_update_token_last_used);
+    }
+
 }
