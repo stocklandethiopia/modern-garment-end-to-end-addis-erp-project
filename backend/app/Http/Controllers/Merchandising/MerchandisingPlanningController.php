@@ -154,11 +154,18 @@ class MerchandisingPlanningController extends Controller
         abort_unless($tenantContext->canAdministerTenant(), 403, 'Tenant administrator approval is required.');
 
         $result = DB::transaction(function () use ($tenantId, $brandId, $versionId, $approver): object {
+            $brand = DB::table('brands')
+                ->where('tenant_id', $tenantId)
+                ->where('id', $brandId)
+                ->lockForUpdate()
+                ->first();
+
+            abort_if($brand === null, 404);
+
             $version = DB::table('brand_strategy_versions')
                 ->where('tenant_id', $tenantId)
                 ->where('brand_id', $brandId)
                 ->where('id', $versionId)
-                ->lockForUpdate()
                 ->first();
 
             abort_if($version === null, 404);
@@ -368,8 +375,20 @@ class MerchandisingPlanningController extends Controller
         abort_if($collection === null, 404);
 
         return DB::transaction(function () use ($tenantId, $collectionId, $versionId, $approver) {
-            $version = DB::table('collection_versions')->where('tenant_id', $tenantId)
-                ->where('collection_id', $collectionId)->where('id', $versionId)->lockForUpdate()->first();
+            $collection = DB::table('collections')
+                ->where('tenant_id', $tenantId)
+                ->where('id', $collectionId)
+                ->lockForUpdate()
+                ->first();
+
+            abort_if($collection === null, 404);
+
+            $version = DB::table('collection_versions')
+                ->where('tenant_id', $tenantId)
+                ->where('collection_id', $collectionId)
+                ->where('id', $versionId)
+                ->first();
+
             abort_if($version === null, 404);
             abort_unless($version->status === 'PENDING_APPROVAL', 422, 'Collection version is not awaiting approval.');
             abort_unless($version->created_by !== $approver, 403, 'The author cannot approve their own collection version.');
