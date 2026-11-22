@@ -16,33 +16,11 @@ import {
   PriceListLine,
   Promotion,
   ResourceEnvelope,
+  ForecastDetail,
+  ForecastItem,
+  ForecastRun,
+  ForecastAdjustment,
 } from './planning-workbench.service';
-
-interface ForecastItem {
-  id: string;
-  dimension_refs: string | Record<string, string>;
-  time_bucket: string;
-  forecast_quantity: string;
-  forecast_value: string | null;
-  currency: string | null;
-  confidence_low: string | null;
-  confidence_high: string | null;
-}
-
-interface ForecastAdjustment {
-  id: string;
-  baseline_value: string;
-  override_value: string;
-  delta_value: string;
-  reason: string;
-  is_approved: boolean;
-}
-
-interface ForecastDetail {
-  data: ForecastRun;
-  forecasts: ForecastItem[];
-  adjustments: ForecastAdjustment[];
-}
 
 type PlanningTab = 'FORECAST' | 'OTB' | 'PRICING';
 
@@ -294,6 +272,14 @@ export class PlanningWorkbenchComponent {
     });
   }
 
+  prepareAdjustment(forecast: ForecastItem): void {
+    this.adjustmentForm.patchValue({
+      forecast_id: forecast.id,
+      baseline_value: forecast.forecast_quantity,
+      override_value: forecast.forecast_quantity,
+    });
+  }
+
   createAdjustment(): void {
     if (!this.valid(this.adjustmentForm)) return;
     const value = this.adjustmentForm.getRawValue();
@@ -358,13 +344,20 @@ export class PlanningWorkbenchComponent {
     }), 'OTB period calculated from the active policy and preserved valuation basis.', () => this.loadAll());
   }
 
+  selectOtbPeriod(period: OtbPeriod): void {
+    this.otbScenarioForm.patchValue({ period_id: period.id });
+  }
+
   simulateOtb(): void {
     if (!this.valid(this.otbScenarioForm)) return;
     const value = this.otbScenarioForm.getRawValue();
     const assumptions: Record<string, string> = {};
     if (value.planned_sales.trim()) assumptions['planned_sales'] = value.planned_sales.trim();
 
-    this.perform(() => this.api.simulateOtb(value.period_id, { assumptions }), 'OTB scenario saved as a non-posting simulation.', () => this.loadAll());
+    this.perform(() => this.api.simulateOtb(value.period_id, { assumptions }), 'OTB scenario saved as a non-posting simulation.', (scenario) => {
+      this.lastScenario.set(scenario);
+      this.loadAll();
+    });
   }
 
   approveScenario(scenarioId: string): void {
@@ -433,6 +426,10 @@ export class PlanningWorkbenchComponent {
     }), 'Promotion created as draft; it needs explicit eligibility and independent approval.', () => this.loadAll());
   }
 
+  selectPromotion(promotion: Promotion): void {
+    this.eligibilityForm.patchValue({ promotion_id: promotion.id });
+  }
+
   addPromotionEligibility(): void {
     if (!this.valid(this.eligibilityForm)) return;
     const value = this.eligibilityForm.getRawValue();
@@ -461,7 +458,7 @@ export class PlanningWorkbenchComponent {
   private perform<T>(
     request: () => import('rxjs').Observable<T>,
     success: string,
-    afterSuccess: () => void,
+    afterSuccess: (result: T) => void,
   ): void {
     if (this.saving()) return;
     this.saving.set(true);
@@ -473,7 +470,7 @@ export class PlanningWorkbenchComponent {
         if (this.session.activeTenant()?.id !== tenantId) return;
         this.saving.set(false);
         this.successMessage.set(success);
-        afterSuccess();
+        afterSuccess(response);
       },
       error: (error: HttpErrorResponse) => {
         if (this.session.activeTenant()?.id !== tenantId) return;
@@ -485,10 +482,6 @@ export class PlanningWorkbenchComponent {
             : 'The request could not be completed. Check the connection and retry.');
       },
     });
-  }
-
-  private loadAllSafe(): void {
-    this.loadAll();
   }
 
   private clearData(): void {
