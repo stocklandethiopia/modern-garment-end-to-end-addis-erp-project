@@ -80,7 +80,7 @@ describe('MerchandisingDashboardComponent', () => {
     expect(text).toContain('Merchandising decision dashboard');
     expect(text).toContain('Frozen range lines with current accepted briefs');
     expect(text).toContain('75.00%');
-    expect(text).toContain('No evidence requirement catalogue is configured.');
+    expect(text).toContain('Evidence requirements are not configured.');
     expect(text).toContain('sell through');
     expect(fixture.componentInstance.dashboard()?.tenant_role).toBe('OWNER');
   });
