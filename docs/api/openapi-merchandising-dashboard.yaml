@@ -1,0 +1,180 @@
+openapi: 3.1.0
+info:
+  title: Modern Garment ERP — Merchandising Dashboard API
+  version: 1.0.0
+  description: >
+    Contract for the tenant-scoped WP-04 merchandising dashboard. This
+    modular contract documents the verified dashboard endpoint; it is not
+    the consolidated contract for all ERP endpoints.
+servers:
+  - url: /
+paths:
+  /api/v1/product/merchandising-dashboard:
+    get:
+      operationId: getMerchandisingDashboard
+      summary: Read the current tenant's merchandising dashboard
+      description: >
+        Returns source-backed planning measures, role-filtered approval and
+        personal work queues, and explicit dependency reasons for metrics that
+        are not yet calculable. The endpoint is read-only. Values based on
+        frozen range plans are planned quantities, not demand or sales actuals.
+      security:
+        - sanctumBearer: []
+      parameters:
+        - name: X-Tenant-Id
+          in: header
+          required: true
+          description: Tenant UUID selected for the authenticated membership.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Tenant-scoped merchandising dashboard.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MerchandisingDashboardEnvelope'
+        '401':
+          description: Missing, invalid or expired authentication token.
+        '403':
+          description: Authenticated actor lacks ERP access or selected tenant membership.
+        '422':
+          description: Tenant selection header is missing or invalid.
+components:
+  securitySchemes:
+    sanctumBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: Laravel Sanctum personal access token
+  schemas:
+    MerchandisingDashboardEnvelope:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/MerchandisingDashboard'
+    MerchandisingDashboard:
+      type: object
+      required:
+        - generated_at
+        - tenant_role
+        - initiative_funnel
+        - kpis
+        - range_lifecycle_mix
+        - range_category_depth
+        - evidence_register
+        - work_queue
+        - unavailable_kpis
+      properties:
+        generated_at:
+          type: string
+          format: date-time
+        tenant_role:
+          type: string
+          description: Active tenant membership role for the authenticated actor.
+        initiative_funnel:
+          type: array
+          items:
+            type: object
+            required: [status, count]
+            properties:
+              status: { type: string }
+              count: { type: integer, minimum: 0 }
+        kpis:
+          type: array
+          items:
+            $ref: '#/components/schemas/MerchandisingKpi'
+        range_lifecycle_mix:
+          type: array
+          items:
+            type: object
+            required: [lifecycle_type, range_line_count, planned_units]
+            properties:
+              lifecycle_type: { type: string }
+              range_line_count: { type: integer, minimum: 0 }
+              planned_units: { type: integer, minimum: 0 }
+        range_category_depth:
+          type: array
+          items:
+            type: object
+            required: [category_code, target_tier, range_line_count, planned_units]
+            properties:
+              category_code: { type: string }
+              target_tier: { type: [string, 'null'] }
+              range_line_count: { type: integer, minimum: 0 }
+              planned_units: { type: integer, minimum: 0 }
+        evidence_register:
+          type: object
+          required: [source_count, insight_count, sufficiency_status, sufficiency_reason]
+          properties:
+            source_count: { type: integer, minimum: 0 }
+            insight_count: { type: integer, minimum: 0 }
+            sufficiency_status:
+              type: string
+              enum: [UNAVAILABLE]
+            sufficiency_reason: { type: string }
+        work_queue:
+          type: object
+          required: [approval_scope, approvals, my_work]
+          properties:
+            approval_scope:
+              type: string
+              enum: [TENANT_APPROVALS, NOT_AUTHORIZED_FOR_TENANT_APPROVALS]
+            approvals:
+              type: array
+              description: Empty for non-OWNER/ADMIN roles.
+              items:
+                $ref: '#/components/schemas/MerchandisingWorkItem'
+            my_work:
+              type: array
+              items:
+                $ref: '#/components/schemas/MerchandisingWorkItem'
+        unavailable_kpis:
+          type: array
+          items:
+            $ref: '#/components/schemas/UnavailableMerchandisingKpi'
+    MerchandisingKpi:
+      type: object
+      required:
+        - key
+        - label
+        - status
+        - value
+        - unit
+        - numerator
+        - denominator
+        - definition
+        - sources
+      properties:
+        key: { type: string }
+        label: { type: string }
+        status:
+          type: string
+          enum: [AVAILABLE, NO_DATA, UNAVAILABLE]
+        value: { type: [number, 'null'] }
+        unit: { type: string }
+        numerator: { type: [integer, 'null'] }
+        denominator: { type: [integer, 'null'] }
+        definition: { type: string }
+        sources:
+          type: array
+          items: { type: string }
+    MerchandisingWorkItem:
+      type: object
+      required: [type, id, code, title, stage, created_at, href]
+      properties:
+        type: { type: string }
+        id: { type: string }
+        code: { type: string }
+        title: { type: string }
+        stage: { type: string }
+        created_at: { type: string, format: date-time }
+        href: { type: string }
+    UnavailableMerchandisingKpi:
+      type: object
+      required: [key, reason, dependency]
+      properties:
+        key: { type: string }
+        reason: { type: string }
+        dependency: { type: string }
