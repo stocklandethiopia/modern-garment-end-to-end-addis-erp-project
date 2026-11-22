@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Merchandising;
 
 use App\Http\Controllers\Controller;
+use App\Services\ScopedAccessService;
 use App\Support\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -85,11 +86,13 @@ class MerchandisingPlanningController extends Controller
         ], 201);
     }
 
-    public function createBrandStrategy(string $brandId, Request $request, TenantContext $tenantContext): JsonResponse
+    public function createBrandStrategy(string $brandId, Request $request, TenantContext $tenantContext, ScopedAccessService $scopedAccess): JsonResponse
     {
         $tenantId = $tenantContext->tenantId();
         $brand = DB::table('brands')->where('tenant_id', $tenantId)->where('id', $brandId)->first();
         abort_if($brand === null, 404);
+        $actor = (string) $request->user()->getAuthIdentifier();
+        $scopedAccess->assertBrand($tenantId, $actor, $brandId, 'CREATE');
 
         $data = $request->validate([
             'positioning' => ['required', 'string', 'min:10', 'max:500'],
@@ -107,7 +110,6 @@ class MerchandisingPlanningController extends Controller
         ]);
 
         $id = (string) Str::uuid();
-        $actor = (string) $request->user()->getAuthIdentifier();
 
         $created = DB::transaction(function () use ($tenantId, $brandId, $data, $id, $actor): array {
             $brand = DB::table('brands')
@@ -151,11 +153,12 @@ class MerchandisingPlanningController extends Controller
         return response()->json(['data' => $created], 201);
     }
 
-    public function approveBrandStrategy(string $brandId, string $versionId, Request $request, TenantContext $tenantContext): JsonResponse
+    public function approveBrandStrategy(string $brandId, string $versionId, Request $request, TenantContext $tenantContext, ScopedAccessService $scopedAccess): JsonResponse
     {
         $tenantId = $tenantContext->tenantId();
         $approver = (string) $request->user()->getAuthIdentifier();
         abort_unless($tenantContext->canAdministerTenant(), 403, 'Tenant administrator approval is required.');
+        $scopedAccess->assertBrand($tenantId, $approver, $brandId, 'APPROVE');
 
         $result = DB::transaction(function () use ($tenantId, $brandId, $versionId, $approver): object {
             $brand = DB::table('brands')
@@ -301,7 +304,7 @@ class MerchandisingPlanningController extends Controller
         ]);
     }
 
-    public function createCollection(Request $request, TenantContext $tenantContext): JsonResponse
+    public function createCollection(Request $request, TenantContext $tenantContext, ScopedAccessService $scopedAccess): JsonResponse
     {
         $tenantId = $tenantContext->tenantId();
         $data = $request->validate([
@@ -321,6 +324,8 @@ class MerchandisingPlanningController extends Controller
         $code = strtoupper($data['code']);
         $id = (string) Str::uuid();
         $actor = (string) $request->user()->getAuthIdentifier();
+        $scopedAccess->assertBrand($tenantId, $actor, $data['brand_id'], 'CREATE');
+        $scopedAccess->assertMarket($tenantId, $actor, $data['target_market'], 'CREATE');
 
         $collection = DB::transaction(function () use ($tenantId, $data, $code, $id, $actor): object {
             DB::table('collections')->insert([
@@ -343,7 +348,7 @@ class MerchandisingPlanningController extends Controller
         return response()->json(['data' => $collection], 201);
     }
 
-    public function createCollectionVersion(string $collectionId, Request $request, TenantContext $tenantContext): JsonResponse
+    public function createCollectionVersion(string $collectionId, Request $request, TenantContext $tenantContext, ScopedAccessService $scopedAccess): JsonResponse
     {
         $tenantId = $tenantContext->tenantId();
         $data = $request->validate([
@@ -360,7 +365,7 @@ class MerchandisingPlanningController extends Controller
         $id = (string) Str::uuid();
         $actor = (string) $request->user()->getAuthIdentifier();
 
-        $created = DB::transaction(function () use ($tenantId, $collectionId, $data, $id, $actor): array {
+        $created = DB::transaction(function () use ($tenantId, $collectionId, $data, $id, $actor, $scopedAccess): array {
             $collection = DB::table('collections')
                 ->where('tenant_id', $tenantId)
                 ->where('id', $collectionId)
@@ -368,6 +373,8 @@ class MerchandisingPlanningController extends Controller
                 ->first();
 
             abort_if($collection === null, 404);
+            $scopedAccess->assertBrand($tenantId, $actor, $collection->brand_id, 'CREATE');
+            $scopedAccess->assertMarket($tenantId, $actor, $collection->target_market, 'CREATE');
 
             $version = (int) DB::table('collection_versions')
                 ->where('tenant_id', $tenantId)
@@ -395,13 +402,15 @@ class MerchandisingPlanningController extends Controller
         return response()->json(['data' => $created], 201);
     }
 
-    public function approveCollectionVersion(string $collectionId, string $versionId, Request $request, TenantContext $tenantContext): JsonResponse
+    public function approveCollectionVersion(string $collectionId, string $versionId, Request $request, TenantContext $tenantContext, ScopedAccessService $scopedAccess): JsonResponse
     {
         $tenantId = $tenantContext->tenantId();
         $approver = (string) $request->user()->getAuthIdentifier();
         abort_unless($tenantContext->canAdministerTenant(), 403);
         $collection = DB::table('collections')->where('tenant_id', $tenantId)->where('id', $collectionId)->first();
         abort_if($collection === null, 404);
+        $scopedAccess->assertBrand($tenantId, $approver, $collection->brand_id, 'APPROVE');
+        $scopedAccess->assertMarket($tenantId, $approver, $collection->target_market, 'APPROVE');
 
         return DB::transaction(function () use ($tenantId, $collectionId, $versionId, $approver) {
             $collection = DB::table('collections')
@@ -531,7 +540,7 @@ class MerchandisingPlanningController extends Controller
         ]);
     }
 
-    public function createRangePlan(Request $request, TenantContext $tenantContext): JsonResponse
+    public function createRangePlan(Request $request, TenantContext $tenantContext, ScopedAccessService $scopedAccess): JsonResponse
     {
         $tenantId = $tenantContext->tenantId();
         $data = $request->validate([
@@ -551,7 +560,7 @@ class MerchandisingPlanningController extends Controller
         $id = (string) Str::uuid();
         $actor = (string) $request->user()->getAuthIdentifier();
 
-        $rangePlan = DB::transaction(function () use ($tenantId, $data, $code, $id, $actor): object {
+        $rangePlan = DB::transaction(function () use ($tenantId, $data, $code, $id, $actor, $scopedAccess): object {
             $collection = DB::table('collections')
                 ->where('tenant_id', $tenantId)
                 ->where('id', $data['collection_id'])
@@ -560,6 +569,8 @@ class MerchandisingPlanningController extends Controller
 
             abort_if($collection === null, 404);
             abort_unless($collection->status === 'APPROVED', 422, 'The collection must be approved before range planning.');
+            $scopedAccess->assertBrand($tenantId, $actor, $collection->brand_id, 'CREATE');
+            $scopedAccess->assertMarket($tenantId, $actor, $collection->target_market, 'CREATE');
 
             $version = DB::table('collection_versions')
                 ->where('tenant_id', $tenantId)
@@ -597,7 +608,7 @@ class MerchandisingPlanningController extends Controller
         return response()->json(['data' => $rangePlan], 201);
     }
 
-    public function createRangeLine(string $rangePlanId, Request $request, TenantContext $tenantContext): JsonResponse
+    public function createRangeLine(string $rangePlanId, Request $request, TenantContext $tenantContext, ScopedAccessService $scopedAccess): JsonResponse
     {
         $tenantId = $tenantContext->tenantId();
         $data = $request->validate([
@@ -627,7 +638,7 @@ class MerchandisingPlanningController extends Controller
         $id = (string) Str::uuid();
         $actor = (string) $request->user()->getAuthIdentifier();
 
-        $rangeLine = DB::transaction(function () use ($tenantId, $rangePlanId, $data, $id, $actor): object {
+        $rangeLine = DB::transaction(function () use ($tenantId, $rangePlanId, $data, $id, $actor, $scopedAccess): object {
             $plan = DB::table('range_plans')
                 ->where('tenant_id', $tenantId)
                 ->where('id', $rangePlanId)
@@ -636,6 +647,10 @@ class MerchandisingPlanningController extends Controller
 
             abort_if($plan === null, 404);
             abort_unless($plan->status === 'DRAFT', 422, 'Range lines can only be added while a plan is in draft.');
+            $collection = DB::table('collections')->where('tenant_id', $tenantId)->where('id', $plan->collection_id)->first();
+            abort_if($collection === null, 404);
+            $scopedAccess->assertBrand($tenantId, $actor, $collection->brand_id, 'CREATE');
+            $scopedAccess->assertMarket($tenantId, $actor, $collection->target_market, 'CREATE');
 
             DB::table('range_lines')->insert([
                 'id' => $id,
@@ -657,16 +672,20 @@ class MerchandisingPlanningController extends Controller
         return response()->json(['data' => $rangeLine], 201);
     }
 
-    public function freezeRangePlan(string $rangePlanId, Request $request, TenantContext $tenantContext): JsonResponse
+    public function freezeRangePlan(string $rangePlanId, Request $request, TenantContext $tenantContext, ScopedAccessService $scopedAccess): JsonResponse
     {
         $tenantId = $tenantContext->tenantId();
         $actor = (string) $request->user()->getAuthIdentifier();
         abort_unless($tenantContext->canAdministerTenant(), 403, 'Tenant administrator freeze approval is required.');
 
-        return DB::transaction(function () use ($tenantId, $rangePlanId, $actor) {
+        return DB::transaction(function () use ($tenantId, $rangePlanId, $actor, $scopedAccess) {
             $plan = DB::table('range_plans')->where('tenant_id', $tenantId)->where('id', $rangePlanId)->lockForUpdate()->first();
             abort_if($plan === null, 404);
             abort_unless($plan->status === 'DRAFT', 422, 'Only a draft range plan can be frozen.');
+            $collection = DB::table('collections')->where('tenant_id', $tenantId)->where('id', $plan->collection_id)->first();
+            abort_if($collection === null, 404);
+            $scopedAccess->assertBrand($tenantId, $actor, $collection->brand_id, 'APPROVE');
+            $scopedAccess->assertMarket($tenantId, $actor, $collection->target_market, 'APPROVE');
             abort_unless($plan->owner_user_id !== $actor, 403, 'The range plan owner cannot approve their own freeze.');
             $lines = DB::table('range_lines')->where('tenant_id', $tenantId)->where('range_plan_id', $rangePlanId)->count();
             abort_unless($lines > 0, 422, 'A range plan needs at least one completed product hypothesis before freeze.');
@@ -694,7 +713,7 @@ class MerchandisingPlanningController extends Controller
         });
     }
 
-    public function createAssortmentPlan(Request $request, TenantContext $tenantContext): JsonResponse
+    public function createAssortmentPlan(Request $request, TenantContext $tenantContext, ScopedAccessService $scopedAccess): JsonResponse
     {
         $tenantId = $tenantContext->tenantId();
         $data = $request->validate([
@@ -710,6 +729,7 @@ class MerchandisingPlanningController extends Controller
             ],
             'channel_code' => ['required', 'string', 'max:60'],
             'market_scope' => ['required', 'string', 'max:160'],
+            'business_site_id' => ['nullable', 'uuid', Rule::exists('business_sites', 'id')->where(fn ($query) => $query->where('tenant_id', $tenantId))],
             'account_reference' => ['nullable', 'string', 'max:120'],
             'location_cluster_reference' => ['nullable', 'string', 'max:120'],
         ]);
@@ -717,7 +737,12 @@ class MerchandisingPlanningController extends Controller
         $id = (string) Str::uuid();
         $actor = (string) $request->user()->getAuthIdentifier();
 
-        $assortmentPlan = DB::transaction(function () use ($tenantId, $data, $id, $actor): object {
+        $scopedAccess->assertMarket($tenantId, $actor, $data['market_scope'], 'CREATE');
+        if (! empty($data['business_site_id'])) {
+            $scopedAccess->assertSite($tenantId, $actor, $data['business_site_id'], 'CREATE');
+        }
+
+        $assortmentPlan = DB::transaction(function () use ($tenantId, $data, $id, $actor, $scopedAccess): object {
             $rangePlan = DB::table('range_plans')
                 ->where('tenant_id', $tenantId)
                 ->where('id', $data['range_plan_id'])
@@ -726,6 +751,82 @@ class MerchandisingPlanningController extends Controller
 
             abort_if($rangePlan === null, 404);
             abort_unless($rangePlan->status === 'FROZEN', 422, 'The range plan must be frozen before assortment planning.');
+            $collection = DB::table('collections')->where('tenant_id', $tenantId)->where('id', $rangePlan->collection_id)->first();
+            abort_if($collection === null, 404);
+            $scopedAccess->assertBrand($tenantId, $actor, $collection->brand_id, 'CREATE');
+            $scopedAccess->assertMarket($tenantId, $actor, $data['market_scope'], 'CREATE');
+
+            $eligibilityStatus = 'NOT_APPLICABLE';
+            $blockReasons = [];
+            if ($data['channel_code'] === 'OWN_RETAIL') {
+                $eligibilityStatus = 'SIMULATION_ONLY';
+                if (empty($data['business_site_id'])) {
+                    $blockReasons[] = 'A business site is required for own-retail commercial eligibility.';
+                } else {
+                    $site = DB::table('business_sites as s')
+                        ->leftJoin('legal_entities as le', function ($join): void {
+                            $join->on('le.tenant_id', '=', 's.tenant_id')->on('le.id', '=', 's.legal_entity_id');
+                        })
+                        ->where('s.tenant_id', $tenantId)
+                        ->where('s.id', $data['business_site_id'])
+                        ->first(['s.id', 's.status as site_status', 's.legal_entity_id', 'le.status as entity_status']);
+                    if ($site === null) {
+                        abort(404, 'Business site not found in the current tenant.');
+                    }
+                    if ($site->legal_entity_id === null || $site->entity_status !== 'ACTIVE') {
+                        $blockReasons[] = 'The site must belong to an ACTIVE legal entity.';
+                    }
+                    if ($site->site_status !== 'ACTIVE') {
+                        $blockReasons[] = 'The business site must be ACTIVE.';
+                    }
+                    $retailNode = DB::table('operational_nodes')
+                        ->where('tenant_id', $tenantId)
+                        ->where('business_site_id', $site->id)
+                        ->where('node_type', 'RETAIL_STORE')
+                        ->where('status', 'ACTIVE')
+                        ->whereRaw("capabilities @> ?::jsonb", [json_encode(['RETAIL'], JSON_THROW_ON_ERROR)])
+                        ->exists();
+                    if (! $retailNode) {
+                        $blockReasons[] = 'An ACTIVE RETAIL_STORE operational node with RETAIL capability is required.';
+                    }
+                    $registration = DB::table('branch_registrations')
+                        ->where('tenant_id', $tenantId)
+                        ->where('business_site_id', $site->id)
+                        ->whereIn('status', ['VERIFIED', 'APPROVED', 'ACTIVE'])
+                        ->where(function ($query): void {
+                            $query->whereNull('valid_from')->orWhereDate('valid_from', '<=', now()->toDateString());
+                        })
+                        ->where(function ($query): void {
+                            $query->whereNull('valid_to')->orWhereDate('valid_to', '>=', now()->toDateString());
+                        })
+                        ->exists();
+                    if (! $registration) {
+                        $blockReasons[] = 'Current verified branch registration evidence is required.';
+                    }
+                    $licence = DB::table('entity_licences')
+                        ->where('tenant_id', $tenantId)
+                        ->where('legal_entity_id', $site->legal_entity_id)
+                        ->where(function ($query) use ($site): void {
+                            $query->whereNull('site_id')->orWhere('site_id', $site->id);
+                        })
+                        ->whereIn('status', ['VERIFIED', 'APPROVED', 'ACTIVE'])
+                        ->where(function ($query): void {
+                            $query->whereNull('valid_from')->orWhereDate('valid_from', '<=', now()->toDateString());
+                        })
+                        ->where(function ($query): void {
+                            $query->whereNull('valid_to')->orWhereDate('valid_to', '>=', now()->toDateString());
+                        })
+                        ->whereRaw('UPPER(activity_code) = ?', ['RETAIL'])
+                        ->exists();
+                    if (! $licence) {
+                        $blockReasons[] = 'Current verified RETAIL activity licence evidence is required.';
+                    }
+                }
+                if ($blockReasons === []) {
+                    $eligibilityStatus = 'ELIGIBLE_PENDING_APPROVAL';
+                    $blockReasons[] = 'Eligibility evidence is complete; a separate commercial activation approval is still required.';
+                }
+            }
 
             DB::table('assortment_plans')->insert([
                 'id' => $id,
@@ -733,6 +834,9 @@ class MerchandisingPlanningController extends Controller
                 ...$data,
                 'version_no' => 1,
                 'status' => 'DRAFT',
+                'business_site_id' => $data['business_site_id'] ?? null,
+                'commercial_eligibility_status' => $eligibilityStatus,
+                'commercial_block_reason' => $blockReasons === [] ? null : implode(' ', $blockReasons),
                 'owner_user_id' => $actor,
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -740,13 +844,15 @@ class MerchandisingPlanningController extends Controller
 
             $this->audit($tenantId, $actor, 'ASSORTMENT_PLAN_CREATED', 'ASSORTMENT_PLAN', $id, 'Channel assortment plan created against a frozen range.');
 
-            return DB::table('assortment_plans')->where('tenant_id', $tenantId)->where('id', $id)->first();
+            $created = DB::table('assortment_plans')->where('tenant_id', $tenantId)->where('id', $id)->first();
+            $created->commercial_activation_allowed = false;
+            return $created;
         });
 
         return response()->json(['data' => $assortmentPlan], 201);
     }
 
-    public function createAssortmentLine(string $assortmentPlanId, Request $request, TenantContext $tenantContext): JsonResponse
+    public function createAssortmentLine(string $assortmentPlanId, Request $request, TenantContext $tenantContext, ScopedAccessService $scopedAccess): JsonResponse
     {
         $tenantId = $tenantContext->tenantId();
         $data = $request->validate([
@@ -769,7 +875,7 @@ class MerchandisingPlanningController extends Controller
         $id = (string) Str::uuid();
         $actor = (string) $request->user()->getAuthIdentifier();
 
-        $assortmentLine = DB::transaction(function () use ($tenantId, $assortmentPlanId, $data, $id, $actor): object {
+        $assortmentLine = DB::transaction(function () use ($tenantId, $assortmentPlanId, $data, $id, $actor, $scopedAccess): object {
             $plan = DB::table('assortment_plans')
                 ->where('tenant_id', $tenantId)
                 ->where('id', $assortmentPlanId)
@@ -778,6 +884,15 @@ class MerchandisingPlanningController extends Controller
 
             abort_if($plan === null, 404);
             abort_unless($plan->status === 'DRAFT', 422, 'Only draft assortment plans can be edited.');
+            $scopedAccess->assertMarket($tenantId, $actor, $plan->market_scope, 'CREATE');
+            if ($plan->business_site_id !== null) {
+                $scopedAccess->assertSite($tenantId, $actor, $plan->business_site_id, 'CREATE');
+            }
+            $rangePlan = DB::table('range_plans')->where('tenant_id', $tenantId)->where('id', $plan->range_plan_id)->first();
+            abort_if($rangePlan === null, 404);
+            $collection = DB::table('collections')->where('tenant_id', $tenantId)->where('id', $rangePlan->collection_id)->first();
+            abort_if($collection === null, 404);
+            $scopedAccess->assertBrand($tenantId, $actor, $collection->brand_id, 'CREATE');
 
             $rangeLine = DB::table('range_lines')
                 ->where('tenant_id', $tenantId)
