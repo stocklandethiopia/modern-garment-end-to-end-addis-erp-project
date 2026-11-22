@@ -1,0 +1,123 @@
+<header class="page-heading">
+  <div>
+    <span class="eyebrow">WP-05 · TECHNICAL PRODUCT DEVELOPMENT</span>
+    <h1>Measurement & pattern engineering</h1>
+    <p>Versioned points of measurement, garment tolerances, pattern pieces and size-grade rules — all tied to a specific style revision.</p>
+  </div>
+  <button class="secondary-button" type="button" (click)="loadStyles()" [disabled]="loading()">Refresh styles</button>
+</header>
+
+@if (errorMessage()) { <p class="notice error" role="alert">{{ errorMessage() }}</p> }
+@if (successMessage()) { <p class="notice success" role="status">{{ successMessage() }}</p> }
+@if (loading()) { <p class="loading-note" role="status">Loading technical development records…</p> }
+
+<section class="panel style-selector">
+  <label>Select style
+    <select (change)="selectStyle($any($event.target).value)">
+      <option value="">Choose a style</option>
+      @for (style of styles(); track style.id) {
+        <option [value]="style.id">{{ style.style_code }} · {{ style.name }} · {{ style.status }} · Rev {{ style.current_revision }}</option>
+      }
+    </select>
+  </label>
+  @if (selectedStyle(); as style) {
+    <div class="style-context">
+      <strong>{{ style.style_code }} · {{ style.name }}</strong>
+      <span>{{ style.category_code }} · style revision {{ style.current_revision }} · {{ style.status }}</span>
+      <span>Technical records must reference the current style revision and an approved measurement specification.</span>
+    </div>
+  }
+</section>
+
+@if (selectedStyle(); as style) {
+  <div class="workspace-grid">
+    <section class="panel">
+      <div class="panel-heading">
+        <div><span class="panel-kicker">01 · POINTS OF MEASUREMENT</span><h2>Create measurement specification</h2><p>Declare a size sequence, base size, measurement method and explicit plus/minus tolerance for every required point and size.</p></div>
+      </div>
+      @if (canManageStyle()) {
+        <form [formGroup]="measurementForm" (ngSubmit)="createMeasurementSpec()" class="form-grid">
+          <label>Size system code<input formControlName="size_system_code" placeholder="BRAND-ADULT-CM"></label>
+          <label>Ordered size sequence<input formControlName="size_sequence_csv" placeholder="XS, S, M, L, XL"></label>
+          <label>Base size<input formControlName="base_size_code" placeholder="M"></label>
+          <label>Measurement condition<input formControlName="measurement_condition" placeholder="Garment flat, relaxed, washed, etc."></label>
+          <label class="full-span">Measurement points and per-size values (JSON array)<textarea rows="13" formControlName="points_json" spellcheck="false" placeholder='[{"point_code":"CHEST_CIRC","name":"Chest circumference","measurement_method":"Measure around the chest at underarm level.","unit_code":"CM","is_required":true,"values":[{"size_code":"XS","nominal_value":92,"tolerance_minus":1,"tolerance_plus":1},{"size_code":"S","nominal_value":96,"tolerance_minus":1,"tolerance_plus":1},{"size_code":"M","nominal_value":100,"tolerance_minus":1,"tolerance_plus":1},{"size_code":"L","nominal_value":104,"tolerance_minus":1,"tolerance_plus":1}]}]'></textarea></label>
+          <label class="full-span">Change reason<textarea rows="2" formControlName="change_reason" placeholder="Why is this size/measurement revision being created?"></textarea></label>
+          <div class="form-footer full-span"><p>Each required point must have exactly one nominal value and tolerance for every size in the ordered sequence.</p><button class="primary-button" type="submit" [disabled]="saving()">Create measurement version</button></div>
+        </form>
+      } @else { <p class="empty-inline">Only the style owner or an authorized tenant administrator can create technical records.</p> }
+
+      <div class="record-list">
+        @for (spec of measurementSpecs(); track spec.id) {
+          <article class="record-card">
+            <div class="record-title"><strong>{{ spec.size_system_code }} · v{{ spec.version_no }}</strong><span class="status-pill" [class.approved]="spec.status === 'APPROVED'">{{ spec.status }}</span></div>
+            <p>Style revision {{ spec.style_revision_no }} · Base {{ spec.base_size_code }} · {{ spec.size_sequence.join(' / ') }}</p>
+            <small>{{ spec.points.length }} measurement points · {{ spec.change_reason }}</small>
+            <div class="point-list">
+              @for (point of spec.points; track point.id) {
+                <div class="point-row"><strong>{{ point.point_code }} · {{ point.name }}</strong><span>{{ point.measurement_method }}</span><small>{{ point.values.length }} sizes · {{ point.unit_code }} · {{ point.is_required ? 'Required' : 'Optional' }}</small></div>
+              }
+            </div>
+            @if (spec.status === 'DRAFT' && canApprove(spec.created_by)) {
+              <button class="secondary-button" type="button" (click)="approveMeasurementSpec(spec)" [disabled]="saving()">Approve independently</button>
+            }
+            @if (spec.status === 'DRAFT' && !canApprove(spec.created_by)) { <small class="approval-hint">Awaiting approval by a different tenant owner/admin.</small> }
+          </article>
+        }
+        @if (measurementSpecs().length === 0) { <div class="empty-state"><strong>No measurement specification yet</strong><p>Create a versioned points-of-measurement table for the selected style revision.</p></div> }
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading"><div><span class="panel-kicker">02 · PATTERN ENGINEERING</span><h2>Create pattern set</h2><p>Pattern revisions pin to an approved measurement specification and the exact style revision.</p></div></div>
+      @if (approvedMeasurementSpecs().length > 0 && canManageStyle()) {
+        <form [formGroup]="patternForm" (ngSubmit)="createPatternSet()" class="form-grid">
+          <label>Pattern code<input formControlName="pattern_code" placeholder="OVERSHIRT-MAIN"></label>
+          <label>Pattern name<input formControlName="name" placeholder="Main production pattern"></label>
+          <label class="full-span">Approved measurement specification<select formControlName="measurement_spec_version_id"><option value="">Select approved current spec</option>@for (spec of approvedMeasurementSpecs(); track spec.id) { <option [value]="spec.id">{{ spec.size_system_code }} · v{{ spec.version_no }} · Rev {{ spec.style_revision_no }}</option> }</select></label>
+          <label class="full-span">Pattern pieces (JSON array)<textarea rows="7" formControlName="pieces_json" spellcheck="false" placeholder='[{"piece_code":"FRONT","description":"Left and right front panels","material_reference":"MAIN_FABRIC","grain_direction":"LENGTHWISE","seam_allowance":{"side":1,"shoulder":1,"hem":3},"piece_count":2}]'></textarea></label>
+          <label class="full-span">Grade rules (JSON array)<textarea rows="8" formControlName="grade_rules_json" spellcheck="false" placeholder='[{"point_code":"CHEST_CIRC","from_size_code":"S","to_size_code":"M","increment":4,"unit_code":"CM"},{"point_code":"CHEST_CIRC","from_size_code":"M","to_size_code":"L","increment":4,"unit_code":"CM"}]'></textarea></label>
+          <label class="full-span">Change summary<textarea rows="2" formControlName="change_summary"></textarea></label>
+          <div class="form-footer full-span"><p>Approval is blocked until every required measurement point has a grade increment for every adjacent size pair, consistent with specified tolerances.</p><button class="primary-button" type="submit" [disabled]="saving()">Create pattern set</button></div>
+        </form>
+      } @else {
+        <div class="empty-state"><strong>Approved current measurement spec required</strong><p>Create and independently approve a measurement specification for this style revision before creating patterns.</p></div>
+      }
+
+      <div class="record-list">
+        @for (pattern of patternSets(); track pattern.id) {
+          <article class="record-card">
+            <div class="record-title"><strong>{{ pattern.pattern_code }} · {{ pattern.name }}</strong><span class="status-pill" [class.approved]="pattern.status === 'APPROVED'">{{ pattern.status }}</span></div>
+            <p>Current approved revision {{ pattern.current_revision || '—' }} · Latest revision {{ pattern.latest_revision_no || '—' }} · {{ pattern.latest_revision_status || 'Not created' }}</p>
+            <small>{{ pattern.latest_change_summary || 'No pattern revision summary' }}</small>
+            <div class="button-row">
+              <button class="text-button" type="button" (click)="selectPattern(pattern)">Create next revision</button>
+              @if (pattern.latest_revision_id && pattern.latest_revision_status === 'DRAFT' && canApprove(pattern.latest_revision_created_by)) {
+                <button class="secondary-button" type="button" (click)="approvePattern(pattern)" [disabled]="saving()">Approve latest revision</button>
+              }
+              @if (pattern.latest_revision_id && pattern.latest_revision_status === 'DRAFT' && !canApprove(pattern.latest_revision_created_by)) { <small class="approval-hint">Independent approval required.</small> }
+            </div>
+          </article>
+        }
+        @if (patternSets().length === 0) { <div class="empty-state"><strong>No pattern set yet</strong><p>Create a first pattern after the measurement spec is approved.</p></div> }
+      </div>
+    </section>
+  </div>
+
+  @if (selectedPattern(); as pattern) {
+    <section class="panel revision-panel">
+      <div class="panel-heading"><div><span class="panel-kicker">PATTERN REVISION WORKSPACE</span><h2>{{ pattern.pattern_code }} · New revision</h2><p>Prior pattern revisions and their approvals remain immutable.</p></div><button class="text-button" type="button" (click)="selectPattern(null as any)">Close</button></div>
+      <form [formGroup]="patternRevisionForm" (ngSubmit)="createPatternRevision()" class="form-grid">
+        <label class="full-span">Approved measurement specification<select formControlName="measurement_spec_version_id"><option value="">Select approved current spec</option>@for (spec of approvedMeasurementSpecs(); track spec.id) { <option [value]="spec.id">{{ spec.size_system_code }} · v{{ spec.version_no }}</option> }</select></label>
+        <label class="full-span">Pattern pieces (JSON array)<textarea rows="7" formControlName="pieces_json" spellcheck="false"></textarea></label>
+        <label class="full-span">Grade rules (JSON array)<textarea rows="8" formControlName="grade_rules_json" spellcheck="false"></textarea></label>
+        <label class="full-span">Change summary<textarea rows="2" formControlName="change_summary"></textarea></label>
+        <div class="form-footer full-span"><p>The new revision must use the current style revision and a matching approved measurement-spec revision.</p><button class="primary-button" type="submit" [disabled]="saving()">Append pattern revision</button></div>
+      </form>
+    </section>
+  }
+} @else {
+  <section class="panel empty-state"><strong>Select a style to begin technical development</strong><p>Technical records are tenant-scoped and cannot be created without a current style revision.</p></section>
+}
+
+<footer class="footer-note"><span class="info-icon">i</span><p>This slice governs measurement tables, point tolerances, pattern-piece registers and grading increments. It does not store CAD binaries or replace 2D/3D authoring software. Physical sample requests, pattern digitization, fit sessions, measurement reconciliation, technical packs, BOM, costing and product release remain later controlled WP-05 stages.</p></footer>

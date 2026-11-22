@@ -96,4 +96,79 @@ describe('ProductDevelopmentService', () => {
     expect(revision.request.method).toBe('POST');
     revision.flush({ data: { id: 'style-1', current_revision: 2 } });
   });
+
+  it('creates and approves immutable measurement specification versions', () => {
+    service.createMeasurementSpec('style-1', {
+      size_system_code: 'ADULT-CM',
+      size_sequence: ['S', 'M', 'L'],
+      base_size_code: 'M',
+      measurement_condition: 'Garment measured flat in relaxed condition.',
+      change_reason: 'Initial size specification for technical development.',
+      points: [{
+        point_code: 'CHEST_CIRC',
+        name: 'Chest circumference',
+        measurement_method: 'Measure around the chest at underarm level.',
+        unit_code: 'CM',
+        is_required: true,
+        values: [
+          { size_code: 'S', nominal_value: 96, tolerance_minus: 1, tolerance_plus: 1 },
+          { size_code: 'M', nominal_value: 100, tolerance_minus: 1, tolerance_plus: 1 },
+          { size_code: 'L', nominal_value: 104, tolerance_minus: 1, tolerance_plus: 1 },
+        ],
+      }],
+    }).subscribe((response) => expect(response.data.status).toBe('DRAFT'));
+
+    const create = http.expectOne('/api/v1/styles/style-1/measurement-specs');
+    expect(create.request.method).toBe('POST');
+    create.flush({ data: { id: 'measurement-1', status: 'DRAFT' } });
+
+    service.approveMeasurementSpec('style-1', 'measurement-1').subscribe((response) => {
+      expect(response.data.status).toBe('APPROVED');
+    });
+    const approve = http.expectOne('/api/v1/styles/style-1/measurement-specs/measurement-1/approve');
+    expect(approve.request.method).toBe('POST');
+    approve.flush({ data: { id: 'measurement-1', status: 'APPROVED' } });
+
+    service.listMeasurementSpecs('style-1').subscribe((response) => {
+      expect(response.data[0]?.size_sequence).toEqual(['S', 'M', 'L']);
+      expect(response.data[0]?.points[0]?.values).toHaveLength(3);
+    });
+    const list = http.expectOne('/api/v1/styles/style-1/measurement-specs');
+    expect(list.request.method).toBe('GET');
+    list.flush({ data: [{ id: 'measurement-1', status: 'APPROVED', size_sequence: ['S', 'M', 'L'], points: [{ values: [{ size_code: 'S' }, { size_code: 'M' }, { size_code: 'L' }] }] }] });
+  });
+
+  it('creates versioned pattern sets, appends revisions and approves the exact revision', () => {
+    const payload = {
+      measurement_spec_version_id: 'measurement-1',
+      pieces: [{ piece_code: 'FRONT', description: 'Front body panel', grain_direction: 'LENGTHWISE', seam_allowance: { side: 1 }, piece_count: 2 }],
+      grade_rules: [{ point_code: 'CHEST_CIRC', from_size_code: 'S', to_size_code: 'M', increment: 4, unit_code: 'CM' }],
+      change_summary: 'Initial pattern for approved measurement baseline.',
+    };
+
+    service.createPatternSet('style-1', {
+      ...payload,
+      pattern_code: 'OVERSHIRT-01',
+      name: 'Main overshirt pattern',
+    }).subscribe((response) => expect(response.revision.revision_no).toBe(1));
+    const create = http.expectOne('/api/v1/styles/style-1/patterns');
+    expect(create.request.method).toBe('POST');
+    create.flush({ data: { id: 'pattern-1', pattern_code: 'OVERSHIRT-01' }, revision: { id: 'pattern-rev-1', revision_no: 1 } });
+
+    service.createPatternRevision('pattern-1', payload).subscribe((response) => {
+      expect(response.data.revision_no).toBe(2);
+    });
+    const revision = http.expectOne('/api/v1/patterns/pattern-1/revisions');
+    expect(revision.request.method).toBe('POST');
+    revision.flush({ data: { id: 'pattern-rev-2', revision_no: 2, status: 'DRAFT' } });
+
+    service.approvePatternRevision('pattern-1', 'pattern-rev-2').subscribe((response) => {
+      expect(response.data.status).toBe('APPROVED');
+      expect(response.pattern_set.current_revision).toBe(2);
+    });
+    const approval = http.expectOne('/api/v1/patterns/pattern-1/revisions/pattern-rev-2/approve');
+    expect(approval.request.method).toBe('POST');
+    approval.flush({ data: { id: 'pattern-rev-2', revision_no: 2, status: 'APPROVED' }, pattern_set: { id: 'pattern-1', current_revision: 2 } });
+  });
+
 });

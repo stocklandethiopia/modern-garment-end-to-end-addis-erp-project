@@ -197,4 +197,155 @@ export class ProductDevelopmentService {
       input,
     );
   }
+
+export interface MeasurementSpecValue {
+  id: string;
+  size_code: string;
+  nominal_value: string;
+  tolerance_minus: string;
+  tolerance_plus: string;
+}
+
+export interface MeasurementSpecPoint {
+  id: string;
+  point_code: string;
+  name: string;
+  measurement_method: string;
+  unit_code: string;
+  is_required: boolean;
+  values: MeasurementSpecValue[];
+}
+
+export interface MeasurementSpecVersion {
+  id: string;
+  style_revision_no: number;
+  version_no: number;
+  size_system_code: string;
+  size_sequence: string[];
+  base_size_code: string;
+  measurement_condition: string;
+  status: 'DRAFT' | 'APPROVED' | 'REJECTED';
+  change_reason: string;
+  created_by: string;
+  approved_by: string | null;
+  approved_at: string | null;
+  points: MeasurementSpecPoint[];
+}
+
+export interface MeasurementPointInput {
+  point_code: string;
+  name: string;
+  measurement_method: string;
+  unit_code: 'CM' | 'MM' | 'IN';
+  is_required: boolean;
+  diagram_reference?: string | null;
+  values: Array<{
+    size_code: string;
+    nominal_value: number;
+    tolerance_minus: number;
+    tolerance_plus: number;
+  }>;
+}
+
+export interface MeasurementSpecInput {
+  size_system_code: string;
+  size_sequence: string[];
+  base_size_code: string;
+  measurement_condition: string;
+  change_reason: string;
+  points: MeasurementPointInput[];
+}
+
+export interface PatternGradeRuleInput {
+  point_code: string;
+  from_size_code: string;
+  to_size_code: string;
+  increment: number;
+  unit_code: 'CM' | 'MM' | 'IN';
+}
+
+export interface PatternPieceInput {
+  piece_code: string;
+  description: string;
+  material_reference?: string | null;
+  grain_direction?: string | null;
+  seam_allowance?: Record<string, number>;
+  piece_count: number;
+}
+
+export interface PatternSetRecord {
+  id: string;
+  style_id: string;
+  pattern_code: string;
+  name: string;
+  status: string;
+  current_revision: number;
+  latest_revision_id: string | null;
+  latest_revision_no: number | null;
+  latest_revision_status: string | null;
+  measurement_spec_version_id: string | null;
+  style_revision_no: number | null;
+  latest_revision_created_by: string | null;
+  latest_change_summary: string | null;
+}
+
+export interface PatternSetInput {
+  pattern_code: string;
+  name: string;
+  measurement_spec_version_id: string;
+  pieces: PatternPieceInput[];
+  grade_rules: PatternGradeRuleInput[];
+  change_summary: string;
+}
+
+export type PatternRevisionInput = Omit<PatternSetInput, 'pattern_code' | 'name'>;
+
+
+  listMeasurementSpecs(styleId: string): Observable<ProductDevelopmentResource<MeasurementSpecVersion[]>> {
+    return this.http.get<ProductDevelopmentResource<MeasurementSpecVersion[]>>(
+      this.base + '/styles/' + encodeURIComponent(styleId) + '/measurement-specs',
+    );
+  }
+
+  createMeasurementSpec(styleId: string, input: MeasurementSpecInput): Observable<ProductDevelopmentResource<MeasurementSpecVersion>> {
+    return this.http.post<ProductDevelopmentResource<MeasurementSpecVersion>>(
+      this.base + '/styles/' + encodeURIComponent(styleId) + '/measurement-specs',
+      input,
+    );
+  }
+
+  approveMeasurementSpec(styleId: string, specVersionId: string): Observable<ProductDevelopmentResource<MeasurementSpecVersion>> {
+    return this.http.post<ProductDevelopmentResource<MeasurementSpecVersion>>(
+      this.base + '/styles/' + encodeURIComponent(styleId) + '/measurement-specs/' + encodeURIComponent(specVersionId) + '/approve',
+      {},
+    );
+  }
+
+  listPatternSets(styleId: string): Observable<ProductDevelopmentResource<PatternSetRecord[]>> {
+    return this.http.get<ProductDevelopmentResource<PatternSetRecord[]>>(
+      this.base + '/styles/' + encodeURIComponent(styleId) + '/patterns',
+    );
+  }
+
+  createPatternSet(styleId: string, input: PatternSetInput): Observable<ProductDevelopmentResource<PatternSetRecord> & { revision: { id: string; revision_no: number } }> {
+    return this.http.post<ProductDevelopmentResource<PatternSetRecord> & { revision: { id: string; revision_no: number } }>(
+      this.base + '/styles/' + encodeURIComponent(styleId) + '/patterns',
+      input,
+    );
+  }
+
+  createPatternRevision(patternSetId: string, input: PatternRevisionInput): Observable<ProductDevelopmentResource<{ id: string; revision_no: number; status: string }>> {
+    return this.http.post<ProductDevelopmentResource<{ id: string; revision_no: number; status: string }>>(
+      this.base + '/patterns/' + encodeURIComponent(patternSetId) + '/revisions',
+      input,
+    );
+  }
+
+  approvePatternRevision(patternSetId: string, revisionId: string): Observable<ProductDevelopmentResource<{ id: string; revision_no: number; status: string }> & { pattern_set: PatternSetRecord }> {
+    return this.http.post<ProductDevelopmentResource<{ id: string; revision_no: number; status: string }> & { pattern_set: PatternSetRecord }>(
+      this.base + '/patterns/' + encodeURIComponent(patternSetId) + '/revisions/' + encodeURIComponent(revisionId) + '/approve',
+      {},
+    );
+  }
+
 }

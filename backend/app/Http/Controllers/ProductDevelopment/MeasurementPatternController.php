@@ -211,6 +211,8 @@ class MeasurementPatternController extends Controller
                     'pr.status as latest_revision_status',
                     'pr.measurement_spec_version_id',
                     'pr.style_revision_no',
+                    'pr.created_by as latest_revision_created_by',
+                    'pr.change_summary as latest_change_summary',
                 ]),
         ]);
     }
@@ -354,7 +356,10 @@ class MeasurementPatternController extends Controller
             abort_unless($revision->created_by !== $actorId, 403, 'The pattern revision creator cannot approve their own revision.');
             abort_unless($revision->status === 'DRAFT', 422, 'Only a draft pattern revision can be approved.');
 
+            $style = $this->findStyle($revision->style_id, $tenantId);
+            abort_unless((int) $revision->style_revision_no === (int) $style->current_revision, 422, 'This pattern revision is based on a superseded style revision.');
             $spec = $this->findApprovedMeasurementSpec($tenantId, $revision->style_id, $revision->measurement_spec_version_id);
+            abort_unless((int) $spec->style_revision_no === (int) $revision->style_revision_no, 422, 'The approved measurement specification must reference the exact style revision used by the pattern.');
             $pieceCount = DB::table('pattern_pieces')->where('tenant_id', $tenantId)->where('pattern_revision_id', $revisionId)->count();
             abort_unless($pieceCount > 0, 422, 'A pattern revision requires at least one pattern piece.');
 
