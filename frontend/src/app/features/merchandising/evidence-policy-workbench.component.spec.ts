@@ -62,6 +62,28 @@ describe('EvidencePolicyWorkbenchComponent', () => {
     expect(text).toContain('2 rules');
   });
 
+  it('assigns distinct default codes when additional rules are added', () => {
+    const fixture = TestBed.createComponent(EvidencePolicyWorkbenchComponent);
+    fixture.detectChanges();
+    http.expectOne('/api/v1/product/evidence-policies').flush({
+      data: { data: [], current_page: 1, last_page: 1, total: 0 },
+    });
+
+    fixture.componentInstance.addRule();
+    fixture.componentInstance.addRule();
+
+    const codes = fixture.componentInstance.ruleForms.controls.map(
+      (rule) => rule.get('requirement_code')?.value,
+    );
+
+    expect(codes).toEqual([
+      'PRIMARY_MARKET_EVIDENCE',
+      'EVIDENCE_REQUIREMENT_2',
+      'EVIDENCE_REQUIREMENT_3',
+    ]);
+    expect(new Set(codes).size).toBe(codes.length);
+  });
+
   it('shows that tenant thresholds are configurable rather than global defaults', () => {
     const fixture = TestBed.createComponent(EvidencePolicyWorkbenchComponent);
     fixture.detectChanges();
