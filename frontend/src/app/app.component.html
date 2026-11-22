@@ -1,67 +1,83 @@
-<div class="app-shell">
-  <aside class="sidebar" aria-label="Main navigation">
-    <a class="brand" routerLink="/" aria-label="Modern Garment ERP home">
-      <span class="brand-mark">M</span>
-      <span class="brand-copy">
-        <strong>MODERN GARMENT</strong>
-        <small>ADDIS ERP</small>
-      </span>
-    </a>
+@if (!session.accessToken()) {
+  <app-login />
+} @else if (!session.activeTenant()) {
+  <app-tenant-picker />
+} @else {
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Main navigation">
+      <a class="brand" routerLink="/" aria-label="Modern Garment ERP home">
+        <span class="brand-mark">M</span>
+        <span class="brand-copy">
+          <strong>MODERN GARMENT</strong>
+          <small>ADDIS ERP</small>
+        </span>
+      </a>
 
-    <div class="workspace-switcher">
-      <span class="workspace-avatar">W</span>
-      <span class="workspace-name">
-        <strong>Workspace</strong>
-        <small>Tenant not connected</small>
-      </span>
-      <span class="switcher-arrow" aria-hidden="true">⌄</span>
-    </div>
+      <div class="workspace-switcher">
+        <span class="workspace-avatar">W</span>
+        <span class="workspace-name">
+          <strong>Workspace</strong>
+          <small>{{ session.activeTenant()?.name }}</small>
+        </span>
+        <select
+          class="tenant-switch"
+          aria-label="Choose tenant workspace"
+          [value]="session.activeTenant()?.id ?? ''"
+          (change)="changeTenant($any($event.target).value)"
+        >
+          @for (membership of session.memberships(); track membership.id) {
+            <option [value]="membership.id">{{ membership.name }}</option>
+          }
+        </select>
+      </div>
 
-    <nav class="primary-nav">
-      <span class="nav-caption">WORKSPACE</span>
-      @for (item of navigation; track item.path) {
-        <a class="nav-link" [routerLink]="item.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-          <span class="nav-icon" aria-hidden="true">{{ item.icon }}</span>
-          <span>{{ item.label }}</span>
-        </a>
-      }
-    </nav>
-
-    @for (group of domainGroups; track group.label) {
-      <section class="nav-group" [attr.aria-label]="group.label">
-        <span class="nav-caption">{{ group.label }}</span>
-        @for (item of group.items; track item) {
-          <div class="nav-link nav-link-disabled" aria-disabled="true">
-            <span class="nav-dot" aria-hidden="true"></span>
-            <span>{{ item }}</span>
-            <span class="planned-tag">PLANNED</span>
-          </div>
+      <nav class="primary-nav" aria-label="Workspace navigation">
+        <span class="nav-caption">WORKSPACE</span>
+        @for (item of navigation; track item.path) {
+          <a class="nav-link" [routerLink]="item.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+            <span class="nav-icon" aria-hidden="true">{{ item.icon }}</span>
+            <span>{{ item.label }}</span>
+          </a>
         }
+      </nav>
+
+      @for (group of domainGroups; track group.label) {
+        <section class="nav-group" [attr.aria-label]="group.label">
+          <span class="nav-caption">{{ group.label }}</span>
+          @for (item of group.items; track item) {
+            <div class="nav-link nav-link-disabled" aria-disabled="true">
+              <span class="nav-dot" aria-hidden="true"></span>
+              <span>{{ item }}</span>
+              <span class="planned-tag">PLANNED</span>
+            </div>
+          }
+        </section>
+      }
+
+      <div class="sidebar-footer">
+        <span class="environment-dot"></span>
+        <span>Development foundation</span>
+        <span class="footer-version">0.1</span>
+      </div>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <div class="breadcrumbs">
+          <span>{{ session.activeTenant()?.name }}</span>
+          <span class="crumb-divider">/</span>
+          <strong>Workspace</strong>
+        </div>
+        <div class="topbar-actions">
+          <span class="environment-label">DEVELOPMENT FOUNDATION</span>
+          <span class="user-label">{{ session.user()?.name }}</span>
+          <button type="button" class="sign-out-button" (click)="signOut()">Sign out</button>
+        </div>
+      </header>
+
+      <section class="page-content">
+        <router-outlet />
       </section>
-    }
-
-    <div class="sidebar-footer">
-      <span class="environment-dot"></span>
-      <span>Development foundation</span>
-      <span class="footer-version">0.1</span>
-    </div>
-  </aside>
-
-  <main class="main-area">
-    <header class="topbar">
-      <div class="breadcrumbs">
-        <span>Workspace</span>
-        <span class="crumb-divider">/</span>
-        <strong>Overview</strong>
-      </div>
-      <div class="topbar-actions">
-        <span class="environment-label">FOUNDATION BUILD</span>
-        <button type="button" class="avatar-button" aria-label="Account menu unavailable until sign-in is enabled">G</button>
-      </div>
-    </header>
-
-    <section class="page-content">
-      <router-outlet />
-    </section>
-  </main>
-</div>
+    </main>
+  </div>
+}
