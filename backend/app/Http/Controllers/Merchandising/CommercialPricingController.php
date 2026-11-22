@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Merchandising;
 
 use App\Http\Controllers\Controller;
 use App\Support\TenantContext;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -332,9 +333,14 @@ class CommercialPricingController extends Controller
 
             abort_if($priceList === null, 404);
             abort_unless($priceList->status === 'PUBLISHED', 422, 'Promotion must reference a published price-list version.');
+            $promotionStart = Carbon::parse($data['starts_at']);
+            $promotionEnd = Carbon::parse($data['ends_at']);
+            $priceListStart = Carbon::parse($priceList->effective_from);
+            $priceListEnd = $priceList->effective_to !== null ? Carbon::parse($priceList->effective_to) : null;
+
             abort_unless(
-                $data['starts_at'] >= $priceList->effective_from
-                    && ($priceList->effective_to === null || $data['ends_at'] <= $priceList->effective_to),
+                $promotionStart->greaterThanOrEqualTo($priceListStart)
+                    && ($priceListEnd === null || $promotionEnd->lessThanOrEqualTo($priceListEnd)),
                 422,
                 'Promotion effective dates must be inside the published price-list effective period.',
             );
@@ -372,7 +378,7 @@ class CommercialPricingController extends Controller
         $tenantId = $tenantContext->tenantId();
         $data = $request->validate([
             'scope_type' => ['required', Rule::in(['CHANNEL', 'PRODUCT', 'CATEGORY', 'ACCOUNT', 'LOCATION', 'BRAND'])],
-            'scope_reference' => ['required', 'string', 'max:160'],
+            'scope_reference' => ['required', 'string', 'min:1', 'max:160'],
             'is_exclusion' => ['required', 'boolean'],
         ]);
 
@@ -472,12 +478,16 @@ class CommercialPricingController extends Controller
                 ->where('existing_scope.is_exclusion', false)
                 ->where('p.starts_at', '<=', $promotion->ends_at)
                 ->where('p.ends_at', '>=', $promotion->starts_at)
-                ->exists();
+                ->select('p.stack_policy')
+                ->first();
 
-            // Overlapping promotions can be valid when stacking policy permits it;
-            // retain the signal for reviewer visibility instead of silently rejecting.
-            if ($overlap && $promotion->stack_policy === 'NO_STACK') {
-                abort(422, 'An approved promotion overlaps an existing promotion for part of this eligibility scope.');
+            // Overlap is permitted only when both the existing and proposed
+            // promotion policies explicitly permit stacking.
+            if (
+                $overlap !== null
+                && ($promotion->stack_policy === 'NO_STACK' || $overlap->stack_policy === 'NO_STACK')
+            ) {
+                abort(422, 'An approved promotion overlaps an existing no-stack promotion for part of this eligibility scope.');
             }
 
             DB::table('merchandising_decisions')->insert([
@@ -488,7 +498,7 @@ class CommercialPricingController extends Controller
                 'object_version' => 1,
                 'decision' => 'APPROVE_PROMOTION',
                 'reason' => 'Promotion independently approved for its effective period and eligibility scope.',
-                'actions' => json_encode(['overlap_detected' => $overlap], JSON_THROW_ON_ERROR),
+                'actions' => json_encode(['overlap_detected' => $overlap !== null], JSON_THROW_ON_ERROR),
                 'decided_by' => $approver,
                 'decided_at' => now(),
             ]);
