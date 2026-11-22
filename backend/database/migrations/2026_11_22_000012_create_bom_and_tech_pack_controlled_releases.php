@@ -410,7 +410,7 @@ return new class extends Migration
                     AND NEW.submitted_by IS NOT DISTINCT FROM OLD.submitted_by
                     AND NEW.submitted_at IS NOT DISTINCT FROM OLD.submitted_at
                     AND NEW.asset_manifest_sha256 IS NOT DISTINCT FROM OLD.asset_manifest_sha256
-                    AND NEW.decided_by IS NOT DISTINCT FROM OLD.decided_by THEN
+                    THEN
                     RETURN NEW;
                 END IF;
 
@@ -502,6 +502,55 @@ return new class extends Migration
             BEFORE INSERT OR UPDATE OR DELETE ON tech_pack_assets
             FOR EACH ROW EXECUTE FUNCTION guard_tech_pack_assets_state()");
 
+        DB::statement("CREATE OR REPLACE FUNCTION guard_style_bom_substitution_state()
+            RETURNS trigger LANGUAGE plpgsql AS $
+            DECLARE
+                parent_status text;
+            BEGIN
+                SELECT v.status INTO parent_status
+                FROM style_bom_lines AS l
+                JOIN style_bom_versions AS v
+                  ON v.tenant_id = l.tenant_id AND v.id = l.bom_version_id
+                WHERE l.tenant_id = NEW.tenant_id AND l.id = NEW.bom_line_id;
+
+                IF parent_status IS DISTINCT FROM 'DRAFT' THEN
+                    RAISE EXCEPTION 'Substitution candidates can only be proposed against a draft BOM';
+                END IF;
+
+                RETURN NEW;
+            END;
+            $");
+
+        DB::statement('CREATE TRIGGER style_bom_substitution_state_guard
+            BEFORE INSERT ON style_bom_substitution_candidates
+            FOR EACH ROW EXECUTE FUNCTION guard_style_bom_substitution_state()');
+
+        DB::statement("CREATE OR REPLACE FUNCTION guard_tech_pack_delivery_receipt()
+            RETURNS trigger LANGUAGE plpgsql AS $
+            DECLARE
+                parent_status text;
+                parent_manifest char(64);
+            BEGIN
+                SELECT status, release_manifest_sha256
+                    INTO parent_status, parent_manifest
+                FROM tech_pack_versions
+                WHERE tenant_id = NEW.tenant_id AND id = NEW.tech_pack_version_id;
+
+                IF parent_status IS DISTINCT FROM 'RELEASED'
+                    OR parent_manifest IS DISTINCT FROM NEW.manifest_sha256 THEN
+                    RAISE EXCEPTION 'Delivery acknowledgements require the matching released tech-pack manifest';
+                END IF;
+
+                RETURN NEW;
+            END;
+            $");
+
+        DB::statement('CREATE TRIGGER tech_pack_receipt_release_guard
+            BEFORE INSERT ON tech_pack_delivery_receipts
+            FOR EACH ROW EXECUTE FUNCTION guard_tech_pack_delivery_receipt()');
+
+
+
         foreach ([
             'style_bom_versions',
             'style_bom_lines',
@@ -543,6 +592,10 @@ return new class extends Migration
         DB::statement('CREATE TRIGGER tech_pack_assets_append_only BEFORE DELETE ON tech_pack_assets FOR EACH ROW EXECUTE FUNCTION prevent_merchandising_history_mutation()');
         DB::statement('CREATE TRIGGER tech_pack_decisions_append_only BEFORE UPDATE OR DELETE ON tech_pack_decisions FOR EACH ROW EXECUTE FUNCTION prevent_merchandising_history_mutation()');
         DB::statement('CREATE TRIGGER tech_pack_receipts_append_only BEFORE UPDATE OR DELETE ON tech_pack_delivery_receipts FOR EACH ROW EXECUTE FUNCTION prevent_merchandising_history_mutation()');
+        DB::statement('REVOKE UPDATE, DELETE ON style_bom_substitution_candidates FROM app_runtime');
+        DB::statement('REVOKE UPDATE, DELETE ON style_bom_decisions FROM app_runtime');
+        DB::statement('REVOKE UPDATE, DELETE ON tech_pack_decisions FROM app_runtime');
+        DB::statement('REVOKE UPDATE, DELETE ON tech_pack_delivery_receipts FROM app_runtime');
     }
 
     public function down(): void
@@ -554,6 +607,10 @@ return new class extends Migration
         DB::statement('DROP TRIGGER IF EXISTS style_bom_decisions_append_only ON style_bom_decisions');
         DB::statement('DROP TRIGGER IF EXISTS style_bom_subst_append_only ON style_bom_substitution_candidates');
         DB::statement('DROP TRIGGER IF EXISTS style_bom_versions_append_only ON style_bom_versions');
+        DB::statement('DROP TRIGGER IF EXISTS tech_pack_receipt_release_guard ON tech_pack_delivery_receipts');
+        DB::statement('DROP TRIGGER IF EXISTS style_bom_substitution_state_guard ON style_bom_substitution_candidates');
+        DB::statement('DROP FUNCTION IF EXISTS guard_tech_pack_delivery_receipt()');
+        DB::statement('DROP FUNCTION IF EXISTS guard_style_bom_substitution_state()');
         DB::statement('DROP TRIGGER IF EXISTS tech_pack_assets_state_guard ON tech_pack_assets');
         DB::statement('DROP TRIGGER IF EXISTS tech_pack_version_state_guard ON tech_pack_versions');
         DB::statement('DROP TRIGGER IF EXISTS style_bom_lines_state_guard ON style_bom_lines');
