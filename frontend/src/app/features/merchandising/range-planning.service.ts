@@ -24,6 +24,7 @@ export interface BrandRecord {
   status: string;
   current_strategy_version: number;
   current_strategy_status: string;
+  latest_strategy_status: string;
   latest_strategy_version_id: string | null;
   latest_strategy_version_no: number | null;
   latest_strategy_created_by: string | null;

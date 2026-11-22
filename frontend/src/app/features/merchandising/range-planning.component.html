@@ -66,9 +66,9 @@
       <div class="record-list">
         @for (brand of brands(); track brand.id) {
           <div class="record-row">
-            <div class="record-main"><strong>{{ brand.name }} · {{ brand.code }}</strong><span>Master: {{ brand.status }} · Strategy v{{ brand.latest_strategy_version_no ?? '—' }}: {{ brand.current_strategy_status }}</span></div>
+            <div class="record-main"><strong>{{ brand.name }} · {{ brand.code }}</strong><span>Master: {{ brand.status }} · Strategy v{{ brand.latest_strategy_version_no ?? '—' }}: {{ brand.latest_strategy_status }}</span></div>
             <button type="button" class="text-button" (click)="selectBrand(brand)">Select</button>
-            @if (brand.current_strategy_status === 'PENDING_APPROVAL' && brand.latest_strategy_version_id) {
+            @if (brand.latest_strategy_status === 'PENDING_APPROVAL' && brand.latest_strategy_version_id) {
               <button type="button" class="secondary-button" (click)="approveBrandStrategy(brand)" [disabled]="saving() || !canApprove(brand.latest_strategy_created_by)">Approve version</button>
             }
           </div>

@@ -22,11 +22,12 @@ describe('RangePlanningService', () => {
   it('loads tenant brand strategy state and approval metadata', () => {
     service.listBrands().subscribe((response) => {
       expect(response.data.data[0]?.latest_strategy_version_id).toBe('strategy-1');
-      expect(response.data.data[0]?.current_strategy_status).toBe('PENDING_APPROVAL');
+      expect(response.data.data[0]?.current_strategy_status).toBe('NOT_CREATED');
+      expect(response.data.data[0]?.latest_strategy_status).toBe('PENDING_APPROVAL');
     });
     const request = http.expectOne('/api/v1/product/brands');
     expect(request.request.method).toBe('GET');
-    request.flush({ data: { data: [{ id: 'brand-1', current_strategy_status: 'PENDING_APPROVAL', latest_strategy_version_id: 'strategy-1' }] } });
+    request.flush({ data: { data: [{ id: 'brand-1', current_strategy_status: 'NOT_CREATED', latest_strategy_status: 'PENDING_APPROVAL', latest_strategy_version_id: 'strategy-1' }] } });
   });
 
   it('creates a collection version as pending and approves it through a separate command', () => {

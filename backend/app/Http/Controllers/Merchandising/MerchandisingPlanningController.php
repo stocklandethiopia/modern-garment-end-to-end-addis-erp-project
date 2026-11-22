@@ -34,7 +34,8 @@ class MerchandisingPlanningController extends Controller
                     'v.id as latest_strategy_version_id',
                     'v.version_no as latest_strategy_version_no',
                     'v.created_by as latest_strategy_created_by',
-                    DB::raw("CASE WHEN d.id IS NOT NULL THEN 'APPROVED' ELSE COALESCE(v.status, 'NOT_CREATED') END AS current_strategy_status"),
+                    DB::raw("CASE WHEN b.current_strategy_version > 0 THEN 'APPROVED' ELSE COALESCE(v.status, 'NOT_CREATED') END AS current_strategy_status"),
+                    DB::raw("CASE WHEN d.id IS NOT NULL THEN 'APPROVED' ELSE COALESCE(v.status, 'NOT_CREATED') END AS latest_strategy_status"),
                 ])
                 ->paginate(50),
         ]);
