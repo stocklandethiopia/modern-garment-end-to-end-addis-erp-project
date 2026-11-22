@@ -24,44 +24,50 @@ class ScopedAccessService
 
     public function setMode(string $tenantId, string $targetUserId, string $actorId, string $mode, string $reason): array
     {
-        $this->assertTenantMember($tenantId, $targetUserId);
-        $existing = DB::table('tenant_access_scope_modes')
-            ->where('tenant_id', $tenantId)
-            ->where('user_id', $targetUserId)
-            ->lockForUpdate()
-            ->first();
+        return DB::transaction(function () use ($tenantId, $targetUserId, $actorId, $mode, $reason): array {
+            $this->assertTenantMember($tenantId, $targetUserId);
+            DB::selectOne(
+                'SELECT pg_advisory_xact_lock(hashtextextended(?, 0))',
+                [$tenantId.':access-mode:'.$targetUserId],
+            );
 
-        $now = now();
-        if ($existing === null) {
-            $id = (string) Str::uuid();
-            DB::table('tenant_access_scope_modes')->insert([
-                'id' => $id,
-                'tenant_id' => $tenantId,
-                'user_id' => $targetUserId,
-                'scope_mode' => $mode,
-                'changed_by' => $actorId,
-                'change_reason' => $reason,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]);
-        } else {
-            DB::table('tenant_access_scope_modes')
+            $existing = DB::table('tenant_access_scope_modes')
                 ->where('tenant_id', $tenantId)
                 ->where('user_id', $targetUserId)
-                ->update([
+                ->lockForUpdate()
+                ->first();
+
+            $now = now();
+            if ($existing === null) {
+                DB::table('tenant_access_scope_modes')->insert([
+                    'id' => (string) Str::uuid(),
+                    'tenant_id' => $tenantId,
+                    'user_id' => $targetUserId,
                     'scope_mode' => $mode,
                     'changed_by' => $actorId,
                     'change_reason' => $reason,
+                    'created_at' => $now,
                     'updated_at' => $now,
                 ]);
-        }
+            } else {
+                DB::table('tenant_access_scope_modes')
+                    ->where('tenant_id', $tenantId)
+                    ->where('user_id', $targetUserId)
+                    ->update([
+                        'scope_mode' => $mode,
+                        'changed_by' => $actorId,
+                        'change_reason' => $reason,
+                        'updated_at' => $now,
+                    ]);
+            }
 
-        $this->audit($tenantId, $actorId, 'TENANT_MEMBER_SCOPE_MODE_CHANGED', 'TENANT_MEMBER', $targetUserId, $reason);
+            $this->audit($tenantId, $actorId, 'TENANT_MEMBER_SCOPE_MODE_CHANGED', 'TENANT_MEMBER', $targetUserId, $reason);
 
-        return [
-            'user_id' => $targetUserId,
-            'scope_mode' => $mode,
-        ];
+            return [
+                'user_id' => $targetUserId,
+                'scope_mode' => $mode,
+            ];
+        });
     }
 
     public function grant(
@@ -70,68 +76,75 @@ class ScopedAccessService
         string $actorId,
         array $data,
     ): array {
-        $this->assertTenantMember($tenantId, $targetUserId);
-        $type = $data['scope_type'];
-        $scopeId = $data['scope_id'] ?? null;
-        $scopeCode = isset($data['scope_code']) ? strtoupper(trim($data['scope_code'])) : null;
+        return DB::transaction(function () use ($tenantId, $targetUserId, $actorId, $data): array {
+            $this->assertTenantMember($tenantId, $targetUserId);
+            $type = $data['scope_type'];
+            $scopeId = $data['scope_id'] ?? null;
+            $scopeCode = isset($data['scope_code']) ? strtoupper(trim($data['scope_code'])) : null;
 
-        if ($type === 'BRAND') {
-            abort_unless(
-                DB::table('brands')->where('tenant_id', $tenantId)->where('id', $scopeId)->exists(),
-                404,
-                'Brand scope target does not exist in this tenant.',
+            if ($type === 'BRAND') {
+                abort_unless(
+                    DB::table('brands')->where('tenant_id', $tenantId)->where('id', $scopeId)->exists(),
+                    404,
+                    'Brand scope target does not exist in this tenant.',
+                );
+                $scopeCode = null;
+            } elseif ($type === 'SITE') {
+                abort_unless(
+                    DB::table('business_sites')->where('tenant_id', $tenantId)->where('id', $scopeId)->exists(),
+                    404,
+                    'Site scope target does not exist in this tenant.',
+                );
+                $scopeCode = null;
+            } elseif ($type === 'MARKET') {
+                abort_unless($scopeCode !== null && $scopeCode !== '', 422, 'Market scope code is required.');
+                $scopeId = null;
+            }
+
+            $validFrom = $data['valid_from'] ?? now()->toDateString();
+            $validTo = $data['valid_to'] ?? null;
+            DB::selectOne(
+                'SELECT pg_advisory_xact_lock(hashtextextended(?, 0))',
+                [
+                    $tenantId.':access-grant:'.$targetUserId.':'.$type.':'.($scopeId ?? $scopeCode).':'.$data['permission_code'],
+                ],
             );
-            $scopeCode = null;
-        } elseif ($type === 'SITE') {
-            abort_unless(
-                DB::table('business_sites')->where('tenant_id', $tenantId)->where('id', $scopeId)->exists(),
-                404,
-                'Site scope target does not exist in this tenant.',
-            );
-            $scopeCode = null;
-        } elseif ($type === 'MARKET') {
-            abort_unless($scopeCode !== null && $scopeCode !== '', 422, 'Market scope code is required.');
-            $scopeId = null;
-        }
 
-        $today = now()->toDateString();
-        $validFrom = $data['valid_from'] ?? $today;
-        $validTo = $data['valid_to'] ?? null;
+            $duplicate = DB::table('tenant_access_scopes')
+                ->where('tenant_id', $tenantId)
+                ->where('user_id', $targetUserId)
+                ->where('scope_type', $type)
+                ->where('permission_code', $data['permission_code'])
+                ->where('status', 'ACTIVE')
+                ->when($scopeId !== null, fn ($query) => $query->where('scope_id', $scopeId))
+                ->when($scopeCode !== null, fn ($query) => $query->whereRaw('UPPER(scope_code) = ?', [$scopeCode]))
+                ->exists();
 
-        $duplicate = DB::table('tenant_access_scopes')
-            ->where('tenant_id', $tenantId)
-            ->where('user_id', $targetUserId)
-            ->where('scope_type', $type)
-            ->where('permission_code', $data['permission_code'])
-            ->where('status', 'ACTIVE')
-            ->when($scopeId !== null, fn ($q) => $q->where('scope_id', $scopeId))
-            ->when($scopeCode !== null, fn ($q) => $q->where('scope_code', $scopeCode))
-            ->exists();
+            abort_unless(! $duplicate, 422, 'An active grant for this user, scope and permission already exists.');
 
-        abort_unless(! $duplicate, 422, 'An active grant for this user, scope and permission already exists.');
+            $id = (string) Str::uuid();
+            $now = now();
+            DB::table('tenant_access_scopes')->insert([
+                'id' => $id,
+                'tenant_id' => $tenantId,
+                'user_id' => $targetUserId,
+                'scope_type' => $type,
+                'scope_id' => $scopeId,
+                'scope_code' => $scopeCode,
+                'permission_code' => $data['permission_code'],
+                'valid_from' => $validFrom,
+                'valid_to' => $validTo,
+                'status' => 'ACTIVE',
+                'grant_reason' => $data['grant_reason'],
+                'granted_by' => $actorId,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
 
-        $id = (string) Str::uuid();
-        $now = now();
-        DB::table('tenant_access_scopes')->insert([
-            'id' => $id,
-            'tenant_id' => $tenantId,
-            'user_id' => $targetUserId,
-            'scope_type' => $type,
-            'scope_id' => $scopeId,
-            'scope_code' => $scopeCode,
-            'permission_code' => $data['permission_code'],
-            'valid_from' => $validFrom,
-            'valid_to' => $validTo,
-            'status' => 'ACTIVE',
-            'grant_reason' => $data['grant_reason'],
-            'granted_by' => $actorId,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
+            $this->audit($tenantId, $actorId, 'TENANT_ACCESS_SCOPE_GRANTED', 'ACCESS_SCOPE', $id, $data['grant_reason']);
 
-        $this->audit($tenantId, $actorId, 'TENANT_ACCESS_SCOPE_GRANTED', 'ACCESS_SCOPE', $id, $data['grant_reason']);
-
-        return DB::table('tenant_access_scopes')->where('tenant_id', $tenantId)->where('id', $id)->first();
+            return DB::table('tenant_access_scopes')->where('tenant_id', $tenantId)->where('id', $id)->first();
+        });
     }
 
     public function revoke(
@@ -140,29 +153,31 @@ class ScopedAccessService
         string $actorId,
         string $reason,
     ): object {
-        $grant = DB::table('tenant_access_scopes')
-            ->where('tenant_id', $tenantId)
-            ->where('id', $scopeGrantId)
-            ->lockForUpdate()
-            ->first();
+        return DB::transaction(function () use ($tenantId, $scopeGrantId, $actorId, $reason): object {
+            $grant = DB::table('tenant_access_scopes')
+                ->where('tenant_id', $tenantId)
+                ->where('id', $scopeGrantId)
+                ->lockForUpdate()
+                ->first();
 
-        abort_if($grant === null, 404);
-        abort_unless($grant->status === 'ACTIVE', 422, 'Only an active access scope can be revoked.');
+            abort_if($grant === null, 404);
+            abort_unless($grant->status === 'ACTIVE', 422, 'Only an active access scope can be revoked.');
 
-        DB::table('tenant_access_scopes')
-            ->where('tenant_id', $tenantId)
-            ->where('id', $scopeGrantId)
-            ->update([
-                'status' => 'REVOKED',
-                'revoked_by' => $actorId,
-                'revoked_at' => now(),
-                'revocation_reason' => $reason,
-                'updated_at' => now(),
-            ]);
+            DB::table('tenant_access_scopes')
+                ->where('tenant_id', $tenantId)
+                ->where('id', $scopeGrantId)
+                ->update([
+                    'status' => 'REVOKED',
+                    'revoked_by' => $actorId,
+                    'revoked_at' => now(),
+                    'revocation_reason' => $reason,
+                    'updated_at' => now(),
+                ]);
 
-        $this->audit($tenantId, $actorId, 'TENANT_ACCESS_SCOPE_REVOKED', 'ACCESS_SCOPE', $scopeGrantId, $reason);
+            $this->audit($tenantId, $actorId, 'TENANT_ACCESS_SCOPE_REVOKED', 'ACCESS_SCOPE', $scopeGrantId, $reason);
 
-        return DB::table('tenant_access_scopes')->where('tenant_id', $tenantId)->where('id', $scopeGrantId)->first();
+            return DB::table('tenant_access_scopes')->where('tenant_id', $tenantId)->where('id', $scopeGrantId)->first();
+        });
     }
 
     public function forMember(string $tenantId, string $targetUserId): array
