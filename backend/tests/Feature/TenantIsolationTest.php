@@ -267,13 +267,13 @@ class TenantIsolationTest extends TestCase
             'entity_licences',
         ];
 
-        $rows = DB::connection('pgsql_test_admin')->select(
-            'SELECT c.relname, c.relrowsecurity, c.relforcerowsecurity
-             FROM pg_class c
-             JOIN pg_namespace n ON n.oid = c.relnamespace
-             WHERE n.nspname = ? AND c.relname::text = ANY(string_to_array(?, ','))',
-            ['public', implode(',', $tables)],
-        );
+        $rows = DB::connection('pgsql_test_admin')
+            ->table('pg_class as c')
+            ->join('pg_namespace as n', 'n.oid', '=', 'c.relnamespace')
+            ->where('n.nspname', 'public')
+            ->whereIn('c.relname', $tables)
+            ->select(['c.relname', 'c.relrowsecurity', 'c.relforcerowsecurity'])
+            ->get();
 
         $this->assertCount(count($tables), $rows);
 
