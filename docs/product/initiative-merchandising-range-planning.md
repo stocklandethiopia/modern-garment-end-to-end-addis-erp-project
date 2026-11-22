@@ -1,7 +1,7 @@
 # WP-04 — Initiative, Market Insight, Brand, Collection, Range and Merchandising
 
 **Package:** WP-04  
-**Status:** DESIGN COMPLETED — implementation follows as domain vertical slices  
+**Status:** DESIGN COMPLETED — implementation in progress as tested domain vertical slices  
 **Scope source:** Approved domain map Domains A and C; Apparel Business Operating System Charter; customer-neutral enterprise and channel principles.  
 **Non-goal:** This package does not add a generic CRM/marketing automation product or make buyer orders the only source of demand. It specifies the initiative-to-range-to-channel-commercial workflow that exists before the manufacturing plan.
 
@@ -294,7 +294,19 @@ No KPI is allowed to conceal denominator, period, channel, tax basis, stockout, 
 
 **Completed:** initiative lifecycle, research evidence model, brand/season/collection governance, range/assortment split, forecast and OTB semantics, price/promotion governance, data ownership, APIs/events, KPI/action model, exceptions and 14 acceptance scenarios.
 
-**Not claimed:** no frontend screen, API endpoint, SQL migration, forecast model, integration, build or automated test has been implemented by this design artifact.
+**Implementation status (22 November 2026):** The design remains the governing scope. Executable tenant-scoped vertical slices now cover initiative, evidence, brand/season/collection, range/assortment, demand/OTB/pricing/promotion workflows and the first merchandising dashboard.
+
+### 10.1 Verified merchandising dashboard slice
+
+- API: `GET /api/v1/product/merchandising-dashboard`, protected by Sanctum `erp:access` and tenant-context middleware; requires `X-Tenant-Id`.
+- Angular workspace: route `/product/merchandising-dashboard`, linked from the workspace navigation.
+- Tenant-scoped calculated measures: initiative status funnel; latest assessment decision conversion; frozen range lines whose product brief is ACCEPTED with accepted version equal to current version; planned units on frozen range lines; category/target-tier depth; NEW versus carry-over mix; and counts of registered market insight sources/insights.
+- Decision queue: visible to OWNER/ADMIN tenant roles only; independent decision items are not offered to their own authors; append-only brand strategy and collection approvals already present in `merchandising_decisions` are excluded from pending work. Personal work includes the signed-in user's active initiatives, briefs and draft range plans.
+- Every displayed measure includes its definition and source record names. Planned units are labelled as planned, not sales or demand actuals. Market evidence counts are volume only, not evidence sufficiency.
+- Explicitly unavailable until authoritative source records and approved definitions exist: evidence sufficiency; forecast bias/WAPE (requires actual sales and stockout treatment); sell-through; actual gross/contribution margin; OTB utilization against authorized commitments; markdown exposure; returns/fit feedback; and range-to-factory-capacity fit. These are rendered as unavailable rather than zero, forecast, or assumed actual.
+- Verification: [GitHub Actions run 45034473384](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45034473384), commit `bf367c924118ff136f0ed876c34580512e2d0326`: PHP formatting/syntax, Composer audit, PostgreSQL 18 restricted-role migrations, **42 backend tests / 401 assertions**, npm audit, **20 Angular tests across 6 files**, and production frontend build passed.
+
+**Not claimed:** no full AT-MER-001..014 acceptance, sales/stockout/finance/returns/capacity actuals, external channel or market-data live integration, complete initiative-to-sale E2E, staging/UAT or production deployment has been completed by this slice.
 
 **Dependencies:** WP-03 tenant/entity/identity and audit foundation; WP-05 product brief/PLM handoff; WP-06 capacity feasibility; WP-07 sourcing/lead-time constraints; WP-12 actual commerce feedback; WP-13 finance/OTB and cost policies; WP-02 licensing/privacy holds.
 
