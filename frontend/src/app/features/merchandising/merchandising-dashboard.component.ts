@@ -44,6 +44,7 @@ export interface MerchandisingDashboardData {
   evidence_register: {
     source_count: number;
     insight_count: number;
+    approved_policy_count: number;
     sufficiency_status: string;
     sufficiency_reason: string;
   };
