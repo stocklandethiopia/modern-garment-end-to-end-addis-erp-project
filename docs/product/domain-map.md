@@ -1,3 +1,9 @@
+# End-to-End Garment ERP Domain Map
+
+This is the product capability map, not a claim that every capability has already been implemented.
+
+**Governing design standard:** This map must be interpreted and extended in line with the [Apparel Business Operating System Charter](apparel-business-operating-system-charter.md). Every workflow must improve how apparel work is planned, executed, controlled, learned from and proven—not merely collect completed transaction data.
+
 ## A. Business initiative, brand strategy and product innovation
 
 The business lifecycle begins before a buyer order and before a factory work order. The system must support companies that own brands and stores, create their own collections, buy or outsource manufacturing, operate factories, distribute other brands, or combine these models. Customer/buyer orders are one demand source—not the only reason a product is created.
@@ -16,13 +22,6 @@ The business lifecycle begins before a buyer order and before a factory work ord
 - Assortment planning by channel, region, store cluster and customer segment; distinguish core/replenishment products, seasonal fashion, fashion-risk products and made-to-order/buyer-specific styles.
 - Range review and assortment decisions with visual boards, financial roll-ups, demand scenarios and store/wholesale feedback.
 - Product lifecycle from idea and development through launch, replenishment, markdown, end-of-life, archive and possible re-issue.
-
-# End-to-End Garment ERP Domain Map
-
-This is the product capability map, not a claim that every capability has already been implemented.
-
-**Governing design standard:** This map must be interpreted and extended in line with the [Apparel Business Operating System Charter](apparel-business-operating-system-charter.md). Every workflow must improve how apparel work is planned, executed, controlled, learned from and proven—not merely collect completed transaction data.
-
 
 ## B. Enterprise and platform foundation
 
