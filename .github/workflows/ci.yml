@@ -90,11 +90,6 @@ jobs:
       - name: Audit PHP dependencies
         run: composer audit
 
-      - name: Diagnose Pint formatting difference
-        run: |
-          vendor/bin/pint tests/Feature/TenantIsolationTest.php
-          git diff -- tests/Feature/TenantIsolationTest.php
-
       - name: Check PHP style and syntax
         run: |
           vendor/bin/pint --test
