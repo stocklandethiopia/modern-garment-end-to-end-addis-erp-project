@@ -484,6 +484,117 @@ class InitiativeWorkflowTest extends TestCase
             ->assertJsonPath('evidence_coverage.rules.0.distinct_sources', 2);
     }
 
+    public function test_approved_research_evidence_policy_gates_screening_approval(): void
+    {
+        $initiative = $this->withHeader('X-Tenant-Id', $this->tenantId)
+            ->postJson('/api/v1/product/initiatives', [
+                'code' => 'RESEARCH-GATE-01',
+                'initiative_type' => 'NEW_COLLECTION',
+                'title' => 'Research-gated collection proposal',
+                'problem_statement' => 'The proposal requires qualifying research before resources are authorized.',
+                'objective' => 'Verify the configured research evidence policy at screening approval.',
+                'target_market' => 'Ethiopia',
+            ])
+            ->assertCreated();
+
+        $initiativeId = $initiative->json('data.id');
+
+        $this->withHeader('X-Tenant-Id', $this->tenantId)
+            ->postJson('/api/v1/product/initiatives/'.$initiativeId.'/submit', [])
+            ->assertOk();
+
+        $policy = $this->withHeader('X-Tenant-Id', $this->tenantId)
+            ->postJson('/api/v1/product/evidence-policies', [
+                'code' => 'NEW_COLLECTION_RESEARCH',
+                'name' => 'New collection research evidence',
+                'initiative_type' => 'NEW_COLLECTION',
+                'stage' => 'RESEARCH',
+                'target_market' => 'Ethiopia',
+                'effective_from' => now()->toDateString(),
+                'change_reason' => 'Initial research gate for proposed new collections.',
+                'rules' => [[
+                    'requirement_code' => 'CURRENT_SURVEY_EVIDENCE',
+                    'insight_type' => 'SURVEY_RESULT',
+                    'minimum_records' => 1,
+                    'minimum_distinct_sources' => 1,
+                    'minimum_confidence' => 0.70,
+                    'minimum_source_reliability' => 0.80,
+                    'max_age_days' => 30,
+                    'is_mandatory' => true,
+                ]],
+            ])
+            ->assertCreated();
+
+        $policyId = $policy->json('data.policy.id');
+
+        $this->withHeader('X-Tenant-Id', $this->tenantId)
+            ->postJson('/api/v1/product/evidence-policies/'.$policyId.'/submit', [])
+            ->assertOk();
+
+        Sanctum::actingAs(User::query()->findOrFail($this->approverId), ['tenant:select', 'erp:access']);
+
+        $this->withHeader('X-Tenant-Id', $this->tenantId)
+            ->postJson('/api/v1/product/evidence-policies/'.$policyId.'/decisions', [
+                'decision' => 'APPROVE',
+                'reason' => 'The research evidence policy is approved for this market and initiative type.',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.policy.status', 'APPROVED');
+
+        $decisionUrl = '/api/v1/product/initiatives/'.$initiativeId.'/decisions';
+
+        $this->withHeader('X-Tenant-Id', $this->tenantId)
+            ->postJson($decisionUrl, [
+                'decision' => 'APPROVE_RESEARCH',
+                'reason' => 'Attempt research approval before its configured evidence is present.',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Configured research evidence requirements are not satisfied.');
+
+        Sanctum::actingAs(User::query()->findOrFail($this->userId), ['tenant:select', 'erp:access']);
+
+        $source = $this->withHeader('X-Tenant-Id', $this->tenantId)
+            ->postJson('/api/v1/product/insight-sources', [
+                'source_type' => 'STORE_OBSERVATION',
+                'source_name' => 'Independent survey source',
+                'source_reference' => 'internal-research://survey/research-gate-01',
+                'capture_method' => 'STRUCTURED_STORE_OBSERVATION',
+                'geography' => 'Addis Ababa',
+                'reliability_score' => 0.90,
+                'permitted_use_basis' => 'Aggregated market research; no personal consumer identifiers are collected.',
+            ])
+            ->assertCreated();
+
+        $this->withHeader('X-Tenant-Id', $this->tenantId)
+            ->postJson('/api/v1/product/market-insights', [
+                'source_id' => $source->json('data.id'),
+                'initiative_id' => $initiativeId,
+                'insight_type' => 'SURVEY_RESULT',
+                'title' => 'Qualifying research survey observation',
+                'summary' => 'An independently sourced result collected for the research-stage evidence requirement.',
+                'observed_at' => now()->subDays(2)->toIso8601String(),
+                'geography' => 'Addis Ababa',
+                'target_segment' => 'Urban adults',
+                'sample_size' => 25,
+                'denominator' => 40,
+                'confidence' => 0.85,
+                'privacy_basis' => 'Aggregated research; no personal consumer identifiers are collected.',
+            ])
+            ->assertCreated();
+
+        Sanctum::actingAs(User::query()->findOrFail($this->approverId), ['tenant:select', 'erp:access']);
+
+        $this->withHeader('X-Tenant-Id', $this->tenantId)
+            ->postJson($decisionUrl, [
+                'decision' => 'APPROVE_RESEARCH',
+                'reason' => 'The approved research evidence requirements are now satisfied.',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'RESEARCH')
+            ->assertJsonPath('evidence_coverage.status', 'MET')
+            ->assertJsonPath('evidence_coverage.coverage_percent', 100);
+    }
+
     public function test_initiative_tables_force_rls_and_history_is_immutable(): void
     {
         $tables = [
