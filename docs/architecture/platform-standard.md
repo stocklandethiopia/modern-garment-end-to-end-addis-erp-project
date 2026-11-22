@@ -67,19 +67,20 @@ Initial bounded contexts:
 7. Costing, pricing, margin, quotation and profitability.
 8. Procurement, supplier sourcing, contracts, purchase requisitions and purchase orders.
 9. Materials planning, MRP, demand, reservations and shortage management.
-10. Warehouse, inventory, lot/batch, roll, shade, bin, transfer and stock valuation.
+10. Warehouse and inventory control across raw materials, WIP, finished goods, central/regional DCs, depots, branch stockrooms, stores, lots/batches, ownership, custody, transfers and valuation.
 11. Production planning, capacity, line balancing, work centres and subcontracting.
 12. Cutting, spreading, marker, bundle, sewing, WIP, finishing and packing execution.
 13. Quality, inspection, defects, rework, CAPA and compliance evidence.
-14. Logistics, dispatch, export documentation, delivery and returns.
-15. Sales, distribution, wholesale, retail, POS and e-commerce integration.
+14. Distribution network management, DC/depot operations, stock allocation, branch/store replenishment and inter-node transfer control.
+15. Order management, ATP/CTP, wholesale, retailer/reseller accounts, company-owned retail, POS, D2C and channel commerce.
+16. Transport, dispatch, delivery tracking, proof of delivery, export documentation, RMA and reverse logistics.
 16. Finance, general ledger, AP, AR, cash, bank, tax, fixed assets, budgets and close.
 17. Human resources, workforce planning, recruitment, onboarding, employee relations and separation.
 18. Time, attendance, shifts, leave, overtime, payroll, benefits, loans and final settlement.
 19. Learning and development, training catalogue, competency, certification, skills matrix and training effectiveness.
 20. Performance, goals, appraisals, succession, engagement, occupational health and safety.
-21. Maintenance, assets, utilities, energy, calibration and facilities.
-22. Documents, workflow, approvals, notifications, reporting, BI and integration management.
+22. Maintenance, assets, utilities, energy, calibration and facilities.
+23. Documents, workflow, approvals, notifications, reporting, BI and integration management.
 
 ## 6. Multi-tenant model
 
@@ -117,3 +118,19 @@ Initial bounded contexts:
 - No secrets, production data, tokens or private certificates in source control.
 - No production deployment from an unreviewed branch.
 - No module is marked complete without acceptance tests and operational documentation.
+
+
+## 10. Distribution and channel architecture
+
+Distribution, order management and channel commerce are first-class bounded contexts alongside manufacturing. The ERP must support a manufacturer-distributor-retailer business model as well as a trading/distribution-only tenant.
+
+- Keep tenant, legal entity, business unit, branch, distribution node, inventory location, retail store, sales channel, customer account and fulfilment partner as distinct concepts with explicit relationships.
+- A branch is not automatically a warehouse. A store may be a selling and fulfilment node; a DC may serve several branches and channels.
+- Use one governed order-management lifecycle for orders received from sales teams, wholesale/retailer portals, EDI/API, POS, e-commerce and marketplaces.
+- ATP/CTP and allocation must be location-, date-, channel-, owner- and status-aware. Quarantined, damaged, reserved, consignment-restricted or otherwise ineligible stock is not saleable supply.
+- Inventory must distinguish legal ownership, physical custody, location, status and commercial reservation. Maintain immutable, source-linked movement records and controlled correction workflows.
+- DC replenishment and inter-node transfers require dispatch, in-transit and receipt events. Cross-legal-entity movement also invokes configured intercompany, tax and finance rules.
+- Channel pricing, credit, assortment, promotions, discounts, rebates, commissions, freight and returns policies are effective-dated, explainable and auditable.
+- POS and digital order integrations must be idempotent and reconcile payment/tender, inventory and finance exactly once, including retry and offline-sync scenarios.
+- Customer returns and reverse logistics must produce linked inspection, inventory disposition, refund/credit and financial records.
+- Cross-context communication uses versioned contracts and outbox events; the distribution domain must not bypass inventory, pricing or finance ownership through direct table writes.
