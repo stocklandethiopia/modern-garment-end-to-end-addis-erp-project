@@ -167,6 +167,13 @@ class EvidencePolicyService
             $approvedAt = null;
 
             if ($decision === 'APPROVE') {
+                DB::selectOne(
+                    'SELECT pg_advisory_xact_lock(hashtextextended(?, 0))',
+                    [
+                        $tenantId.':evidence-policy:'.$policy->initiative_type.':'.$policy->stage.':'.($policy->target_market ?? '*'),
+                    ],
+                );
+
                 $overlap = $this->hasApprovedOverlap($tenantId, $policy);
                 abort_unless(
                     ! $overlap,
