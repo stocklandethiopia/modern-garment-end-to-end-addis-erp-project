@@ -846,6 +846,7 @@ class MerchandisingPlanningController extends Controller
 
             $created = DB::table('assortment_plans')->where('tenant_id', $tenantId)->where('id', $id)->first();
             $created->commercial_activation_allowed = false;
+
             return $created;
         });
 
