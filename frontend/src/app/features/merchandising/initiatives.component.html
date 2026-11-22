@@ -248,6 +248,52 @@
           </form>
         }
 
+        @if (record.data.status === 'RESEARCH' || record.data.status === 'ASSESSMENT') {
+          <section class="detail-section evidence-coverage-panel" aria-labelledby="evidence-coverage-heading">
+            <div class="section-title">
+              <div>
+                <h3 id="evidence-coverage-heading">Evidence sufficiency gate</h3>
+                <p>Assessment-stage policy for this initiative's type and target market.</p>
+              </div>
+              @if (evidenceCoverage(); as coverageRecord) {
+                <span class="coverage-chip" [attr.data-status]="coverageRecord.evidence_coverage.status">
+                  {{ coverageRecord.evidence_coverage.status.replaceAll('_', ' ') }}
+                </span>
+              }
+            </div>
+            @if (loadingEvidenceCoverage()) {
+              <div class="empty-inline">Evaluating approved evidence requirements…</div>
+            } @else if (evidenceCoverageError()) {
+              <div class="empty-inline">{{ evidenceCoverageError() }}</div>
+            } @else if (evidenceCoverage(); as coverageRecord) {
+              @if (coverageRecord.evidence_coverage.status === 'NOT_CONFIGURED') {
+                <div class="empty-inline">
+                  No approved policy matches this initiative type, market and assessment stage. The existing sourced-insight minimum applies; configure and approve a tenant policy for a complete sufficiency gate.
+                  <a routerLink="/product/evidence-policies" class="text-link">Configure evidence policy →</a>
+                </div>
+              } @else {
+                <div class="coverage-summary">
+                  <strong>{{ coverageRecord.evidence_coverage.coverage_percent ?? 0 | number:'1.0-2' }}%</strong>
+                  <span>{{ coverageRecord.evidence_coverage.mandatory_rules_met }} of {{ coverageRecord.evidence_coverage.mandatory_rules }} mandatory requirements met</span>
+                  <small>{{ coverageRecord.evidence_coverage.policy?.code }} · v{{ coverageRecord.evidence_coverage.policy?.version_no }} · {{ coverageRecord.evidence_coverage.policy?.target_market || 'Tenant-wide policy' }}</small>
+                </div>
+                @for (rule of coverageRecord.evidence_coverage.rules; track rule.requirement_code) {
+                  <article class="coverage-rule">
+                    <div>
+                      <strong>{{ rule.requirement_code }}</strong>
+                      <small>{{ rule.insight_type.replaceAll('_', ' ') }} · {{ rule.qualifying_records }} qualifying / {{ rule.observed_records }} observed · {{ rule.distinct_sources }} distinct sources</small>
+                    </div>
+                    <span [class.rule-met]="rule.status === 'MET'">{{ rule.status }}</span>
+                    @if (rule.gaps.length > 0) {
+                      <small class="rule-gaps">{{ rule.gaps.join(' · ').replaceAll('_', ' ') }}</small>
+                    }
+                  </article>
+                }
+              }
+            }
+          </section>
+        }
+
         <div class="detail-section">
           <div class="section-title">
             <div>
