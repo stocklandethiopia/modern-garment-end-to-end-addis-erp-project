@@ -99,17 +99,109 @@ class MarketInsightController extends Controller
             'confidence' => ['nullable', 'numeric', 'between:0,1'],
             'limitations' => ['nullable', 'string', 'max:5000'],
             'privacy_basis' => ['required', 'string', 'min:3', 'max:200'],
+            'source_system' => ['nullable', 'string', 'min:2', 'max:80'],
+            'source_event_id' => ['nullable', 'string', 'min:1', 'max:160'],
         ]);
+
+        $hasSourceSystem = isset($data['source_system']) && trim($data['source_system']) !== '';
+        $hasSourceEventId = isset($data['source_event_id']) && trim($data['source_event_id']) !== '';
+        abort_if(
+            $hasSourceSystem !== $hasSourceEventId,
+            422,
+            'source_system and source_event_id must be supplied together for idempotent event ingestion.',
+        );
 
         if (isset($data['sample_size'], $data['denominator'])) {
             abort_if($data['denominator'] < $data['sample_size'], 422, 'The denominator cannot be smaller than the sample size.');
         }
 
+        if ($hasSourceSystem) {
+            $data['source_system'] = strtoupper(trim($data['source_system']));
+            $data['source_event_id'] = trim($data['source_event_id']);
+        } else {
+            $data['source_system'] = null;
+            $data['source_event_id'] = null;
+        }
+
         $insightId = (string) Str::uuid();
         $actorId = (string) $request->user()->getAuthIdentifier();
         $now = now();
+        $eventId = $data['source_event_id'];
+        $sourceSystem = $data['source_system'];
+        $payload = $data;
+        unset($payload['source_system'], $payload['source_event_id']);
+        ksort($payload);
+        $payloadHash = hash('sha256', json_encode($payload, JSON_THROW_ON_ERROR));
 
-        DB::transaction(function () use ($data, $tenantId, $insightId, $actorId, $now): void {
+        $result = DB::transaction(function () use (
+            $data,
+            $tenantId,
+            $insightId,
+            $actorId,
+            $now,
+            $eventId,
+            $sourceSystem,
+            $payloadHash,
+        ): array {
+            if ($eventId !== null && $sourceSystem !== null) {
+                DB::selectOne(
+                    'SELECT pg_advisory_xact_lock(hashtextextended(?, 0))',
+                    [$tenantId.':market-insight:'.$sourceSystem.':'.$eventId],
+                );
+
+                $receipt = DB::table('market_insight_event_receipts')
+                    ->where('tenant_id', $tenantId)
+                    ->where('source_system', $sourceSystem)
+                    ->where('source_event_id', $eventId)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($receipt !== null) {
+                    abort_unless(
+                        hash_equals($receipt->payload_sha256, $payloadHash),
+                        409,
+                        'This source event ID was previously received with a different payload. Use a new event ID for a changed observation.',
+                    );
+
+                    DB::table('market_insight_event_receipts')
+                        ->where('tenant_id', $tenantId)
+                        ->where('id', $receipt->id)
+                        ->update([
+                            'duplicate_count' => DB::raw('duplicate_count + 1'),
+                            'last_received_at' => $now,
+                            'updated_at' => $now,
+                        ]);
+
+                    DB::table('audit_events')->insert([
+                        'id' => (string) Str::uuid(),
+                        'tenant_id' => $tenantId,
+                        'actor_user_id' => $actorId,
+                        'action' => 'MARKET_INSIGHT_EVENT_DUPLICATE_DEDUPLICATED',
+                        'object_type' => 'MARKET_INSIGHT',
+                        'object_id' => $receipt->market_insight_id,
+                        'scope' => json_encode([
+                            'source_system' => $sourceSystem,
+                            'source_event_id' => $eventId,
+                            'duplicate_count' => (int) $receipt->duplicate_count + 1,
+                        ], JSON_THROW_ON_ERROR),
+                        'reason' => 'A replayed source event was deduplicated; the original insight was retained.',
+                        'correlation_id' => (string) Str::uuid(),
+                        'occurred_at' => $now,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ]);
+
+                    return [
+                        'insight' => DB::table('market_insights')
+                            ->where('tenant_id', $tenantId)
+                            ->where('id', $receipt->market_insight_id)
+                            ->first(),
+                        'deduplicated' => true,
+                        'duplicate_count' => (int) $receipt->duplicate_count + 1,
+                    ];
+                }
+            }
+
             DB::table('market_insights')->insert([
                 'id' => $insightId,
                 'tenant_id' => $tenantId,
@@ -118,6 +210,22 @@ class MarketInsightController extends Controller
                 'analyst_user_id' => $actorId,
                 'created_at' => $now,
             ]);
+
+            if ($eventId !== null && $sourceSystem !== null) {
+                DB::table('market_insight_event_receipts')->insert([
+                    'id' => (string) Str::uuid(),
+                    'tenant_id' => $tenantId,
+                    'source_system' => $sourceSystem,
+                    'source_event_id' => $eventId,
+                    'market_insight_id' => $insightId,
+                    'payload_sha256' => $payloadHash,
+                    'duplicate_count' => 0,
+                    'first_received_at' => $now,
+                    'last_received_at' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
 
             DB::table('audit_events')->insert([
                 'id' => (string) Str::uuid(),
@@ -129,20 +237,31 @@ class MarketInsightController extends Controller
                 'scope' => json_encode([
                     'insight_type' => $data['insight_type'],
                     'initiative_id' => $data['initiative_id'] ?? null,
+                    'source_system' => $sourceSystem,
+                    'source_event_id' => $eventId,
                 ], JSON_THROW_ON_ERROR),
-                'reason' => 'Market insight captured with source and permitted-use basis',
+                'reason' => 'Market insight captured with source and permitted-use basis.',
                 'correlation_id' => (string) Str::uuid(),
                 'occurred_at' => $now,
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
+
+            return [
+                'insight' => DB::table('market_insights')
+                    ->where('tenant_id', $tenantId)
+                    ->where('id', $insightId)
+                    ->first(),
+                'deduplicated' => false,
+                'duplicate_count' => 0,
+            ];
         });
 
         return response()->json([
-            'data' => DB::table('market_insights')
-                ->where('tenant_id', $tenantId)
-                ->where('id', $insightId)
-                ->first(),
-        ], 201);
+            'data' => $result['insight'],
+            'deduplicated' => $result['deduplicated'],
+            'duplicate_count' => $result['duplicate_count'],
+        ], $result['deduplicated'] ? 200 : 201);
     }
+
 }
