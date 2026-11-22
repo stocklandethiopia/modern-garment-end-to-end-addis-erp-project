@@ -32,6 +32,7 @@ return new class extends Migration
             $table->text('decision_reason')->nullable();
             $table->timestampsTz();
             $table->unique(['tenant_id', 'id'], 'style_bom_versions_tenant_id_uq');
+            $table->unique(['tenant_id', 'id', 'style_id', 'style_revision_no'], 'style_bom_versions_release_fk_uq');
             $table->unique(['tenant_id', 'style_id', 'style_revision_no', 'version_no'], 'style_bom_versions_style_ver_uq');
             $table->foreign('tenant_id')->references('id')->on('tenants')->restrictOnDelete();
             $table->foreign(['tenant_id', 'style_id', 'style_revision_no'], 'style_bom_versions_style_rev_fk')
@@ -136,14 +137,19 @@ return new class extends Migration
             $table->timestampTz('released_at')->nullable();
             $table->timestampsTz();
             $table->unique(['tenant_id', 'id'], 'tech_pack_versions_tenant_id_uq');
+            $table->unique(['tenant_id', 'id', 'style_id', 'style_revision_no'], 'tech_pack_versions_release_fk_uq');
             $table->unique(['tenant_id', 'style_id', 'style_revision_no', 'version_no'], 'tech_pack_versions_style_ver_uq');
             $table->foreign('tenant_id')->references('id')->on('tenants')->restrictOnDelete();
             $table->foreign(['tenant_id', 'style_id', 'style_revision_no'], 'tech_pack_versions_style_rev_fk')
                 ->references(['tenant_id', 'style_id', 'revision_no'])->on('style_revisions')->restrictOnDelete();
-            $table->foreign(['tenant_id', 'bom_version_id'], 'tech_pack_versions_bom_fk')
-                ->references(['tenant_id', 'id'])->on('style_bom_versions')->restrictOnDelete();
+            $table->foreign(['tenant_id', 'bom_version_id', 'style_id', 'style_revision_no'], 'tech_pack_versions_bom_fk')
+                ->references(['tenant_id', 'id', 'style_id', 'style_revision_no'])->on('style_bom_versions')->restrictOnDelete();
             $table->foreign(['tenant_id', 'measurement_spec_version_id', 'style_id', 'style_revision_no'], 'tech_pack_versions_measurement_fk')
                 ->references(['tenant_id', 'id', 'style_id', 'style_revision_no'])->on('measurement_spec_versions')->restrictOnDelete();
+            $table->foreign(['tenant_id', 'pattern_revision_id', 'style_id', 'style_revision_no', 'measurement_spec_version_id'], 'tech_pack_versions_pattern_fk')
+                ->references(['tenant_id', 'id', 'style_id', 'style_revision_no', 'measurement_spec_version_id'])->on('pattern_revisions')->restrictOnDelete();
+            $table->foreign(['tenant_id', 'sample_request_id', 'style_id', 'style_revision_no', 'pattern_revision_id', 'measurement_spec_version_id'], 'tech_pack_versions_sample_fk')
+                ->references(['tenant_id', 'id', 'style_id', 'style_revision_no', 'pattern_revision_id', 'measurement_spec_version_id'])->on('sample_requests')->restrictOnDelete();
             $table->foreign('created_by')->references('id')->on('users')->restrictOnDelete();
             $table->foreign('submitted_by')->references('id')->on('users')->restrictOnDelete();
             $table->foreign('decided_by')->references('id')->on('users')->restrictOnDelete();
