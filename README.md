@@ -6,7 +6,7 @@ This repository is the canonical product source. ERP 16.2.18 and the five approv
 
 ## Product promise
 
-One connected operating system from customer enquiry and merchandising through product engineering, costing, procurement, material planning, cutting, sewing, finishing, quality, packing, warehouse, dispatch, sales, finance, HR, learning and workforce development, compliance, analytics and administration.
+One connected operating system from customer enquiry and merchandising through product engineering, costing, procurement, material planning, cutting, sewing, finishing, quality and packing, then through central and regional distribution centres, wholesale depots, branches, company-owned retail stores, wholesalers, retailers, resellers, direct customers, POS, digital channels, delivery and reverse logistics—integrated with finance, HR, learning, compliance, analytics and administration.
 
 The platform must support multiple tenants, companies, legal entities, factories, branches, warehouses, brands, currencies, languages and operating calendars without hard-coded Stockland identity or sample customer data.
 
@@ -26,6 +26,7 @@ Exact supported patch versions are recorded in the platform standard and must be
 
 1. Platform architecture and technology standard: docs/architecture/platform-standard.md
 2. End-to-end business domain map: docs/product/domain-map.md
+3. Distribution network, order management and channel commerce: docs/product/distribution-and-channel-commerce.md
 3. Engineering, syntax and code quality rules: docs/engineering/code-quality.md
 4. Development, container and deployment standard: docs/engineering/development-deployment.md
 5. Security and SaaS tenancy standard: docs/security/saas-security.md
