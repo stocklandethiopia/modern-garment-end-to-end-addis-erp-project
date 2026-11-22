@@ -61,7 +61,6 @@ return new class extends Migration
             $table->string('attachment_position', 160)->nullable();
             $table->boolean('is_mandatory')->default(true);
             $table->text('technical_notes')->nullable();
-            $table->timestampTz('created_at');
             $table->timestampsTz();
             $table->unique(['tenant_id', 'id'], 'style_bom_lines_tenant_id_uq');
             $table->unique(['tenant_id', 'bom_version_id', 'line_no'], 'style_bom_lines_version_line_uq');
@@ -82,7 +81,6 @@ return new class extends Migration
             $table->string('status', 32)->default('PROPOSED');
             $table->string('quality_approval_status', 32)->default('PENDING_WP11');
             $table->uuid('proposed_by');
-            $table->timestampTz('created_at');
             $table->timestampsTz();
             $table->unique(['tenant_id', 'id'], 'style_bom_subst_tenant_id_uq');
             $table->foreign('tenant_id')->references('id')->on('tenants')->restrictOnDelete();
@@ -106,6 +104,27 @@ return new class extends Migration
             $table->foreign(['tenant_id', 'bom_version_id'], 'style_bom_decisions_version_fk')
                 ->references(['tenant_id', 'id'])->on('style_bom_versions')->restrictOnDelete();
             $table->foreign('decided_by')->references('id')->on('users')->restrictOnDelete();
+        });
+
+        Schema::table('measurement_spec_versions', function (Blueprint $table): void {
+            $table->unique(
+                ['tenant_id', 'id', 'style_id', 'style_revision_no'],
+                'measurement_spec_versions_techpack_fk_uq',
+            );
+        });
+
+        Schema::table('pattern_revisions', function (Blueprint $table): void {
+            $table->unique(
+                ['tenant_id', 'id', 'style_id', 'style_revision_no', 'measurement_spec_version_id'],
+                'pattern_revisions_techpack_fk_uq',
+            );
+        });
+
+        Schema::table('sample_requests', function (Blueprint $table): void {
+            $table->unique(
+                ['tenant_id', 'id', 'style_id', 'style_revision_no', 'pattern_revision_id', 'measurement_spec_version_id'],
+                'sample_requests_techpack_fk_uq',
+            );
         });
 
         Schema::create('tech_pack_versions', function (Blueprint $table): void {
@@ -175,7 +194,6 @@ return new class extends Migration
             $table->timestampTz('reviewed_at')->nullable();
             $table->text('review_reason')->nullable();
             $table->uuid('created_by');
-            $table->timestampTz('created_at');
             $table->timestampsTz();
             $table->unique(['tenant_id', 'id'], 'tech_pack_assets_tenant_id_uq');
             $table->foreign('tenant_id')->references('id')->on('tenants')->restrictOnDelete();
@@ -253,7 +271,7 @@ return new class extends Migration
 
         DB::statement("ALTER TABLE tech_pack_versions
             ADD CONSTRAINT tech_pack_versions_status_chk
-                CHECK (status IN ('DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'RELEASE_BLOCKED', 'RELEASED', 'SUPERSEDED', 'REJECTED')),
+                CHECK (status IN ('DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'RELEASED', 'SUPERSEDED', 'REJECTED')),
             ADD CONSTRAINT tech_pack_versions_decision_chk
                 CHECK (
                     (status IN ('DRAFT', 'PENDING_APPROVAL', 'RELEASE_BLOCKED') AND decided_by IS NULL AND decided_at IS NULL AND decision_reason IS NULL)
@@ -391,7 +409,57 @@ return new class extends Migration
                     AND NEW.created_at IS NOT DISTINCT FROM OLD.created_at
                     AND NEW.submitted_by IS NOT DISTINCT FROM OLD.submitted_by
                     AND NEW.submitted_at IS NOT DISTINCT FROM OLD.submitted_at
-                    AND NEW.asset_manifest_sha256 IS NOT DISTINCT FROM OLD.asset_manifest_sha256 THEN
+                    AND NEW.asset_manifest_sha256 IS NOT DISTINCT FROM OLD.asset_manifest_sha256
+                    AND NEW.decided_by IS NOT DISTINCT FROM OLD.decided_by THEN
+                    RETURN NEW;
+                END IF;
+
+                IF OLD.status = 'APPROVED' AND NEW.status = 'RELEASED'
+                    AND NEW.tenant_id IS NOT DISTINCT FROM OLD.tenant_id
+                    AND NEW.style_id IS NOT DISTINCT FROM OLD.style_id
+                    AND NEW.style_revision_no IS NOT DISTINCT FROM OLD.style_revision_no
+                    AND NEW.bom_version_id IS NOT DISTINCT FROM OLD.bom_version_id
+                    AND NEW.measurement_spec_version_id IS NOT DISTINCT FROM OLD.measurement_spec_version_id
+                    AND NEW.pattern_revision_id IS NOT DISTINCT FROM OLD.pattern_revision_id
+                    AND NEW.sample_request_id IS NOT DISTINCT FROM OLD.sample_request_id
+                    AND NEW.version_no IS NOT DISTINCT FROM OLD.version_no
+                    AND NEW.construction_specification IS NOT DISTINCT FROM OLD.construction_specification
+                    AND NEW.seam_and_stitch_specification IS NOT DISTINCT FROM OLD.seam_and_stitch_specification
+                    AND NEW.care_instructions IS NOT DISTINCT FROM OLD.care_instructions
+                    AND NEW.label_specification IS NOT DISTINCT FROM OLD.label_specification
+                    AND NEW.packaging_specification IS NOT DISTINCT FROM OLD.packaging_specification
+                    AND NEW.quality_checkpoints IS NOT DISTINCT FROM OLD.quality_checkpoints
+                    AND NEW.created_by IS NOT DISTINCT FROM OLD.created_by
+                    AND NEW.created_at IS NOT DISTINCT FROM OLD.created_at
+                    AND NEW.submitted_by IS NOT DISTINCT FROM OLD.submitted_by
+                    AND NEW.submitted_at IS NOT DISTINCT FROM OLD.submitted_at
+                    AND NEW.decided_by IS NOT DISTINCT FROM OLD.decided_by
+                    AND NEW.decided_at IS NOT DISTINCT FROM OLD.decided_at
+                    AND NEW.decision_reason IS NOT DISTINCT FROM OLD.decision_reason
+                    AND NEW.asset_manifest_sha256 IS NOT DISTINCT FROM OLD.asset_manifest_sha256
+                    AND NEW.release_manifest_sha256 IS NOT NULL
+                    AND NEW.released_by IS NOT NULL
+                    AND NEW.released_at IS NOT NULL THEN
+                    RETURN NEW;
+                END IF;
+
+                IF OLD.status IN ('APPROVED', 'RELEASED') AND NEW.status = 'SUPERSEDED'
+                    AND NEW.tenant_id IS NOT DISTINCT FROM OLD.tenant_id
+                    AND NEW.style_id IS NOT DISTINCT FROM OLD.style_id
+                    AND NEW.style_revision_no IS NOT DISTINCT FROM OLD.style_revision_no
+                    AND NEW.bom_version_id IS NOT DISTINCT FROM OLD.bom_version_id
+                    AND NEW.measurement_spec_version_id IS NOT DISTINCT FROM OLD.measurement_spec_version_id
+                    AND NEW.pattern_revision_id IS NOT DISTINCT FROM OLD.pattern_revision_id
+                    AND NEW.sample_request_id IS NOT DISTINCT FROM OLD.sample_request_id
+                    AND NEW.version_no IS NOT DISTINCT FROM OLD.version_no
+                    AND NEW.construction_specification IS NOT DISTINCT FROM OLD.construction_specification
+                    AND NEW.seam_and_stitch_specification IS NOT DISTINCT FROM OLD.seam_and_stitch_specification
+                    AND NEW.care_instructions IS NOT DISTINCT FROM OLD.care_instructions
+                    AND NEW.label_specification IS NOT DISTINCT FROM OLD.label_specification
+                    AND NEW.packaging_specification IS NOT DISTINCT FROM OLD.packaging_specification
+                    AND NEW.quality_checkpoints IS NOT DISTINCT FROM OLD.quality_checkpoints
+                    AND NEW.created_by IS NOT DISTINCT FROM OLD.created_by
+                    AND NEW.created_at IS NOT DISTINCT FROM OLD.created_at THEN
                     RETURN NEW;
                 END IF;
 
@@ -454,14 +522,14 @@ return new class extends Migration
             );
         }
 
-        DB::statement('GRANT SELECT, INSERT, UPDATE ON style_bom_versions TO app_runtime');
+        DB::statement('GRANT SELECT, INSERT ON style_bom_versions TO app_runtime');
         DB::statement('REVOKE DELETE ON style_bom_versions FROM app_runtime');
         DB::statement('GRANT SELECT, INSERT, UPDATE, DELETE ON style_bom_lines TO app_runtime');
         DB::statement('GRANT SELECT, INSERT ON style_bom_substitution_candidates TO app_runtime');
         DB::statement('GRANT SELECT, INSERT ON style_bom_decisions TO app_runtime');
-        DB::statement('GRANT SELECT, INSERT, UPDATE ON tech_pack_versions TO app_runtime');
+        DB::statement('GRANT SELECT, INSERT ON tech_pack_versions TO app_runtime');
         DB::statement('REVOKE DELETE ON tech_pack_versions FROM app_runtime');
-        DB::statement('GRANT SELECT, INSERT, UPDATE ON tech_pack_assets TO app_runtime');
+        DB::statement('GRANT SELECT, INSERT ON tech_pack_assets TO app_runtime');
         DB::statement('GRANT SELECT, INSERT ON tech_pack_decisions TO app_runtime');
         DB::statement('GRANT SELECT, INSERT ON tech_pack_delivery_receipts TO app_runtime');
 
@@ -481,19 +549,14 @@ return new class extends Migration
 
     public function down(): void
     {
-        foreach ([
-            'tech_pack_receipts_append_only',
-            'tech_pack_decisions_append_only',
-            'tech_pack_assets_append_only',
-            'tech_pack_versions_append_only',
-            'style_bom_decisions_append_only',
-            'style_bom_subst_append_only',
-            'style_bom_lines_append_only',
-            'style_bom_versions_append_only',
-        ] as $trigger) {
-            DB::statement("DROP TRIGGER IF EXISTS {$trigger} ON tech_pack_delivery_receipts");
-        }
-
+        DB::statement('DROP TRIGGER IF EXISTS tech_pack_receipts_append_only ON tech_pack_delivery_receipts');
+        DB::statement('DROP TRIGGER IF EXISTS tech_pack_decisions_append_only ON tech_pack_decisions');
+        DB::statement('DROP TRIGGER IF EXISTS tech_pack_assets_append_only ON tech_pack_assets');
+        DB::statement('DROP TRIGGER IF EXISTS tech_pack_versions_append_only ON tech_pack_versions');
+        DB::statement('DROP TRIGGER IF EXISTS style_bom_decisions_append_only ON style_bom_decisions');
+        DB::statement('DROP TRIGGER IF EXISTS style_bom_subst_append_only ON style_bom_substitution_candidates');
+        DB::statement('DROP TRIGGER IF EXISTS style_bom_lines_append_only ON style_bom_lines');
+        DB::statement('DROP TRIGGER IF EXISTS style_bom_versions_append_only ON style_bom_versions');
         DB::statement('DROP TRIGGER IF EXISTS tech_pack_assets_state_guard ON tech_pack_assets');
         DB::statement('DROP TRIGGER IF EXISTS tech_pack_version_state_guard ON tech_pack_versions');
         DB::statement('DROP TRIGGER IF EXISTS style_bom_lines_state_guard ON style_bom_lines');
@@ -510,5 +573,14 @@ return new class extends Migration
         Schema::dropIfExists('style_bom_substitution_candidates');
         Schema::dropIfExists('style_bom_lines');
         Schema::dropIfExists('style_bom_versions');
+        Schema::table('sample_requests', function (Blueprint $table): void {
+            $table->dropUnique('sample_requests_techpack_fk_uq');
+        });
+        Schema::table('pattern_revisions', function (Blueprint $table): void {
+            $table->dropUnique('pattern_revisions_techpack_fk_uq');
+        });
+        Schema::table('measurement_spec_versions', function (Blueprint $table): void {
+            $table->dropUnique('measurement_spec_versions_techpack_fk_uq');
+        });
     }
 };
