@@ -102,10 +102,16 @@ class TenantIsolationTest extends TestCase
 
     public function test_runtime_database_role_sees_no_tenant_rows_without_context(): void
     {
+        $runtime = DB::connection('pgsql');
         $this->assertSame(
             0,
-            DB::connection('pgsql')->table('legal_entities')->count(),
-            'RLS must deny reads when transaction-local tenant context is absent.',
+            $runtime->table('legal_entities')->count(),
+            'RLS must deny legal-entity reads when tenant context is absent.',
+        );
+        $this->assertSame(
+            0,
+            $runtime->table('tenants')->count(),
+            'RLS must deny tenant-root reads when no selected tenant or membership context exists.',
         );
     }
     public function test_tenant_admin_can_create_a_draft_legal_entity_with_audit_evidence(): void
@@ -187,6 +193,19 @@ class TenantIsolationTest extends TestCase
             $this->assertTrue($row->relrowsecurity, $row->relname.' must enable RLS.');
             $this->assertTrue($row->relforcerowsecurity, $row->relname.' must force RLS.');
         }
+    }
+
+    public function test_tenant_roots_have_membership_only_select_policy(): void
+    {
+        $policies = DB::connection('pgsql_test_admin')->select(
+            "SELECT policyname FROM pg_policies
+             WHERE schemaname = 'public' AND tablename = 'tenants'",
+        );
+
+        $this->assertEqualsCanonicalizing(
+            ['tenant_isolation_tenants', 'tenant_self_membership_access'],
+            array_map(fn ($row) => $row->policyname, $policies),
+        );
     }
 
     public function test_runtime_role_has_only_explicit_minimum_table_privileges(): void
