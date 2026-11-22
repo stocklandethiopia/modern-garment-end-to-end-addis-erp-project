@@ -695,6 +695,7 @@ class InitiativeWorkflowTest extends TestCase
             'tenant_access_scope_modes',
             'tenant_access_scopes',
             'market_insight_event_receipts',
+            'assortment_account_terms',
         ];
 
         $rows = DB::connection('pgsql_test_admin')
@@ -729,7 +730,11 @@ class InitiativeWorkflowTest extends TestCase
                 has_table_privilege('app_runtime', 'market_insight_event_receipts', 'INSERT') AS can_insert_event_receipt,
                 has_column_privilege('app_runtime', 'market_insight_event_receipts', 'duplicate_count', 'UPDATE') AS can_update_event_receipt,
                 has_column_privilege('app_runtime', 'market_insight_event_receipts', 'payload_sha256', 'UPDATE') AS can_change_event_payload_hash,
-                has_table_privilege('app_runtime', 'market_insight_event_receipts', 'DELETE') AS can_delete_event_receipt",
+                has_table_privilege('app_runtime', 'market_insight_event_receipts', 'DELETE') AS can_delete_event_receipt,
+                has_table_privilege('app_runtime', 'assortment_account_terms', 'INSERT') AS can_insert_account_terms,
+                has_column_privilege('app_runtime', 'assortment_account_terms', 'status', 'UPDATE') AS can_transition_account_terms,
+                has_column_privilege('app_runtime', 'assortment_account_terms', 'payment_terms_reference', 'UPDATE') AS can_change_account_terms,
+                has_table_privilege('app_runtime', 'assortment_account_terms', 'DELETE') AS can_delete_account_terms",
         );
 
         $this->assertTrue($versionPrivileges->can_insert_version);
@@ -749,6 +754,10 @@ class InitiativeWorkflowTest extends TestCase
         $this->assertTrue($versionPrivileges->can_update_event_receipt);
         $this->assertFalse($versionPrivileges->can_change_event_payload_hash);
         $this->assertFalse($versionPrivileges->can_delete_event_receipt);
+        $this->assertTrue($versionPrivileges->can_insert_account_terms);
+        $this->assertTrue($versionPrivileges->can_transition_account_terms);
+        $this->assertFalse($versionPrivileges->can_change_account_terms);
+        $this->assertFalse($versionPrivileges->can_delete_account_terms);
     }
 
     public function test_insight_source_provenance_is_append_only(): void
