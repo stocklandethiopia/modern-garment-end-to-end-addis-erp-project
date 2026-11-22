@@ -143,7 +143,6 @@ class TenantIsolationTest extends TestCase
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
-
             [
                 'id' => $this->warehouseNodeB,
                 'tenant_id' => $this->tenantA,
