@@ -8,6 +8,7 @@ use App\Services\ScopedAccessService;
 use App\Support\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class AssortmentAccountTermsController extends Controller
@@ -19,7 +20,8 @@ class AssortmentAccountTermsController extends Controller
         AssortmentAccountTermsService $service,
     ): JsonResponse {
         $tenantId = $tenantContext->tenantId();
-        $this->assertPlanScope($tenantId, $assortmentPlanId, $scopedAccess, 'READ');
+        $actorId = (string) request()->user()->getAuthIdentifier();
+        $this->assertPlanScope($tenantId, $assortmentPlanId, $actorId, $scopedAccess, 'READ');
 
         return response()->json([
             'data' => $service->index($tenantId, $assortmentPlanId),
@@ -34,7 +36,8 @@ class AssortmentAccountTermsController extends Controller
         AssortmentAccountTermsService $service,
     ): JsonResponse {
         $tenantId = $tenantContext->tenantId();
-        $this->assertPlanScope($tenantId, $assortmentPlanId, $scopedAccess, 'CREATE');
+        $actorId = (string) $request->user()->getAuthIdentifier();
+        $this->assertPlanScope($tenantId, $assortmentPlanId, $actorId, $scopedAccess, 'CREATE');
 
         $data = $request->validate([
             'price_list_id' => [
@@ -57,7 +60,7 @@ class AssortmentAccountTermsController extends Controller
         $terms = $service->create(
             $tenantId,
             $assortmentPlanId,
-            (string) $request->user()->getAuthIdentifier(),
+            $actorId,
             [
                 ...$data,
                 'minimum_order_units' => $data['minimum_order_units'] ?? 0,
@@ -77,14 +80,15 @@ class AssortmentAccountTermsController extends Controller
         AssortmentAccountTermsService $service,
     ): JsonResponse {
         $tenantId = $tenantContext->tenantId();
-        $this->assertPlanScope($tenantId, $assortmentPlanId, $scopedAccess, 'CREATE');
+        $actorId = (string) $request->user()->getAuthIdentifier();
+        $this->assertPlanScope($tenantId, $assortmentPlanId, $actorId, $scopedAccess, 'CREATE');
 
         return response()->json([
             'data' => $service->submit(
                 $tenantId,
                 $assortmentPlanId,
                 $termsId,
-                (string) $request->user()->getAuthIdentifier(),
+                $actorId,
                 $tenantContext->canAdministerTenant(),
             ),
         ]);
@@ -101,7 +105,8 @@ class AssortmentAccountTermsController extends Controller
         abort_unless($tenantContext->canAdministerTenant(), 403, 'Tenant owner or administrator approval is required.');
 
         $tenantId = $tenantContext->tenantId();
-        $this->assertPlanScope($tenantId, $assortmentPlanId, $scopedAccess, 'APPROVE');
+        $actorId = (string) $request->user()->getAuthIdentifier();
+        $this->assertPlanScope($tenantId, $assortmentPlanId, $actorId, $scopedAccess, 'APPROVE');
         $data = $request->validate([
             'decision' => ['required', Rule::in(['APPROVE', 'REJECT'])],
             'reason' => ['required', 'string', 'min:10', 'max:3000'],
@@ -112,7 +117,7 @@ class AssortmentAccountTermsController extends Controller
                 $tenantId,
                 $assortmentPlanId,
                 $termsId,
-                (string) $request->user()->getAuthIdentifier(),
+                $actorId,
                 $data['decision'],
                 trim($data['reason']),
             ),
@@ -122,34 +127,35 @@ class AssortmentAccountTermsController extends Controller
     private function assertPlanScope(
         string $tenantId,
         string $assortmentPlanId,
+        string $actorId,
         ScopedAccessService $scopedAccess,
         string $permission,
     ): void {
-        $plan = \Illuminate\Support\Facades\DB::table('assortment_plans')
+        $plan = DB::table('assortment_plans')
             ->where('tenant_id', $tenantId)
             ->where('id', $assortmentPlanId)
             ->first();
 
         abort_if($plan === null, 404);
 
-        $range = \Illuminate\Support\Facades\DB::table('range_plans')
+        $range = DB::table('range_plans')
             ->where('tenant_id', $tenantId)
             ->where('id', $plan->range_plan_id)
             ->first();
 
         abort_if($range === null, 404);
 
-        $collection = \Illuminate\Support\Facades\DB::table('collections')
+        $collection = DB::table('collections')
             ->where('tenant_id', $tenantId)
             ->where('id', $range->collection_id)
             ->first();
 
         abort_if($collection === null, 404);
 
-        $scopedAccess->assertBrand($tenantId, (string) request()->user()->getAuthIdentifier(), $collection->brand_id, $permission);
-        $scopedAccess->assertMarket($tenantId, (string) request()->user()->getAuthIdentifier(), $plan->market_scope, $permission);
+        $scopedAccess->assertBrand($tenantId, $actorId, $collection->brand_id, $permission);
+        $scopedAccess->assertMarket($tenantId, $actorId, $plan->market_scope, $permission);
         if ($plan->business_site_id !== null) {
-            $scopedAccess->assertSite($tenantId, (string) request()->user()->getAuthIdentifier(), $plan->business_site_id, $permission);
+            $scopedAccess->assertSite($tenantId, $actorId, $plan->business_site_id, $permission);
         }
     }
 }
