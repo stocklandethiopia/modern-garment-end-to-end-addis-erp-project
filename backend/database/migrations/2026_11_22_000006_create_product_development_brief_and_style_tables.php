@@ -96,6 +96,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->uuid('tenant_id');
             $table->uuid('product_brief_id');
+            $table->unsignedInteger('product_brief_version');
             $table->string('style_code', 80);
             $table->string('name', 180);
             $table->string('category_code', 80);
@@ -108,6 +109,8 @@ return new class extends Migration
             $table->foreign('tenant_id')->references('id')->on('tenants')->restrictOnDelete();
             $table->foreign(['tenant_id', 'product_brief_id'])
                 ->references(['tenant_id', 'id'])->on('product_briefs')->restrictOnDelete();
+            $table->foreign(['tenant_id', 'product_brief_id', 'product_brief_version'])
+                ->references(['tenant_id', 'product_brief_id', 'version_no'])->on('product_brief_versions')->restrictOnDelete();
             $table->foreign('owner_user_id')->references('id')->on('users')->restrictOnDelete();
             $table->index(['tenant_id', 'status', 'created_at']);
         });

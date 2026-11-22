@@ -505,6 +505,7 @@ class ProductDevelopmentController extends Controller
                 'id' => $styleId,
                 'tenant_id' => $tenantId,
                 'product_brief_id' => $data['product_brief_id'],
+                'product_brief_version' => (int) $brief->accepted_version,
                 'style_code' => strtoupper($data['style_code']),
                 'name' => trim($data['name']),
                 'category_code' => strtoupper($data['category_code']),
