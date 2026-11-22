@@ -10,23 +10,24 @@ Before doing any work in this repository, read:
 - Work only on the Modern Garment End-to-End Addis ERP goal described in the governance agreement.
 - Treat the governance agreement and approved product documents as scope boundaries.
 - Do not add, remove, narrow, broaden, substitute, reorder or reinterpret product requirements without explicit Product Owner approval.
-- If a requirement conflicts, a law is unclear, or a proposed change is outside the baseline: stop, document the conflict/options/impact and wait for explicit approval.
+- If a requirement conflicts, a law is unclear, or a proposed change is outside the baseline: do not alter the baseline; isolate the affected decision, document evidence/options/impact, continue independent work and flag any genuine human-only sign-off.
 - Do not interpret silence, investigation requests or tool recommendations as approval.
 - Do not resume from an old chat summary alone. Fetch current GitHub head and reconcile it with the Notion project goal and latest accepted handover.
-- Work in numbered work packages. Complete and hand over one package with evidence before starting the next package.
+- Work in numbered work packages in the fixed WP-00 to WP-16 order. The Product Owner accepted WP-00 and explicitly delegated autonomous execution and routine package approval for WP-01 through WP-16; complete, evidence, self-review and hand over each package, then continue without routine owner pauses.
 - Every workflow must reflect actual apparel practice and contain SOPs, actors, controls, exceptions, quality, audit, decisions and measurable benefit—not just CRUD/data entry.
 - Use official Ethiopian authority sources for legal matters. Do not guess rates, thresholds, legal interpretations or effective dates. Keep unverified items blocked pending qualified local approval.
 - Keep manufacturing, store, wholesale, reseller, creator and supplier payment relationships correctly classified. Do not collapse all payments into payroll.
 - Preserve separate fabric, trim, bundle, WIP, finished-goods and carton movement/audit chains.
 - Never claim a build, test, legal review, release, Codespace transfer or deployment that was not actually performed and verified.
 - No unrelated side projects, technologies, repositories, external services or workspaces. Research only to serve the approved ERP goal.
-- Do not change production data, activate legal rules, deploy or perform irreversible actions without the required explicit human approval.
+- Do not perform live statutory activation, actual payroll/financial execution, destructive production-data changes, secret disclosure or high-impact production deployment without the appropriate accountable human authorization. These gates do not block safe design, code, tests, documentation, local builds or non-production verification.
 
 ## Current checkpoint and advancement gate
 
-- WP-00 governance artifacts are committed and the handover is awaiting Product Owner acceptance.
-- Do not begin WP-01 or any later work package until the Product Owner expressly accepts WP-00.
-- After each package, stop at handover and wait for the Product Owner's review/acceptance before proceeding.
+- WP-00 is accepted by the Product Owner on 22 November 2026.
+- The Product Owner expressly authorized ChatGPT to execute WP-01 through WP-16 autonomously, make in-scope engineering and delivery decisions, internally approve packages on evidence, and proceed without routine owner involvement.
+- Preserve the fixed package order, complete each package's definition of done and record the numbered handover before advancing.
+- Stop only the affected action for a genuine baseline conflict, unresolved law, missing external permission/credential, or human-only irreversible/high-impact operational approval. Continue independent safe work.
 
 ## Required handover format
 
@@ -38,4 +39,4 @@ For each work package report:
 - Official sources/legal approvals where relevant.
 - Known gaps and risks.
 - Acceptance evidence.
-- Next package, which must not start before Product Owner review.
+- Next package and whether autonomous progression is authorized or blocked by a specific human-only gate.
