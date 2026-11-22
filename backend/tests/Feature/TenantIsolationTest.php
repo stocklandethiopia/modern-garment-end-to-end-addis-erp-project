@@ -393,7 +393,7 @@ class TenantIsolationTest extends TestCase
             ->assertJsonPath('data.status', 'DRAFT');
     }
 
-    public function test_branch_node_cannot_be_configured_as_stock_holding(): void
+    public function test_branch_node_can_be_explicitly_configured_as_stock_holding(): void
     {
         $siteId = (string) Str::uuid();
         $now = now();
@@ -418,8 +418,9 @@ class TenantIsolationTest extends TestCase
                 'name' => 'Branch Two',
                 'stock_holding_enabled' => true,
             ])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors('stock_holding_enabled');
+            ->assertCreated()
+            ->assertJsonPath('data.stock_holding_enabled', true)
+            ->assertJsonPath('data.capabilities.0', 'STOCK_HOLDING');
     }
 
     public function test_non_admin_member_cannot_create_business_site(): void
