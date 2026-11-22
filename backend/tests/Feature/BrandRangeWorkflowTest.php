@@ -892,6 +892,14 @@ class BrandRangeWorkflowTest extends TestCase
             ->assertJsonPath('data.status', 'PENDING_APPROVAL');
 
         $this->withHeaders($this->tenantHeader())
+            ->getJson('/api/v1/product/merchandising-dashboard')
+            ->assertOk()
+            ->assertJsonMissing([
+                'type' => 'ASSORTMENT_ACCOUNT_TERMS_APPROVAL',
+                'id' => $termsId,
+            ]);
+
+        $this->withHeaders($this->tenantHeader())
             ->postJson('/api/v1/product/assortment-plans/'.$wholesalePlanId.'/account-terms/'.$termsId.'/decisions', [
                 'decision' => 'APPROVE',
                 'reason' => 'The terms author cannot approve their own wholesale commercial terms.',
@@ -900,12 +908,121 @@ class BrandRangeWorkflowTest extends TestCase
 
         $this->actAsApprover();
         $this->withHeaders($this->tenantHeader())
+            ->getJson('/api/v1/product/merchandising-dashboard')
+            ->assertOk()
+            ->assertJsonFragment([
+                'type' => 'ASSORTMENT_ACCOUNT_TERMS_APPROVAL',
+                'id' => $termsId,
+            ]);
+
+        $this->withHeaders($this->tenantHeader())
             ->postJson('/api/v1/product/assortment-plans/'.$wholesalePlanId.'/account-terms/'.$termsId.'/decisions', [
                 'decision' => 'APPROVE',
                 'reason' => 'The wholesale account, price list and effective terms have been independently reviewed.',
             ])
             ->assertOk()
             ->assertJsonPath('data.status', 'APPROVED');
+
+        $this->actAsOwner();
+        $overlappingTerms = $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product/assortment-plans/'.$wholesalePlanId.'/account-terms', [
+                'price_list_id' => $wholesalePriceListId,
+                'account_tier' => 'GOLD',
+                'commercial_terms_reference' => 'CONTRACT-DISTRIBUTOR-001-OVERLAP',
+                'payment_terms_reference' => 'PAYMENT-POLICY-NET30',
+                'delivery_terms_reference' => 'DELIVERY-POLICY-DC-ADDIS',
+                'effective_from' => '2027-06-01',
+                'effective_to' => '2027-12-31',
+                'change_reason' => 'Test an overlapping account-terms renewal against the approved version.',
+            ])
+            ->assertCreated();
+
+        $overlappingId = $overlappingTerms->json('data.id');
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product/assortment-plans/'.$wholesalePlanId.'/account-terms/'.$overlappingId.'/submit', [])
+            ->assertOk();
+
+        $this->actAsApprover();
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product/assortment-plans/'.$wholesalePlanId.'/account-terms/'.$overlappingId.'/decisions', [
+                'decision' => 'APPROVE',
+                'reason' => 'This overlapping version must not replace the current effective account terms.',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Approved account terms already overlap this channel, market, account and effective period. Create a new non-overlapping version.');
+
+        $this->actAsOwner();
+        $nextTerms = $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product/assortment-plans/'.$wholesalePlanId.'/account-terms', [
+                'price_list_id' => $wholesalePriceListId,
+                'account_tier' => 'GOLD',
+                'commercial_terms_reference' => 'CONTRACT-DISTRIBUTOR-001-RENEWAL',
+                'payment_terms_reference' => 'PAYMENT-POLICY-NET30',
+                'delivery_terms_reference' => 'DELIVERY-POLICY-DC-ADDIS',
+                'effective_from' => '2027-07-01',
+                'effective_to' => '2027-12-31',
+                'change_reason' => 'Non-overlapping successor account terms for the second half of the trading year.',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.version_no', 3);
+
+        $nextTermsId = $nextTerms->json('data.id');
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product/assortment-plans/'.$wholesalePlanId.'/account-terms/'.$nextTermsId.'/submit', [])
+            ->assertOk();
+
+        $this->actAsApprover();
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product/assortment-plans/'.$wholesalePlanId.'/account-terms/'.$nextTermsId.'/decisions', [
+                'decision' => 'APPROVE',
+                'reason' => 'The non-overlapping successor period is independently approved.',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'APPROVED');
+
+        $this->actAsOwner();
+        $resellerTerms = $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product/assortment-plans/'.$resellerPlanId.'/account-terms', [
+                'price_list_id' => $resellerPriceListId,
+                'account_tier' => 'SILVER',
+                'commercial_terms_reference' => 'CONTRACT-RESELLER-002',
+                'payment_terms_reference' => 'PAYMENT-POLICY-NET15',
+                'delivery_terms_reference' => 'DELIVERY-POLICY-RESELLER-ADDIS',
+                'returns_policy_reference' => 'RETURNS-POLICY-RESELLER',
+                'minimum_order_units' => 60,
+                'order_multiple_units' => 12,
+                'effective_from' => '2027-01-01',
+                'effective_to' => '2027-12-31',
+                'change_reason' => 'Independent reseller account terms and price-book linkage.',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.account_reference', 'RESELLER-002')
+            ->assertJsonPath('data.price_list_id', $resellerPriceListId);
+
+        $resellerTermsId = $resellerTerms->json('data.id');
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product/assortment-plans/'.$resellerPlanId.'/account-terms/'.$resellerTermsId.'/submit', [])
+            ->assertOk();
+        $this->actAsApprover();
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product/assortment-plans/'.$resellerPlanId.'/account-terms/'.$resellerTermsId.'/decisions', [
+                'decision' => 'APPROVE',
+                'reason' => 'The distinct reseller account terms are independently approved.',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'APPROVED');
+
+        $this->actAsOwner();
+        $this->withHeaders($this->tenantHeader())
+            ->getJson('/api/v1/product/assortment-plans/'.$wholesalePlanId.'/account-terms')
+            ->assertOk()
+            ->assertJsonCount(3, 'data.data')
+            ->assertJsonFragment(['account_reference' => 'DISTRIBUTOR-001', 'price_list_id' => $wholesalePriceListId]);
+        $this->withHeaders($this->tenantHeader())
+            ->getJson('/api/v1/product/assortment-plans/'.$resellerPlanId.'/account-terms')
+            ->assertOk()
+            ->assertJsonCount(1, 'data.data')
+            ->assertJsonFragment(['account_reference' => 'RESELLER-002', 'price_list_id' => $resellerPriceListId]);
 
         $this->expectException(QueryException::class);
         DB::connection('pgsql_test_admin')->table('assortment_account_terms')
