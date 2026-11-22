@@ -19,6 +19,10 @@ Route::prefix('v1')->group(function (): void {
     Route::post('/auth/tokens', [TokenController::class, 'store'])
         ->middleware('throttle:6,1');
 
+    Route::middleware('auth:sanctum')->group(function (): void {
+        Route::get('/tenants', [\\App\\Http\\Controllers\\Enterprise\\TenantController::class, 'index']);
+    });
+
     Route::middleware(['auth:sanctum', 'tenant.context'])->group(function (): void {
         Route::get('/me', function (Request $request, TenantContext $tenantContext) {
             return response()->json([
