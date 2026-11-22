@@ -235,12 +235,13 @@ class ScopedAccessService
 
     private function assertTenantMember(string $tenantId, string $userId): void
     {
+        $membership = DB::selectOne(
+            'SELECT CASE WHEN public.is_active_member_of_current_tenant(?) THEN 1 ELSE 0 END AS active',
+            [$userId],
+        );
+
         abort_unless(
-            DB::table('tenant_memberships')
-                ->where('tenant_id', $tenantId)
-                ->where('user_id', $userId)
-                ->where('status', 'ACTIVE')
-                ->exists(),
+            $membership !== null && (int) $membership->active === 1,
             404,
             'Active tenant membership not found.',
         );
