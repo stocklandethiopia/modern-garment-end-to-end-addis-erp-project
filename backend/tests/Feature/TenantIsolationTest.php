@@ -476,10 +476,8 @@ class TenantIsolationTest extends TestCase
                 'node_type' => 'FACTORY',
                 'name' => 'No Entity Factory',
             ])
-            ->assertUnprocessable()
             ->assertUnprocessable();
     }
-
 
     public function test_branch_registration_evidence_is_saved_for_review_not_activated(): void
     {
