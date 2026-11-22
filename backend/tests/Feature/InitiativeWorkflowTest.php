@@ -17,6 +17,8 @@ class InitiativeWorkflowTest extends TestCase
 
     private string $userId;
 
+    private string $approverId;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -26,6 +28,7 @@ class InitiativeWorkflowTest extends TestCase
         $this->tenantId = (string) Str::uuid();
         $this->otherTenantId = (string) Str::uuid();
         $this->userId = (string) Str::uuid();
+        $this->approverId = (string) Str::uuid();
 
         foreach ([$this->tenantId => 'MERCH-TEST-1', $this->otherTenantId => 'MERCH-TEST-2'] as $tenantId => $code) {
             $admin->table('tenants')->insert([
@@ -50,15 +53,37 @@ class InitiativeWorkflowTest extends TestCase
             'updated_at' => $now,
         ]);
 
-        $admin->table('tenant_memberships')->insert([
-            'id' => (string) Str::uuid(),
-            'tenant_id' => $this->tenantId,
-            'user_id' => $this->userId,
-            'membership_role' => 'OWNER',
+        $admin->table('users')->insert([
+            'id' => $this->approverId,
+            'name' => 'Independent Merchandising Approver',
+            'email' => 'approver-'.Str::lower(Str::random(10)).'@example.test',
+            'password' => Hash::make('a-long-test-password'),
             'status' => 'ACTIVE',
-            'joined_at' => $now,
             'created_at' => $now,
             'updated_at' => $now,
+        ]);
+
+        $admin->table('tenant_memberships')->insert([
+            [
+                'id' => (string) Str::uuid(),
+                'tenant_id' => $this->tenantId,
+                'user_id' => $this->userId,
+                'membership_role' => 'OWNER',
+                'status' => 'ACTIVE',
+                'joined_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'id' => (string) Str::uuid(),
+                'tenant_id' => $this->tenantId,
+                'user_id' => $this->approverId,
+                'membership_role' => 'ADMIN',
+                'status' => 'ACTIVE',
+                'joined_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
         ]);
 
         Sanctum::actingAs(User::query()->findOrFail($this->userId), ['tenant:select', 'erp:access']);
@@ -106,6 +131,15 @@ class InitiativeWorkflowTest extends TestCase
             ->postJson('/api/v1/product/initiatives/'.$initiativeId.'/submit', [])
             ->assertOk()
             ->assertJsonPath('data.status', 'SCREENING');
+
+        $this->withHeader('X-Tenant-Id', $this->tenantId)
+            ->postJson('/api/v1/product/initiatives/'.$initiativeId.'/decisions', [
+                'decision' => 'APPROVE_RESEARCH',
+                'reason' => 'The creator cannot approve their own screening decision.',
+            ])
+            ->assertForbidden();
+
+        Sanctum::actingAs(User::query()->findOrFail($this->approverId), ['tenant:select', 'erp:access']);
 
         $this->withHeader('X-Tenant-Id', $this->tenantId)
             ->postJson('/api/v1/product/initiatives/'.$initiativeId.'/decisions', [
@@ -167,6 +201,8 @@ class InitiativeWorkflowTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.status', 'ASSESSMENT');
 
+        Sanctum::actingAs(User::query()->findOrFail($this->approverId), ['tenant:select', 'erp:access']);
+
         $this->withHeader('X-Tenant-Id', $this->tenantId)
             ->postJson('/api/v1/product/initiatives/'.$initiativeId.'/decisions', [
                 'decision' => 'APPROVE',
@@ -184,7 +220,8 @@ class InitiativeWorkflowTest extends TestCase
             ->assertJsonCount(1, 'versions')
             ->assertJsonCount(2, 'decisions')
             ->assertJsonCount(1, 'insights')
-            ->assertJsonPath('decisions.1.decision', 'APPROVE_RESEARCH')
+            ->assertJsonFragment(['decision' => 'APPROVE_RESEARCH'])
+            ->assertJsonFragment(['decision' => 'APPROVE'])
             ->assertJsonPath('insights.0.source_name', 'Addis store visit notes');
 
         $decisionCount = DB::connection('pgsql_test_admin')->table('initiative_decisions')
