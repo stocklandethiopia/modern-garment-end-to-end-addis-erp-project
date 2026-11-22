@@ -1,8 +1,8 @@
 <?php
 
 use App\Http\Controllers\Auth\TokenController;
-use App\Http\Controllers\Enterprise\BusinessSiteController;
 use App\Http\Controllers\Enterprise\AccessScopeController;
+use App\Http\Controllers\Enterprise\BusinessSiteController;
 use App\Http\Controllers\Enterprise\InventoryLocationController;
 use App\Http\Controllers\Enterprise\LegalEntityController;
 use App\Http\Controllers\Enterprise\LicensingEvidenceController;
