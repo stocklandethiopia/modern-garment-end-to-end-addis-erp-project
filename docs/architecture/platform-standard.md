@@ -80,7 +80,8 @@ Initial bounded contexts:
 20. Learning and development, training catalogue, competency, certification, skills matrix and training effectiveness.
 21. Performance, goals, appraisals, succession, engagement, occupational health and safety.
 22. Maintenance, assets, utilities, energy, calibration and facilities.
-23. Documents, workflow, approvals, notifications, reporting, BI and integration management.
+23. Legal/regulatory rules, authority-source register, obligation calendars, compliance evidence, legal-change monitoring and approvals.
+24. Documents, workflow, approvals, notifications, reporting, BI and integration management.
 
 ## 6. Multi-tenant model
 
@@ -149,3 +150,13 @@ Distribution, order management and channel commerce are first-class bounded cont
 - Daily management includes visual boards, Andon, 5S, worker suggestions, team meetings, Kaizen actions and measured before/after results.
 - Any incentive calculation is optional, policy-versioned and approved; it balances accepted output, quality, rework, safety, compliance and team contribution, and never rewards unsafe speed or defect concealment.
 - 3D assets, technical revisions, sample/fit comments, work instructions and in-process dashboards must share product context and version identity. Virtual fitting supports physical fit review rather than automatically replacing it.
+
+
+## 12. Regulatory rules and authority integration
+
+- Local legal rules are data/configuration with authoritative source metadata, not constants buried in business code.
+- The jurisdiction pack stores instrument/authority/version/effective dates, applicability, clause, calculation base, thresholds/rates, approved interpretation, evidence and reviewer.
+- Each tax, payroll, pension, customs, FX, business-licence, public-procurement, privacy, environmental and reporting workflow links to the relevant rule version.
+- New legal instruments enter a draft review state; compare amendments, identify impacted transactions/modules, prepare tests and require competent local approval before activation.
+- Historical postings retain the original legal rule and calculation version. Do not silently recalculate posted payroll, tax, customs, stock or financial records after a law change.
+- Keep the public-procurement compliance pack optional and applicability-gated; internal procurement controls remain a distinct private-enterprise governance feature.
