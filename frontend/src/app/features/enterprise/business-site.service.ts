@@ -90,13 +90,13 @@ export class BusinessSiteService {
 
   listNodes(siteId: string): Observable<PageResponse<OperationalNode>> {
     return this.http.get<PageResponse<OperationalNode>>(
-      \`/api/v1/enterprise/sites/\${encodeURIComponent(siteId)}/nodes\`,
+      '/api/v1/enterprise/sites/' + encodeURIComponent(siteId) + '/nodes',
     );
   }
 
   createNode(siteId: string, input: OperationalNodeInput): Observable<ResourceResponse<OperationalNode>> {
     return this.http.post<ResourceResponse<OperationalNode>>(
-      \`/api/v1/enterprise/sites/\${encodeURIComponent(siteId)}/nodes\`,
+      '/api/v1/enterprise/sites/' + encodeURIComponent(siteId) + '/nodes',
       input,
     );
   }
