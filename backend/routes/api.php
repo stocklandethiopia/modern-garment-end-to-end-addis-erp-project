@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\TokenController;
 use App\Http\Controllers\Enterprise\LegalEntityController;
+use App\Http\Controllers\Enterprise\TenantController;
 use App\Support\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -20,7 +21,8 @@ Route::prefix('v1')->group(function (): void {
         ->middleware('throttle:6,1');
 
     Route::middleware('auth:sanctum')->group(function (): void {
-        Route::get('/tenants', [\\App\\Http\\Controllers\\Enterprise\\TenantController::class, 'index']);
+        Route::get('/tenants', [TenantController::class, 'index']);
+        Route::delete('/auth/tokens/current', [TokenController::class, 'destroy']);
     });
 
     Route::middleware(['auth:sanctum', 'tenant.context'])->group(function (): void {
@@ -37,8 +39,6 @@ Route::prefix('v1')->group(function (): void {
                 ],
             ]);
         });
-
-        Route::delete('/auth/tokens/current', [TokenController::class, 'destroy']);
 
         Route::get('/enterprise/legal-entities', [LegalEntityController::class, 'index']);
         Route::post('/enterprise/legal-entities', [LegalEntityController::class, 'store']);
