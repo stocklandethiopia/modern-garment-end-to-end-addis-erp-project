@@ -46,7 +46,7 @@ return new class extends Migration
                 ->references(['tenant_id', 'style_id', 'revision_no'])->on('style_revisions')->restrictOnDelete();
             $table->foreign('created_by')->references('id')->on('users')->restrictOnDelete();
             $table->foreign('approved_by')->references('id')->on('users')->restrictOnDelete();
-            $table->index(['tenant_id', 'style_id', 'status', 'version_no']);
+            $table->index(['tenant_id', 'style_id', 'status', 'version_no'], 'measurement_spec_versions_style_status_idx');
         });
 
         Schema::create('measurement_spec_points', function (Blueprint $table): void {
@@ -61,12 +61,11 @@ return new class extends Migration
             $table->string('diagram_reference', 240)->nullable();
             $table->timestampTz('created_at');
             $table->unique(['tenant_id', 'id']);
-            $table->unique(['tenant_id', 'measurement_spec_version_id', 'id']);
-            $table->unique(['tenant_id', 'measurement_spec_version_id', 'point_code']);
+            $table->unique(['tenant_id', 'measurement_spec_version_id', 'id'], 'measurement_spec_points_version_point_uq');
+            $table->unique(['tenant_id', 'measurement_spec_version_id', 'point_code'], 'measurement_spec_points_version_code_uq');
             $table->foreign('tenant_id')->references('id')->on('tenants')->restrictOnDelete();
-            $table->foreign(['tenant_id', 'measurement_spec_version_id'])
+            $table->foreign(['tenant_id', 'measurement_spec_version_id'], 'measurement_spec_points_version_fk')
                 ->references(['tenant_id', 'id'])->on('measurement_spec_versions')->restrictOnDelete();
-            $table->index(['tenant_id', 'measurement_spec_version_id']);
         });
 
         Schema::create('measurement_spec_values', function (Blueprint $table): void {
@@ -79,11 +78,10 @@ return new class extends Migration
             $table->decimal('tolerance_plus', 10, 4)->default(0);
             $table->timestampTz('created_at');
             $table->unique(['tenant_id', 'id']);
-            $table->unique(['tenant_id', 'measurement_point_id', 'size_code']);
+            $table->unique(['tenant_id', 'measurement_point_id', 'size_code'], 'measurement_spec_values_point_size_uq');
             $table->foreign('tenant_id')->references('id')->on('tenants')->restrictOnDelete();
             $table->foreign(['tenant_id', 'measurement_point_id'])
                 ->references(['tenant_id', 'id'])->on('measurement_spec_points')->restrictOnDelete();
-            $table->index(['tenant_id', 'measurement_point_id', 'size_code']);
         });
 
         Schema::create('pattern_sets', function (Blueprint $table): void {
@@ -123,7 +121,7 @@ return new class extends Migration
             $table->timestampTz('approved_at')->nullable();
             $table->timestampTz('created_at');
             $table->unique(['tenant_id', 'id']);
-            $table->unique(['tenant_id', 'id', 'measurement_spec_version_id']);
+            $table->unique(['tenant_id', 'id', 'measurement_spec_version_id'], 'pattern_revisions_spec_reference_uq');
             $table->unique(['tenant_id', 'pattern_set_id', 'revision_no']);
             $table->foreign('tenant_id')->references('id')->on('tenants')->restrictOnDelete();
             $table->foreign(['tenant_id', 'pattern_set_id', 'style_id'])
@@ -134,7 +132,6 @@ return new class extends Migration
                 ->references(['tenant_id', 'id'])->on('measurement_spec_versions')->restrictOnDelete();
             $table->foreign('created_by')->references('id')->on('users')->restrictOnDelete();
             $table->foreign('approved_by')->references('id')->on('users')->restrictOnDelete();
-            $table->index(['tenant_id', 'pattern_set_id', 'revision_no']);
         });
 
         Schema::create('pattern_pieces', function (Blueprint $table): void {
@@ -153,7 +150,6 @@ return new class extends Migration
             $table->foreign('tenant_id')->references('id')->on('tenants')->restrictOnDelete();
             $table->foreign(['tenant_id', 'pattern_revision_id'])
                 ->references(['tenant_id', 'id'])->on('pattern_revisions')->restrictOnDelete();
-            $table->index(['tenant_id', 'pattern_revision_id']);
         });
 
         Schema::create('grade_rules', function (Blueprint $table): void {
@@ -168,13 +164,12 @@ return new class extends Migration
             $table->string('unit_code', 8);
             $table->timestampTz('created_at');
             $table->unique(['tenant_id', 'id']);
-            $table->unique(['tenant_id', 'pattern_revision_id', 'measurement_point_id', 'from_size_code', 'to_size_code']);
+            $table->unique(['tenant_id', 'pattern_revision_id', 'measurement_point_id', 'from_size_code', 'to_size_code'], 'grade_rules_revision_point_sizes_uq');
             $table->foreign('tenant_id')->references('id')->on('tenants')->restrictOnDelete();
-            $table->foreign(['tenant_id', 'pattern_revision_id', 'measurement_spec_version_id'])
+            $table->foreign(['tenant_id', 'pattern_revision_id', 'measurement_spec_version_id'], 'grade_rules_revision_spec_fk')
                 ->references(['tenant_id', 'id', 'measurement_spec_version_id'])->on('pattern_revisions')->restrictOnDelete();
-            $table->foreign(['tenant_id', 'measurement_spec_version_id', 'measurement_point_id'])
+            $table->foreign(['tenant_id', 'measurement_spec_version_id', 'measurement_point_id'], 'grade_rules_measurement_point_fk')
                 ->references(['tenant_id', 'measurement_spec_version_id', 'id'])->on('measurement_spec_points')->restrictOnDelete();
-            $table->index(['tenant_id', 'pattern_revision_id', 'measurement_point_id']);
         });
 
         DB::statement('ALTER TABLE measurement_spec_versions ADD CONSTRAINT measurement_spec_version_number_check CHECK (version_no > 0)');
