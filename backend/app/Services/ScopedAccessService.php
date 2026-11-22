@@ -75,8 +75,8 @@ class ScopedAccessService
         string $targetUserId,
         string $actorId,
         array $data,
-    ): array {
-        return DB::transaction(function () use ($tenantId, $targetUserId, $actorId, $data): array {
+    ): object {
+        return DB::transaction(function () use ($tenantId, $targetUserId, $actorId, $data): object {
             $this->assertTenantMember($tenantId, $targetUserId);
             $type = $data['scope_type'];
             $scopeId = $data['scope_id'] ?? null;
