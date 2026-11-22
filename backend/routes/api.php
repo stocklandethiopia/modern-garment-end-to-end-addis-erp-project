@@ -21,11 +21,11 @@ Route::prefix('v1')->group(function (): void {
         ->middleware('throttle:6,1');
 
     Route::middleware('auth:sanctum')->group(function (): void {
-        Route::get('/tenants', [TenantController::class, 'index']);
+        Route::middleware('token.ability:tenant:select')->get('/tenants', [TenantController::class, 'index']);
         Route::delete('/auth/tokens/current', [TokenController::class, 'destroy']);
     });
 
-    Route::middleware(['auth:sanctum', 'tenant.context'])->group(function (): void {
+    Route::middleware(['auth:sanctum', 'token.ability:erp:access', 'tenant.context'])->group(function (): void {
         Route::get('/me', function (Request $request, TenantContext $tenantContext) {
             return response()->json([
                 'user' => [
