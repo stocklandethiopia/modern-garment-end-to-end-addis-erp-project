@@ -390,6 +390,26 @@ class MerchandisingDashboardService
             ];
         }
 
+        $accountTerms = DB::table('assortment_account_terms')
+            ->where('tenant_id', $tenantId)
+            ->where('status', 'PENDING_APPROVAL')
+            ->where('created_by', '<>', $actorId)
+            ->orderBy('created_at')
+            ->limit(25)
+            ->get(['id', 'assortment_plan_id', 'channel_code', 'market_scope', 'account_reference', 'version_no', 'created_at']);
+
+        foreach ($accountTerms as $terms) {
+            $items[] = [
+                'type' => 'ASSORTMENT_ACCOUNT_TERMS_APPROVAL',
+                'id' => $terms->id,
+                'code' => $terms->account_reference,
+                'title' => $terms->channel_code.' · '.$terms->account_reference.' · v'.$terms->version_no,
+                'stage' => 'PENDING_APPROVAL',
+                'created_at' => $terms->created_at,
+                'href' => '/product/assortment-plans/'.$terms->assortment_plan_id.'/account-terms',
+            ];
+        }
+
         $briefs = DB::table('product_briefs')
             ->where('tenant_id', $tenantId)
             ->where('status', 'SUBMITTED_FOR_REVIEW')
