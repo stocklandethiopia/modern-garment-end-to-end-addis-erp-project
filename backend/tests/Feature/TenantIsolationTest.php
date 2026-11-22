@@ -75,7 +75,7 @@ class TenantIsolationTest extends TestCase
         }
 
         $user = User::query()->findOrFail($this->userId);
-        Sanctum::actingAs($user, ['tenant:select']);
+        Sanctum::actingAs($user, ['tenant:select', 'erp:access']);
     }
 
     public function test_membership_scopes_legal_entity_query_to_authorized_tenant(): void
