@@ -179,6 +179,7 @@ class TenantIsolationTest extends TestCase
     public function test_tenant_tables_force_row_level_security(): void
     {
         $tables = [
+            'tenants',
             'tenant_memberships',
             'legal_entities',
             'business_sites',
