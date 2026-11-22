@@ -2,6 +2,7 @@
 
 namespace App\Services\Merchandising;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -80,13 +81,13 @@ class AssortmentAccountTermsService
                 422,
                 'The published price list belongs to a different brand.',
             );
-            $priceListStart = \Carbon\CarbonImmutable::parse($priceList->effective_from);
-            $termsStart = \Carbon\CarbonImmutable::parse($data['effective_from'])->startOfDay();
+            $priceListStart = CarbonImmutable::parse($priceList->effective_from);
+            $termsStart = CarbonImmutable::parse($data['effective_from'])->startOfDay();
             $priceListEnd = $priceList->effective_to === null
                 ? null
-                : \Carbon\CarbonImmutable::parse($priceList->effective_to);
+                : CarbonImmutable::parse($priceList->effective_to);
             $termsEnd = isset($data['effective_to'])
-                ? \Carbon\CarbonImmutable::parse($data['effective_to'])->endOfDay()
+                ? CarbonImmutable::parse($data['effective_to'])->endOfDay()
                 : null;
 
             abort_unless(
