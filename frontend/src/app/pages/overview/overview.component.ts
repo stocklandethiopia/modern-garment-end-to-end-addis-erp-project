@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 
 import { ApiHealth, ApiHealthService } from '../../core/api/api-health.service';
 import { ConnectionState, toConnectionState } from '../../core/api/connection-state';
@@ -7,6 +8,7 @@ import { ConnectionState, toConnectionState } from '../../core/api/connection-st
 @Component({
   selector: 'app-overview',
   standalone: true,
+  imports: [DatePipe],
   templateUrl: './overview.component.html',
   styleUrl: './overview.component.css',
 })
