@@ -3,7 +3,12 @@
   "name": "modern-garment-erp/backend",
   "type": "project",
   "description": "Multi-tenant apparel business operating system API",
-  "keywords": ["laravel", "apparel", "erp", "multi-tenant"],
+  "keywords": [
+    "laravel",
+    "apparel",
+    "erp",
+    "multi-tenant"
+  ],
   "license": "proprietary",
   "require": {
     "php": "^8.5",
@@ -15,7 +20,15 @@
     "ext-pdo_pgsql": "*",
     "laravel/framework": "^13.0",
     "laravel/sanctum": "^4.0",
-    "predis/predis": "^3.0"
+    "predis/predis": "^3.0",
+    "ext-curl": "*",
+    "ext-dom": "*",
+    "ext-fileinfo": "*",
+    "ext-filter": "*",
+    "ext-hash": "*",
+    "ext-session": "*",
+    "ext-tokenizer": "*",
+    "ext-xml": "*"
   },
   "require-dev": {
     "fakerphp/faker": "^1.24",
