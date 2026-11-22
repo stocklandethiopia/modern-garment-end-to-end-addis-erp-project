@@ -133,6 +133,86 @@ class BrandRangeWorkflowTest extends TestCase
         return $brandId;
     }
 
+    private function createDraftRangePlanForAcceptance(): array
+    {
+        $brandId = $this->createApprovedBrand();
+
+        $season = $this->withHeaders($this->tenantHeader())->postJson('/api/v1/product/seasons', [
+            'code' => 'ATMER-SS27-'.Str::upper(Str::random(5)),
+            'name' => 'Acceptance Spring Summer 2027',
+            'calendar_type' => 'FASHION',
+            'timezone' => 'Africa/Addis_Ababa',
+            'design_start' => '2026-09-01',
+            'buy_start' => '2026-11-01',
+            'production_start' => '2027-01-01',
+            'production_end' => '2027-03-31',
+            'delivery_start' => '2027-04-01',
+            'delivery_end' => '2027-05-31',
+            'selling_start' => '2027-06-01',
+            'selling_end' => '2027-09-30',
+        ])->assertCreated();
+
+        $collection = $this->withHeaders($this->tenantHeader())->postJson('/api/v1/product/collections', [
+            'brand_id' => $brandId,
+            'season_id' => $season->json('data.id'),
+            'code' => 'ATMER-COL-'.Str::upper(Str::random(5)),
+            'name' => 'Acceptance collection',
+            'concept' => 'A controlled collection used for scoped authorization and legal eligibility tests.',
+            'target_market' => 'Ethiopia',
+        ])->assertCreated();
+
+        $collectionId = $collection->json('data.id');
+        $version = $this->withHeaders($this->tenantHeader())->postJson('/api/v1/product/collections/'.$collectionId.'/versions', [
+            'story' => 'A practical apparel collection for an explicit target customer and channel strategy.',
+            'target_consumer' => 'Urban adults',
+            'category_architecture' => ['CASUALWEAR'],
+            'price_margin_envelope' => ['currency' => 'ETB', 'margin_floor' => 25],
+            'budget_amount' => 150000,
+            'budget_currency' => 'ETB',
+            'delivery_start' => '2027-04-01',
+            'delivery_end' => '2027-05-31',
+            'change_reason' => 'Acceptance-test collection baseline.',
+        ])->assertCreated();
+
+        $this->actAsApprover();
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product/collections/'.$collectionId.'/versions/'.$version->json('data.id').'/approve', [])
+            ->assertOk();
+        $this->actAsOwner();
+
+        $range = $this->withHeaders($this->tenantHeader())->postJson('/api/v1/product/range-plans', [
+            'collection_id' => $collectionId,
+            'collection_version' => 1,
+            'code' => 'ATMER-RANGE-'.Str::upper(Str::random(5)),
+            'plan_start' => '2027-01-01',
+            'plan_end' => '2027-03-31',
+        ])->assertCreated();
+
+        $line = $this->withHeaders($this->tenantHeader())->postJson('/api/v1/product/range-plans/'.$range->json('data.id').'/lines', [
+            'line_code' => 'ATMER-STYLE-01',
+            'category_code' => 'CASUALWEAR',
+            'target_tier' => 'GOOD',
+            'product_hypothesis' => 'A durable everyday garment for an identifiable target consumer.',
+            'planned_units' => 240,
+            'target_retail_price' => 1800,
+            'target_wholesale_price' => 1200,
+            'price_currency' => 'ETB',
+            'target_margin_percent' => 32,
+            'channel_scope' => ['OWN_RETAIL', 'WHOLESALE'],
+            'size_colour_intent' => ['sizes' => ['S', 'M', 'L'], 'colours' => ['NAVY']],
+            'lifecycle_type' => 'NEW',
+            'forecast_basis' => 'Initial research-led demand hypothesis; not a firm order.',
+            'launch_date' => '2027-06-01',
+        ])->assertCreated();
+
+        return [
+            'brand_id' => $brandId,
+            'collection_id' => $collectionId,
+            'range_plan_id' => $range->json('data.id'),
+            'range_line_id' => $line->json('data.id'),
+        ];
+    }
+
     public function test_brand_strategy_is_approved_independently_and_version_content_remains_immutable(): void
     {
         $brand = $this->withHeaders($this->tenantHeader())->postJson('/api/v1/product/brands', [
@@ -520,6 +600,149 @@ class BrandRangeWorkflowTest extends TestCase
             ->assertJsonPath('data.range_category_depth.0.planned_units', 100)
             ->assertJsonPath('data.evidence_register.sufficiency_status', 'NOT_CONFIGURED')
             ->assertJsonPath('data.evidence_register.sufficiency_reason', 'No approved, effective tenant evidence policy is currently active. The legacy sourced-insight minimum remains in force and is not a full sufficiency assessment.');
+    }
+
+    public function test_scoped_administrator_cannot_freeze_a_range_without_brand_and_market_grants(): void
+    {
+        $range = $this->createDraftRangePlanForAcceptance();
+
+        $this->withHeaders($this->tenantHeader())
+            ->putJson('/api/v1/enterprise/members/'.$this->approverId.'/access-scope-mode', [
+                'scope_mode' => 'SCOPED',
+                'reason' => 'Restrict this approver to explicitly assigned brands and markets.',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.scope_mode', 'SCOPED');
+
+        $this->actAsApprover();
+        $freezeUrl = '/api/v1/product/range-plans/'.$range['range_plan_id'].'/freeze';
+        $this->withHeaders($this->tenantHeader())
+            ->postJson($freezeUrl, [])
+            ->assertForbidden()
+            ->assertJsonPath('message', 'The authenticated tenant member does not have the required scope for this brand, site or market action.');
+
+        $this->actAsOwner();
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/enterprise/members/'.$this->approverId.'/access-scopes', [
+                'scope_type' => 'BRAND',
+                'scope_id' => $range['brand_id'],
+                'permission_code' => 'APPROVE',
+                'grant_reason' => 'The approver is responsible for decisions on this brand.',
+            ])
+            ->assertCreated();
+
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/enterprise/members/'.$this->approverId.'/access-scopes', [
+                'scope_type' => 'MARKET',
+                'scope_code' => 'Ethiopia',
+                'permission_code' => 'APPROVE',
+                'grant_reason' => 'The approver is assigned to this target market.',
+            ])
+            ->assertCreated();
+
+        $this->actAsApprover();
+        $this->withHeaders($this->tenantHeader())
+            ->postJson($freezeUrl, [])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'FROZEN');
+    }
+
+    public function test_own_retail_assortment_is_simulation_only_until_current_legal_evidence_is_verified(): void
+    {
+        $range = $this->createDraftRangePlanForAcceptance();
+
+        $this->actAsApprover();
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product/range-plans/'.$range['range_plan_id'].'/freeze', [])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'FROZEN');
+
+        $this->actAsOwner();
+        $entity = $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/enterprise/legal-entities', [
+                'registration_number' => 'ATMER-REG-'.Str::upper(Str::random(6)),
+                'legal_name' => 'Acceptance Apparel Trading Entity',
+                'legal_form' => 'PRIVATE_LIMITED_COMPANY',
+                'country_code' => 'ET',
+                'tax_identifier' => 'ATMER-TIN-'.Str::upper(Str::random(6)),
+                'base_currency' => 'ETB',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.status', 'DRAFT');
+
+        $site = $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/enterprise/sites', [
+                'legal_entity_id' => $entity->json('data.id'),
+                'code' => 'ATMER-STORE-'.Str::upper(Str::random(4)),
+                'site_type' => 'STORE_PREMISES',
+                'name' => 'Acceptance Retail Store',
+                'country_code' => 'ET',
+                'region' => 'Addis Ababa',
+                'city' => 'Addis Ababa',
+                'timezone' => 'Africa/Addis_Ababa',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.status', 'DRAFT');
+
+        $siteId = $site->json('data.id');
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/enterprise/sites/'.$siteId.'/nodes', [
+                'code' => 'ATMER-RETAIL-NODE-'.Str::upper(Str::random(4)),
+                'node_type' => 'RETAIL_STORE',
+                'name' => 'Acceptance store node',
+                'capabilities' => ['RETAIL', 'STOCK_HOLDING'],
+                'stock_holding_enabled' => true,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.status', 'DRAFT');
+
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/enterprise/sites/'.$siteId.'/branch-registrations', [
+                'commercial_register_reference' => 'ATMER-BRANCH-'.Str::upper(Str::random(6)),
+                'activity_codes' => ['RETAIL'],
+                'issuing_authority' => 'Acceptance-test authority placeholder',
+                'valid_from' => now()->toDateString(),
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.status', 'REVIEW_REQUIRED');
+
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/enterprise/legal-entities/'.$entity->json('data.id').'/licences', [
+                'site_id' => $siteId,
+                'activity_code' => 'RETAIL',
+                'licence_number' => 'ATMER-LIC-'.Str::upper(Str::random(6)),
+                'issuing_authority' => 'Acceptance-test authority placeholder',
+                'valid_from' => now()->toDateString(),
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.status', 'REVIEW_REQUIRED');
+
+        $assortment = $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product/assortment-plans', [
+                'range_plan_id' => $range['range_plan_id'],
+                'code' => 'ATMER-OWN-RETAIL-'.Str::upper(Str::random(5)),
+                'channel_code' => 'OWN_RETAIL',
+                'market_scope' => 'Ethiopia',
+                'business_site_id' => $siteId,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.status', 'DRAFT')
+            ->assertJsonPath('data.commercial_eligibility_status', 'SIMULATION_ONLY')
+            ->assertJsonPath('data.commercial_activation_allowed', false);
+
+        $this->assertStringContainsString(
+            'Current verified branch registration evidence is required.',
+            $assortment->json('data.commercial_block_reason'),
+        );
+        $this->assertStringContainsString(
+            'Current verified RETAIL activity licence evidence is required.',
+            $assortment->json('data.commercial_block_reason'),
+        );
+        $this->assertDatabaseHas('assortment_plans', [
+            'tenant_id' => $this->tenantId,
+            'id' => $assortment->json('data.id'),
+            'commercial_eligibility_status' => 'SIMULATION_ONLY',
+        ], 'pgsql_test_admin');
     }
 
     public function test_approved_range_line_requires_an_accepted_brief_before_version_pinned_style_development(): void
