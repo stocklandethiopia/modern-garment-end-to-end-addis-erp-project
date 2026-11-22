@@ -6,6 +6,9 @@ use App\Http\Controllers\Enterprise\InventoryLocationController;
 use App\Http\Controllers\Enterprise\LegalEntityController;
 use App\Http\Controllers\Enterprise\LicensingEvidenceController;
 use App\Http\Controllers\Enterprise\TenantController;
+use App\Http\Controllers\Merchandising\InitiativeController;
+use App\Http\Controllers\Merchandising\InsightSourceController;
+use App\Http\Controllers\Merchandising\MarketInsightController;
 use App\Support\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -55,5 +58,17 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/enterprise/sites/{siteId}/branch-registrations', [LicensingEvidenceController::class, 'createBranchRegistration']);
         Route::get('/enterprise/legal-entities/{entityId}/licences', [LicensingEvidenceController::class, 'listLicences']);
         Route::post('/enterprise/legal-entities/{entityId}/licences', [LicensingEvidenceController::class, 'createLicence']);
+
+        Route::get('/product/initiatives', [InitiativeController::class, 'index']);
+        Route::post('/product/initiatives', [InitiativeController::class, 'store']);
+        Route::get('/product/initiatives/{initiativeId}', [InitiativeController::class, 'show']);
+        Route::post('/product/initiatives/{initiativeId}/submit', [InitiativeController::class, 'submit']);
+        Route::post('/product/initiatives/{initiativeId}/advance-to-assessment', [InitiativeController::class, 'advanceToAssessment']);
+        Route::post('/product/initiatives/{initiativeId}/decisions', [InitiativeController::class, 'decide']);
+
+        Route::get('/product/insight-sources', [InsightSourceController::class, 'index']);
+        Route::post('/product/insight-sources', [InsightSourceController::class, 'store']);
+        Route::get('/product/market-insights', [MarketInsightController::class, 'index']);
+        Route::post('/product/market-insights', [MarketInsightController::class, 'store']);
     });
 });
