@@ -1,12 +1,12 @@
 <?php
 
-namespace App\\Http\\Controllers\\Merchandising;
+namespace App\Http\Controllers\Merchandising;
 
-use App\\Http\\Controllers\\Controller;
-use App\\Support\\TenantContext;
-use Illuminate\\Http\\JsonResponse;
-use Illuminate\\Support\\Facades\\DB;
-use Illuminate\\Support\\Str;
+use App\Http\Controllers\Controller;
+use App\Support\TenantContext;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class MerchandisingReportingController extends Controller
 {
