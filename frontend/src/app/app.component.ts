@@ -1,16 +1,23 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+
+import { AuthSessionService } from './core/auth/auth-session.service';
+import { LoginComponent } from './features/auth/login.component';
+import { TenantPickerComponent } from './features/auth/tenant-picker.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, LoginComponent, TenantPickerComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
 })
 export class AppComponent {
+  readonly session = inject(AuthSessionService);
+
   readonly navigation = [
     { label: 'Overview', path: '/', icon: '◫' },
+    { label: 'Legal entities', path: '/enterprise/legal-entities', icon: '▦' },
   ];
 
   readonly domainGroups = [
@@ -24,11 +31,19 @@ export class AppComponent {
     },
     {
       label: 'Enterprise',
-      items: ['Warehouse & distribution', 'Sales channels & retail', 'Finance & treasury', 'People & payroll'],
+      items: ['Sites & branches', 'Warehouse & distribution', 'Sales channels & retail', 'Finance & treasury', 'People & payroll'],
     },
     {
       label: 'Intelligence',
       items: ['Analytics & control tower', 'Integrations & AI governance'],
     },
   ];
+
+  changeTenant(tenantId: string): void {
+    this.session.selectTenant(tenantId);
+  }
+
+  signOut(): void {
+    this.session.logout().subscribe();
+  }
 }
