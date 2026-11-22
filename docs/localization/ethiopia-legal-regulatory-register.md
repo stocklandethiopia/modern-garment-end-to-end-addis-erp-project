@@ -60,7 +60,7 @@ The entries below are a researched starting set. The complete PDF, amendments, c
 
 | Source | Verified finding | System consequence |
 |---|---|---|
-| [Proclamation No. 1395/2025](https://www.mor.gov.et/DomesticProclamations/1786970364007-582645424-pdf-%C3%A1%C2%8A%C2%A0%C3%A1%C2%8B%C2%8B%E1%8A%9A%E1%8C%8D%E1%8C%85%E1% 7 1) | Article 97 amendment states 3% withholding on covered domestic goods payments above ETB 20,000 per transaction/contract and covered service payments of ETB 10,000 per supply contract, subject to stated withholding-agent and exception conditions. It also provides a 30% rate where the supplier has failed to provide TIN and business licence in the described case. | AP must classify goods/service, amount, supplier type, TIN/licence and withholding-agent status; calculate from transaction-date rule. Never apply 3% universally or default 30% without exact statutory conditions and sign-off. |
+| [Proclamation No. 1395/2025 — Federal Negarit Gazette No. 64](https://www.mor.gov.et/DomesticProclamations/1786970364007-582645424-pdf-%C3%A1%C2%8A%C2%A0%C3%A1%C2%8B%C2%8B%C3%A1%C2%8C%C2%85-%C3%A1%C2%89%C2%81%C3%A1%C2%8C%C2%A5-%C3%A1%C2%88%C2%AD-1395-2017.pdf) | Article 97 amendment states 3% withholding on covered domestic goods payments above ETB 20,000 per transaction/contract and covered service payments of ETB 10,000 per supply contract, subject to stated withholding-agent and exception conditions. It also provides a 30% rate where the supplier has failed to provide TIN and business licence in the described case. | AP must classify goods/service, amount, supplier type, TIN/licence and withholding-agent status; calculate from transaction-date rule. Never apply 3% universally or default 30% without exact statutory conditions and sign-off. |
 | [Tax Invoice Usage and Administration Amendment Directive No. 1099/2017 E.C.](https://justice.gov.et/en/directives/a-directive-to-amend-tax-invoices-usage-and-administration-directive-no-1099-2017/) | Ministry of Revenues directive, catalogue identifier 1099/2017 E.C., published 9 Feb 2026 G.C.; the explanatory note is separately listed as No. 1099/2026. | Tax-invoice workflow must follow current invoice usage/administration instructions; preserve source document, invoice number, corrections and cancellation/reissue evidence. |
 | [VAT Registration Directive No. 1104/2017 E.C.](https://justice.gov.et/en/directives/directive-on-registration-for-value-added-tax-directive-no-1104-202/) | Ministry of Finance directive, catalogue identifier 1104/2017 E.C., published 3 Feb 2026 G.C.; its explanatory note is separately listed as No. 1104/2026. | VAT registration eligibility/obligations must be effective-dated and linked to each legal entity/activity. |
 | [VAT Refund Determination Directive](https://justice.gov.et/en/sector/revenue/) | Ministry of Revenues source index identifies a VAT Refund Determination Directive dated 18 Apr 2026. | VAT refund claims need eligibility, source invoices, input/output reconciliation, supporting schedules and authority-response tracking; obtain and review full directive before automating eligibility. |
@@ -140,6 +140,22 @@ The product has two distinct layers:
 - **Internal control standard:** regardless of legal status, support transparent supplier selection, approved vendor lists, competitive quotes, price reasonableness, conflicts declaration, separation of requester/buyer/receiver/payer, delegated approvals, budget commitment, contract control, three-way matching, duplicate invoice detection, supplier performance, audit history and whistleblowing/exception review.
 
 The internal control layer is an enterprise best-practice baseline; it must not be described as a mandatory public tender law for private companies unless a specific rule applies.
+
+
+
+### G. Internal Ethiopian ERP comparison — functional patterns only
+
+The existing Notion *Stockland ERP — Functional Acceptance Runbook* contains historical acceptance evidence for finance/procurement and payroll workflows. It is useful as an internal process benchmark, not as a legal authority or schema baseline.
+
+Useful controls to preserve in the new customer-neutral product:
+- Purchase order, supplier invoice/AP, customer AR, inventory receipt/movement and balanced GL journals are distinct linked records—not one overloaded transaction.
+- Procurement approval, independent Owner decision, warehouse receipt, actual quantity, justified variance, source audit and notification are separate steps.
+- Supplier invoice matching and AP settlement should remain separate from customer AR and stock ledger posting.
+- Warehouse physical count is distinct from stock movement; duplicate receipt/PICK must not duplicate inventory movement.
+- Finance dashboard/report views are location-scoped and must show query failure/empty states honestly.
+- Maker-checker, idempotency, exact quantity, audit log, approved variance and balanced journal checks are process-quality requirements even when the underlying customer is private-sector.
+
+**Do not copy legacy legal calculations:** the older runbook contains historic/synthetic payroll examples using an earlier PAYE table and pension-before-tax arithmetic. Those are examples of old ERP test behavior, not current law. Recalculate each employee tax, pension base, withholding and other statutory item from the current Gazette/directive and contract-specific classification. The legacy 49-table ERP contract and its Stockland organization are not the schema or tenant model for this greenfield SaaS.
 
 ## 7. Research boundary and open verification items
 
