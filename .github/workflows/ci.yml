@@ -92,7 +92,7 @@ jobs:
 
       - name: Check PHP style and syntax
         run: |
-          vendor/bin/pint --test
+          vendor/bin/pint --test --verbose
           find app bootstrap config database routes tests -type f -name '*.php' -print0 | xargs -0 -n1 php -l
 
       - name: Run migrations as the restricted migration role
