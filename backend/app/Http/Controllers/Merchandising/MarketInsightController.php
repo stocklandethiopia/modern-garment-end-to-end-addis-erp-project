@@ -263,5 +263,4 @@ class MarketInsightController extends Controller
             'duplicate_count' => $result['duplicate_count'],
         ], $result['deduplicated'] ? 200 : 201);
     }
-
 }
