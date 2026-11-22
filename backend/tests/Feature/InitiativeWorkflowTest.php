@@ -614,6 +614,74 @@ class InitiativeWorkflowTest extends TestCase
             ->assertJsonPath('evidence_coverage.coverage_percent', 100);
     }
 
+    public function test_market_insight_source_event_replay_is_deduplicated_and_conflicting_replay_is_rejected(): void
+    {
+        $source = $this->withHeader('X-Tenant-Id', $this->tenantId)
+            ->postJson('/api/v1/product/insight-sources', [
+                'source_type' => 'EXTERNAL_BENCHMARK',
+                'source_name' => 'Idempotent source event benchmark',
+                'source_reference' => 'internal-research://event-replay/benchmark-01',
+                'capture_method' => 'CONTROLLED_IMPORT',
+                'reliability_score' => 0.92,
+                'permitted_use_basis' => 'Aggregated test research with no personal data.',
+            ])
+            ->assertCreated();
+
+        $payload = [
+            'source_id' => $source->json('data.id'),
+            'insight_type' => 'EXTERNAL_BENCHMARK',
+            'title' => 'Imported market observation',
+            'summary' => 'One source event must produce one immutable market insight.',
+            'observed_at' => now()->subDays(2)->toIso8601String(),
+            'geography' => 'Addis Ababa',
+            'target_segment' => 'Urban adults',
+            'confidence' => 0.88,
+            'privacy_basis' => 'Aggregated test evidence; no personal identifiers.',
+            'source_system' => 'MARKET_RESEARCH_FEED',
+            'source_event_id' => 'event-mer-014-0001',
+        ];
+
+        $first = $this->withHeader('X-Tenant-Id', $this->tenantId)
+            ->postJson('/api/v1/product/market-insights', $payload)
+            ->assertCreated()
+            ->assertJsonPath('deduplicated', false)
+            ->assertJsonPath('duplicate_count', 0);
+
+        $insightId = $first->json('data.id');
+
+        $this->withHeader('X-Tenant-Id', $this->tenantId)
+            ->postJson('/api/v1/product/market-insights', $payload)
+            ->assertOk()
+            ->assertJsonPath('data.id', $insightId)
+            ->assertJsonPath('deduplicated', true)
+            ->assertJsonPath('duplicate_count', 1);
+
+        $admin = DB::connection('pgsql_test_admin');
+        $this->assertSame(
+            1,
+            $admin->table('market_insights')
+                ->where('tenant_id', $this->tenantId)
+                ->where('source_system', 'MARKET_RESEARCH_FEED')
+                ->where('source_event_id', 'event-mer-014-0001')
+                ->count(),
+        );
+        $this->assertSame(
+            1,
+            (int) $admin->table('market_insight_event_receipts')
+                ->where('tenant_id', $this->tenantId)
+                ->where('source_system', 'MARKET_RESEARCH_FEED')
+                ->where('source_event_id', 'event-mer-014-0001')
+                ->value('duplicate_count'),
+        );
+
+        $conflictingPayload = $payload;
+        $conflictingPayload['summary'] = 'A changed payload cannot reuse an existing source event ID.';
+
+        $this->withHeader('X-Tenant-Id', $this->tenantId)
+            ->postJson('/api/v1/product/market-insights', $conflictingPayload)
+            ->assertStatus(409);
+    }
+
     public function test_initiative_tables_force_rls_and_history_is_immutable(): void
     {
         $tables = [
@@ -624,6 +692,9 @@ class InitiativeWorkflowTest extends TestCase
             'market_insights',
             'initiative_evidence_policies',
             'initiative_evidence_policy_rules',
+            'tenant_access_scope_modes',
+            'tenant_access_scopes',
+            'market_insight_event_receipts',
         ];
 
         $rows = DB::connection('pgsql_test_admin')
@@ -649,7 +720,14 @@ class InitiativeWorkflowTest extends TestCase
                 has_table_privilege('app_runtime', 'initiative_evidence_policies', 'INSERT') AS can_insert_evidence_policy,
                 has_table_privilege('app_runtime', 'initiative_evidence_policies', 'DELETE') AS can_delete_evidence_policy,
                 has_table_privilege('app_runtime', 'initiative_evidence_policy_rules', 'INSERT') AS can_insert_evidence_rule,
-                has_table_privilege('app_runtime', 'initiative_evidence_policy_rules', 'DELETE') AS can_delete_evidence_rule",
+                has_table_privilege('app_runtime', 'initiative_evidence_policy_rules', 'DELETE') AS can_delete_evidence_rule,
+                has_table_privilege('app_runtime', 'tenant_access_scope_modes', 'UPDATE') AS can_update_scope_mode,
+                has_table_privilege('app_runtime', 'tenant_access_scopes', 'INSERT') AS can_insert_scope,
+                has_table_privilege('app_runtime', 'tenant_access_scopes', 'UPDATE') AS can_revoke_scope,
+                has_table_privilege('app_runtime', 'tenant_access_scopes', 'DELETE') AS can_delete_scope,
+                has_table_privilege('app_runtime', 'market_insight_event_receipts', 'INSERT') AS can_insert_event_receipt,
+                has_table_privilege('app_runtime', 'market_insight_event_receipts', 'UPDATE') AS can_update_event_receipt,
+                has_table_privilege('app_runtime', 'market_insight_event_receipts', 'DELETE') AS can_delete_event_receipt",
         );
 
         $this->assertTrue($versionPrivileges->can_insert_version);
@@ -660,6 +738,13 @@ class InitiativeWorkflowTest extends TestCase
         $this->assertFalse($versionPrivileges->can_delete_evidence_policy);
         $this->assertTrue($versionPrivileges->can_insert_evidence_rule);
         $this->assertTrue($versionPrivileges->can_delete_evidence_rule);
+        $this->assertTrue($versionPrivileges->can_update_scope_mode);
+        $this->assertTrue($versionPrivileges->can_insert_scope);
+        $this->assertTrue($versionPrivileges->can_revoke_scope);
+        $this->assertFalse($versionPrivileges->can_delete_scope);
+        $this->assertTrue($versionPrivileges->can_insert_event_receipt);
+        $this->assertTrue($versionPrivileges->can_update_event_receipt);
+        $this->assertFalse($versionPrivileges->can_delete_event_receipt);
     }
 
     public function test_insight_source_provenance_is_append_only(): void
