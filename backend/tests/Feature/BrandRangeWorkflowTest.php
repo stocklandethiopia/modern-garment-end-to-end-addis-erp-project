@@ -726,5 +726,4 @@ class BrandRangeWorkflowTest extends TestCase
             ->assertJsonCount(2, 'decisions')
             ->assertJsonCount(2, 'styles');
     }
-
 }
