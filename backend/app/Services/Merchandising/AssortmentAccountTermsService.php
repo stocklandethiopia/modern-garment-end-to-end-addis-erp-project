@@ -237,6 +237,45 @@ class AssortmentAccountTermsService
             abort_unless($terms->status === 'PENDING_APPROVAL', 422, 'Account terms are not awaiting a decision.');
             abort_unless($terms->created_by !== $actorId, 403, 'The account-terms author cannot approve or reject their own version.');
 
+            if ($decision === 'APPROVE') {
+                DB::selectOne(
+                    'SELECT pg_advisory_xact_lock(hashtextextended(?, 0))',
+                    [
+                        $tenantId.':account-terms-scope:'.$terms->channel_code.':'.$terms->market_scope.':'.$terms->account_reference,
+                    ],
+                );
+
+                $priceList = DB::table('price_lists')
+                    ->where('tenant_id', $tenantId)
+                    ->where('id', $terms->price_list_id)
+                    ->first();
+
+                abort_unless($priceList !== null && $priceList->status === 'PUBLISHED', 422, 'The referenced price list must remain published at approval time.');
+
+                $overlap = DB::table('assortment_account_terms as t')
+                    ->where('t.tenant_id', $tenantId)
+                    ->where('t.id', '<>', $termsId)
+                    ->where('t.status', 'APPROVED')
+                    ->where('t.channel_code', $terms->channel_code)
+                    ->where('t.market_scope', $terms->market_scope)
+                    ->where('t.account_reference', $terms->account_reference)
+                    ->where(function ($query) use ($terms): void {
+                        $query->whereNull('t.effective_to')
+                            ->orWhereDate('t.effective_to', '>=', $terms->effective_from);
+                    })
+                    ->when(
+                        $terms->effective_to !== null,
+                        fn ($query) => $query->whereDate('t.effective_from', '<=', $terms->effective_to),
+                    )
+                    ->exists();
+
+                abort_unless(
+                    ! $overlap,
+                    422,
+                    'Approved account terms already overlap this channel, market, account and effective period. Create a new non-overlapping version.',
+                );
+            }
+
             $status = $decision === 'APPROVE' ? 'APPROVED' : 'REJECTED';
             DB::table('merchandising_decisions')->insert([
                 'id' => (string) Str::uuid(),
