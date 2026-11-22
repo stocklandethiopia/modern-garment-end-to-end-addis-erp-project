@@ -249,8 +249,10 @@ export class InitiativesComponent {
         ) return;
         this.detail.set(response);
         this.loadingDetail.set(false);
-        if (response.data.status === 'RESEARCH' || response.data.status === 'ASSESSMENT') {
-          this.loadEvidenceCoverage(initiativeId, tenantId);
+        if (response.data.status === 'SCREENING') {
+          this.loadEvidenceCoverage(initiativeId, tenantId, 'RESEARCH');
+        } else if (response.data.status === 'RESEARCH' || response.data.status === 'ASSESSMENT') {
+          this.loadEvidenceCoverage(initiativeId, tenantId, 'ASSESSMENT');
         }
         this.decisionForm.patchValue({
           decision: response.data.status === 'SCREENING' ? 'APPROVE_RESEARCH' : 'APPROVE',
@@ -271,12 +273,16 @@ export class InitiativesComponent {
     });
   }
 
-  private loadEvidenceCoverage(initiativeId: string, tenantId: string): void {
+  private loadEvidenceCoverage(
+    initiativeId: string,
+    tenantId: string,
+    stage: 'RESEARCH' | 'ASSESSMENT',
+  ): void {
     const sequence = ++this.evidenceCoverageSequence;
     this.loadingEvidenceCoverage.set(true);
     this.evidenceCoverageError.set(null);
 
-    this.evidencePolicyApi.coverage(initiativeId, 'ASSESSMENT').subscribe({
+    this.evidencePolicyApi.coverage(initiativeId, stage).subscribe({
       next: (response) => {
         if (
           sequence !== this.evidenceCoverageSequence ||
