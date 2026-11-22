@@ -186,6 +186,26 @@ class BrandRangeWorkflowTest extends TestCase
         $this->assertNotNull($decision);
         $this->assertSame($this->approverId, $decision->decided_by);
 
+        // A new pending revision must not invalidate the previously approved strategy.
+        $nextStrategy = $this->withHeaders($this->tenantHeader())->postJson('/api/v1/product/brands/'.$brandId.'/strategy-versions', [
+            'positioning' => 'A refined everyday essentials proposition.',
+            'target_consumer' => 'Consumers seeking durable versatile wardrobe staples.',
+            'value_proposition' => 'Improved fit consistency, durable quality and clear value.',
+            'approved_categories' => ['BASICS', 'CASUALWEAR'],
+            'price_architecture' => ['currency' => 'ETB', 'target_margin' => 32],
+            'approved_channels' => ['OWN_RETAIL', 'WHOLESALE'],
+            'change_reason' => 'Prepare next brand strategy revision for lifecycle regression test.',
+        ])->assertCreated()->assertJsonPath('data.version_no', 2);
+
+        $this->withHeaders($this->tenantHeader())
+            ->getJson('/api/v1/product/brands')
+            ->assertOk()
+            ->assertJsonPath('data.data.0.current_strategy_status', 'APPROVED')
+            ->assertJsonPath('data.data.0.current_strategy_version', 1)
+            ->assertJsonPath('data.data.0.latest_strategy_version_no', 2)
+            ->assertJsonPath('data.data.0.latest_strategy_version_id', $nextStrategy->json('data.id'))
+            ->assertJsonPath('data.data.0.latest_strategy_status', 'PENDING_APPROVAL');
+
         $privileges = DB::connection('pgsql_test_admin')->selectOne(
             "SELECT
                 has_table_privilege('app_runtime', 'brand_strategy_versions', 'INSERT') AS can_insert,
