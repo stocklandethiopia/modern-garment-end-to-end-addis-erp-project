@@ -16,6 +16,23 @@ export interface BusinessSite {
   status: string;
 }
 
+export interface InventoryLocation {
+  id: string;
+  operational_node_id: string;
+  parent_id: string | null;
+  code: string;
+  location_type: string;
+  allow_stock: boolean;
+  status: string;
+}
+
+export interface InventoryLocationInput {
+  code: string;
+  location_type: string;
+  parent_id: string | null;
+  allow_stock: boolean;
+}
+
 export interface OperationalNode {
   id: string;
   business_site_id: string;
