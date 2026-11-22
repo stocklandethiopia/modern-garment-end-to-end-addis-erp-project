@@ -10,6 +10,9 @@ use App\Http\Controllers\Merchandising\InitiativeController;
 use App\Http\Controllers\Merchandising\InsightSourceController;
 use App\Http\Controllers\Merchandising\MarketInsightController;
 use App\Http\Controllers\Merchandising\MerchandisingPlanningController;
+use App\Http\Controllers\Merchandising\DemandPlanningController;
+use App\Http\Controllers\Merchandising\OtbPlanningController;
+use App\Http\Controllers\Merchandising\CommercialPricingController;
 use App\Support\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -92,5 +95,29 @@ Route::prefix('v1')->group(function (): void {
 
         Route::post('/product/assortment-plans', [MerchandisingPlanningController::class, 'createAssortmentPlan']);
         Route::post('/product/assortment-plans/{assortmentPlanId}/lines', [MerchandisingPlanningController::class, 'createAssortmentLine']);
+
+        Route::get('/product/forecast-runs', [DemandPlanningController::class, 'runs']);
+        Route::post('/product/forecast-runs', [DemandPlanningController::class, 'publishRun']);
+        Route::get('/product/forecast-runs/{runId}', [DemandPlanningController::class, 'showRun']);
+        Route::post('/product/forecasts/{forecastId}/adjustments', [DemandPlanningController::class, 'createAdjustment']);
+        Route::post('/product/forecast-adjustments/{adjustmentId}/approve', [DemandPlanningController::class, 'approveAdjustment']);
+
+        Route::get('/product/otb-policies', [OtbPlanningController::class, 'policies']);
+        Route::post('/product/otb-policies', [OtbPlanningController::class, 'createPolicy']);
+        Route::post('/product/otb-policies/{policyId}/activate', [OtbPlanningController::class, 'activatePolicy']);
+        Route::get('/product/otb-periods', [OtbPlanningController::class, 'periods']);
+        Route::post('/product/otb-periods', [OtbPlanningController::class, 'createPeriod']);
+        Route::post('/product/otb-periods/{periodId}/scenarios', [OtbPlanningController::class, 'simulateScenario']);
+        Route::post('/product/otb-scenarios/{scenarioId}/approve', [OtbPlanningController::class, 'approveScenario']);
+
+        Route::get('/product/price-lists', [CommercialPricingController::class, 'priceLists']);
+        Route::post('/product/price-lists', [CommercialPricingController::class, 'createPriceList']);
+        Route::get('/product/price-lists/{priceListId}/lines', [CommercialPricingController::class, 'priceListLines']);
+        Route::post('/product/price-lists/{priceListId}/lines', [CommercialPricingController::class, 'createPriceListLine']);
+        Route::post('/product/price-lists/{priceListId}/publish', [CommercialPricingController::class, 'publishPriceList']);
+        Route::get('/product/promotions', [CommercialPricingController::class, 'promotions']);
+        Route::post('/product/promotions', [CommercialPricingController::class, 'createPromotion']);
+        Route::post('/product/promotions/{promotionId}/eligibility', [CommercialPricingController::class, 'addPromotionEligibility']);
+        Route::post('/product/promotions/{promotionId}/approve', [CommercialPricingController::class, 'approvePromotion']);
     });
 });
