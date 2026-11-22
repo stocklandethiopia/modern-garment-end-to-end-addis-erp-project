@@ -179,8 +179,9 @@ class InitiativeController extends Controller
     {
         $tenantId = $tenantContext->tenantId();
         $actorId = (string) $request->user()->getAuthIdentifier();
+        $canAdministerTenant = $tenantContext->canAdministerTenant();
 
-        $initiative = DB::transaction(function () use ($initiativeId, $tenantId, $actorId): object {
+        $initiative = DB::transaction(function () use ($initiativeId, $tenantId, $actorId, $canAdministerTenant): object {
             $initiative = DB::table('initiatives')
                 ->where('tenant_id', $tenantId)
                 ->where('id', $initiativeId)
@@ -188,6 +189,11 @@ class InitiativeController extends Controller
                 ->first();
 
             abort_if($initiative === null, 404);
+            abort_unless(
+                $initiative->owner_user_id === $actorId || $canAdministerTenant,
+                403,
+                'Only the initiative owner or a tenant administrator may submit it for screening.',
+            );
             abort_unless($initiative->status === 'DRAFT', 422, 'Only a draft initiative can be submitted for screening.');
 
             DB::table('initiatives')->where('tenant_id', $tenantId)->where('id', $initiativeId)->update([
