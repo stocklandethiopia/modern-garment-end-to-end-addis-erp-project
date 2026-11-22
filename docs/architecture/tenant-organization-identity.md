@@ -154,11 +154,13 @@ These are downstream context-owned tables; WP-03 establishes their tenant/entity
 3. Unique business keys are tenant-scoped (e.g. `UNIQUE(tenant_id, code)`).
 4. PostgreSQL RLS policies enforce `tenant_id = current_setting('app.current_tenant_id', true)::uuid`. Missing context returns no rows and denies writes.
 5. Apply `ENABLE ROW LEVEL SECURITY` and `FORCE ROW LEVEL SECURITY`; the application DB role is not table owner, superuser or `BYPASSRLS`.
-6. Laravel sets tenant context with transaction-local `set_config('app.current_tenant_id', tenant_uuid, true)` only after the authenticated user is authorized for that tenant. Never use persistent session `SET` with pooled connections.
-7. API accepts tenant context only through a verified membership/authorized host or trusted token claim; never trust a client-supplied tenant ID.
-8. Background jobs carry tenant ID and actor/system identity in signed/validated job context and re-check membership/service scope.
-9. Cache keys, file paths, search indexes, exports and event envelopes include tenant scope and are checked at every access boundary.
-10. Platform operators use separately audited, time-limited, reason-coded support access; no silent tenant impersonation.
+6. **Default-deny SQL grants:** do not grant blanket table/sequence privileges through PostgreSQL default privileges. Newly created tables are inaccessible until their migration explicitly grants the smallest required operations after RLS is enabled. Missing grants must fail closed. The runtime role has no rights to update/delete tenants, user identities, memberships, audit events or draft legal entities.
+7. Laravel sets tenant context with transaction-local `set_config('app.current_tenant_id', tenant_uuid, true)` only after the authenticated user is authorized for that tenant. The authenticated user UUID is separately set transaction-locally for the self-membership selector policy. Never use persistent session `SET` with pooled connections.
+8. API accepts tenant context only through a verified membership/authorized host or trusted token claim; never trust a client-supplied tenant ID.
+9. Background jobs carry tenant ID and actor/system identity in signed/validated job context and re-check membership/service scope.
+10. Cache keys, file paths, search indexes, exports and event envelopes include tenant scope and are checked at every access boundary.
+11. Platform operators use separately audited, time-limited, reason-coded support access; no silent tenant impersonation.
+12. Migration credentials are injected only into controlled migration/provisioning processes, never the web runtime environment. A privileged test-fixture connection is declared only in test bootstrap, not the application database configuration.
 
 ### 6.2 Illustrative policy pattern
 
@@ -178,7 +180,7 @@ WITH CHECK (
 );
 ```
 
-Do not use a shared DB owner/application account with RLS bypass. Test with the same non-owner role used by the Laravel runtime.
+Do not use a shared DB owner/application account with RLS bypass. Test with the same non-owner role used by the Laravel runtime. Verify `relrowsecurity` and `relforcerowsecurity`, test missing-context default denial, cross-tenant reads/writes, and role/table/column grants. Every future domain migration must create its tenant RLS policy and explicit grants; no global default grant may silently widen access.
 
 ## 7. API and transaction contract
 
