@@ -112,6 +112,15 @@ class MerchandisingDashboardService
         $insightCount = DB::table('market_insights')
             ->where('tenant_id', $tenantId)
             ->count();
+        $approvedPolicyCount = DB::table('initiative_evidence_policies')
+            ->where('tenant_id', $tenantId)
+            ->where('status', 'APPROVED')
+            ->whereDate('effective_from', '<=', now()->toDateString())
+            ->where(function ($query): void {
+                $query->whereNull('effective_to')
+                    ->orWhereDate('effective_to', '>=', now()->toDateString());
+            })
+            ->count();
 
         $kpis = [
             [
@@ -175,8 +184,13 @@ class MerchandisingDashboardService
                 'evidence_register' => [
                     'source_count' => $sourceCount,
                     'insight_count' => $insightCount,
-                    'sufficiency_status' => 'UNAVAILABLE',
-                    'sufficiency_reason' => 'The approved requirements catalogue does not yet store per-initiative evidence requirements, so a valid sufficiency denominator cannot be calculated.',
+                    'approved_policy_count' => $approvedPolicyCount,
+                    'sufficiency_status' => $approvedPolicyCount > 0
+                        ? 'POLICY_CATALOGUE_ACTIVE_COVERAGE_PER_INITIATIVE'
+                        : 'NOT_CONFIGURED',
+                    'sufficiency_reason' => $approvedPolicyCount > 0
+                        ? 'Tenant-approved evidence policies are active. Coverage is calculated per initiative, stage and matching market using the policy version returned by the initiative evidence-coverage endpoint; a single tenant-wide percentage is not aggregated across different policy denominators.'
+                        : 'No approved, effective tenant evidence policy is currently active. The legacy sourced-insight minimum remains in force and is not a full sufficiency assessment.',
                 ],
                 'work_queue' => [
                     'approval_scope' => $isApprover ? 'TENANT_APPROVALS' : 'NOT_AUTHORIZED_FOR_TENANT_APPROVALS',
@@ -455,9 +469,9 @@ class MerchandisingDashboardService
     {
         return [
             [
-                'key' => 'evidence_sufficiency',
-                'reason' => 'No approved evidence-requirement catalogue exists to define a denominator by initiative type, stage or market.',
-                'dependency' => 'WP-04 requirements model',
+                'key' => 'tenant_wide_evidence_sufficiency_rate',
+                'reason' => 'Evidence coverage is assessed per initiative against its matching approved policy. A single tenant-wide percentage would combine different initiative types, stages, markets and policy denominators, so it is intentionally not calculated.',
+                'dependency' => 'Use the per-initiative evidence-coverage API and the approved policy version',
             ],
             [
                 'key' => 'forecast_bias_and_wape',
