@@ -460,6 +460,12 @@ export class RangePlanningComponent {
       range_line_id: '', variant_size_curve_json: '', planned_units: '0',
       launch_date: '', minimum_depth: '', maximum_depth: '',
     });
+    this.api.listRangeLines(plan.range_plan_id).subscribe({
+      next: (response) => {
+        if (this.selectedAssortment()?.id === plan.id) this.rangeLines.set(response.data.data);
+      },
+      error: () => this.errorMessage.set('The frozen range lines could not be loaded for this assortment.'),
+    });
     this.api.listAssortmentLines(plan.id).subscribe({
       next: (response) => {
         if (this.selectedAssortment()?.id === plan.id) this.assortmentLines.set(response.data.data);
@@ -467,6 +473,10 @@ export class RangePlanningComponent {
       error: () => this.errorMessage.set('Assortment lines could not be loaded.'),
     });
     this.clearMessages();
+  }
+
+  rangeLinesForSelectedAssortment(): RangeLineRecord[] {
+    return this.rangeLines();
   }
 
   createAssortmentLine(): void {
