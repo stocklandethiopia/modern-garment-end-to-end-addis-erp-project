@@ -32,7 +32,9 @@ Exact supported patch versions are recorded in the platform standard and must be
 6. Development, container and deployment standard: docs/engineering/development-deployment.md
 7. Security and SaaS tenancy standard: docs/security/saas-security.md
 8. Ethiopia localization and statutory controls: docs/localization/ethiopia.md
-9. Approved reference repository review: docs/references/reference-repositories.md
+9. Ethiopia legal and regulatory source register: docs/localization/ethiopia-legal-regulatory-register.md
+10. Payroll and differentiated variable-compensation schemes: docs/hr/payroll-and-variable-compensation.md
+11. Approved reference repository review: docs/references/reference-repositories.md
 
 ## Delivery rule
 
