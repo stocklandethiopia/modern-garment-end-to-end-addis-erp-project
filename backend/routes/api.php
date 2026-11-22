@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\TokenController;
 use App\Http\Controllers\Enterprise\BusinessSiteController;
+use App\Http\Controllers\Enterprise\AccessScopeController;
 use App\Http\Controllers\Enterprise\InventoryLocationController;
 use App\Http\Controllers\Enterprise\LegalEntityController;
 use App\Http\Controllers\Enterprise\LicensingEvidenceController;
@@ -67,6 +68,11 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/enterprise/sites/{siteId}/branch-registrations', [LicensingEvidenceController::class, 'createBranchRegistration']);
         Route::get('/enterprise/legal-entities/{entityId}/licences', [LicensingEvidenceController::class, 'listLicences']);
         Route::post('/enterprise/legal-entities/{entityId}/licences', [LicensingEvidenceController::class, 'createLicence']);
+
+        Route::get('/enterprise/members/{userId}/access-scopes', [AccessScopeController::class, 'index']);
+        Route::put('/enterprise/members/{userId}/access-scope-mode', [AccessScopeController::class, 'setMode']);
+        Route::post('/enterprise/members/{userId}/access-scopes', [AccessScopeController::class, 'grant']);
+        Route::post('/enterprise/members/{userId}/access-scopes/{grantId}/revoke', [AccessScopeController::class, 'revoke']);
 
         Route::get('/product/evidence-policies', [EvidencePolicyController::class, 'index']);
         Route::post('/product/evidence-policies', [EvidencePolicyController::class, 'store']);
