@@ -15,7 +15,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const headers: Record<string, string> = {};
 
   if (token) {
-    headers['Authorization'] = \`Bearer \${token}\`;
+    headers['Authorization'] = 'Bearer ' + token;
   }
 
   if (tenant) {
