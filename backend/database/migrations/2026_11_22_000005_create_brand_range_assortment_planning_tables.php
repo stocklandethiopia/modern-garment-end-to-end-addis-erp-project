@@ -134,7 +134,7 @@ return new class extends Migration
             $table->string('name', 180);
             $table->string('concept', 500)->nullable();
             $table->string('target_market', 160);
-            $table->unsignedInteger('current_version')->default(1);
+            $table->unsignedInteger('current_version')->default(0);
             $table->string('status', 24)->default('DRAFT');
             $table->uuid('owner_user_id');
             $table->timestampsTz();
