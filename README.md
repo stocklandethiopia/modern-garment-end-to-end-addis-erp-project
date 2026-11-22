@@ -43,10 +43,26 @@ Exact supported patch versions are recorded in the platform standard and must be
 
 ## Work-package delivery status
 
-- [Requirements traceability catalogue](docs/requirements/requirements-traceability.md)
-- [Tenant, organisation and identity architecture](docs/architecture/tenant-organization-identity.md)
-- [WP-00 to WP-16 handover register](docs/work-packages/handover-register.md)
-- [Ethiopia legal-source register and open holds](docs/localization/ethiopia-legal-regulatory-register.md)
+The numbered design packages WP-00 through WP-16 have been prepared and internally reviewed under the Product Owner's autonomous delegation. See the [handover register](docs/work-packages/handover-register.md) for exact commits, limitations and implementation status.
+
+- [WP-01 Requirements traceability](docs/requirements/requirements-traceability.md)
+- [WP-02 Ethiopia legal-source register and holds](docs/localization/ethiopia-legal-regulatory-register.md)
+- [WP-03 Tenant, organisation and identity architecture](docs/architecture/tenant-organization-identity.md)
+- [WP-04 Initiative, market insight and merchandising](docs/product/initiative-merchandising-range-planning.md)
+- [WP-05 PLM, design studio and product development](docs/product/plm-design-studio-product-development.md)
+- [WP-06 Industrial engineering and capacity](docs/engineering/industrial-engineering-capacity-standard.md)
+- [WP-07 Supplier sourcing and material traceability](docs/procurement/supplier-sourcing-material-traceability.md)
+- [WP-08 Route, SOP and work-instruction framework](docs/manufacturing/route-sop-work-instruction-framework.md)
+- [WP-09 Departmental manufacturing execution](docs/manufacturing/departmental-manufacturing-execution.md)
+- [WP-10 Production planning, skills and improvement](docs/manufacturing/production-planning-skills-incentives-improvement.md)
+- [WP-11 Quality, compliance, CAPA and HSE](docs/quality/quality-compliance-capa-hse.md)
+- [WP-12 WMS, distribution and channel commerce](docs/distribution/wms-order-management-channel-commerce.md)
+- [WP-13 Finance, accounting, treasury and tax](docs/finance/finance-accounting-treasury-tax-costing.md)
+- [WP-14 Workforce, payroll and compensation](docs/hr/workforce-payroll-pension-benefits-compensation.md)
+- [WP-15 Analytics, integration and AI control tower](docs/analytics/integration-ai-control-tower.md)
+- [WP-16 E2E acceptance, security and release controls](docs/release/end-to-end-acceptance-security-deployment.md)
+
+**Important:** these are accepted design/requirements deliverables, not proof that the ERP application exists or has passed a build/test/release. Runtime implementation and executable verification are tracked separately.
 
 ## Delivery rule
 
