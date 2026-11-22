@@ -94,6 +94,19 @@ export class BusinessSiteService {
     );
   }
 
+  listLocations(nodeId: string): Observable<PageResponse<InventoryLocation>> {
+    return this.http.get<PageResponse<InventoryLocation>>(
+      '/api/v1/enterprise/nodes/' + encodeURIComponent(nodeId) + '/inventory-locations',
+    );
+  }
+
+  createLocation(nodeId: string, input: InventoryLocationInput): Observable<ResourceResponse<InventoryLocation>> {
+    return this.http.post<ResourceResponse<InventoryLocation>>(
+      '/api/v1/enterprise/nodes/' + encodeURIComponent(nodeId) + '/inventory-locations',
+      input,
+    );
+  }
+
   createNode(siteId: string, input: OperationalNodeInput): Observable<ResourceResponse<OperationalNode>> {
     return this.http.post<ResourceResponse<OperationalNode>>(
       '/api/v1/enterprise/sites/' + encodeURIComponent(siteId) + '/nodes',
