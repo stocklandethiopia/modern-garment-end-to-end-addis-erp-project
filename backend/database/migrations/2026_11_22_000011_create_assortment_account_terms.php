@@ -141,30 +141,29 @@ return new class extends Migration
             END;
             $$");
 
-        DB.statement("CREATE TRIGGER assortment_account_terms_state_guard
+        DB::statement("CREATE TRIGGER assortment_account_terms_state_guard
             BEFORE UPDATE ON assortment_account_terms
             FOR EACH ROW EXECUTE FUNCTION guard_assortment_account_terms_state()");
 
-        DB.statement("ALTER TABLE assortment_account_terms ENABLE ROW LEVEL SECURITY");
-        DB.statement("ALTER TABLE assortment_account_terms FORCE ROW LEVEL SECURITY");
-        DB.statement(
+        DB::statement("ALTER TABLE assortment_account_terms ENABLE ROW LEVEL SECURITY");
+        DB::statement("ALTER TABLE assortment_account_terms FORCE ROW LEVEL SECURITY");
+        DB::statement(
             "CREATE POLICY tenant_isolation_assortment_account_terms ON assortment_account_terms
              USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid)
              WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid)"
         );
-        DB.statement('GRANT SELECT, INSERT ON assortment_account_terms TO app_runtime');
-        DB.statement('GRANT UPDATE (status, submitted_by, submitted_at, decided_by, decided_at, decision_reason, updated_at) ON assortment_account_terms TO app_runtime');
-        DB.statement('REVOKE DELETE ON assortment_account_terms FROM app_runtime');
+        DB::statement('GRANT SELECT, INSERT ON assortment_account_terms TO app_runtime');
+        DB::statement('GRANT UPDATE (status, submitted_by, submitted_at, decided_by, decided_at, decision_reason, updated_at) ON assortment_account_terms TO app_runtime');
+        DB::statement('REVOKE DELETE ON assortment_account_terms FROM app_runtime');
 
-        DB.statement('GRANT EXECUTE ON FUNCTION prevent_merchandising_history_mutation() TO app_runtime');
-        DB.statement('CREATE TRIGGER assortment_account_terms_append_only BEFORE DELETE ON assortment_account_terms FOR EACH ROW EXECUTE FUNCTION prevent_merchandising_history_mutation()');
+        DB::statement('CREATE TRIGGER assortment_account_terms_append_only BEFORE DELETE ON assortment_account_terms FOR EACH ROW EXECUTE FUNCTION prevent_merchandising_history_mutation()');
     }
 
     public function down(): void
     {
-        DB.statement('DROP TRIGGER IF EXISTS assortment_account_terms_append_only ON assortment_account_terms');
-        DB.statement('DROP TRIGGER IF EXISTS assortment_account_terms_state_guard ON assortment_account_terms');
-        DB.statement('DROP FUNCTION IF EXISTS guard_assortment_account_terms_state()');
+        DB::statement('DROP TRIGGER IF EXISTS assortment_account_terms_append_only ON assortment_account_terms');
+        DB::statement('DROP TRIGGER IF EXISTS assortment_account_terms_state_guard ON assortment_account_terms');
+        DB::statement('DROP FUNCTION IF EXISTS guard_assortment_account_terms_state()');
         Schema::dropIfExists('assortment_account_terms');
     }
 };
