@@ -784,7 +784,7 @@ class MerchandisingPlanningController extends Controller
                         ->where('business_site_id', $site->id)
                         ->where('node_type', 'RETAIL_STORE')
                         ->where('status', 'ACTIVE')
-                        ->whereRaw("capabilities @> ?::jsonb", [json_encode(['RETAIL'], JSON_THROW_ON_ERROR)])
+                        ->whereRaw('capabilities @> ?::jsonb', [json_encode(['RETAIL'], JSON_THROW_ON_ERROR)])
                         ->exists();
                     if (! $retailNode) {
                         $blockReasons[] = 'An ACTIVE RETAIL_STORE operational node with RETAIL capability is required.';
