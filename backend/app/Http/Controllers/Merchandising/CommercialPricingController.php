@@ -30,6 +30,7 @@ class CommercialPricingController extends Controller
     public function createPriceList(Request $request, TenantContext $tenantContext): JsonResponse
     {
         $tenantId = $tenantContext->tenantId();
+        $request->merge(['code' => strtoupper(trim((string) $request->input('code')))]);
         $data = $request->validate([
             'legal_entity_id' => [
                 'required',
@@ -179,7 +180,23 @@ class CommercialPricingController extends Controller
         abort_unless($tenantContext->canAdministerTenant(), 403, 'A tenant administrator must publish a price list.');
 
         $priceList = DB::transaction(function () use ($tenantId, $priceListId, $approver): object {
-            DB::select("SELECT pg_advisory_xact_lock(hashtext(?))", ['price-list-publish:'.$tenantId.':'.$priceListId]);
+            $scopeSeed = DB::table('price_lists')
+                ->where('tenant_id', $tenantId)
+                ->where('id', $priceListId)
+                ->first();
+
+            abort_if($scopeSeed === null, 404);
+
+            $scopeLock = implode('|', [
+                $tenantId,
+                $scopeSeed->legal_entity_id,
+                $scopeSeed->channel_code,
+                $scopeSeed->market_scope,
+                $scopeSeed->currency,
+                $scopeSeed->brand_id ?? '*',
+                $scopeSeed->account_reference ?? '*',
+            ]);
+            DB::select("SELECT pg_advisory_xact_lock(hashtext(?))", ['price-list-scope:'.$scopeLock]);
 
             $priceList = DB::table('price_lists')
                 ->where('tenant_id', $tenantId)
@@ -273,6 +290,7 @@ class CommercialPricingController extends Controller
     public function createPromotion(Request $request, TenantContext $tenantContext): JsonResponse
     {
         $tenantId = $tenantContext->tenantId();
+        $request->merge(['code' => strtoupper(trim((string) $request->input('code')))]);
         $data = $request->validate([
             'price_list_id' => [
                 'required',
@@ -329,7 +347,7 @@ class CommercialPricingController extends Controller
                 'promotion_type' => $data['promotion_type'],
                 'discount_value' => $discount,
                 'stack_policy' => $data['stack_policy'],
-                'budget_amount' => isset($data['budget_amount']) ? $this->decimal($data['budget_amount']) : null,
+                'budget_amount' => isset($data['budget_amount']) ? $this->decimal($data['budget_amount'], 16) : null,
                 'funded_by' => $data['funded_by'] ?? null,
                 'starts_at' => $data['starts_at'],
                 'ends_at' => $data['ends_at'],
@@ -397,7 +415,17 @@ class CommercialPricingController extends Controller
         abort_unless($tenantContext->canAdministerTenant(), 403, 'A tenant administrator must approve a promotion.');
 
         $promotion = DB::transaction(function () use ($tenantId, $promotionId, $approver): object {
-            DB::select("SELECT pg_advisory_xact_lock(hashtext(?))", ['promotion-approval:'.$tenantId.':'.$promotionId]);
+            $promotionSeed = DB::table('promotions')
+                ->where('tenant_id', $tenantId)
+                ->where('id', $promotionId)
+                ->first();
+
+            abort_if($promotionSeed === null, 404);
+
+            DB::select(
+                "SELECT pg_advisory_xact_lock(hashtext(?))",
+                ['promotion-price-list:'.$tenantId.':'.$promotionSeed->price_list_id],
+            );
 
             $promotion = DB::table('promotions')
                 ->where('tenant_id', $tenantId)
@@ -479,7 +507,7 @@ class CommercialPricingController extends Controller
         return response()->json(['data' => $promotion]);
     }
 
-    private function decimal(int|float|string $value): string
+    private function decimal(int|float|string $value, int $maximumWholeDigits = 14): string
     {
         $raw = trim((string) $value);
 
@@ -492,6 +520,7 @@ class CommercialPricingController extends Controller
         [$whole, $fraction] = array_pad(explode('.', $unsigned, 2), 2, '');
         $whole = ltrim($whole, '0');
         $whole = $whole === '' ? '0' : $whole;
+        abort_unless(strlen($whole) <= $maximumWholeDigits, 422, 'The amount exceeds the supported decimal precision.');
         $normalized = $whole.'.'.str_pad($fraction, 4, '0');
 
         return $negative && $normalized !== '0.0000' ? '-'.$normalized : $normalized;
