@@ -170,16 +170,24 @@ return new class extends Migration
             $table->index(['tenant_id', 'occurred_at']);
         });
 
-        // The application role is intentionally read-only on tenant roots and
-        // membership records. Identity, tenant membership and legal entity corrections
-        // are separate authorized workflows; no generic delete capability exists.
-        DB::statement('REVOKE INSERT, UPDATE, DELETE ON tenants, users, tenant_memberships FROM app_runtime');
+        // Fail closed: runtime has no default table grants. Every new domain
+        // migration must explicitly grant the minimum privileges after enabling RLS.
+        DB::statement('REVOKE ALL ON tenants, users, tenant_memberships, legal_entities, business_sites, operational_nodes, branch_registrations, inventory_locations, audit_events FROM app_runtime');
+
+        // Authentication and tenant selection may read global identities and only
+        // the current user's memberships. Membership/identity mutation stays privileged.
         DB::statement('GRANT SELECT ON tenants, users, tenant_memberships TO app_runtime');
-        DB::statement('REVOKE UPDATE, DELETE ON legal_entities FROM app_runtime');
+
+        // Legal entities can be registered as drafts; activation and amendment require
+        // a separate approval workflow, so the runtime cannot update or delete them.
         DB::statement('GRANT SELECT, INSERT ON legal_entities TO app_runtime');
-        DB::statement('REVOKE DELETE ON business_sites, operational_nodes, branch_registrations, inventory_locations FROM app_runtime');
-        DB::statement('REVOKE UPDATE, DELETE ON audit_events FROM app_runtime');
+
+        // Site/network setup can create and amend records but cannot erase history.
+        DB::statement('GRANT SELECT, INSERT, UPDATE ON business_sites, operational_nodes, branch_registrations, inventory_locations TO app_runtime');
+
+        // Audit events are append-only. The trigger and SQL grants both deny mutation.
         DB::statement('GRANT SELECT, INSERT ON audit_events TO app_runtime');
+        DB::statement('REVOKE ALL ON migrations FROM app_runtime');
 
         foreach ($this->tenantTables as $table) {
             DB::statement("ALTER TABLE {$table} ENABLE ROW LEVEL SECURITY");
