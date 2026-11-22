@@ -657,5 +657,4 @@ class TenantIsolationTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonValidationErrors('parent_id');
     }
-
 }
