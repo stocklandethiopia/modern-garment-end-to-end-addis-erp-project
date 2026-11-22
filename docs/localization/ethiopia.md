@@ -72,8 +72,8 @@ The register currently records the following discovered instruments as source ch
 
 - Income Tax (Amendment) Proclamation No. 1395/2025 — employment income tax table and digital-content income definition.
 - Federal Income Tax Regulation No. 597/2026 — further digital-content creator tax treatment and reporting.
-- VAT Proclamation No. 1341/2024; VAT Regulation No. 570/2025; VAT Registration Directive No. 1104/2026; Tax Invoice Usage and Administration Amendment Directive No. 1099/2026; VAT Refund Determination Directive (18 Apr 2026).
-- Pension Proclamation No. 1268/2022 and directives 1086/2025 and 1087/2025.
+- VAT Proclamation No. 1341/2024; VAT Regulation No. 570/2025; VAT Registration Directive No. 1104/2017 E.C. (published 3 Feb 2026 G.C.); Tax Invoice Usage and Administration Amendment Directive No. 1099/2017 E.C. (published 9 Feb 2026 G.C.); VAT Refund Determination Directive (18 Apr 2026).
+- Private Organization Employees’ Pension Proclamation No. 1268/2022 and POESSA implementation / contribution directives 1085/2025, 1086/2025 and 1087/2025.
 - Customs Proclamation Further Amendment No. 1425/2026.
 - NBE FXD/01/2024 as amended by FXD/03/2025, FXD/04/2026 and FXD/05/2026; check FVD/01/2026 for applicable import modality.
 - Investment incentive Regulation No. 586/2026 and implementing Directive No. 1064/2025.
