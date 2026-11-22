@@ -127,23 +127,25 @@ return new class extends Migration
             RETURNS trigger LANGUAGE plpgsql AS $$
             DECLARE
                 policy_status text;
-                policy_tenant uuid;
-                policy_id uuid;
             BEGIN
-                IF TG_OP = 'DELETE' THEN
-                    policy_tenant := OLD.tenant_id;
-                    policy_id := OLD.policy_id;
-                ELSE
-                    policy_tenant := NEW.tenant_id;
-                    policy_id := NEW.policy_id;
+                IF TG_OP IN ('UPDATE', 'DELETE') THEN
+                    SELECT status INTO policy_status
+                    FROM initiative_evidence_policies
+                    WHERE tenant_id = OLD.tenant_id AND id = OLD.policy_id;
+
+                    IF policy_status IS DISTINCT FROM 'DRAFT' THEN
+                        RAISE EXCEPTION 'evidence policy rules can only change while the policy is a draft';
+                    END IF;
                 END IF;
 
-                SELECT status INTO policy_status
-                FROM initiative_evidence_policies
-                WHERE tenant_id = policy_tenant AND id = policy_id;
+                IF TG_OP IN ('INSERT', 'UPDATE') THEN
+                    SELECT status INTO policy_status
+                    FROM initiative_evidence_policies
+                    WHERE tenant_id = NEW.tenant_id AND id = NEW.policy_id;
 
-                IF policy_status IS DISTINCT FROM 'DRAFT' THEN
-                    RAISE EXCEPTION 'evidence policy rules can only change while the policy is a draft';
+                    IF policy_status IS DISTINCT FROM 'DRAFT' THEN
+                        RAISE EXCEPTION 'evidence policy rules can only change while the policy is a draft';
+                    END IF;
                 END IF;
 
                 IF TG_OP = 'DELETE' THEN
