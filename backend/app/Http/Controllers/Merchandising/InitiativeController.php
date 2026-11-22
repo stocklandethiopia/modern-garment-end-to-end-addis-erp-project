@@ -267,6 +267,11 @@ class InitiativeController extends Controller
                 ->first();
 
             abort_if($initiative === null, 404);
+            abort_unless(
+                $actorId !== $initiative->owner_user_id,
+                403,
+                'The initiative creator cannot approve their own screening or assessment decision.',
+            );
 
             $stage = $initiative->status;
             $nextStatus = match ([$stage, $data['decision']]) {
