@@ -18,6 +18,7 @@ export class AppComponent {
   readonly navigation = [
     { label: 'Overview', path: '/', icon: '◫' },
     { label: 'Legal entities', path: '/enterprise/legal-entities', icon: '▦' },
+    { label: 'Business sites & nodes', path: '/enterprise/sites', icon: '⌖' },
   ];
 
   readonly domainGroups = [
@@ -31,7 +32,7 @@ export class AppComponent {
     },
     {
       label: 'Enterprise',
-      items: ['Sites & branches', 'Warehouse & distribution', 'Sales channels & retail', 'Finance & treasury', 'People & payroll'],
+      items: ['Warehouse & distribution', 'Sales channels & retail', 'Finance & treasury', 'People & payroll'],
     },
     {
       label: 'Intelligence',
