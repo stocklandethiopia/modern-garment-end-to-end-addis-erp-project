@@ -3,7 +3,7 @@ import { provideHttpClientTesting, HttpTestingController } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { ProductDevelopmentService } from './product-development.service';
+import { PatternRevisionInput, ProductDevelopmentService } from './product-development.service';
 
 describe('ProductDevelopmentService', () => {
   let service: ProductDevelopmentService;
@@ -139,7 +139,7 @@ describe('ProductDevelopmentService', () => {
   });
 
   it('creates versioned pattern sets, appends revisions and approves the exact revision', () => {
-    const payload = {
+    const payload: PatternRevisionInput = {
       measurement_spec_version_id: 'measurement-1',
       pieces: [{ piece_code: 'FRONT', description: 'Front body panel', grain_direction: 'LENGTHWISE', seam_allowance: { side: 1 }, piece_count: 2 }],
       grade_rules: [{ point_code: 'CHEST_CIRC', from_size_code: 'S', to_size_code: 'M', increment: 4, unit_code: 'CM' }],
