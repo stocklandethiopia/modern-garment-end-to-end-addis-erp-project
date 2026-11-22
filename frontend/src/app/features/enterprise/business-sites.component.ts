@@ -139,6 +139,8 @@ export class BusinessSitesComponent {
   }
 
   selectSite(site: BusinessSite): void {
+    this.nodeRequestSequence += 1;
+    this.savingNode.set(false);
     this.activeSite.set(site);
     this.nodes.set([]);
     this.showNodeForm.set(false);
