@@ -10,6 +10,7 @@ return new class extends Migration
     private array $tenantTables = [
         'brands',
         'brand_strategy_versions',
+        'merchandising_decisions',
         'seasons',
         'collections',
         'collection_versions',
@@ -76,6 +77,24 @@ return new class extends Migration
                 ->references(['tenant_id', 'id'])->on('brands')->restrictOnDelete();
             $table->foreign('created_by')->references('id')->on('users')->restrictOnDelete();
             $table->check('(effective_to IS NULL OR effective_from IS NULL OR effective_to >= effective_from)');
+        });
+
+        Schema::create('merchandising_decisions', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->uuid('tenant_id');
+            $table->string('object_type', 40);
+            $table->uuid('object_id');
+            $table->unsignedInteger('object_version')->default(1);
+            $table->string('decision', 32);
+            $table->text('reason');
+            $table->jsonb('actions')->default(DB::raw("'[]'::jsonb"));
+            $table->date('review_date')->nullable();
+            $table->uuid('decided_by');
+            $table->timestampTz('decided_at');
+            $table->unique(['tenant_id', 'id']);
+            $table->foreign('tenant_id')->references('id')->on('tenants')->restrictOnDelete();
+            $table->foreign('decided_by')->references('id')->on('users')->restrictOnDelete();
+            $table->index(['tenant_id', 'object_type', 'object_id', 'decided_at']);
         });
 
         Schema::create('seasons', function (Blueprint $table): void {
@@ -495,6 +514,7 @@ return new class extends Migration
 
         $appendOnlyTables = [
             'brand_strategy_versions',
+            'merchandising_decisions',
             'collection_versions',
             'demand_forecast_runs',
             'demand_forecasts',
@@ -524,7 +544,7 @@ return new class extends Migration
 
         DB::statement("CREATE OR REPLACE FUNCTION prevent_merchandising_history_mutation() RETURNS trigger LANGUAGE plpgsql AS 'BEGIN RAISE EXCEPTION ''approved merchandising versions and forecast history are append-only''; END;'");
 
-        foreach (['brand_strategy_versions', 'collection_versions', 'demand_forecast_runs', 'demand_forecasts', 'forecast_adjustments', 'otb_scenarios'] as $table) {
+        foreach (['brand_strategy_versions', 'merchandising_decisions', 'collection_versions', 'demand_forecast_runs', 'demand_forecasts', 'forecast_adjustments', 'otb_scenarios'] as $table) {
             DB::statement("CREATE TRIGGER {$table}_append_only BEFORE UPDATE OR DELETE ON {$table} FOR EACH ROW EXECUTE FUNCTION prevent_merchandising_history_mutation()");
         }
     }
@@ -554,6 +574,7 @@ return new class extends Migration
             'collection_versions',
             'collections',
             'seasons',
+            'merchandising_decisions',
             'brand_strategy_versions',
             'brands',
         ] as $table) {
