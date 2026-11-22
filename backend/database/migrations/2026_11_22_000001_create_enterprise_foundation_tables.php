@@ -212,29 +212,6 @@ return new class extends Migration
             );
         SQL);
 
-        // Tenant roots are visible only for the selected tenant or to a user
-        // with an active membership. This protects the tenant selector itself.
-        DB::statement('ALTER TABLE tenants ENABLE ROW LEVEL SECURITY');
-        DB::statement('ALTER TABLE tenants FORCE ROW LEVEL SECURITY');
-        DB::unprepared(<<<'SQL'
-            CREATE POLICY tenant_isolation_tenants ON tenants
-            USING (
-                id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid
-            );
-
-            CREATE POLICY tenant_self_membership_access ON tenants
-            FOR SELECT
-            USING (
-                EXISTS (
-                    SELECT 1
-                    FROM tenant_memberships m
-                    WHERE m.tenant_id = tenants.id
-                      AND m.user_id = NULLIF(current_setting('app.current_user_id', true), '')::uuid
-                      AND m.status = 'ACTIVE'
-                )
-            );
-        SQL);
-
         foreach ($this->tenantTables as $table) {
             DB::statement("ALTER TABLE {$table} ENABLE ROW LEVEL SECURITY");
             DB::statement("ALTER TABLE {$table} FORCE ROW LEVEL SECURITY");
