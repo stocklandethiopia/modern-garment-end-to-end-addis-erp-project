@@ -94,11 +94,22 @@ class OtbPlanningController extends Controller
         abort_unless($tenantContext->canAdministerTenant(), 403, 'A tenant administrator must activate an OTB policy.');
 
         $policy = DB::transaction(function () use ($tenantId, $policyId, $approver): object {
-            DB::select("SELECT pg_advisory_xact_lock(hashtext(?))", ['otb-policy:'.$tenantId.':'.$policyId]);
+            $policySeed = DB::table('otb_policies')
+                ->where('tenant_id', $tenantId)
+                ->where('id', $policyId)
+                ->first();
+
+            abort_if($policySeed === null, 404);
+
+            DB::select(
+                "SELECT pg_advisory_xact_lock(hashtext(?))",
+                ['otb-policy-entity:'.$tenantId.':'.$policySeed->legal_entity_id],
+            );
 
             $policy = DB::table('otb_policies')
                 ->where('tenant_id', $tenantId)
                 ->where('id', $policyId)
+                ->lockForUpdate()
                 ->first();
 
             abort_if($policy === null, 404);
@@ -433,6 +444,7 @@ class OtbPlanningController extends Controller
         [$whole, $fraction] = array_pad(explode('.', $unsigned, 2), 2, '');
         $whole = ltrim($whole, '0');
         $whole = $whole === '' ? '0' : $whole;
+        abort_unless(strlen($whole) <= 16, 422, 'OTB values exceed the supported numeric precision.');
         $normalized = $whole.'.'.str_pad($fraction, 4, '0');
 
         return $negative && $normalized !== '0.0000' ? '-'.$normalized : $normalized;
