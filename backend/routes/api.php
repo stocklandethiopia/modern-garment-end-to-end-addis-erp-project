@@ -90,10 +90,13 @@ Route::prefix('v1')->group(function (): void {
 
         Route::get('/product/range-plans', [MerchandisingPlanningController::class, 'rangePlans']);
         Route::post('/product/range-plans', [MerchandisingPlanningController::class, 'createRangePlan']);
+        Route::get('/product/range-plans/{rangePlanId}/lines', [MerchandisingPlanningController::class, 'rangeLines']);
         Route::post('/product/range-plans/{rangePlanId}/lines', [MerchandisingPlanningController::class, 'createRangeLine']);
         Route::post('/product/range-plans/{rangePlanId}/freeze', [MerchandisingPlanningController::class, 'freezeRangePlan']);
 
+        Route::get('/product/assortment-plans', [MerchandisingPlanningController::class, 'assortmentPlans']);
         Route::post('/product/assortment-plans', [MerchandisingPlanningController::class, 'createAssortmentPlan']);
+        Route::get('/product/assortment-plans/{assortmentPlanId}/lines', [MerchandisingPlanningController::class, 'assortmentLines']);
         Route::post('/product/assortment-plans/{assortmentPlanId}/lines', [MerchandisingPlanningController::class, 'createAssortmentLine']);
 
         Route::get('/product/forecast-runs', [DemandPlanningController::class, 'runs']);

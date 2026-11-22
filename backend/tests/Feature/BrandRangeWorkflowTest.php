@@ -381,4 +381,108 @@ class BrandRangeWorkflowTest extends TestCase
         $this->assertFalse($privileges->can_update_collection_version);
         $this->assertFalse($privileges->can_delete_decision);
     }
+
+    public function test_range_and_assortment_read_workflows_are_tenant_scoped_and_return_saved_rows(): void
+    {
+        $brandId = $this->createApprovedBrand();
+
+        $season = $this->withHeaders($this->tenantHeader())->postJson('/api/v1/product/seasons', [
+            'code' => 'READ-SEASON-'.Str::upper(Str::random(5)),
+            'name' => 'Read workflow season',
+            'calendar_type' => 'FASHION',
+            'timezone' => 'Africa/Addis_Ababa',
+        ])->assertCreated();
+
+        $collection = $this->withHeaders($this->tenantHeader())->postJson('/api/v1/product/collections', [
+            'brand_id' => $brandId,
+            'season_id' => $season->json('data.id'),
+            'code' => 'READ-COLLECTION-'.Str::upper(Str::random(4)),
+            'name' => 'Read workflow collection',
+            'target_market' => 'Ethiopia',
+        ])->assertCreated();
+
+        $collectionId = $collection->json('data.id');
+        $version = $this->withHeaders($this->tenantHeader())->postJson('/api/v1/product/collections/'.$collectionId.'/versions', [
+            'story' => 'A collection used to verify persisted planning records.',
+            'target_consumer' => 'Adults',
+            'category_architecture' => ['CASUALWEAR'],
+            'price_margin_envelope' => ['currency' => 'ETB'],
+            'change_reason' => 'Create collection version for read workflow coverage.',
+        ])->assertCreated();
+
+        $this->withHeaders($this->tenantHeader())->getJson('/api/v1/product/collections')
+            ->assertOk()
+            ->assertJsonPath('data.data.0.latest_version_status', 'PENDING_APPROVAL')
+            ->assertJsonPath('data.data.0.latest_version_id', $version->json('data.id'));
+
+        $this->actAsApprover();
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product/collections/'.$collectionId.'/versions/'.$version->json('data.id').'/approve', [])
+            ->assertOk();
+
+        $this->actAsOwner();
+        $range = $this->withHeaders($this->tenantHeader())->postJson('/api/v1/product/range-plans', [
+            'collection_id' => $collectionId,
+            'collection_version' => 1,
+            'code' => 'READ-RANGE-'.Str::upper(Str::random(4)),
+            'plan_start' => '2027-01-01',
+            'plan_end' => '2027-02-28',
+        ])->assertCreated();
+
+        $rangePlanId = $range->json('data.id');
+        $line = $this->withHeaders($this->tenantHeader())->postJson('/api/v1/product/range-plans/'.$rangePlanId.'/lines', [
+            'line_code' => 'READ-STYLE-001',
+            'category_code' => 'CASUALWEAR',
+            'product_hypothesis' => 'A durable everyday product for the selected consumer.',
+            'planned_units' => 100,
+            'channel_scope' => ['OWN_RETAIL'],
+            'size_colour_intent' => ['sizes' => ['S', 'M']],
+            'lifecycle_type' => 'NEW',
+            'forecast_basis' => 'Research-led range hypothesis.',
+        ])->assertCreated();
+
+        $this->actAsApprover();
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product/range-plans/'.$rangePlanId.'/freeze', [])
+            ->assertOk();
+
+        $this->actAsOwner();
+        $this->withHeaders($this->tenantHeader())
+            ->getJson('/api/v1/product/range-plans/'.$rangePlanId.'/lines')
+            ->assertOk()
+            ->assertJsonPath('data.data.0.id', $line->json('data.id'));
+
+        $assortment = $this->withHeaders($this->tenantHeader())->postJson('/api/v1/product/assortment-plans', [
+            'range_plan_id' => $rangePlanId,
+            'code' => 'READ-ASSORTMENT-'.Str::upper(Str::random(4)),
+            'channel_code' => 'OWN_RETAIL',
+            'market_scope' => 'Addis Ababa',
+        ])->assertCreated();
+
+        $assortmentId = $assortment->json('data.id');
+        $assortmentLine = $this->withHeaders($this->tenantHeader())->postJson('/api/v1/product/assortment-plans/'.$assortmentId.'/lines', [
+            'range_line_id' => $line->json('data.id'),
+            'variant_size_curve' => ['S' => 40, 'M' => 60],
+            'planned_units' => 100,
+        ])->assertCreated();
+
+        $this->withHeaders($this->tenantHeader())
+            ->getJson('/api/v1/product/assortment-plans')
+            ->assertOk()
+            ->assertJsonPath('data.data.0.id', $assortmentId)
+            ->assertJsonPath('data.data.0.range_plan_code', $range->json('data.code'));
+
+        $this->withHeaders($this->tenantHeader())
+            ->getJson('/api/v1/product/assortment-plans/'.$assortmentId.'/lines')
+            ->assertOk()
+            ->assertJsonPath('data.data.0.id', $assortmentLine->json('data.id'));
+
+        $this->withHeaders($this->tenantHeader())
+            ->getJson('/api/v1/product/range-plans/'.Str::uuid().'/lines')
+            ->assertNotFound();
+        $this->withHeaders($this->tenantHeader())
+            ->getJson('/api/v1/product/assortment-plans/'.Str::uuid().'/lines')
+            ->assertNotFound();
+    }
+
 }

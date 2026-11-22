@@ -19,7 +19,7 @@ class MerchandisingPlanningController extends Controller
                 ->leftJoin('brand_strategy_versions as v', function ($join): void {
                     $join->on('v.tenant_id', '=', 'b.tenant_id')
                         ->on('v.brand_id', '=', 'b.id')
-                        ->on('v.version_no', '=', 'b.current_strategy_version');
+                        ->whereRaw('v.version_no = (SELECT MAX(v2.version_no) FROM brand_strategy_versions AS v2 WHERE v2.tenant_id = b.tenant_id AND v2.brand_id = b.id)');
                 })
                 ->leftJoin('merchandising_decisions as d', function ($join): void {
                     $join->on('d.tenant_id', '=', 'v.tenant_id')
@@ -31,6 +31,9 @@ class MerchandisingPlanningController extends Controller
                 ->orderBy('b.name')
                 ->select([
                     'b.*',
+                    'v.id as latest_strategy_version_id',
+                    'v.version_no as latest_strategy_version_no',
+                    'v.created_by as latest_strategy_created_by',
                     DB::raw("CASE WHEN d.id IS NOT NULL THEN 'APPROVED' ELSE COALESCE(v.status, 'NOT_CREATED') END AS current_strategy_status"),
                 ])
                 ->paginate(50),
@@ -272,9 +275,28 @@ class MerchandisingPlanningController extends Controller
             'data' => DB::table('collections as c')
                 ->join('brands as b', fn ($join) => $join->on('b.id', '=', 'c.brand_id')->on('b.tenant_id', '=', 'c.tenant_id'))
                 ->join('seasons as s', fn ($join) => $join->on('s.id', '=', 'c.season_id')->on('s.tenant_id', '=', 'c.tenant_id'))
+                ->leftJoin('collection_versions as cv', function ($join): void {
+                    $join->on('cv.tenant_id', '=', 'c.tenant_id')
+                        ->on('cv.collection_id', '=', 'c.id')
+                        ->whereRaw('cv.version_no = (SELECT MAX(cv2.version_no) FROM collection_versions AS cv2 WHERE cv2.tenant_id = c.tenant_id AND cv2.collection_id = c.id)');
+                })
+                ->leftJoin('merchandising_decisions as md', function ($join): void {
+                    $join->on('md.tenant_id', '=', 'cv.tenant_id')
+                        ->on('md.object_id', '=', 'cv.id')
+                        ->where('md.object_type', '=', 'COLLECTION_VERSION')
+                        ->where('md.decision', '=', 'APPROVE');
+                })
                 ->where('c.tenant_id', $tenantContext->tenantId())
                 ->orderByDesc('c.created_at')
-                ->paginate(50, ['c.*', 'b.name as brand_name', 's.name as season_name']),
+                ->paginate(50, [
+                    'c.*',
+                    'b.name as brand_name',
+                    's.name as season_name',
+                    'cv.id as latest_version_id',
+                    'cv.version_no as latest_version_no',
+                    'cv.created_by as latest_version_created_by',
+                    DB::raw("CASE WHEN md.id IS NOT NULL THEN 'APPROVED' ELSE COALESCE(cv.status, 'NOT_CREATED') END AS latest_version_status"),
+                ]),
         ]);
     }
 
@@ -436,8 +458,75 @@ class MerchandisingPlanningController extends Controller
     public function rangePlans(TenantContext $tenantContext): JsonResponse
     {
         return response()->json([
-            'data' => DB::table('range_plans')->where('tenant_id', $tenantContext->tenantId())
-                ->orderByDesc('created_at')->paginate(50),
+            'data' => DB::table('range_plans')
+                ->where('tenant_id', $tenantContext->tenantId())
+                ->orderByDesc('created_at')
+                ->paginate(50),
+        ]);
+    }
+
+    public function rangeLines(string $rangePlanId, TenantContext $tenantContext): JsonResponse
+    {
+        $tenantId = $tenantContext->tenantId();
+        $plan = DB::table('range_plans')
+            ->where('tenant_id', $tenantId)
+            ->where('id', $rangePlanId)
+            ->first();
+
+        abort_if($plan === null, 404);
+
+        return response()->json([
+            'data' => DB::table('range_lines')
+                ->where('tenant_id', $tenantId)
+                ->where('range_plan_id', $rangePlanId)
+                ->orderBy('line_code')
+                ->paginate(100),
+        ]);
+    }
+
+    public function assortmentPlans(TenantContext $tenantContext): JsonResponse
+    {
+        return response()->json([
+            'data' => DB::table('assortment_plans as ap')
+                ->join('range_plans as rp', function ($join): void {
+                    $join->on('rp.tenant_id', '=', 'ap.tenant_id')
+                        ->on('rp.id', '=', 'ap.range_plan_id');
+                })
+                ->where('ap.tenant_id', $tenantContext->tenantId())
+                ->orderByDesc('ap.created_at')
+                ->paginate(50, [
+                    'ap.*',
+                    'rp.code as range_plan_code',
+                    'rp.status as range_plan_status',
+                ]),
+        ]);
+    }
+
+    public function assortmentLines(string $assortmentPlanId, TenantContext $tenantContext): JsonResponse
+    {
+        $tenantId = $tenantContext->tenantId();
+        $plan = DB::table('assortment_plans')
+            ->where('tenant_id', $tenantId)
+            ->where('id', $assortmentPlanId)
+            ->first();
+
+        abort_if($plan === null, 404);
+
+        return response()->json([
+            'data' => DB::table('assortment_lines as al')
+                ->join('range_lines as rl', function ($join): void {
+                    $join->on('rl.tenant_id', '=', 'al.tenant_id')
+                        ->on('rl.id', '=', 'al.range_line_id');
+                })
+                ->where('al.tenant_id', $tenantId)
+                ->where('al.assortment_plan_id', $assortmentPlanId)
+                ->orderBy('rl.line_code')
+                ->paginate(100, [
+                    'al.*',
+                    'rl.line_code',
+                    'rl.category_code',
+                    'rl.lifecycle_type',
+                ]),
         ]);
     }
 
