@@ -46,6 +46,29 @@ class EvidencePolicyController extends Controller
     {
         abort_unless($tenantContext->canAdministerTenant(), 403, 'Only a tenant owner or administrator may configure evidence policies.');
 
+        foreach (['code', 'name', 'change_reason', 'target_market'] as $field) {
+            $value = $request->input($field);
+            if (is_string($value)) {
+                $normalized = trim($value);
+                if ($field === 'code') {
+                    $normalized = strtoupper($normalized);
+                }
+                $request->merge([
+                    $field => $field === 'target_market' && $normalized === '' ? null : $normalized,
+                ]);
+            }
+        }
+
+        $rules = $request->input('rules');
+        if (is_array($rules)) {
+            foreach ($rules as $index => $rule) {
+                if (is_array($rule) && is_string($rule['requirement_code'] ?? null)) {
+                    $rules[$index]['requirement_code'] = strtoupper(trim($rule['requirement_code']));
+                }
+            }
+            $request->merge(['rules' => $rules]);
+        }
+
         $data = $request->validate([
             'code' => ['required', 'string', 'max:80', 'regex:/^[A-Z0-9][A-Z0-9._-]+$/'],
             'name' => ['required', 'string', 'min:3', 'max:180'],
