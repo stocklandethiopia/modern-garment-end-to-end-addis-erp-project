@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -95,9 +96,17 @@ class PersonalAccessTokenTest extends TestCase
             'device_name' => 'revoke-test',
         ])->assertOk()->json('access_token');
 
+        $tokenId = (int) explode('|', $plainTextToken, 2)[0];
+
         $this->withToken($plainTextToken)->deleteJson('/api/v1/auth/tokens/current')
             ->assertOk()
             ->assertJson(['status' => 'revoked']);
+
+        $this->assertDatabaseMissing('personal_access_tokens', ['id' => $tokenId]);
+
+        // Feature tests reuse the application container; clear the cached guard
+        // so the next HTTP request authenticates exactly as a new client request.
+        Auth::forgetGuards();
 
         $this->withToken($plainTextToken)->getJson('/api/v1/tenants')
             ->assertUnauthorized();
