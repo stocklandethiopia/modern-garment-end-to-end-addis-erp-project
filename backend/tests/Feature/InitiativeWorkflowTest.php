@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -378,7 +379,7 @@ class InitiativeWorkflowTest extends TestCase
 
         $sourceId = $response->json('data.id');
 
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
         DB::connection('pgsql_test_admin')->table('insight_sources')
             ->where('tenant_id', $this->tenantId)
             ->where('id', $sourceId)
@@ -402,7 +403,7 @@ class InitiativeWorkflowTest extends TestCase
             'created_at' => $now,
         ]);
 
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
         $admin->table('market_insights')->insert([
             'id' => (string) Str::uuid(),
             'tenant_id' => $this->tenantId,
@@ -418,5 +419,4 @@ class InitiativeWorkflowTest extends TestCase
             'created_at' => $now,
         ]);
     }
-
 }
