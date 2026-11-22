@@ -11,7 +11,7 @@ class PersonalAccessTokenTest extends TestCase
 {
     private string $tenantId;
     private string $userId;
-    private string $email = 'access-owner@example.test';
+    private string $email;
     private string $password = 'a-long-test-password';
 
     protected function setUp(): void
@@ -20,6 +20,7 @@ class PersonalAccessTokenTest extends TestCase
 
         $this->tenantId = (string) Str::uuid();
         $this->userId = (string) Str::uuid();
+        $this->email = 'access-owner-'.Str::lower(Str::random(10)).'@example.test';
         $now = now();
         $admin = DB::connection('pgsql_test_admin');
 
