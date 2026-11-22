@@ -15,9 +15,24 @@ class MerchandisingPlanningController extends Controller
     public function brands(TenantContext $tenantContext): JsonResponse
     {
         return response()->json([
-            'data' => DB::table('brands')
-                ->where('tenant_id', $tenantContext->tenantId())
-                ->orderBy('name')
+            'data' => DB::table('brands as b')
+                ->leftJoin('brand_strategy_versions as v', function ($join): void {
+                    $join->on('v.tenant_id', '=', 'b.tenant_id')
+                        ->on('v.brand_id', '=', 'b.id')
+                        ->on('v.version_no', '=', 'b.current_strategy_version');
+                })
+                ->leftJoin('merchandising_decisions as d', function ($join): void {
+                    $join->on('d.tenant_id', '=', 'v.tenant_id')
+                        ->on('d.object_id', '=', 'v.id')
+                        ->where('d.object_type', '=', 'BRAND_STRATEGY')
+                        ->where('d.decision', '=', 'APPROVE');
+                })
+                ->where('b.tenant_id', $tenantContext->tenantId())
+                ->orderBy('b.name')
+                ->select([
+                    'b.*',
+                    DB::raw("CASE WHEN d.id IS NOT NULL THEN 'APPROVED' ELSE COALESCE(v.status, 'NOT_CREATED') END AS current_strategy_status"),
+                ])
                 ->paginate(50),
         ]);
     }
@@ -89,10 +104,21 @@ class MerchandisingPlanningController extends Controller
 
         $id = (string) Str::uuid();
         $actor = (string) $request->user()->getAuthIdentifier();
-        $version = (int) DB::table('brand_strategy_versions')->where('tenant_id', $tenantId)
-            ->where('brand_id', $brandId)->max('version_no') + 1;
 
-        DB::transaction(function () use ($tenantId, $brandId, $data, $id, $actor, $version): void {
+        $created = DB::transaction(function () use ($tenantId, $brandId, $data, $id, $actor): array {
+            $brand = DB::table('brands')
+                ->where('tenant_id', $tenantId)
+                ->where('id', $brandId)
+                ->lockForUpdate()
+                ->first();
+
+            abort_if($brand === null, 404);
+
+            $version = (int) DB::table('brand_strategy_versions')
+                ->where('tenant_id', $tenantId)
+                ->where('brand_id', $brandId)
+                ->max('version_no') + 1;
+
             DB::table('brand_strategy_versions')->insert([
                 'id' => $id,
                 'tenant_id' => $tenantId,
@@ -114,9 +140,11 @@ class MerchandisingPlanningController extends Controller
             ]);
 
             $this->audit($tenantId, $actor, 'BRAND_STRATEGY_VERSION_CREATED', 'BRAND_STRATEGY', $id, $data['change_reason']);
+
+            return ['id' => $id, 'brand_id' => $brandId, 'version_no' => $version, 'status' => 'PENDING_APPROVAL'];
         });
 
-        return response()->json(['data' => ['id' => $id, 'brand_id' => $brandId, 'version_no' => $version, 'status' => 'PENDING_APPROVAL']], 201);
+        return response()->json(['data' => $created], 201);
     }
 
     public function approveBrandStrategy(string $brandId, string $versionId, Request $request, TenantContext $tenantContext): JsonResponse
@@ -137,6 +165,15 @@ class MerchandisingPlanningController extends Controller
             abort_unless($version->status === 'PENDING_APPROVAL', 422, 'Only a pending strategy version can be approved.');
             abort_unless($version->created_by !== $approver, 403, 'The author cannot approve their own brand strategy.');
 
+            $alreadyApproved = DB::table('merchandising_decisions')
+                ->where('tenant_id', $tenantId)
+                ->where('object_type', 'BRAND_STRATEGY')
+                ->where('object_id', $versionId)
+                ->where('decision', 'APPROVE')
+                ->exists();
+
+            abort_unless(! $alreadyApproved, 422, 'This brand strategy version has already been approved.');
+
             DB::table('merchandising_decisions')->insert([
                 'id' => (string) Str::uuid(),
                 'tenant_id' => $tenantId,
@@ -150,9 +187,8 @@ class MerchandisingPlanningController extends Controller
                 'decided_at' => now(),
             ]);
 
-            DB::table('brand_strategy_versions')->where('tenant_id', $tenantId)->where('id', $versionId)
-                ->update(['status' => 'APPROVED']);
-
+            // The strategy version remains immutable. Approval is represented by
+            // the append-only merchandising_decisions record above.
             DB::table('brands')->where('tenant_id', $tenantId)->where('id', $brandId)->update([
                 'current_strategy_version' => $version->version_no,
                 'status' => 'ACTIVE',
@@ -160,6 +196,7 @@ class MerchandisingPlanningController extends Controller
             ]);
 
             $this->audit($tenantId, $approver, 'BRAND_STRATEGY_APPROVED', 'BRAND_STRATEGY', $versionId, 'Independent approval.');
+
             return DB::table('brands')->where('tenant_id', $tenantId)->where('id', $brandId)->first();
         });
 
@@ -177,7 +214,13 @@ class MerchandisingPlanningController extends Controller
     public function createSeason(Request $request, TenantContext $tenantContext): JsonResponse
     {
         $data = $request->validate([
-            'code' => ['required', 'string', 'max:80', 'regex:/^[A-Z0-9][A-Z0-9_-]{1,79}$/'],
+            'code' => [
+                'required',
+                'string',
+                'max:80',
+                'regex:/^[A-Z0-9][A-Z0-9_-]{1,79}$/',
+                Rule::unique('seasons', 'code')->where(fn ($query) => $query->where('tenant_id', $tenantContext->tenantId())),
+            ],
             'name' => ['required', 'string', 'max:180'],
             'calendar_type' => ['required', Rule::in(['FASHION', 'SCHOOL', 'UNIFORM', 'CLIMATE', 'HOLIDAY', 'WHOLESALE', 'CUSTOM'])],
             'market_scope' => ['nullable', 'string', 'max:160'],
@@ -193,23 +236,27 @@ class MerchandisingPlanningController extends Controller
         ]);
         $tenantId = $tenantContext->tenantId();
         $code = strtoupper($data['code']);
-        abort_if(DB::table('seasons')->where('tenant_id', $tenantId)->where('code', $code)->exists(), 422, 'Season code already exists in this tenant.');
-
         $id = (string) Str::uuid();
         $actor = (string) $request->user()->getAuthIdentifier();
-        DB::table('seasons')->insert([
-            'id' => $id,
-            'tenant_id' => $tenantId,
-            ...$data,
-            'code' => $code,
-            'status' => 'ACTIVE',
-            'created_by' => $actor,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-        $this->audit($tenantId, $actor, 'SEASON_CREATED', 'SEASON', $id, 'Season calendar created. Overlapping season windows are permitted.');
 
-        return response()->json(['data' => DB::table('seasons')->where('tenant_id', $tenantId)->where('id', $id)->first()], 201);
+        $season = DB::transaction(function () use ($tenantId, $data, $code, $id, $actor): object {
+            DB::table('seasons')->insert([
+                'id' => $id,
+                'tenant_id' => $tenantId,
+                ...$data,
+                'code' => $code,
+                'status' => 'ACTIVE',
+                'created_by' => $actor,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $this->audit($tenantId, $actor, 'SEASON_CREATED', 'SEASON', $id, 'Season calendar created. Overlapping season windows are permitted.');
+
+            return DB::table('seasons')->where('tenant_id', $tenantId)->where('id', $id)->first();
+        });
+
+        return response()->json(['data' => $season], 201);
     }
 
     public function collections(TenantContext $tenantContext): JsonResponse
@@ -236,31 +283,33 @@ class MerchandisingPlanningController extends Controller
             'target_market' => ['required', 'string', 'max:160'],
         ]);
         $code = strtoupper($data['code']);
-        abort_if(DB::table('collections')->where('tenant_id', $tenantId)->where('code', $code)->exists(), 422, 'Collection code already exists in this tenant.');
-
         $id = (string) Str::uuid();
         $actor = (string) $request->user()->getAuthIdentifier();
-        DB::table('collections')->insert([
-            'id' => $id,
-            'tenant_id' => $tenantId,
-            ...$data,
-            'code' => $code,
-            'current_version' => 0,
-            'status' => 'DRAFT',
-            'owner_user_id' => $actor,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-        $this->audit($tenantId, $actor, 'COLLECTION_CREATED', 'COLLECTION', $id, 'Collection created in draft state.');
 
-        return response()->json(['data' => DB::table('collections')->where('tenant_id', $tenantId)->where('id', $id)->first()], 201);
+        $collection = DB::transaction(function () use ($tenantId, $data, $code, $id, $actor): object {
+            DB::table('collections')->insert([
+                'id' => $id,
+                'tenant_id' => $tenantId,
+                ...$data,
+                'code' => $code,
+                'current_version' => 0,
+                'status' => 'DRAFT',
+                'owner_user_id' => $actor,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $this->audit($tenantId, $actor, 'COLLECTION_CREATED', 'COLLECTION', $id, 'Collection created in draft state.');
+
+            return DB::table('collections')->where('tenant_id', $tenantId)->where('id', $id)->first();
+        });
+
+        return response()->json(['data' => $collection], 201);
     }
 
     public function createCollectionVersion(string $collectionId, Request $request, TenantContext $tenantContext): JsonResponse
     {
         $tenantId = $tenantContext->tenantId();
-        $collection = DB::table('collections')->where('tenant_id', $tenantId)->where('id', $collectionId)->first();
-        abort_if($collection === null, 404);
         $data = $request->validate([
             'story' => ['required', 'string', 'min:10', 'max:10000'],
             'target_consumer' => ['required', 'string', 'max:180'],
@@ -272,25 +321,42 @@ class MerchandisingPlanningController extends Controller
             'delivery_end' => ['nullable', 'date', 'after_or_equal:delivery_start'],
             'change_reason' => ['required', 'string', 'min:5', 'max:500'],
         ]);
-        $version = (int) DB::table('collection_versions')->where('tenant_id', $tenantId)->where('collection_id', $collectionId)->max('version_no') + 1;
         $id = (string) Str::uuid();
         $actor = (string) $request->user()->getAuthIdentifier();
 
-        DB::table('collection_versions')->insert([
-            'id' => $id,
-            'tenant_id' => $tenantId,
-            'collection_id' => $collectionId,
-            'version_no' => $version,
-            ...$data,
-            'category_architecture' => json_encode($data['category_architecture'], JSON_THROW_ON_ERROR),
-            'price_margin_envelope' => json_encode($data['price_margin_envelope'], JSON_THROW_ON_ERROR),
-            'status' => 'PENDING_APPROVAL',
-            'created_by' => $actor,
-            'created_at' => now(),
-        ]);
-        $this->audit($tenantId, $actor, 'COLLECTION_VERSION_CREATED', 'COLLECTION_VERSION', $id, $data['change_reason']);
+        $created = DB::transaction(function () use ($tenantId, $collectionId, $data, $id, $actor): array {
+            $collection = DB::table('collections')
+                ->where('tenant_id', $tenantId)
+                ->where('id', $collectionId)
+                ->lockForUpdate()
+                ->first();
 
-        return response()->json(['data' => ['id' => $id, 'collection_id' => $collectionId, 'version_no' => $version, 'status' => 'PENDING_APPROVAL']], 201);
+            abort_if($collection === null, 404);
+
+            $version = (int) DB::table('collection_versions')
+                ->where('tenant_id', $tenantId)
+                ->where('collection_id', $collectionId)
+                ->max('version_no') + 1;
+
+            DB::table('collection_versions')->insert([
+                'id' => $id,
+                'tenant_id' => $tenantId,
+                'collection_id' => $collectionId,
+                'version_no' => $version,
+                ...$data,
+                'category_architecture' => json_encode($data['category_architecture'], JSON_THROW_ON_ERROR),
+                'price_margin_envelope' => json_encode($data['price_margin_envelope'], JSON_THROW_ON_ERROR),
+                'status' => 'PENDING_APPROVAL',
+                'created_by' => $actor,
+                'created_at' => now(),
+            ]);
+
+            $this->audit($tenantId, $actor, 'COLLECTION_VERSION_CREATED', 'COLLECTION_VERSION', $id, $data['change_reason']);
+
+            return ['id' => $id, 'collection_id' => $collectionId, 'version_no' => $version, 'status' => 'PENDING_APPROVAL'];
+        });
+
+        return response()->json(['data' => $created], 201);
     }
 
     public function approveCollectionVersion(string $collectionId, string $versionId, Request $request, TenantContext $tenantContext): JsonResponse
@@ -308,6 +374,15 @@ class MerchandisingPlanningController extends Controller
             abort_unless($version->status === 'PENDING_APPROVAL', 422, 'Collection version is not awaiting approval.');
             abort_unless($version->created_by !== $approver, 403, 'The author cannot approve their own collection version.');
 
+            $alreadyApproved = DB::table('merchandising_decisions')
+                ->where('tenant_id', $tenantId)
+                ->where('object_type', 'COLLECTION_VERSION')
+                ->where('object_id', $versionId)
+                ->where('decision', 'APPROVE')
+                ->exists();
+
+            abort_unless(! $alreadyApproved, 422, 'This collection version has already been approved.');
+
             DB::table('merchandising_decisions')->insert([
                 'id' => (string) Str::uuid(),
                 'tenant_id' => $tenantId,
@@ -320,13 +395,15 @@ class MerchandisingPlanningController extends Controller
                 'decided_by' => $approver,
                 'decided_at' => now(),
             ]);
-            DB::table('collection_versions')->where('tenant_id', $tenantId)->where('id', $versionId)->update(['status' => 'APPROVED']);
+            // The collection version remains immutable. Approval is stored as a
+            // separate append-only decision and reflected on the collection master.
             DB::table('collections')->where('tenant_id', $tenantId)->where('id', $collectionId)->update([
                 'current_version' => $version->version_no,
                 'status' => 'APPROVED',
                 'updated_at' => now(),
             ]);
             $this->audit($tenantId, $approver, 'COLLECTION_VERSION_APPROVED', 'COLLECTION_VERSION', $versionId, 'Independent collection version approval.');
+
             return response()->json(['data' => DB::table('collections')->where('tenant_id', $tenantId)->where('id', $collectionId)->first()]);
         });
     }
@@ -350,9 +427,20 @@ class MerchandisingPlanningController extends Controller
             'plan_end' => ['required', 'date', 'after_or_equal:plan_start'],
         ]);
         $version = DB::table('collection_versions')->where('tenant_id', $tenantId)
-            ->where('collection_id', $data['collection_id'])->where('version_no', $data['collection_version'])
-            ->where('status', 'APPROVED')->first();
-        abort_if($version === null, 422, 'The selected collection version must be approved.');
+            ->where('collection_id', $data['collection_id'])
+            ->where('version_no', $data['collection_version'])
+            ->first();
+
+        abort_if($version === null, 422, 'The selected collection version does not exist.');
+
+        $versionApproved = DB::table('merchandising_decisions')
+            ->where('tenant_id', $tenantId)
+            ->where('object_type', 'COLLECTION_VERSION')
+            ->where('object_id', $version->id)
+            ->where('decision', 'APPROVE')
+            ->exists();
+
+        abort_unless($versionApproved, 422, 'The selected collection version must be approved.');
         $code = strtoupper($data['code']);
         abort_if(DB::table('range_plans')->where('tenant_id', $tenantId)->where('code', $code)->exists(), 422, 'Range plan code already exists in this tenant.');
 
@@ -409,6 +497,7 @@ class MerchandisingPlanningController extends Controller
             'updated_at' => now(),
         ]);
         $this->audit($tenantId, $actor, 'RANGE_LINE_CREATED', 'RANGE_LINE', $id, 'Draft range line added.');
+
         return response()->json(['data' => DB::table('range_lines')->where('tenant_id', $tenantId)->where('id', $id)->first()], 201);
     }
 
@@ -417,6 +506,7 @@ class MerchandisingPlanningController extends Controller
         $tenantId = $tenantContext->tenantId();
         $actor = (string) $request->user()->getAuthIdentifier();
         abort_unless($tenantContext->canAdministerTenant(), 403, 'Tenant administrator freeze approval is required.');
+
         return DB::transaction(function () use ($tenantId, $rangePlanId, $actor) {
             $plan = DB::table('range_plans')->where('tenant_id', $tenantId)->where('id', $rangePlanId)->lockForUpdate()->first();
             abort_if($plan === null, 404);
@@ -443,6 +533,7 @@ class MerchandisingPlanningController extends Controller
                 'updated_at' => now(),
             ]);
             $this->audit($tenantId, $actor, 'RANGE_PLAN_FROZEN', 'RANGE_PLAN', $rangePlanId, 'Independent freeze approval.');
+
             return response()->json(['data' => DB::table('range_plans')->where('tenant_id', $tenantId)->where('id', $rangePlanId)->first()]);
         });
     }
@@ -471,6 +562,7 @@ class MerchandisingPlanningController extends Controller
             'updated_at' => now(),
         ]);
         $this->audit($tenantId, $actor, 'ASSORTMENT_PLAN_CREATED', 'ASSORTMENT_PLAN', $id, 'Channel assortment plan created against a frozen range.');
+
         return response()->json(['data' => DB::table('assortment_plans')->where('tenant_id', $tenantId)->where('id', $id)->first()], 201);
     }
 
@@ -499,6 +591,7 @@ class MerchandisingPlanningController extends Controller
             'updated_at' => now(),
         ]);
         $this->audit($tenantId, (string) $request->user()->getAuthIdentifier(), 'ASSORTMENT_LINE_CREATED', 'ASSORTMENT_LINE', $id, 'Channel assortment depth added.');
+
         return response()->json(['data' => DB::table('assortment_lines')->where('tenant_id', $tenantId)->where('id', $id)->first()], 201);
     }
 
