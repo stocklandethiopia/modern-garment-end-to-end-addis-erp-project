@@ -126,7 +126,8 @@ jobs:
           node-version-file: .nvmrc
 
       - name: Install frontend dependencies
-        run: npm install --no-audit --no-fund
+        run: |
+          if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
 
       - name: Audit frontend dependencies
         run: npm audit --audit-level=high
@@ -145,3 +146,45 @@ jobs:
           path: frontend/package-lock.json
           if-no-files-found: error
           retention-days: 14
+
+  lockfiles:
+    name: Commit resolved dependency lockfiles
+    if: github.event_name == 'push' && github.ref == 'refs/heads/delivery/autonomous-wp-01-16'
+    needs:
+      - backend
+      - frontend
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout execution branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          persist-credentials: true
+
+      - name: Download Composer lockfile
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-composer-lock-${{ github.sha }}
+          path: /tmp/erp-locks/backend
+
+      - name: Download npm lockfile
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-package-lock-${{ github.sha }}
+          path: /tmp/erp-locks/frontend
+
+      - name: Commit lockfiles when dependencies changed
+        run: |
+          install -D /tmp/erp-locks/backend/composer.lock backend/composer.lock
+          install -D /tmp/erp-locks/frontend/package-lock.json frontend/package-lock.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/composer.lock frontend/package-lock.json
+          if git diff --cached --quiet; then
+            echo "Dependency lockfiles are already current."
+          else
+            git commit -m "build: lock verified backend and frontend dependencies"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
