@@ -3,7 +3,7 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { HttpErrorResponse } from '@angular/common/http';
 
 import { AuthSessionService } from '../../core/auth/auth-session.service';
-import { BusinessSite, BusinessSiteService, OperationalNode } from './business-site.service';
+import { BusinessSite, BusinessSiteService, InventoryLocation, OperationalNode } from './business-site.service';
 import { LegalEntity, LegalEntityService } from './legal-entity.service';
 
 @Component({
@@ -21,19 +21,25 @@ export class BusinessSitesComponent {
   readonly sites = signal<BusinessSite[]>([]);
   readonly legalEntities = signal<LegalEntity[]>([]);
   readonly nodes = signal<OperationalNode[]>([]);
+  readonly locations = signal<InventoryLocation[]>([]);
   readonly activeSite = signal<BusinessSite | null>(null);
+  readonly activeNode = signal<OperationalNode | null>(null);
 
   readonly loading = signal(false);
   readonly loadingNodes = signal(false);
+  readonly loadingLocations = signal(false);
   readonly savingSite = signal(false);
   readonly savingNode = signal(false);
+  readonly savingLocation = signal(false);
   readonly showSiteForm = signal(false);
   readonly showNodeForm = signal(false);
+  readonly showLocationForm = signal(false);
   readonly errorMessage = signal<string | null>(null);
   readonly successMessage = signal<string | null>(null);
 
   private siteRequestSequence = 0;
   private nodeRequestSequence = 0;
+  private locationRequestSequence = 0;
 
   readonly canManage = computed(() => {
     const role = this.session.activeTenant()?.membership_role;
@@ -44,17 +50,22 @@ export class BusinessSitesComponent {
     const tenantId = this.session.activeTenant()?.id;
     const requestId = ++this.siteRequestSequence;
     this.nodeRequestSequence += 1;
+    this.locationRequestSequence += 1;
 
     this.sites.set([]);
     this.legalEntities.set([]);
     this.nodes.set([]);
+    this.locations.set([]);
     this.activeSite.set(null);
+    this.activeNode.set(null);
     this.errorMessage.set(null);
     this.successMessage.set(null);
     this.loading.set(false);
     this.loadingNodes.set(false);
+    this.loadingLocations.set(false);
     this.savingSite.set(false);
     this.savingNode.set(false);
+    this.savingLocation.set(false);
 
     if (tenantId) {
       this.loadSites(tenantId, requestId);
@@ -102,6 +113,16 @@ export class BusinessSitesComponent {
     stock_holding_enabled: new FormControl(false, { nonNullable: true }),
   });
 
+  readonly locationForm = new FormGroup({
+    code: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.maxLength(100), Validators.pattern(/^[A-Za-z0-9][A-Za-z0-9._-]{1,99}$/)],
+    }),
+    location_type: new FormControl('BIN', { nonNullable: true, validators: [Validators.required] }),
+    parent_id: new FormControl('', { nonNullable: true }),
+    allow_stock: new FormControl(true, { nonNullable: true }),
+  });
+
   private loadSites(tenantId: string, requestId: number): void {
     this.loading.set(true);
     this.api.listSites().subscribe({
@@ -140,7 +161,13 @@ export class BusinessSitesComponent {
 
   selectSite(site: BusinessSite): void {
     this.nodeRequestSequence += 1;
+    this.locationRequestSequence += 1;
     this.savingNode.set(false);
+    this.savingLocation.set(false);
+    this.loadingLocations.set(false);
+    this.activeNode.set(null);
+    this.locations.set([]);
+    this.showLocationForm.set(false);
     this.activeSite.set(site);
     this.nodes.set([]);
     this.showNodeForm.set(false);
@@ -168,6 +195,94 @@ export class BusinessSitesComponent {
         this.nodes.set([]);
         this.errorMessage.set('Operational nodes could not be loaded for this site.');
         this.loadingNodes.set(false);
+      },
+    });
+  }
+
+  selectNode(node: OperationalNode): void {
+    this.locationRequestSequence += 1;
+    this.activeNode.set(node);
+    this.locations.set([]);
+    this.showLocationForm.set(false);
+    this.savingLocation.set(false);
+
+    if (!node.stock_holding_enabled) {
+      this.loadingLocations.set(false);
+      this.errorMessage.set('This node has no stock-holding capability, so it cannot contain inventory locations.');
+      return;
+    }
+
+    const tenantId = this.session.activeTenant()?.id;
+    if (!tenantId) return;
+
+    const requestId = ++this.locationRequestSequence;
+    this.loadingLocations.set(true);
+    this.api.listLocations(node.id).subscribe({
+      next: (response) => {
+        if (
+          requestId !== this.locationRequestSequence ||
+          this.session.activeTenant()?.id !== tenantId ||
+          this.activeNode()?.id !== node.id
+        ) return;
+        this.locations.set(response.data);
+        this.loadingLocations.set(false);
+      },
+      error: () => {
+        if (
+          requestId !== this.locationRequestSequence ||
+          this.session.activeTenant()?.id !== tenantId ||
+          this.activeNode()?.id !== node.id
+        ) return;
+        this.locations.set([]);
+        this.errorMessage.set('Inventory locations could not be loaded for this node.');
+        this.loadingLocations.set(false);
+      },
+    });
+  }
+
+  createLocation(): void {
+    const node = this.activeNode();
+    const tenantId = this.session.activeTenant()?.id;
+    if (!node || !tenantId || !node.stock_holding_enabled || !this.canManage() || this.locationForm.invalid || this.savingLocation()) {
+      this.locationForm.markAllAsTouched();
+      return;
+    }
+
+    const value = this.locationForm.getRawValue();
+    const requestId = ++this.locationRequestSequence;
+    this.savingLocation.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    this.api.createLocation(node.id, {
+      code: value.code.trim(),
+      location_type: value.location_type,
+      parent_id: value.parent_id || null,
+      allow_stock: value.allow_stock,
+    }).subscribe({
+      next: ({ data }) => {
+        if (
+          requestId !== this.locationRequestSequence ||
+          this.session.activeTenant()?.id !== tenantId ||
+          this.activeNode()?.id !== node.id
+        ) return;
+        this.locations.update((current) => [data, ...current]);
+        this.savingLocation.set(false);
+        this.showLocationForm.set(false);
+        this.locationForm.reset({
+          code: '',
+          location_type: 'BIN',
+          parent_id: '',
+          allow_stock: true,
+        });
+        this.successMessage.set('Draft inventory location created. It has no stock balance until approved inventory movements are posted.');
+      },
+      error: (error: HttpErrorResponse) => {
+        if (requestId !== this.locationRequestSequence || this.session.activeTenant()?.id !== tenantId) return;
+        this.savingLocation.set(false);
+        this.errorMessage.set(error.status === 422
+          ? 'Check the location code, parent and stock capability of this node.'
+          : 'The inventory location could not be created.');
       },
     });
   }
