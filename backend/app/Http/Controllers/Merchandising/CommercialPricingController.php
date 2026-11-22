@@ -57,7 +57,7 @@ class CommercialPricingController extends Controller
         $code = strtoupper($data['code']);
 
         $priceList = DB::transaction(function () use ($tenantId, $data, $id, $actor, $code): object {
-            DB::select("SELECT pg_advisory_xact_lock(hashtext(?))", ['price-list:'.$tenantId.':'.$code]);
+            DB::select('SELECT pg_advisory_xact_lock(hashtext(?))', ['price-list:'.$tenantId.':'.$code]);
 
             $version = (int) DB::table('price_lists')
                 ->where('tenant_id', $tenantId)
@@ -197,7 +197,7 @@ class CommercialPricingController extends Controller
                 $scopeSeed->brand_id ?? '*',
                 $scopeSeed->account_reference ?? '*',
             ]);
-            DB::select("SELECT pg_advisory_xact_lock(hashtext(?))", ['price-list-scope:'.$scopeLock]);
+            DB::select('SELECT pg_advisory_xact_lock(hashtext(?))', ['price-list-scope:'.$scopeLock]);
 
             $priceList = DB::table('price_lists')
                 ->where('tenant_id', $tenantId)
@@ -429,7 +429,7 @@ class CommercialPricingController extends Controller
             abort_if($promotionSeed === null, 404);
 
             DB::select(
-                "SELECT pg_advisory_xact_lock(hashtext(?))",
+                'SELECT pg_advisory_xact_lock(hashtext(?))',
                 ['promotion-price-list:'.$tenantId.':'.$promotionSeed->price_list_id],
             );
 
