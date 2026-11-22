@@ -42,7 +42,7 @@ class InsightSourceController extends Controller
         $data = $request->validate([
             'source_type' => ['required', Rule::in(self::TYPES)],
             'source_name' => ['required', 'string', 'max:200'],
-            'source_reference' => ['nullable', 'url', 'max:1000'],
+            'source_reference' => ['nullable', 'string', 'max:1000'],
             'capture_method' => ['required', 'string', 'max:80'],
             'geography' => ['nullable', 'string', 'max:160'],
             'reliability_score' => ['nullable', 'numeric', 'between:0,1'],
