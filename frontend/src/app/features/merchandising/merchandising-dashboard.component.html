@@ -186,13 +186,14 @@
       <div>
         <span class="panel-kicker">EVIDENCE PROVENANCE</span>
         <h2>Market evidence register</h2>
-        <p>{{ data.evidence_register.source_count | number }} sources · {{ data.evidence_register.insight_count | number }} captured insights.</p>
+        <p>{{ data.evidence_register.source_count | number }} sources · {{ data.evidence_register.insight_count | number }} captured insights · {{ data.evidence_register.approved_policy_count | number }} approved active policies.</p>
       </div>
       <a class="text-link" routerLink="/product/market-insights">Open evidence register</a>
     </div>
     <div class="unavailable-note">
-      <strong>Evidence sufficiency is not calculated.</strong>
+      <strong>{{ data.evidence_register.sufficiency_status === 'NOT_CONFIGURED' ? 'Evidence requirements are not configured.' : 'Evidence coverage is evaluated per initiative.' }}</strong>
       <p>{{ data.evidence_register.sufficiency_reason }}</p>
+      <a class="text-link" routerLink="/product/evidence-policies">Manage evidence requirement policies</a>
     </div>
   </section>
 
