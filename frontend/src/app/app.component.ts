@@ -22,6 +22,7 @@ export class AppComponent {
     { label: 'Initiatives & opportunities', path: '/product/initiatives', icon: '⌁' },
     { label: 'Market insight register', path: '/product/market-insights', icon: '◉' },
     { label: 'Merchandising dashboard', path: '/product/merchandising-dashboard', icon: '▤' },
+    { label: 'Evidence requirement policies', path: '/product/evidence-policies', icon: '◈' },
     { label: 'Brand & range planning', path: '/product/brand-range', icon: '◇' },
     { label: 'Product development studio', path: '/product/product-development', icon: '✳' },
     { label: 'Measurement & pattern engineering', path: '/product/technical-development', icon: '▦' },
