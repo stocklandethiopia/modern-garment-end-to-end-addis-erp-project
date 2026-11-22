@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Middleware\ResolveTenantContext;
 use App\Http\Middleware\EnsureTokenAbility;
+use App\Http\Middleware\ResolveTenantContext;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
