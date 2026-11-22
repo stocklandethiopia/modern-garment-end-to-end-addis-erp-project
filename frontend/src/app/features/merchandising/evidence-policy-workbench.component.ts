@@ -31,6 +31,7 @@ export class EvidencePolicyWorkbenchComponent {
   readonly showPolicyForm = signal(false);
   readonly reviewingPolicy = signal<EvidencePolicy | null>(null);
   readonly reviewDecision = signal<'APPROVE' | 'REJECT'>('APPROVE');
+  private nextRuleNumber = 2;
 
   readonly initiativeTypes: Array<{ value: EvidenceInitiativeType; label: string }> = [
     { value: 'NEW_BRAND', label: 'New brand' },
@@ -112,7 +113,7 @@ export class EvidencePolicyWorkbenchComponent {
     if (this.ruleForms.length >= 20) {
       return;
     }
-    this.ruleForms.push(this.createRuleForm());
+    this.ruleForms.push(this.createRuleForm(`EVIDENCE_REQUIREMENT_${this.nextRuleNumber++}`));
   }
 
   removeRule(index: number): void {
@@ -173,6 +174,7 @@ export class EvidencePolicyWorkbenchComponent {
           rules: [],
         });
         this.ruleForms.clear();
+        this.nextRuleNumber = 2;
         this.ruleForms.push(this.createRuleForm());
         this.saving.set(false);
         this.load();
@@ -220,7 +222,7 @@ export class EvidencePolicyWorkbenchComponent {
     this.saving.set(true);
     this.api.decide(policy.id, this.reviewDecision(), this.decisionForm.controls.reason.value.trim()).subscribe({
       next: () => {
-        this.successMessage.set(`${policy.code} v${policy.version_no} ${this.reviewDecision().toLowerCase()}d.`);
+        this.successMessage.set(`${policy.code} v${policy.version_no} ${this.reviewDecision() === 'APPROVE' ? 'approved' : 'rejected'}.`);
         this.reviewingPolicy.set(null);
         this.saving.set(false);
         this.load();
@@ -232,9 +234,9 @@ export class EvidencePolicyWorkbenchComponent {
     });
   }
 
-  private createRuleForm(): FormGroup {
+  private createRuleForm(requirementCode = 'PRIMARY_MARKET_EVIDENCE'): FormGroup {
     return new FormGroup({
-      requirement_code: new FormControl('PRIMARY_MARKET_EVIDENCE', { nonNullable: true, validators: [Validators.required, Validators.maxLength(80)] }),
+      requirement_code: new FormControl(requirementCode, { nonNullable: true, validators: [Validators.required, Validators.maxLength(80)] }),
       insight_type: new FormControl<EvidenceInsightType>('OBSERVED_FACT', { nonNullable: true, validators: [Validators.required] }),
       minimum_records: new FormControl(1, { nonNullable: true, validators: [Validators.required, Validators.min(1), Validators.max(500)] }),
       minimum_distinct_sources: new FormControl(1, { nonNullable: true, validators: [Validators.required, Validators.min(1), Validators.max(500)] }),
