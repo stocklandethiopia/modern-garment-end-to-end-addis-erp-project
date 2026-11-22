@@ -177,8 +177,8 @@ class TenantIsolationTest extends TestCase
             'SELECT c.relname, c.relrowsecurity, c.relforcerowsecurity
              FROM pg_class c
              JOIN pg_namespace n ON n.oid = c.relnamespace
-             WHERE n.nspname = ? AND c.relname = ANY(?)',
-            ['public', '{'.implode(',', $tables).'}'],
+             WHERE n.nspname = ? AND c.relname::text = ANY(string_to_array(?, ','))',
+            ['public', implode(',', $tables)],
         );
 
         $this->assertCount(count($tables), $rows);
