@@ -38,6 +38,32 @@ export interface ForecastRun {
   created_at: string;
 }
 
+export interface ForecastItem {
+  id: string;
+  dimension_refs: string | Record<string, string>;
+  time_bucket: string;
+  forecast_quantity: string;
+  forecast_value: string | null;
+  currency: string | null;
+  confidence_low: string | null;
+  confidence_high: string | null;
+}
+
+export interface ForecastAdjustment {
+  id: string;
+  baseline_value: string;
+  override_value: string;
+  delta_value: string;
+  reason: string;
+  is_approved: boolean;
+}
+
+export interface ForecastDetail {
+  data: ForecastRun;
+  forecasts: ForecastItem[];
+  adjustments: ForecastAdjustment[];
+}
+
 export interface OtbPolicy {
   id: string;
   legal_entity_id: string;
@@ -130,6 +156,26 @@ export class PlanningWorkbenchService {
     return this.http.post<ResourceEnvelope<ForecastRun> & { row_count: number }>(
       '/api/v1/product/forecast-runs',
       input,
+    );
+  }
+
+  getForecastRun(runId: string): Observable<ForecastDetail> {
+    return this.http.get<ForecastDetail>(
+      '/api/v1/product/forecast-runs/' + encodeURIComponent(runId),
+    );
+  }
+
+  createForecastAdjustment(forecastId: string, input: Record<string, unknown>): Observable<ResourceEnvelope<ForecastAdjustment> & { approval_status: string }> {
+    return this.http.post<ResourceEnvelope<ForecastAdjustment> & { approval_status: string }>(
+      '/api/v1/product/forecasts/' + encodeURIComponent(forecastId) + '/adjustments',
+      input,
+    );
+  }
+
+  approveForecastAdjustment(adjustmentId: string): Observable<{ data: ForecastAdjustment; approval_status: string }> {
+    return this.http.post<{ data: ForecastAdjustment; approval_status: string }>(
+      '/api/v1/product/forecast-adjustments/' + encodeURIComponent(adjustmentId) + '/approve',
+      {},
     );
   }
 
