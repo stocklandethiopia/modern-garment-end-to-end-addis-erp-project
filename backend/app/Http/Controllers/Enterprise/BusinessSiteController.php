@@ -161,6 +161,13 @@ class BusinessSiteController extends Controller
 
         abort_if($site === null, 404, 'Business site not found.');
 
+        if ($site->legal_entity_id === null) {
+            return response()->json([
+                'message' => 'Assign a legal entity to the business site before creating operating nodes.',
+                'errors' => ['legal_entity_id' => ['Operating nodes require an owning legal entity.']],
+            ], 422);
+        }
+
         $data = $request->validate([
             'code' => [
                 'required',
