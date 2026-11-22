@@ -5,6 +5,7 @@ namespace App\Support;
 final class TenantContext
 {
     private ?string $tenantId = null;
+
     private ?string $membershipRole = null;
 
     public function set(string $tenantId, string $membershipRole): void
