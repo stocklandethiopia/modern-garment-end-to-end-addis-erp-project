@@ -124,7 +124,10 @@ class CommercialPricingController extends Controller
         $listPrice = $this->decimal($data['list_price']);
         $priceFloor = isset($data['price_floor']) ? $this->decimal($data['price_floor']) : null;
 
-        abort_unless($priceFloor === null || bccomp($priceFloor, $listPrice, 4) <= 0, 422, 'The price floor cannot exceed the list price.');
+        abort_unless($priceFloor === null || $this->compareDecimals($priceFloor, $listPrice) <= 0, 422, 'The price floor cannot exceed the list price.');
+        if ($priceFloor !== null && isset($data['wholesale_price'])) {
+            abort_unless($this->compareDecimals($this->decimal($data['wholesale_price']), $priceFloor) >= 0, 422, 'The wholesale price cannot be below the approved price floor.');
+        }
 
         $id = (string) Str::uuid();
         $actor = (string) $request->user()->getAuthIdentifier();
@@ -297,7 +300,7 @@ class CommercialPricingController extends Controller
 
         $discount = $this->decimal($data['discount_value']);
         if ($data['promotion_type'] === 'PERCENTAGE') {
-            abort_unless(bccomp($discount, '100.0000', 4) <= 0, 422, 'A percentage promotion cannot exceed 100%.');
+            abort_unless($this->compareDecimals($discount, '100.0000') <= 0, 422, 'A percentage promotion cannot exceed 100%.');
         }
 
         $id = (string) Str::uuid();
@@ -422,25 +425,23 @@ class CommercialPricingController extends Controller
             abort_unless($eligible, 422, 'Promotion approval requires at least one explicit inclusion scope.');
 
             $overlap = DB::table('promotions as p')
-                ->join('promotion_eligibility as e', function ($join): void {
-                    $join->on('e.tenant_id', '=', 'p.tenant_id')
-                        ->on('e.promotion_id', '=', 'p.id');
+                ->join('promotion_eligibility as existing_scope', function ($join): void {
+                    $join->on('existing_scope.tenant_id', '=', 'p.tenant_id')
+                        ->on('existing_scope.promotion_id', '=', 'p.id');
+                })
+                ->join('promotion_eligibility as candidate_scope', function ($join) use ($tenantId, $promotionId): void {
+                    $join->on('candidate_scope.tenant_id', '=', 'existing_scope.tenant_id')
+                        ->on('candidate_scope.scope_type', '=', 'existing_scope.scope_type')
+                        ->on('candidate_scope.scope_reference', '=', 'existing_scope.scope_reference')
+                        ->where('candidate_scope.tenant_id', '=', $tenantId)
+                        ->where('candidate_scope.promotion_id', '=', $promotionId)
+                        ->where('candidate_scope.is_exclusion', '=', false);
                 })
                 ->where('p.tenant_id', $tenantId)
                 ->where('p.price_list_id', $promotion->price_list_id)
                 ->where('p.status', 'APPROVED')
                 ->where('p.id', '<>', $promotionId)
-                ->where('e.is_exclusion', false)
-                ->whereIn('e.scope_type', DB::table('promotion_eligibility')
-                    ->where('tenant_id', $tenantId)
-                    ->where('promotion_id', $promotionId)
-                    ->where('is_exclusion', false)
-                    ->select('scope_type'))
-                ->whereIn('e.scope_reference', DB::table('promotion_eligibility')
-                    ->where('tenant_id', $tenantId)
-                    ->where('promotion_id', $promotionId)
-                    ->where('is_exclusion', false)
-                    ->select('scope_reference'))
+                ->where('existing_scope.is_exclusion', false)
                 ->where('p.starts_at', '<=', $promotion->ends_at)
                 ->where('p.ends_at', '>=', $promotion->starts_at)
                 ->exists();
@@ -480,7 +481,44 @@ class CommercialPricingController extends Controller
 
     private function decimal(int|float|string $value): string
     {
-        return number_format((float) $value, 4, '.', '');
+        $raw = trim((string) $value);
+
+        if (! preg_match('/^-?\\d+(?:\\.\\d{1,4})?$/', $raw)) {
+            abort(422, 'A numeric value with at most four decimal places is required.');
+        }
+
+        $negative = str_starts_with($raw, '-');
+        $unsigned = ltrim($raw, '-');
+        [$whole, $fraction] = array_pad(explode('.', $unsigned, 2), 2, '');
+        $whole = ltrim($whole, '0');
+        $whole = $whole === '' ? '0' : $whole;
+        $normalized = $whole.'.'.str_pad($fraction, 4, '0');
+
+        return $negative && $normalized !== '0.0000' ? '-'.$normalized : $normalized;
+    }
+
+    private function compareDecimals(string $left, string $right): int
+    {
+        $left = $this->decimal($left);
+        $right = $this->decimal($right);
+        $leftNegative = str_starts_with($left, '-');
+        $rightNegative = str_starts_with($right, '-');
+
+        if ($leftNegative !== $rightNegative) {
+            return $leftNegative ? -1 : 1;
+        }
+
+        $leftDigits = ltrim(str_replace(['-', '.'], '', $left), '0');
+        $rightDigits = ltrim(str_replace(['-', '.'], '', $right), '0');
+        $leftDigits = $leftDigits === '' ? '0' : $leftDigits;
+        $rightDigits = $rightDigits === '' ? '0' : $rightDigits;
+
+        $comparison = strlen($leftDigits) <=> strlen($rightDigits);
+        if ($comparison === 0) {
+            $comparison = strcmp($leftDigits, $rightDigits) <=> 0;
+        }
+
+        return $leftNegative ? -$comparison : $comparison;
     }
 
     private function audit(string $tenantId, string $actorId, string $action, string $objectType, string $objectId, string $reason): void
