@@ -31,7 +31,12 @@ class CommercialPricingController extends Controller
     public function createPriceList(Request $request, TenantContext $tenantContext): JsonResponse
     {
         $tenantId = $tenantContext->tenantId();
-        $request->merge(['code' => strtoupper(trim((string) $request->input('code')))]);
+        $request->merge([
+            'code' => strtoupper(trim((string) $request->input('code'))),
+            'channel_code' => strtoupper(trim((string) $request->input('channel_code'))),
+            'market_scope' => strtoupper(trim((string) $request->input('market_scope'))),
+            'account_reference' => trim((string) $request->input('account_reference', '')) ?: null,
+        ]);
         $data = $request->validate([
             'legal_entity_id' => [
                 'required',
@@ -44,7 +49,7 @@ class CommercialPricingController extends Controller
                 Rule::exists('brands', 'id')->where(fn ($query) => $query->where('tenant_id', $tenantId)->where('status', 'ACTIVE')),
             ],
             'code' => ['required', 'string', 'max:80', 'regex:/^[A-Z0-9][A-Z0-9_-]{1,79}$/'],
-            'channel_code' => ['required', 'string', 'max:60'],
+            'channel_code' => ['required', Rule::in(['OWN_RETAIL', 'WHOLESALE', 'RESELLER', 'MARKETPLACE', 'D2C', 'EXPORT', 'CUSTOMER_PROGRAMME'])],
             'market_scope' => ['required', 'string', 'max:160'],
             'account_reference' => ['nullable', 'string', 'max:120'],
             'currency' => ['required', 'string', 'size:3', 'alpha:upper'],
