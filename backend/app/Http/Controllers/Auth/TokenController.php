@@ -30,7 +30,7 @@ class TokenController extends Controller
             ]);
         }
 
-        $token = $user->createToken($data['device_name'], ['tenant:select']);
+        $token = $user->createToken($data['device_name'], ['tenant:select', 'erp:access']);
 
         return response()->json([
             'token_type' => 'Bearer',
