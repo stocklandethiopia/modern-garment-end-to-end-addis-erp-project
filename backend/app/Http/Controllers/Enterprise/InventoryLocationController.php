@@ -35,7 +35,10 @@ class InventoryLocationController extends Controller
 
         abort_if($node === null, 404, 'Operational node not found.');
 
-        abort_unless((bool) $node->stock_holding_enabled, 422, 'This operational node is not configured to hold stock.');
+        $stockHoldingEnabled = $node->stock_holding_enabled === true
+            || in_array((string) $node->stock_holding_enabled, ['1', 't', 'true'], true);
+
+        abort_unless($stockHoldingEnabled, 422, 'This operational node is not configured to hold stock.');
 
         $locations = DB::table('inventory_locations')
             ->where('tenant_id', $tenantId)
@@ -58,7 +61,10 @@ class InventoryLocationController extends Controller
 
         abort_if($node === null, 404, 'Operational node not found.');
 
-        if (! (bool) $node->stock_holding_enabled) {
+        $stockHoldingEnabled = $node->stock_holding_enabled === true
+            || in_array((string) $node->stock_holding_enabled, ['1', 't', 'true'], true);
+
+        if (! $stockHoldingEnabled) {
             return response()->json([
                 'message' => 'This operational node is not configured to hold inventory.',
                 'errors' => ['operational_node' => ['Enable stock-holding capability on an eligible operational node before creating inventory locations.']],
