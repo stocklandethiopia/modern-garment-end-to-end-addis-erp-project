@@ -203,7 +203,7 @@ class EvidencePolicyService
             $this->audit(
                 $tenantId,
                 $actorId,
-                'EVIDENCE_POLICY_'.$decision.'D',
+                $decision === 'APPROVE' ? 'EVIDENCE_POLICY_APPROVED' : 'EVIDENCE_POLICY_REJECTED',
                 'EVIDENCE_POLICY',
                 $policyId,
                 $reason,
