@@ -503,6 +503,22 @@ class BrandRangeWorkflowTest extends TestCase
         $this->withHeaders($this->tenantHeader())
             ->getJson('/api/v1/product/assortment-plans/'.Str::uuid().'/lines')
             ->assertNotFound();
+
+        $this->withHeaders($this->tenantHeader())
+            ->getJson('/api/v1/product/merchandising-dashboard')
+            ->assertOk()
+            ->assertJsonPath('data.tenant_role', 'OWNER')
+            ->assertJsonPath('data.work_queue.approval_scope', 'TENANT_APPROVALS')
+            ->assertJsonPath('data.kpis.1.key', 'range_brief_readiness')
+            ->assertJsonPath('data.kpis.1.status', 'AVAILABLE')
+            ->assertJsonPath('data.kpis.1.value', 0)
+            ->assertJsonPath('data.kpis.1.numerator', 0)
+            ->assertJsonPath('data.kpis.1.denominator', 1)
+            ->assertJsonPath('data.range_lifecycle_mix.0.lifecycle_type', 'NEW')
+            ->assertJsonPath('data.range_lifecycle_mix.0.planned_units', 100)
+            ->assertJsonPath('data.range_category_depth.0.category_code', 'CASUALWEAR')
+            ->assertJsonPath('data.range_category_depth.0.planned_units', 100)
+            ->assertJsonPath('data.evidence_register.sufficiency_status', 'UNAVAILABLE');
     }
 
     public function test_approved_range_line_requires_an_accepted_brief_before_version_pinned_style_development(): void
