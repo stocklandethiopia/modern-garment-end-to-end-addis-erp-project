@@ -178,7 +178,7 @@
               </label>
             </div>
             <div class="form-actions">
-              <span class="form-hint">A branch or office cannot be made a stock-holding node. A location/bin is a separate record.</span>
+              <span class="form-hint">A branch starts without stock capability; enable it only when the branch actually holds inventory. Offices and subcontractor nodes cannot hold stock. A location/bin is a separate record.</span>
               <button type="submit" class="primary-button" [disabled]="nodeForm.invalid || savingNode()">
                 @if (savingNode()) { Saving… } @else { Save draft node }
               </button>
