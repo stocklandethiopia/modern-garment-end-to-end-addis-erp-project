@@ -246,7 +246,7 @@ class OtbPlanningController extends Controller
                 'period_end' => $data['period_end'],
                 'currency' => $data['currency'],
                 ...$data,
-                'available_budget' => number_format($calculation['available_budget'], 4, '.', ''),
+                'available_budget' => $calculation['available_budget'],
                 'status' => 'DRAFT',
                 'created_at' => now(),
                 'updated_at' => now(),
