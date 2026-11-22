@@ -540,13 +540,26 @@ class TenantIsolationTest extends TestCase
 
     public function test_activity_licence_cannot_link_a_site_owned_by_another_entity(): void
     {
+        $otherEntityId = (string) Str::uuid();
         $otherSiteId = (string) Str::uuid();
         $now = now();
+
+        DB::connection('pgsql_test_admin')->table('legal_entities')->insert([
+            'id' => $otherEntityId,
+            'tenant_id' => $this->tenantA,
+            'registration_number' => 'SECOND-REG-'.Str::upper(Str::random(6)),
+            'legal_name' => 'Second Legal Entity A',
+            'country_code' => 'ET',
+            'base_currency' => 'ETB',
+            'status' => 'DRAFT',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
 
         DB::connection('pgsql_test_admin')->table('business_sites')->insert([
             'id' => $otherSiteId,
             'tenant_id' => $this->tenantA,
-            'legal_entity_id' => $this->legalEntityB,
+            'legal_entity_id' => $otherEntityId,
             'code' => 'OTHER-ENTITY-SITE',
             'site_type' => 'FACTORY_CAMPUS',
             'name' => 'Other Entity Site',
