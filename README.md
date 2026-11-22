@@ -22,6 +22,11 @@ The platform must support multiple tenants, companies, legal entities, factories
 
 Exact supported patch versions are recorded in the platform standard and must be refreshed during dependency updates. Prefer supported LTS/bug-fix releases over release candidates or unmaintained versions.
 
+## Project governance
+
+- Strict project scope, express change approval, numbered work packages and handover rules: [Project Governance Agreement](docs/agent/project-governance-agreement.md).
+- Agent instructions: [AGENTS.md](AGENTS.md). All contributors and coding agents must read these before work.
+
 ## Start here
 
 1. Platform architecture and technology standard: docs/architecture/platform-standard.md
