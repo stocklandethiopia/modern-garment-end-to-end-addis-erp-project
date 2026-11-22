@@ -394,6 +394,14 @@ class InitiativeWorkflowTest extends TestCase
             ->assertJsonPath('data.policy.status', 'PENDING_APPROVAL');
 
         $this->withHeader('X-Tenant-Id', $this->tenantId)
+            ->getJson('/api/v1/product/merchandising-dashboard')
+            ->assertOk()
+            ->assertJsonMissing([
+                'type' => 'EVIDENCE_POLICY_APPROVAL',
+                'id' => $policyId,
+            ]);
+
+        $this->withHeader('X-Tenant-Id', $this->tenantId)
             ->postJson('/api/v1/product/evidence-policies/'.$policyId.'/decisions', [
                 'decision' => 'APPROVE',
                 'reason' => 'The policy author cannot approve their own evidence thresholds.',
@@ -401,6 +409,14 @@ class InitiativeWorkflowTest extends TestCase
             ->assertForbidden();
 
         Sanctum::actingAs(User::query()->findOrFail($this->approverId), ['tenant:select', 'erp:access']);
+
+        $this->withHeader('X-Tenant-Id', $this->tenantId)
+            ->getJson('/api/v1/product/merchandising-dashboard')
+            ->assertOk()
+            ->assertJsonFragment([
+                'type' => 'EVIDENCE_POLICY_APPROVAL',
+                'id' => $policyId,
+            ]);
 
         $this->withHeader('X-Tenant-Id', $this->tenantId)
             ->postJson('/api/v1/product/evidence-policies/'.$policyId.'/decisions', [
@@ -493,7 +509,7 @@ class InitiativeWorkflowTest extends TestCase
                 'title' => 'Research-gated collection proposal',
                 'problem_statement' => 'The proposal requires qualifying research before resources are authorized.',
                 'objective' => 'Verify the configured research evidence policy at screening approval.',
-                'target_market' => 'Ethiopia',
+                'target_market' => ' Ethiopia ',
             ])
             ->assertCreated();
 
@@ -505,7 +521,7 @@ class InitiativeWorkflowTest extends TestCase
 
         $policy = $this->withHeader('X-Tenant-Id', $this->tenantId)
             ->postJson('/api/v1/product/evidence-policies', [
-                'code' => 'NEW_COLLECTION_RESEARCH',
+                'code' => ' new_collection_research ',
                 'name' => 'New collection research evidence',
                 'initiative_type' => 'NEW_COLLECTION',
                 'stage' => 'RESEARCH',
@@ -513,7 +529,7 @@ class InitiativeWorkflowTest extends TestCase
                 'effective_from' => now()->toDateString(),
                 'change_reason' => 'Initial research gate for proposed new collections.',
                 'rules' => [[
-                    'requirement_code' => 'CURRENT_SURVEY_EVIDENCE',
+                    'requirement_code' => ' current_survey_evidence ',
                     'insight_type' => 'SURVEY_RESULT',
                     'minimum_records' => 1,
                     'minimum_distinct_sources' => 1,
@@ -523,7 +539,10 @@ class InitiativeWorkflowTest extends TestCase
                     'is_mandatory' => true,
                 ]],
             ])
-            ->assertCreated();
+            ->assertCreated()
+            ->assertJsonPath('data.policy.code', 'NEW_COLLECTION_RESEARCH')
+            ->assertJsonPath('data.policy.target_market', 'Ethiopia')
+            ->assertJsonPath('data.rules.0.requirement_code', 'CURRENT_SURVEY_EVIDENCE');
 
         $policyId = $policy->json('data.policy.id');
 
