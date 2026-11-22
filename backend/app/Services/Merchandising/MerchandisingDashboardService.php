@@ -370,6 +370,26 @@ class MerchandisingDashboardService
             ];
         }
 
+        $evidencePolicies = DB::table('initiative_evidence_policies')
+            ->where('tenant_id', $tenantId)
+            ->where('status', 'PENDING_APPROVAL')
+            ->where('created_by', '<>', $actorId)
+            ->orderBy('created_at')
+            ->limit(25)
+            ->get(['id', 'code', 'name', 'initiative_type', 'stage', 'target_market', 'version_no', 'created_at']);
+
+        foreach ($evidencePolicies as $policy) {
+            $items[] = [
+                'type' => 'EVIDENCE_POLICY_APPROVAL',
+                'id' => $policy->id,
+                'code' => $policy->code,
+                'title' => $policy->name.' · '.$policy->initiative_type.' / '.$policy->stage.' · v'.$policy->version_no,
+                'stage' => 'PENDING_APPROVAL',
+                'created_at' => $policy->created_at,
+                'href' => '/product/evidence-policies',
+            ];
+        }
+
         $briefs = DB::table('product_briefs')
             ->where('tenant_id', $tenantId)
             ->where('status', 'SUBMITTED_FOR_REVIEW')
