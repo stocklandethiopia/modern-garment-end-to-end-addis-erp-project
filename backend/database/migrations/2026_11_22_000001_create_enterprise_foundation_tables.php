@@ -170,6 +170,17 @@ return new class extends Migration
             $table->index(['tenant_id', 'occurred_at']);
         });
 
+        // The application role is intentionally read-only on tenant roots and
+        // membership records. Identity, tenant membership and legal entity corrections
+        // are separate authorized workflows; no generic delete capability exists.
+        DB::statement('REVOKE INSERT, UPDATE, DELETE ON tenants, users, tenant_memberships FROM app_runtime');
+        DB::statement('GRANT SELECT ON tenants, users, tenant_memberships TO app_runtime');
+        DB::statement('REVOKE UPDATE, DELETE ON legal_entities FROM app_runtime');
+        DB::statement('GRANT SELECT, INSERT ON legal_entities TO app_runtime');
+        DB::statement('REVOKE DELETE ON business_sites, operational_nodes, branch_registrations, inventory_locations FROM app_runtime');
+        DB::statement('REVOKE UPDATE, DELETE ON audit_events FROM app_runtime');
+        DB::statement('GRANT SELECT, INSERT ON audit_events TO app_runtime');
+
         foreach ($this->tenantTables as $table) {
             DB::statement("ALTER TABLE {$table} ENABLE ROW LEVEL SECURITY");
             DB::statement("ALTER TABLE {$table} FORCE ROW LEVEL SECURITY");
@@ -179,6 +190,14 @@ return new class extends Migration
                  WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid)"
             );
         }
+
+        // A user may list their own memberships across tenants before selecting
+        // one tenant. This policy does not expose another user's memberships.
+        DB::statement(
+            "CREATE POLICY tenant_membership_self_select ON tenant_memberships FOR SELECT
+             USING (user_id = NULLIF(current_setting('app.current_user_id', true), '')::uuid)"
+        );
+        DB::statement('REVOKE ALL ON migrations FROM app_runtime');
 
         DB::unprepared(<<<'SQL'
             CREATE OR REPLACE FUNCTION prevent_audit_event_mutation()
