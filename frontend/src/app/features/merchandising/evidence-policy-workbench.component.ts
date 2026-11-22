@@ -15,7 +15,7 @@ import {
 @Component({
   selector: 'app-evidence-policy-workbench',
   standalone: true,
-  imports: [DatePipe, DecimalPipe, ReactiveFormsModule],
+  imports: [DatePipe, ReactiveFormsModule],
   templateUrl: './evidence-policy-workbench.component.html',
   styleUrl: './evidence-policy-workbench.component.css',
 })
