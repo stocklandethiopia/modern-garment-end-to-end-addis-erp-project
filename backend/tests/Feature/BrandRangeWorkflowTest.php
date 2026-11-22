@@ -484,5 +484,4 @@ class BrandRangeWorkflowTest extends TestCase
             ->getJson('/api/v1/product/assortment-plans/'.Str::uuid().'/lines')
             ->assertNotFound();
     }
-
 }
