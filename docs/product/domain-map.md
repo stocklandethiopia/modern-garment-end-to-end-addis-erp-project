@@ -21,6 +21,9 @@ The business lifecycle begins before a buyer order and before a factory work ord
 
 This is the product capability map, not a claim that every capability has already been implemented.
 
+**Governing design standard:** This map must be interpreted and extended in line with the [Apparel Business Operating System Charter](apparel-business-operating-system-charter.md). Every workflow must improve how apparel work is planned, executed, controlled, learned from and proven—not merely collect completed transaction data.
+
+
 ## B. Enterprise and platform foundation
 
 - Tenant registration, trial, subscription, plan limits, feature entitlements and tenant lifecycle.
