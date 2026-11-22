@@ -122,13 +122,13 @@ return new class extends Migration
             $table->string('source_event_id', 160)->nullable();
         });
 
-        DB::statement("ALTER TABLE market_insights
+        DB::statement('ALTER TABLE market_insights
             ADD CONSTRAINT market_insights_source_event_pair_chk
-                CHECK ((source_system IS NULL) = (source_event_id IS NULL))");
+                CHECK ((source_system IS NULL) = (source_event_id IS NULL))');
 
-        DB::statement("CREATE UNIQUE INDEX market_insights_source_event_uq
+        DB::statement('CREATE UNIQUE INDEX market_insights_source_event_uq
             ON market_insights (tenant_id, source_system, source_event_id)
-            WHERE source_event_id IS NOT NULL");
+            WHERE source_event_id IS NOT NULL');
 
         Schema::create('market_insight_event_receipts', function (Blueprint $table): void {
             $table->uuid('id')->primary();
