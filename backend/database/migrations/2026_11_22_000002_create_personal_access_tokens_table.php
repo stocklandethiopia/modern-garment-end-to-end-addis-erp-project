@@ -21,6 +21,7 @@ return new class extends Migration
         });
 
         DB::statement('REVOKE UPDATE ON personal_access_tokens FROM app_runtime');
+        DB::statement('GRANT UPDATE (last_used_at, updated_at) ON personal_access_tokens TO app_runtime');
         DB::statement('GRANT DELETE ON personal_access_tokens TO app_runtime');
     }
 
