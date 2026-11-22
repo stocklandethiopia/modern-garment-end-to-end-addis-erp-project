@@ -173,8 +173,8 @@ class BrandRangeWorkflowTest extends TestCase
         $this->withHeaders($this->tenantHeader())
             ->getJson('/api/v1/product/brands')
             ->assertOk()
-            ->assertJsonPath('data.0.current_strategy_status', 'APPROVED')
-            ->assertJsonPath('data.0.current_strategy_version', 1);
+            ->assertJsonPath('data.data.0.current_strategy_status', 'APPROVED')
+            ->assertJsonPath('data.data.0.current_strategy_version', 1);
 
         $decision = DB::connection('pgsql_test_admin')->table('merchandising_decisions')
             ->where('tenant_id', $this->tenantId)
