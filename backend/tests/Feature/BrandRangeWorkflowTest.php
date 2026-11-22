@@ -518,7 +518,8 @@ class BrandRangeWorkflowTest extends TestCase
             ->assertJsonPath('data.range_lifecycle_mix.0.planned_units', 100)
             ->assertJsonPath('data.range_category_depth.0.category_code', 'CASUALWEAR')
             ->assertJsonPath('data.range_category_depth.0.planned_units', 100)
-            ->assertJsonPath('data.evidence_register.sufficiency_status', 'UNAVAILABLE');
+            ->assertJsonPath('data.evidence_register.sufficiency_status', 'NOT_CONFIGURED')
+            ->assertJsonPath('data.evidence_register.sufficiency_reason', 'No approved, effective tenant evidence policy is currently active.');
     }
 
     public function test_approved_range_line_requires_an_accepted_brief_before_version_pinned_style_development(): void
