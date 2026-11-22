@@ -80,7 +80,7 @@ return new class extends Migration
             ADD CONSTRAINT evidence_policies_approval_chk
                 CHECK ((status = 'APPROVED') = (approved_by IS NOT NULL AND approved_at IS NOT NULL))");
 
-        DB::statement("ALTER TABLE initiative_evidence_policy_rules
+        DB::statement('ALTER TABLE initiative_evidence_policy_rules
             ADD CONSTRAINT evidence_policy_rules_counts_chk
                 CHECK (minimum_records > 0 AND minimum_distinct_sources > 0
                     AND minimum_distinct_sources <= minimum_records),
@@ -89,7 +89,7 @@ return new class extends Migration
             ADD CONSTRAINT evidence_policy_rules_reliability_chk
                 CHECK (minimum_source_reliability IS NULL OR minimum_source_reliability BETWEEN 0 AND 1),
             ADD CONSTRAINT evidence_policy_rules_age_chk
-                CHECK (max_age_days IS NULL OR max_age_days > 0)");
+                CHECK (max_age_days IS NULL OR max_age_days > 0)');
 
         DB::statement("CREATE OR REPLACE FUNCTION guard_initiative_evidence_policy_state()
             RETURNS trigger LANGUAGE plpgsql AS $$
@@ -119,9 +119,9 @@ return new class extends Migration
             END;
             $$");
 
-        DB::statement("CREATE TRIGGER initiative_evidence_policy_state_guard
+        DB::statement('CREATE TRIGGER initiative_evidence_policy_state_guard
             BEFORE UPDATE ON initiative_evidence_policies
-            FOR EACH ROW EXECUTE FUNCTION guard_initiative_evidence_policy_state()");
+            FOR EACH ROW EXECUTE FUNCTION guard_initiative_evidence_policy_state()');
 
         DB::statement("CREATE OR REPLACE FUNCTION guard_initiative_evidence_policy_rules()
             RETURNS trigger LANGUAGE plpgsql AS $$
@@ -156,9 +156,9 @@ return new class extends Migration
             END;
             $$");
 
-        DB::statement("CREATE TRIGGER initiative_evidence_policy_rules_guard
+        DB::statement('CREATE TRIGGER initiative_evidence_policy_rules_guard
             BEFORE INSERT OR UPDATE OR DELETE ON initiative_evidence_policy_rules
-            FOR EACH ROW EXECUTE FUNCTION guard_initiative_evidence_policy_rules()");
+            FOR EACH ROW EXECUTE FUNCTION guard_initiative_evidence_policy_rules()');
 
         foreach (['initiative_evidence_policies', 'initiative_evidence_policy_rules'] as $table) {
             DB::statement("ALTER TABLE {$table} ENABLE ROW LEVEL SECURITY");
