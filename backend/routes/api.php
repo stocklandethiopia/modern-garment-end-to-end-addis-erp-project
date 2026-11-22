@@ -7,6 +7,7 @@ use App\Http\Controllers\Enterprise\InventoryLocationController;
 use App\Http\Controllers\Enterprise\LegalEntityController;
 use App\Http\Controllers\Enterprise\LicensingEvidenceController;
 use App\Http\Controllers\Enterprise\TenantController;
+use App\Http\Controllers\Merchandising\AssortmentAccountTermsController;
 use App\Http\Controllers\Merchandising\CommercialPricingController;
 use App\Http\Controllers\Merchandising\DemandPlanningController;
 use App\Http\Controllers\Merchandising\EvidencePolicyController;
@@ -116,6 +117,10 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/product/assortment-plans', [MerchandisingPlanningController::class, 'createAssortmentPlan']);
         Route::get('/product/assortment-plans/{assortmentPlanId}/lines', [MerchandisingPlanningController::class, 'assortmentLines']);
         Route::post('/product/assortment-plans/{assortmentPlanId}/lines', [MerchandisingPlanningController::class, 'createAssortmentLine']);
+        Route::get('/product/assortment-plans/{assortmentPlanId}/account-terms', [AssortmentAccountTermsController::class, 'index']);
+        Route::post('/product/assortment-plans/{assortmentPlanId}/account-terms', [AssortmentAccountTermsController::class, 'store']);
+        Route::post('/product/assortment-plans/{assortmentPlanId}/account-terms/{termsId}/submit', [AssortmentAccountTermsController::class, 'submit']);
+        Route::post('/product/assortment-plans/{assortmentPlanId}/account-terms/{termsId}/decisions', [AssortmentAccountTermsController::class, 'decide']);
 
         Route::get('/product/forecast-runs', [DemandPlanningController::class, 'runs']);
         Route::post('/product/forecast-runs', [DemandPlanningController::class, 'publishRun']);
