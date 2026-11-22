@@ -345,10 +345,10 @@
       @if (lastScenario(); as scenario) {
         <div class="scenario-result">
           <span>SIMULATED · {{ scenario.id }}</span>
-          @if (scenario.result && typeof scenario.result === 'object') {
-            <strong>{{ scenario.result.calculation.available_budget }}</strong>
-            <p>{{ scenario.result.budget_basis }} basis · {{ scenario.result.formula_version }}</p>
-            <small>{{ scenario.result.warning }}</small>
+          @if (scenarioResult(); as result) {
+            <strong>{{ result.available_budget }}</strong>
+            <p>{{ result.budget_basis }} basis · {{ result.formula_version }}</p>
+            <small>{{ result.warning }}</small>
           }
           <button type="button" class="secondary-button" (click)="approveScenario(scenario.id)">Approve for planning only</button>
         </div>
