@@ -99,7 +99,7 @@ jobs:
         run: DB_CONNECTION=pgsql_migrator MIGRATION_DB_USERNAME=erp_migrator MIGRATION_DB_PASSWORD=local-migrator-password php artisan migrate:fresh --force
 
       - name: Run backend feature and RLS integration tests
-        run: php artisan test --colors=never
+        run: php artisan test --display-all-issues --colors=never
 
       - name: Upload resolved Composer lockfile
         if: always() && hashFiles('backend/composer.lock') != ''
