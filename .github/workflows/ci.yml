@@ -1,0 +1,148 @@
+name: ERP Continuous Integration
+
+on:
+  push:
+    branches:
+      - main
+      - delivery/autonomous-wp-01-16
+  pull_request:
+    branches:
+      - main
+      - delivery/autonomous-wp-01-16
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: erp-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Laravel 13 and PostgreSQL tenant security
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: garment_erp
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: local-postgres-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d garment_erp"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      redis:
+        image: redis:8.2-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      APP_ENV: testing
+      APP_DEBUG: "true"
+      APP_KEY: base64:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+      APP_URL: http://127.0.0.1:8000
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: garment_erp
+      DB_USERNAME: app_runtime
+      DB_PASSWORD: local-runtime-password
+      MIGRATION_DB_USERNAME: erp_migrator
+      MIGRATION_DB_PASSWORD: local-migrator-password
+      DB_ADMIN_USERNAME: postgres
+      DB_ADMIN_PASSWORD: local-postgres-password
+      CACHE_STORE: array
+      QUEUE_CONNECTION: sync
+      SESSION_DRIVER: array
+      LOG_CHANNEL: stderr
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP 8.5
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          extensions: ctype, curl, dom, fileinfo, filter, hash, mbstring, openssl, pdo, pdo_pgsql, pgsql, session, tokenizer, xml
+          coverage: none
+          tools: composer:v2
+
+      - name: Create restricted PostgreSQL roles
+        run: |
+          PGPASSWORD="$DB_ADMIN_PASSWORD" psql -h 127.0.0.1 -U postgres -d garment_erp -v ON_ERROR_STOP=1 -f ../docker/postgres/init/010-create-roles.sql
+
+      - name: Validate Composer manifest and resolve dependencies
+        run: |
+          composer validate --no-check-publish --no-check-lock
+          composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Audit PHP dependencies
+        run: composer audit
+
+      - name: Check PHP style and syntax
+        run: |
+          vendor/bin/pint --test
+          find app bootstrap config database routes tests -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Run migrations as the restricted migration role
+        run: DB_CONNECTION=pgsql_migrator php artisan migrate:fresh --force
+
+      - name: Run backend feature and RLS integration tests
+        run: php artisan test --colors=never
+
+      - name: Upload resolved Composer lockfile
+        if: always() && hashFiles('backend/composer.lock') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-composer-lock-${{ github.sha }}
+          path: backend/composer.lock
+          if-no-files-found: error
+          retention-days: 14
+
+  frontend:
+    name: Angular 22 frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js from the repository pin
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install frontend dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Audit frontend dependencies
+        run: npm audit --audit-level=high
+
+      - name: Run frontend unit tests
+        run: npm test
+
+      - name: Build production frontend
+        run: npm run build
+
+      - name: Upload resolved frontend lockfile
+        if: always() && hashFiles('frontend/package-lock.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-package-lock-${{ github.sha }}
+          path: frontend/package-lock.json
+          if-no-files-found: error
+          retention-days: 14
