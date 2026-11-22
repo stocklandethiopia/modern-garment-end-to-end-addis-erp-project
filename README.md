@@ -41,23 +41,26 @@ Exact supported patch versions are recorded in the platform standard and must be
 10. Payroll and differentiated variable-compensation schemes: docs/hr/payroll-and-variable-compensation.md
 11. Approved reference repository review: docs/references/reference-repositories.md
 
-## Application foundation
+## Application foundation — CI verified
 
-The first executable foundation is now present on `delivery/autonomous-wp-01-16`:
-- Laravel API scaffold with token authentication, health endpoint, tenant context and legal-entity onboarding.
-- PostgreSQL 18 foundation migrations for tenants, memberships, legal entities, sites, operational nodes, branch-registration evidence, inventory locations and append-only audit events.
-- Forced row-level security (RLS) policies on tenant-owned foundation tables.
-- Local PostgreSQL/Redis Compose infrastructure and a one-time interactive first-owner provisioning command.
-- Angular 22 workspace with a live API-health connection check and implementation-status overview.
-- CI workflow for PHP 8.5/PostgreSQL 18 and Node 26.13.1.
+The first executable **WP-03 enterprise/platform foundation** is implemented on `delivery/autonomous-wp-01-16` and verified by GitHub Actions run [#190](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45016393009) on commit `6e231926762f6fb8f6891b30677f1ddf17bfa716`.
 
-**This is not the full ERP yet.** The first scaffold implements only platform foundation and a small API surface; operational modules WP-04–WP-15 remain to be implemented as executable domain slices. Build/test/deploy status must be read from GitHub Actions and the handover register, never inferred from file presence.
+- Laravel API: health, Sanctum token issue/revoke, authenticated tenant selection, tenant context and draft legal-entity/site/node/licence/branch/inventory-location onboarding.
+- PostgreSQL 18: tenant and enterprise tables, composite tenant-scoped foreign keys, forced RLS, restricted runtime grants and append-only audit events.
+- Angular 22: login, tenant selection, overview/API health and enterprise setup screens.
+- Local PostgreSQL/Redis Compose, interactive first-owner provisioning and setup guide.
+- Backend CI: PHP syntax/style, Composer validation/audit, PostgreSQL migrations and PHPUnit **26 tests / 109 assertions — passed**.
+- Frontend CI: dependency audit, Angular unit tests and production build — passed.
+- Reproducible dependency lockfiles are committed.
+
+**Important:** This is the first verified platform foundation, not the complete garment ERP. WP-04–WP-15 operational capabilities remain to be implemented as executable domain slices; full business E2E, security/performance hardening, staging/UAT and production release are still pending. The pull request [#1](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/pull/1) remains draft and unmerged; `main` is unchanged.
 
 - [Local development guide](docs/development/local-development.md)
 - [Laravel backend](backend/)
 - [Angular frontend](frontend/)
 - [Local infrastructure](docker-compose.yml)
 - [CI workflow](.github/workflows/ci.yml)
+- [WP-00 to WP-16 handover register](docs/work-packages/handover-register.md)
 
 ## Work-package delivery status
 
