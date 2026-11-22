@@ -1,0 +1,130 @@
+<div class="welcome-row">
+  <div>
+    <div class="eyebrow">ENTERPRISE OPERATING SYSTEM</div>
+    <h1>Good morning. Your operating system starts here.</h1>
+    <p class="intro">A connected workspace for product development, sourcing, manufacturing, commerce and enterprise control.</p>
+  </div>
+  <div class="date-chip">{{ checkedAt() ? (checkedAt() | date:'EEE, d MMM y · HH:mm') : 'Environment check pending' }}</div>
+</div>
+
+<section class="status-banner" aria-live="polite">
+  <div class="status-icon" [class.connected]="connectionState() === 'connected'" [class.unavailable]="connectionState() === 'unavailable'">
+    @if (connectionState() === 'connected') { ✓ } @else if (connectionState() === 'unavailable') { ! } @else { … }
+  </div>
+  <div class="status-copy">
+    <strong>{{ connectionLabel }}</strong>
+    <span>
+      @if (health()) {
+        {{ health()?.service }} · version {{ health()?.version }}
+      } @else if (connectionError()) {
+        The API health endpoint did not respond. Start the Laravel API and check the local proxy configuration.
+      } @else {
+        Checking the Laravel API health endpoint.
+      }
+    </span>
+  </div>
+  <button type="button" class="refresh-button" (click)="checkConnection()">Refresh connection</button>
+</section>
+
+<div class="section-heading">
+  <div>
+    <h2>Operating domains</h2>
+    <p>Approved product scope · application modules are delivered in sequenced work packages</p>
+  </div>
+  <span class="section-count">12 CORE DOMAINS</span>
+</div>
+
+<div class="domain-grid">
+  <article class="domain-card">
+    <span class="domain-number">01</span>
+    <div class="domain-symbol">⌁</div>
+    <h3>Initiative & merchandising</h3>
+    <p>Market insight, brand strategy, seasonal collections, range, assortment and open-to-buy.</p>
+    <span class="module-state">Design baseline ready</span>
+  </article>
+  <article class="domain-card">
+    <span class="domain-number">02</span>
+    <div class="domain-symbol">◇</div>
+    <h3>Design studio & PLM</h3>
+    <p>Patterns, grading, fit, sample room, 2D/3D assets, tech packs, BOM and costing.</p>
+    <span class="module-state">Design baseline ready</span>
+  </article>
+  <article class="domain-card">
+    <span class="domain-number">03</span>
+    <div class="domain-symbol">⌗</div>
+    <h3>Industrial engineering</h3>
+    <p>Method study, SAM/SMV, resource capacity, operation standards and line balancing.</p>
+    <span class="module-state">Design baseline ready</span>
+  </article>
+  <article class="domain-card">
+    <span class="domain-number">04</span>
+    <div class="domain-symbol">▤</div>
+    <h3>Sourcing & materials</h3>
+    <p>Qualified suppliers, procurement, fabric rolls, trims, chemicals, import and traceability.</p>
+    <span class="module-state">Design baseline ready</span>
+  </article>
+  <article class="domain-card">
+    <span class="domain-number">05</span>
+    <div class="domain-symbol">⇄</div>
+    <h3>Manufacturing execution</h3>
+    <p>Versioned routes, cutting, bundles, sewing, special processes, finishing and packing.</p>
+    <span class="module-state">Design baseline ready</span>
+  </article>
+  <article class="domain-card">
+    <span class="domain-number">06</span>
+    <div class="domain-symbol">◎</div>
+    <h3>Quality & HSE</h3>
+    <p>Inspection at source, containment, rework, CAPA, process compliance and safety.</p>
+    <span class="module-state">Design baseline ready</span>
+  </article>
+  <article class="domain-card">
+    <span class="domain-number">07</span>
+    <div class="domain-symbol">▣</div>
+    <h3>Warehouse & distribution</h3>
+    <p>Inventory ledger, handling-unit genealogy, DC network, transfers and fulfilment.</p>
+    <span class="module-state">Design baseline ready</span>
+  </article>
+  <article class="domain-card">
+    <span class="domain-number">08</span>
+    <div class="domain-symbol">▱</div>
+    <h3>Commerce & channels</h3>
+    <p>Wholesale, resellers, owned retail, POS, D2C, marketplace, delivery and returns.</p>
+    <span class="module-state">Design baseline ready</span>
+  </article>
+  <article class="domain-card">
+    <span class="domain-number">09</span>
+    <div class="domain-symbol">∑</div>
+    <h3>Finance & treasury</h3>
+    <p>GL, AP/AR, cost accounting, payments, tax, FX, statutory controls and close.</p>
+    <span class="module-state">Design baseline ready</span>
+  </article>
+  <article class="domain-card">
+    <span class="domain-number">10</span>
+    <div class="domain-symbol">♧</div>
+    <h3>People & workforce</h3>
+    <p>Employment, skills, attendance, payroll, pension, benefits and fair incentives.</p>
+    <span class="module-state">Design baseline ready</span>
+  </article>
+  <article class="domain-card">
+    <span class="domain-number">11</span>
+    <div class="domain-symbol">⌘</div>
+    <h3>Analytics & control tower</h3>
+    <p>Role-based KPIs, alerts, forecasting, operational recommendations and audit lineage.</p>
+    <span class="module-state">Design baseline ready</span>
+  </article>
+  <article class="domain-card">
+    <span class="domain-number">12</span>
+    <div class="domain-symbol">⛭</div>
+    <h3>Enterprise platform</h3>
+    <p>Tenant isolation, identity, APIs, approvals, integration, observability and recovery.</p>
+    <span class="module-state">Foundation scaffold in progress</span>
+  </article>
+</div>
+
+<section class="foundation-note">
+  <div class="note-mark">i</div>
+  <div>
+    <strong>Implementation status is deliberately visible</strong>
+    <p>This environment is the first executable platform foundation, not a finished ERP. No production tenant, company data, inventory, payroll or finance transactions are loaded. Domain workflows will appear as their code, database constraints and tests are delivered.</p>
+  </div>
+</section>
