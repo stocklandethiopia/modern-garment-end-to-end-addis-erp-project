@@ -88,14 +88,43 @@ Product development is an in-house creative and technical discipline. It must no
 - IE changes require a measured before/after baseline, approved new method/SMV, training and effective date; preserve historical standards for old production.
 
 
-## E. Procurement and materials
+## E. Procurement, sourcing, supplier governance and materials
 
-- Supplier qualification, sourcing, quotations, price history, contracts and vendor performance.
-- Purchase requisition, approval, purchase order, delivery schedule, goods receipt and supplier invoice matching.
-- Import purchase, landed cost, freight, insurance, customs, duties, foreign currency and bank document tracking.
-- Fabric, trims, accessories, packaging, chemicals and consumables with lot, roll, shade, width, weight and expiry attributes.
-- MRP, demand forecast, safety stock, reservations, shortage, substitute approval and material allocation.
-- Incoming inspection, quarantine, supplier returns and claims.
+Procurement is a controlled source-to-pay discipline. It must protect product quality, continuity of supply, cash, legal compliance and ethical sourcing—not simply create purchase orders.
+
+### Demand, planning and sourcing
+- Aggregate demand from initiatives, collections, buyer orders, production plans, stores, DC replenishment, maintenance, facilities and service operations.
+- Purchase requisition, budget/commitment check, category strategy, make/buy decision, approved source list, RFQ/RFP, quotation comparison, negotiation and sourcing recommendation.
+- Supplier onboarding and due diligence: legal identity, registration/business licence, TIN, tax/VAT status, bank ownership, beneficial ownership where required, sanctions/blacklist screening where applicable, capacity, quality systems, social/environmental risk and conflicts of interest.
+- Supplier segmentation by fabric mill, trim/accessory provider, packaging supplier, chemical supplier, equipment/service provider, subcontract processor, carrier, marketing/content agency, consultant and other service providers.
+- Supplier scorecards: quality, delivery reliability, lead time, cost, responsiveness, claims, traceability, compliance and improvement actions.
+- Approved vendor list, supplier contracts, framework agreements, price validity, MOQ, lead-time, Incoterms, currency, warranty, delivery terms, service levels, retention, rebate and contract performance.
+
+### Purchase-to-pay controls
+- Purchase requisition → delegated approval → sourcing event → award → purchase order/contract → order acknowledgment → ASN → goods/service receipt → inspection/acceptance → invoice verification → withholding/VAT review → payment proposal → bank payment → reconciliation.
+- Enforce delegated authority, role separation, budget availability, supplier bank-change verification, duplicate invoice detection and three-way match (PO, accepted receipt/service confirmation, supplier invoice) with controlled exceptions.
+- Keep goods procurement, services, subcontract conversion, capital expenditure, freight, customs/duties and staff reimbursements distinct.
+- Record contract deliverables, milestone certification, service acceptance evidence, retention/advance recovery and dispute status.
+- Supplier invoice controls must validate TIN/licence, tax invoice requirements, tax/VAT category, applicable withholding rule, currency and bank/payment controls using the transaction-date rule version.
+- Maintain audit evidence for sourcing decisions, quotation comparison, conflict declarations, approver, contract, goods receipt, acceptance, invoice and payment.
+
+### Apparel material and subcontract sourcing
+- Fabric: mill, construction, composition, GSM, width, finish, color, dye lot, shade, roll, shrinkage, testing, defects, country of origin, MOQ, lead time, price and approved standard.
+- Trims/accessories: SKU, brand/customer approval, artwork/label text revision, size/color, lot, supplier, quantity, packaging and component compatibility.
+- Chemicals/wash/print/embroidery inputs: approved chemistry/recipe, restricted-substance documentation, safety data, expiry, lot, storage and process eligibility.
+- Subcontract processing: controlled job issue, material custody, process route, approved recipe/artwork, expected yield, delivery schedule, quality plan, loss/damage responsibility, receipt, rework and settlement.
+- Fabric roll/lot and trim/accessory procurement, receipt, inspection, issue, return and consumption remain separate traceable flows.
+
+### Import, customs and foreign currency
+- Import requisition, pro-forma invoice, supplier contract, bank FX application, permitted payment modality, letter of credit/cash-against-documents/advance where allowed, customs declaration, HS code, origin, tariff, customs valuation, duty/tax, freight, insurance, port/transport, release and landed cost.
+- Capture exact NBE foreign-exchange directive and amendment set applicable on transaction date; do not rely on an old static import procedure.
+- Reconcile foreign supplier invoice, bank debit, FX rate, customs value, duty/VAT, clearing-agent charge and inventory capitalization; preserve source documents and approved conversion rates.
+- Export and re-export workflows must preserve customs regime, export proceeds, retention account rules, certificates, shipping evidence and buyer collection records.
+
+### Procurement governance boundary
+- Federal Public Procurement and Property Administration Proclamation No. 1333/2024 is a public-procurement regime. Do not impose it automatically on ordinary private apparel tenants. Apply it only where the customer/legal entity is within its statutory scope (including relevant public enterprises) and the responsible counsel has confirmed applicability.
+- Private-sector tenants still need strong internal procurement governance, contract law, tax, licensing, competition, anti-fraud, delegated authority and documented sourcing controls. Internal best-practice controls must be labelled company policy, not misrepresented as a public-procurement statutory mandate.
+- Never split orders, invoices or contracts to evade approval thresholds, tax withholding, customs or procurement controls; detect related transactions and route exceptions for review.
 
 ## F. Warehouse and inventory control
 
@@ -257,35 +286,78 @@ Quality is designed into product definition, supplier/material approval, every m
 - Process-specific chemical handling, PPE, ventilation, water/energy/effluent and waste controls where relevant.
 - Shipment inspection, packing/carton audit, customer/buyer compliance evidence, export/shipping documents, certificate and release traceability.
 
-## J. Finance and administration
+## J. Finance, accounting, treasury, tax and financial governance
 
-- Chart of accounts, journals, general ledger, AP, AR, customer/supplier balances and ageing.
-- Cash, bank accounts, payment instruments, bank reconciliation and treasury.
-- Cost centres, budgets, commitments, allocations, landed cost and profitability.
-- Sales invoices, credit/debit notes, supplier invoices, tax, withholding, VAT and statutory reports.
-- Fixed assets, depreciation, expense claims, advances, loans, accruals and provisions.
-- Multi-currency, FX revaluation, intercompany transactions, consolidation and period close.
-- Product costing, order margin, style profitability, factory cost, variance and management accounts.
+Finance must operate across manufacturing, procurement, wholesale, retail, stores, distribution, payroll, commissions, returns and intercompany entities. It is not an invoice-printing module.
 
-## K. Human resources, capability and people development
+### Accounting and financial control
+- Multi-entity chart of accounts, legal-entity and branch dimensions, cost/profit centres, journals, GL, AP, AR, fixed assets, depreciation, bank/cash, budgets, commitments, accruals, provisions, close and consolidation.
+- Double-entry accounting, immutable posted journals, reversal/adjustment workflows, reconciliations, maker-checker, segregation of duties, approval limits and audit trails.
+- Accounting framework by reporting entity, effective date and AABE adoption status (IFRS or IFRS for SMEs where applicable); support financial statements, notes, audit trail and controlled reporting packs.
+- Cost accounting: garment/style/order cost, material consumption, labour, SMV/earned minutes, overhead absorption, subcontract, energy, freight, duty, wastage, rework, scrap, variance and actual contribution margin.
+- Manufacturing costs and commercial channel margins must remain reconcilable without merging their distinct cost drivers.
 
-HR is a major enterprise domain, not a small employee register.
+### Ethiopian tax and statutory finance
+- Configurable tax registrations and profiles for each legal entity and taxable activity; distinguish federal, regional and city revenue authority jurisdiction.
+- Output/input VAT, exempt/zero-rated/out-of-scope classification, tax invoice, credit/debit note, VAT return, refund, tax withholding, employment income tax, business income tax, turnover/gross sales tax where applicable, minimum alternative tax, advance tax, customs duty, excise where applicable, interest, penalty and tax audit/dispute evidence.
+- Supplier/customer tax checks: TIN, licence, VAT registration, invoice authenticity/status, withholding category, threshold, applicable rule version and tax certificate.
+- Tax calculations use the law, regulation, directive, authority, effective date, tax year, transaction category, taxpayer category and approved interpretation applicable to the transaction; never assume all group entities have identical rates or filing obligations.
+- Electronic tax-invoice and tax-invoice administration support must follow the current Ministry of Revenues directive and authority integrations; keep invoice numbering, signature/QR/validation, cancelled/reissued invoice and audit evidence as required by the active rule.
+- Preserve tax return workpapers, source invoices, declarations, withholding certificates, payment receipts, tax assessment, objections, appeal and resolution timeline.
+
+### Banking, cash and foreign exchange
+- Bank accounts, mandates/signatories, payment batches, bank reconciliation, cash counts, card/mobile payment settlement, POS acquirer fees, refunds, merchant settlement and cash-in-transit.
+- Multi-currency AP/AR, import/export FX application, approved bank rate, NBE daily indicative rate for reference, transaction-date conversion, realized/unrealized FX gains/losses and foreign currency retention.
+- FX rule registry must include the base NBE FXD/01/2024 and the current amendments FXD/03/2025, FXD/04/2026 and FXD/05/2026, plus relevant modality-specific directives such as FVD/01/2026. Do not hard-code an advance-payment limit or import modality without checking the current amendment.
+- Intercompany loans, balances, charges, stock transfers, transfer pricing and consolidation require entity-level evidence and locally approved tax/accounting treatment.
+
+### Commercial and channel finance
+- Customer credit, account statements, wholesale pricing, rebates, sales commissions, reseller/dealer incentives, retail POS tender, gift cards/vouchers, promotions, refunds, chargebacks, returns and customer balances.
+- Revenue recognition, inventory cost of goods sold, discounts, sales returns, freight, channel fees, influencer campaign cost and partner settlements must link to original orders/campaigns and legal entities.
+- Separate customer trade discounts/rebates and reseller incentives from employee payroll compensation and from independent service-provider invoices.
+- Store/DC/branch profitability with inventory turns, stock losses, write-downs, markdowns, returns, freight and working capital.
+
+### Finance compliance and closure
+- Effective-dated tax calendars, filing obligations, evidence checklist, source-document retention, reconciliation tasks, preparer/reviewer, due dates and escalation.
+- Tax audit readiness, supporting schedules, general-ledger to tax-return reconciliation, risk register, assessments, objections and appeal workflow.
+- Finance close cannot be certified while material unresolved VAT, withholding, customs, payroll, stock valuation, bank or intercompany reconciliations remain without an approved exception.
+
+## K. Human resources, workforce, payroll and people development
+
+HR is a major enterprise domain. Payroll must model different workforce populations and compensation arrangements without confusing employee wages, sales commissions, supplier invoices, reseller rebates and digital-creator income.
 
 ### Workforce lifecycle
 - Workforce demand, headcount budget, organization design, job architecture and manpower requisition.
 - Recruitment, applicant tracking, interview, selection, offer, contract and onboarding.
 - Employee master, personal/emergency contacts, qualifications, experience, documents and consent.
 - Position, grade, job family, department, supervisor, location, employment type and contract lifecycle.
+- Permanent, fixed-term, temporary, seasonal, part-time, probationary, apprentice/trainee and other legally recognized employment arrangements, with classification and eligibility rules approved against current labour law.
 - Probation, confirmation, transfer, promotion, secondment, disciplinary case, grievance and exit.
-- Employee self-service, manager self-service, HR case management and employee relations.
+- Employee self-service, manager self-service, HR case management, social dialogue, employee relations and worker voice.
 
 ### Time, pay and benefits
-- Shift patterns, roster, biometric/device integration, attendance, lateness, absence and overtime approval.
+- Shift patterns, roster, attendance, device integration, lateness, absence, rest periods and overtime approval.
 - Leave types, entitlement, accrual, carry-forward, encashment and leave settlement.
 - Payroll calendar, salary structure, earnings, deductions, allowances, benefits, loans and advances.
-- Payroll calculation, validation, approval, payslip, bank payment file, journal posting and reconciliation.
-- Pension, income tax, withholding, severance/final settlement and statutory returns under approved local rules.
-- Payroll corrections, retroactive adjustments, off-cycle pay and audit history.
+- Monthly salary, hourly/daily wage, shift allowance, approved overtime, piece-rate/quantity-based earning, skill/qualification premium, team/line incentive, individual incentive, store sales commission, sales bonus and management bonus as separate configurable earning types.
+- Payroll calculation, validation, approval, payslip, bank payment file, journal posting, statutory submission and reconciliation.
+- Pension, employment income tax, withholding, benefits, employment injury, severance/final settlement and statutory returns under approved local rules.
+- Payroll corrections, retroactive adjustments, off-cycle pay and full audit history.
+
+### Role- and business-specific compensation schemes
+- Manufacturing operators and production support: fixed wage/salary plus any approved operation/piece/line/team incentive, skilled-operation premium, certification allowance or approved shift/overtime payment. Productivity measures must be linked to approved SMV/SAM, accepted output, time evidence, quality, actual staffing and fair-work safeguards.
+- Sewing/cutting/wash/finishing/packing lines: daily/shift line target and actual, earned standard minutes, direct-labour minutes, line efficiency, first-pass quality, rework, WIP, downtime and safety/process compliance. Any incentive scheme is optional and requires approved policy and legal/HR validation.
+- Store/retail staff: fixed wage/salary and optional individual/store sales commission based on approved eligible net sales, returns/voids, margin and store service measures. Do not pay commission on cancelled or refunded transactions without a controlled adjustment.
+- Branch managers: role-based salary and optional balanced branch-performance bonus using commercial results, stock accuracy, customer experience, compliance and team outcomes.
+- Wholesale/key-account sales employees: salary plus approved commission/bonus based on defined eligible sales, realized margin, collection and customer-quality criteria, with credit-note/return adjustments.
+- Employees in merchandising, product development, finance, HR, warehouse and support: job-grade salary, skill/certification premium and approved performance bonus; do not force factory line metrics onto non-line roles.
+- Commission-only, piece-rate, contractor or casual arrangements are not automatically treated as lawful merely because the system can calculate them. The actual working relationship, contract, labour law, tax and pension status must be reviewed before activation.
+
+### External commercial payables—not employee payroll
+- Wholesalers, retailers, dealers and resellers are normally handled through customer/supplier account agreements, price tiers, trade discounts, rebates, promotional allowances or approved settlement commissions—not payroll—unless the legal facts establish an employment relationship.
+- Influencer, content creator, brand ambassador, affiliate, photographer and advertising-agency payments must be classified from contract, activity, recipient legal form, residency, TIN/licence, VAT status, payment nature and current income-tax rules. Support fixed campaign fees, deliverable fees, affiliate/performance commissions, royalties/licence usage, product-in-kind/barter and platform revenue as separate payable types.
+- A creator's digital content income may fall under business income or Schedule D other income depending on the conditions in the Income Tax Amendment and implementing regulation; do not automatically label every influencer fee as payroll or apply one universal withholding rule.
+- Supplier and subcontractor service payments are controlled in AP/procurement; employee compensation and external supplier payments must not be mixed.
 
 ### Learning, capability and performance
 - Training needs analysis linked to business strategy, skills gaps and compliance requirements.
@@ -296,7 +368,12 @@ HR is a major enterprise domain, not a small employee register.
 - Factory induction, safety, quality, machine operation, supervisor and leadership development.
 - Operational skill matrix by employee, operation, machine, process, style family and skill grade; evidence-backed assessment, assessor, date, recertification/expiry and authorization limits.
 - Link skills to line balancing, shift assignment, absence coverage, bottleneck risk, cross-training, succession and training investment. Supervisors/IE may receive explainable deployment suggestions, never an unreviewable automated worker score.
-- Optional team/individual incentive policies can consume approved productivity and quality evidence only after HR/management policy approval. Keep rules transparent, versioned, auditable, worker-visible and appealable; balance accepted output, first-pass quality, rework, safety, compliance and teamwork.
+
+### Safe and fair incentive governance
+- Incentive schemes are optional, separately versioned policies with eligibility, formula, measurement window, quality gate, cap/floor if approved, exception handling, review, employee visibility, grievance/appeal and payroll authorization.
+- Manufacturing line or team schemes can reward accepted/earned output and productivity together with first-pass yield, rework, safe work, training, teamwork and accurate reporting. The system must not reward unsafe speed, defect concealment, unauthorized overtime, skipped inspection or work outside approved competencies.
+- Store and sales schemes can balance eligible net sales, gross margin, customer service, returns, stock accuracy, payment collection and compliance; avoid rewarding over-discounting, mis-selling or pushing unsuitable inventory.
+- Reversal of an incentive after returns/chargebacks must be handled through a lawful, approved adjustment; never impose an unapproved wage deduction or penalty.
 
 ### Safety and wellbeing
 - Occupational health and safety, incidents, near misses, risk assessments and corrective actions.
