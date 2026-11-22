@@ -76,7 +76,6 @@ return new class extends Migration
             $table->foreign(['tenant_id', 'brand_id'])
                 ->references(['tenant_id', 'id'])->on('brands')->restrictOnDelete();
             $table->foreign('created_by')->references('id')->on('users')->restrictOnDelete();
-            $table->check('(effective_to IS NULL OR effective_from IS NULL OR effective_to >= effective_from)');
         });
 
         Schema::create('merchandising_decisions', function (Blueprint $table): void {
@@ -120,9 +119,6 @@ return new class extends Migration
             $table->unique(['tenant_id', 'code']);
             $table->foreign('tenant_id')->references('id')->on('tenants')->restrictOnDelete();
             $table->foreign('created_by')->references('id')->on('users')->restrictOnDelete();
-            $table->check('(production_end IS NULL OR production_start IS NULL OR production_end >= production_start)');
-            $table->check('(delivery_end IS NULL OR delivery_start IS NULL OR delivery_end >= delivery_start)');
-            $table->check('(selling_end IS NULL OR selling_start IS NULL OR selling_end >= selling_start)');
         });
 
         Schema::create('collections', function (Blueprint $table): void {
@@ -171,7 +167,6 @@ return new class extends Migration
             $table->foreign(['tenant_id', 'collection_id'])
                 ->references(['tenant_id', 'id'])->on('collections')->restrictOnDelete();
             $table->foreign('created_by')->references('id')->on('users')->restrictOnDelete();
-            $table->check('(delivery_end IS NULL OR delivery_start IS NULL OR delivery_end >= delivery_start)');
         });
 
         Schema::create('range_plans', function (Blueprint $table): void {
@@ -194,7 +189,6 @@ return new class extends Migration
                 ->references(['tenant_id', 'collection_id', 'version_no'])->on('collection_versions')->restrictOnDelete();
             $table->foreign('owner_user_id')->references('id')->on('users')->restrictOnDelete();
             $table->foreign('frozen_by')->references('id')->on('users')->restrictOnDelete();
-            $table->check('plan_end >= plan_start');
         });
 
         Schema::create('range_lines', function (Blueprint $table): void {
@@ -222,10 +216,6 @@ return new class extends Migration
             $table->foreign('tenant_id')->references('id')->on('tenants')->restrictOnDelete();
             $table->foreign(['tenant_id', 'range_plan_id'])
                 ->references(['tenant_id', 'id'])->on('range_plans')->restrictOnDelete();
-            $table->check('planned_units >= 0');
-            $table->check('(target_margin_percent IS NULL OR target_margin_percent BETWEEN -100 AND 100)');
-            $table->check('(target_retail_price IS NULL OR target_retail_price >= 0)');
-            $table->check('(target_wholesale_price IS NULL OR target_wholesale_price >= 0)');
         });
 
         Schema::create('assortment_plans', function (Blueprint $table): void {
@@ -267,8 +257,6 @@ return new class extends Migration
                 ->references(['tenant_id', 'id'])->on('assortment_plans')->restrictOnDelete();
             $table->foreign(['tenant_id', 'range_line_id'])
                 ->references(['tenant_id', 'id'])->on('range_lines')->restrictOnDelete();
-            $table->check('planned_units >= 0');
-            $table->check('(maximum_depth IS NULL OR minimum_depth IS NULL OR maximum_depth >= minimum_depth)');
         });
 
         Schema::create('demand_forecast_runs', function (Blueprint $table): void {
@@ -288,7 +276,6 @@ return new class extends Migration
             $table->unique(['tenant_id', 'id']);
             $table->foreign('tenant_id')->references('id')->on('tenants')->restrictOnDelete();
             $table->foreign('created_by')->references('id')->on('users')->restrictOnDelete();
-            $table->check('forecast_end >= forecast_start');
         });
 
         Schema::create('demand_forecasts', function (Blueprint $table): void {
@@ -307,7 +294,6 @@ return new class extends Migration
             $table->foreign('tenant_id')->references('id')->on('tenants')->restrictOnDelete();
             $table->foreign(['tenant_id', 'forecast_run_id'])
                 ->references(['tenant_id', 'id'])->on('demand_forecast_runs')->restrictOnDelete();
-            $table->check('(confidence_low IS NULL OR confidence_high IS NULL OR confidence_high >= confidence_low)');
         });
 
         Schema::create('forecast_adjustments', function (Blueprint $table): void {
@@ -351,7 +337,6 @@ return new class extends Migration
             $table->foreign(['tenant_id', 'legal_entity_id'])
                 ->references(['tenant_id', 'id'])->on('legal_entities')->restrictOnDelete();
             $table->foreign('created_by')->references('id')->on('users')->restrictOnDelete();
-            $table->check('(effective_to IS NULL OR effective_to >= effective_from)');
         });
 
         Schema::create('otb_periods', function (Blueprint $table): void {
@@ -376,7 +361,6 @@ return new class extends Migration
             $table->foreign('tenant_id')->references('id')->on('tenants')->restrictOnDelete();
             $table->foreign(['tenant_id', 'otb_policy_id'])
                 ->references(['tenant_id', 'id'])->on('otb_policies')->restrictOnDelete();
-            $table->check('period_end >= period_start');
         });
 
         Schema::create('otb_scenarios', function (Blueprint $table): void {
@@ -427,7 +411,6 @@ return new class extends Migration
                 ->references(['tenant_id', 'id'])->on('brands')->restrictOnDelete();
             $table->foreign('created_by')->references('id')->on('users')->restrictOnDelete();
             $table->foreign('published_by')->references('id')->on('users')->restrictOnDelete();
-            $table->check('(effective_to IS NULL OR effective_to > effective_from)');
         });
 
         Schema::create('price_list_lines', function (Blueprint $table): void {
@@ -446,10 +429,6 @@ return new class extends Migration
             $table->foreign('tenant_id')->references('id')->on('tenants')->restrictOnDelete();
             $table->foreign(['tenant_id', 'price_list_id'])
                 ->references(['tenant_id', 'id'])->on('price_lists')->restrictOnDelete();
-            $table->check('list_price >= 0');
-            $table->check('(wholesale_price IS NULL OR wholesale_price >= 0)');
-            $table->check('(price_floor IS NULL OR price_floor >= 0)');
-            $table->check('(cost_basis IS NULL OR cost_basis >= 0)');
         });
 
         Schema::create('promotions', function (Blueprint $table): void {
@@ -476,9 +455,6 @@ return new class extends Migration
                 ->references(['tenant_id', 'id'])->on('price_lists')->restrictOnDelete();
             $table->foreign('created_by')->references('id')->on('users')->restrictOnDelete();
             $table->foreign('approved_by')->references('id')->on('users')->restrictOnDelete();
-            $table->check('ends_at > starts_at');
-            $table->check('discount_value >= 0');
-            $table->check('(margin_floor IS NULL OR margin_floor BETWEEN -100 AND 100)');
         });
 
         Schema::create('promotion_eligibility', function (Blueprint $table): void {
@@ -495,6 +471,69 @@ return new class extends Migration
             $table->foreign(['tenant_id', 'promotion_id'])
                 ->references(['tenant_id', 'id'])->on('promotions')->restrictOnDelete();
         });
+
+
+        // Laravel Blueprint has no CHECK helper; install PostgreSQL-native
+        // named constraints after the tables exist. These enforce data validity
+        // independently of request validation and remain part of the schema.
+        $checkConstraints = [
+            'brand_strategy_versions' => [
+                'brand_strategy_effective_dates_check' => 'effective_to IS NULL OR effective_from IS NULL OR effective_to >= effective_from',
+            ],
+            'seasons' => [
+                'season_production_dates_check' => 'production_end IS NULL OR production_start IS NULL OR production_end >= production_start',
+                'season_delivery_dates_check' => 'delivery_end IS NULL OR delivery_start IS NULL OR delivery_end >= delivery_start',
+                'season_selling_dates_check' => 'selling_end IS NULL OR selling_start IS NULL OR selling_end >= selling_start',
+            ],
+            'collection_versions' => [
+                'collection_version_delivery_dates_check' => 'delivery_end IS NULL OR delivery_start IS NULL OR delivery_end >= delivery_start',
+            ],
+            'range_plans' => [
+                'range_plan_dates_check' => 'plan_end >= plan_start',
+            ],
+            'range_lines' => [
+                'range_line_planned_units_check' => 'planned_units >= 0',
+                'range_line_margin_check' => 'target_margin_percent IS NULL OR target_margin_percent BETWEEN -100 AND 100',
+                'range_line_retail_price_check' => 'target_retail_price IS NULL OR target_retail_price >= 0',
+                'range_line_wholesale_price_check' => 'target_wholesale_price IS NULL OR target_wholesale_price >= 0',
+            ],
+            'assortment_lines' => [
+                'assortment_line_planned_units_check' => 'planned_units >= 0',
+                'assortment_line_depth_check' => 'maximum_depth IS NULL OR minimum_depth IS NULL OR maximum_depth >= minimum_depth',
+            ],
+            'demand_forecast_runs' => [
+                'forecast_run_dates_check' => 'forecast_end >= forecast_start',
+            ],
+            'demand_forecasts' => [
+                'demand_forecast_confidence_check' => 'confidence_low IS NULL OR confidence_high IS NULL OR confidence_high >= confidence_low',
+            ],
+            'otb_policies' => [
+                'otb_policy_effective_dates_check' => 'effective_to IS NULL OR effective_to >= effective_from',
+            ],
+            'otb_periods' => [
+                'otb_period_dates_check' => 'period_end >= period_start',
+            ],
+            'price_lists' => [
+                'price_list_effective_dates_check' => 'effective_to IS NULL OR effective_to > effective_from',
+            ],
+            'price_list_lines' => [
+                'price_list_list_price_check' => 'list_price >= 0',
+                'price_list_wholesale_price_check' => 'wholesale_price IS NULL OR wholesale_price >= 0',
+                'price_list_floor_check' => 'price_floor IS NULL OR price_floor >= 0',
+                'price_list_cost_basis_check' => 'cost_basis IS NULL OR cost_basis >= 0',
+            ],
+            'promotions' => [
+                'promotion_dates_check' => 'ends_at > starts_at',
+                'promotion_discount_check' => 'discount_value >= 0',
+                'promotion_margin_floor_check' => 'margin_floor IS NULL OR margin_floor BETWEEN -100 AND 100',
+            ],
+        ];
+
+        foreach ($checkConstraints as $table => $constraints) {
+            foreach ($constraints as $name => $expression) {
+                DB::statement("ALTER TABLE {$table} ADD CONSTRAINT {$name} CHECK ({$expression})");
+            }
+        }
 
         $mutableTables = [
             'brands',
