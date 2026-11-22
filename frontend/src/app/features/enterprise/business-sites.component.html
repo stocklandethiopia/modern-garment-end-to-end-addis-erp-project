@@ -1,0 +1,233 @@
+<section class="sites-page" aria-labelledby="sites-heading">
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">ENTERPRISE FOUNDATION</span>
+      <h1 id="sites-heading">Business sites & operating nodes</h1>
+      <p>Separate physical premises from the operational functions located there.</p>
+    </div>
+    @if (canManage()) {
+      <button type="button" class="primary-button" (click)="showSiteForm.set(!showSiteForm())">
+        {{ showSiteForm() ? 'Close form' : 'Add business site' }}
+      </button>
+    }
+  </div>
+
+  <div class="scope-banner">
+    <span class="scope-icon" aria-hidden="true">◎</span>
+    <div>
+      <strong>{{ session.activeTenant()?.name }}</strong>
+      <span>Tenant workspace · {{ session.activeTenant()?.membership_role }}</span>
+    </div>
+  </div>
+
+  @if (successMessage()) {
+    <div class="notice success" role="status" aria-live="polite">{{ successMessage() }}</div>
+  }
+  @if (errorMessage()) {
+    <div class="notice error" role="alert">{{ errorMessage() }}</div>
+  }
+
+  @if (showSiteForm() && canManage()) {
+    <form class="site-form" [formGroup]="siteForm" (ngSubmit)="createSite" novalidate>
+      <div class="form-heading">
+        <div>
+          <h2>Register physical premises</h2>
+          <p>A site is an address/premises record. It does not automatically create a warehouse, branch registration or business licence.</p>
+        </div>
+        <span class="draft-label">DRAFT ON SAVE</span>
+      </div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label for="site-name">Site name</label>
+          <input id="site-name" formControlName="name" maxlength="180" required>
+        </div>
+        <div class="field">
+          <label for="site-code">Unique site code</label>
+          <input id="site-code" formControlName="code" maxlength="80" required>
+        </div>
+        <div class="field">
+          <label for="site-type">Physical site type</label>
+          <select id="site-type" formControlName="site_type">
+            <option value="FACTORY_CAMPUS">Factory campus</option>
+            <option value="OFFICE">Office</option>
+            <option value="STORE_PREMISES">Store premises</option>
+            <option value="WAREHOUSE_CAMPUS">Warehouse campus</option>
+            <option value="DEPOT_PREMISES">Depot premises</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="site-entity">Owning legal entity</label>
+          <select id="site-entity" formControlName="legal_entity_id">
+            <option value="">Not assigned yet</option>
+            @for (entity of legalEntities(); track entity.id) {
+              <option [value]="entity.id">{{ entity.legal_name }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label for="site-country">Country code</label>
+          <input id="site-country" formControlName="country_code" maxlength="2" required>
+        </div>
+        <div class="field">
+          <label for="site-region">Region</label>
+          <input id="site-region" formControlName="region" maxlength="120">
+        </div>
+        <div class="field">
+          <label for="site-city">City</label>
+          <input id="site-city" formControlName="city" maxlength="120">
+        </div>
+        <div class="field">
+          <label for="site-timezone">Time zone</label>
+          <input id="site-timezone" formControlName="timezone" maxlength="64" required>
+        </div>
+        <div class="field full-width">
+          <label for="site-address">Address</label>
+          <input id="site-address" formControlName="address_line" maxlength="255">
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <span class="form-hint">Owner/admin access required. Legal permission is reviewed separately.</span>
+        <button type="submit" class="primary-button" [disabled]="siteForm.invalid || savingSite()">
+          @if (savingSite()) { Saving… } @else { Save draft site }
+        </button>
+      </div>
+    </form>
+  }
+
+  <div class="workspace-grid">
+    <section class="site-list-panel" aria-labelledby="site-list-heading">
+      <div class="panel-heading">
+        <div>
+          <h2 id="site-list-heading">Physical sites</h2>
+          <p>{{ sites().length }} loaded</p>
+        </div>
+        <button type="button" class="secondary-button" (click)="selectSite(activeSite()!)" [disabled]="!activeSite() || loading()">Refresh</button>
+      </div>
+
+      @if (loading()) {
+        <div class="loading-state" role="status">Loading sites…</div>
+      } @else if (sites().length === 0) {
+        <div class="empty-state">
+          <strong>No business sites registered</strong>
+          <p>Add a factory, office, store premises, warehouse campus or depot address. The operational node is registered separately.</p>
+        </div>
+      } @else {
+        <div class="site-list">
+          @for (site of sites(); track site.id) {
+            <button type="button" class="site-option" [class.selected]="activeSite()?.id === site.id" (click)="selectSite(site)">
+              <span class="site-avatar" aria-hidden="true">{{ site.name.slice(0, 1).toUpperCase() }}</span>
+              <span class="site-details">
+                <strong>{{ site.name }}</strong>
+                <small>{{ site.code }} · {{ site.city || site.site_type }}</small>
+                <span class="site-status">{{ site.status }}</span>
+              </span>
+              <span class="select-arrow" aria-hidden="true">→</span>
+            </button>
+          }
+        </div>
+      }
+    </section>
+
+    <section class="node-panel" aria-labelledby="node-heading">
+      @if (activeSite(); as site) {
+        <div class="panel-heading">
+          <div>
+            <span class="eyebrow">SITE DETAIL</span>
+            <h2 id="node-heading">{{ site.name }}</h2>
+            <p>{{ site.address_line || site.city || site.site_type }} · {{ site.timezone }}</p>
+          </div>
+          @if (canManage()) {
+            <button type="button" class="secondary-button" (click)="showNodeForm.set(!showNodeForm())">
+              {{ showNodeForm() ? 'Close' : 'Add operating node' }}
+            </button>
+          }
+        </div>
+
+        @if (showNodeForm() && canManage()) {
+          <form class="node-form" [formGroup]="nodeForm" (ngSubmit)="createNode()">
+            <h3>Create an operational node at this site</h3>
+            <div class="form-grid">
+              <div class="field">
+                <label for="node-name">Node name</label>
+                <input id="node-name" formControlName="name" maxlength="180" required>
+              </div>
+              <div class="field">
+                <label for="node-code">Unique node code</label>
+                <input id="node-code" formControlName="code" maxlength="80" required>
+              </div>
+              <div class="field">
+                <label for="node-type">Operational function</label>
+                <select id="node-type" formControlName="node_type">
+                  <option value="FACTORY">Factory</option>
+                  <option value="WAREHOUSE">Warehouse</option>
+                  <option value="DISTRIBUTION_CENTER">Distribution centre</option>
+                  <option value="BRANCH">Branch</option>
+                  <option value="RETAIL_STORE">Retail store</option>
+                  <option value="WHOLESALE_DEPOT">Wholesale depot</option>
+                  <option value="FULFILLMENT_CENTER">Fulfilment centre</option>
+                  <option value="OFFICE">Office</option>
+                  <option value="SUBCONTRACTOR_SITE">Subcontractor site</option>
+                </select>
+              </div>
+              <label class="checkbox-field">
+                <input type="checkbox" formControlName="stock_holding_enabled">
+                <span>Enable stock-holding capability for this node</span>
+              </label>
+            </div>
+            <div class="form-actions">
+              <span class="form-hint">A branch or office cannot be made a stock-holding node. A location/bin is a separate record.</span>
+              <button type="submit" class="primary-button" [disabled]="nodeForm.invalid || savingNode()">
+                @if (savingNode()) { Saving… } @else { Save draft node }
+              </button>
+            </div>
+          </form>
+        }
+
+        <div class="node-list-heading">
+          <h3>Operating nodes</h3>
+          <span>{{ nodes().length }} loaded</span>
+        </div>
+
+        @if (loadingNodes()) {
+          <div class="loading-state" role="status">Loading operating nodes…</div>
+        } @else if (nodes().length === 0) {
+          <div class="empty-state compact">
+            <strong>No operational nodes yet</strong>
+            <p>Create one or more distinct operating functions at this physical site.</p>
+          </div>
+        } @else {
+          <div class="node-list">
+            @for (node of nodes(); track node.id) {
+              <article class="node-item">
+                <span class="node-icon" aria-hidden="true">◇</span>
+                <div class="node-details">
+                  <strong>{{ node.name }}</strong>
+                  <small>{{ node.code }} · {{ node.node_type }}</small>
+                  <span class="node-status">{{ node.status }}</span>
+                </div>
+                @if (node.stock_holding_enabled) {
+                  <span class="stock-badge">Stock capable</span>
+                } @else {
+                  <span class="plain-badge">No stock</span>
+                }
+              </article>
+            }
+          </div>
+        }
+      } @else {
+        <div class="empty-state node-empty">
+          <strong>Select a physical site</strong>
+          <p>Choose a site to inspect or create its factory, branch, DC, store, office, warehouse or fulfilment nodes.</p>
+        </div>
+      }
+    </section>
+  </div>
+
+  <div class="legal-note">
+    <strong>Legal and operational distinction</strong>
+    <p>Physical sites, branch registration, business licences, tax registration, environmental permits, inventory locations and operating nodes are independent records. A site or node configuration never grants legal authority to retail, wholesale, manufacture, store controlled materials or discharge effluent.</p>
+  </div>
+</section>
