@@ -133,6 +133,11 @@ export class BusinessSitesComponent {
     });
   }
 
+  refreshActiveSite(): void {
+    const site = this.activeSite();
+    if (site) this.selectSite(site);
+  }
+
   selectSite(site: BusinessSite): void {
     this.activeSite.set(site);
     this.nodes.set([]);
