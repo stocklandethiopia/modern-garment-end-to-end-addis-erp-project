@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\TokenController;
 use App\Http\Controllers\Enterprise\BusinessSiteController;
 use App\Http\Controllers\Enterprise\InventoryLocationController;
 use App\Http\Controllers\Enterprise\LegalEntityController;
+use App\Http\Controllers\Enterprise\LicensingEvidenceController;
 use App\Http\Controllers\Enterprise\TenantController;
 use App\Support\TenantContext;
 use Illuminate\Http\Request;
@@ -50,5 +51,9 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/enterprise/sites/{siteId}/nodes', [BusinessSiteController::class, 'storeNode']);
         Route::get('/enterprise/nodes/{nodeId}/inventory-locations', [InventoryLocationController::class, 'index']);
         Route::post('/enterprise/nodes/{nodeId}/inventory-locations', [InventoryLocationController::class, 'store']);
+        Route::get('/enterprise/sites/{siteId}/branch-registrations', [LicensingEvidenceController::class, 'listBranchRegistrations']);
+        Route::post('/enterprise/sites/{siteId}/branch-registrations', [LicensingEvidenceController::class, 'createBranchRegistration']);
+        Route::get('/enterprise/legal-entities/{entityId}/licences', [LicensingEvidenceController::class, 'listLicences']);
+        Route::post('/enterprise/legal-entities/{entityId}/licences', [LicensingEvidenceController::class, 'createLicence']);
     });
 });
