@@ -30,6 +30,7 @@ class ResolveTenantContext
 
         try {
             // Transaction-local context prevents pooled-connection tenant leakage.
+            $connection->select("select set_config('app.current_user_id', ?, true)", [$user->getAuthIdentifier()]);
             $connection->select("select set_config('app.current_tenant_id', ?, true)", [$tenantId]);
 
             $membership = $connection->table('tenant_memberships')
