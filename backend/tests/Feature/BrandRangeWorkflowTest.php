@@ -730,6 +730,9 @@ class BrandRangeWorkflowTest extends TestCase
             ->postJson('/api/v1/styles/'.$styleId.'/measurement-specs/'.$specId.'/approve', [])
             ->assertOk()
             ->assertJsonPath('data.status', 'APPROVED');
+        $this->withHeaders($this->tenantHeader())->getJson('/api/v1/styles/'.$styleId)
+            ->assertOk()
+            ->assertJsonPath('data.status', 'TECHNICAL_DESIGN');
         $this->actAsOwner();
 
         $pieces = [
@@ -783,6 +786,9 @@ class BrandRangeWorkflowTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.status', 'APPROVED')
             ->assertJsonPath('pattern_set.current_revision', 2);
+        $this->withHeaders($this->tenantHeader())->getJson('/api/v1/styles/'.$styleId)
+            ->assertOk()
+            ->assertJsonPath('data.status', 'PATTERN_DEVELOPMENT');
         $this->actAsOwner();
 
         $this->withHeaders($this->tenantHeader())->getJson('/api/v1/styles/'.$styleId.'/patterns')

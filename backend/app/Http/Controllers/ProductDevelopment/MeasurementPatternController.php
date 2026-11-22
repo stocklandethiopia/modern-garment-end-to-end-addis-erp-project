@@ -180,6 +180,10 @@ class MeasurementPatternController extends Controller
                 'approved_by' => $actorId,
                 'approved_at' => now(),
             ]);
+            DB::table('styles')->where('tenant_id', $tenantId)->where('id', $styleId)->update([
+                'status' => 'TECHNICAL_DESIGN',
+                'updated_at' => now(),
+            ]);
 
             $this->writeAudit($tenantId, $actorId, 'MEASUREMENT_SPEC_VERSION_APPROVED', 'MEASUREMENT_SPEC', $specVersionId, 'Independent approval of the measurement specification version.');
 
@@ -244,6 +248,7 @@ class MeasurementPatternController extends Controller
         $style = $this->findStyle($styleId, $tenantId);
         $this->assertStyleEditor($style, $actorId, $tenantContext);
         abort_unless((int) $style->current_revision > 0, 422, 'A style revision is required before pattern development.');
+        abort_unless(in_array($style->status, ['TECHNICAL_DESIGN', 'PATTERN_DEVELOPMENT'], true), 422, 'The current style revision must complete measurement approval before pattern development.');
         $spec = $this->findApprovedMeasurementSpec($tenantId, $styleId, $data['measurement_spec_version_id']);
         abort_unless((int) $spec->style_revision_no === (int) $style->current_revision, 422, 'The measurement specification must reference the current style revision.');
 
@@ -309,6 +314,7 @@ class MeasurementPatternController extends Controller
             abort_if($patternSet === null, 404);
             $style = $this->findStyle($patternSet->style_id, $tenantId);
             $this->assertStyleEditor($style, $actorId, $tenantContext);
+            abort_unless(in_array($style->status, ['TECHNICAL_DESIGN', 'PATTERN_DEVELOPMENT'], true), 422, 'The current style revision must complete measurement approval before pattern development.');
             $spec = $this->findApprovedMeasurementSpec($tenantId, $patternSet->style_id, $data['measurement_spec_version_id']);
             abort_unless((int) $spec->style_revision_no === (int) $style->current_revision, 422, 'The measurement specification must reference the current style revision.');
 
