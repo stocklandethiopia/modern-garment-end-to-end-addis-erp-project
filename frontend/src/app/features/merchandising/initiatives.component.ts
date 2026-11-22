@@ -5,6 +5,7 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { RouterLink } from '@angular/router';
 
 import { AuthSessionService } from '../../core/auth/auth-session.service';
+import { EvidencePolicyCoverage, EvidencePolicyService } from './evidence-policy.service';
 import { LegalEntity, LegalEntityService } from '../enterprise/legal-entity.service';
 import {
   Initiative,
@@ -23,6 +24,7 @@ import {
 })
 export class InitiativesComponent {
   private readonly api = inject(MerchandisingService);
+  private readonly evidencePolicyApi = inject(EvidencePolicyService);
   private readonly legalEntityApi = inject(LegalEntityService);
   readonly session = inject(AuthSessionService);
 
@@ -30,6 +32,9 @@ export class InitiativesComponent {
   readonly legalEntities = signal<LegalEntity[]>([]);
   readonly selectedId = signal<string | null>(null);
   readonly detail = signal<InitiativeDetailResponse | null>(null);
+  readonly evidenceCoverage = signal<EvidencePolicyCoverage | null>(null);
+  readonly loadingEvidenceCoverage = signal(false);
+  readonly evidenceCoverageError = signal<string | null>(null);
 
   readonly loading = signal(false);
   readonly loadingDetail = signal(false);
@@ -41,6 +46,7 @@ export class InitiativesComponent {
 
   private requestSequence = 0;
   private detailSequence = 0;
+  private evidenceCoverageSequence = 0;
 
   readonly canDecide = computed(() => {
     const role = this.session.activeTenant()?.membership_role;
@@ -153,6 +159,10 @@ export class InitiativesComponent {
     this.legalEntities.set([]);
     this.selectedId.set(null);
     this.detail.set(null);
+    this.evidenceCoverage.set(null);
+    this.loadingEvidenceCoverage.set(false);
+    this.evidenceCoverageError.set(null);
+    this.evidenceCoverageSequence += 1;
     this.errorMessage.set(null);
     this.successMessage.set(null);
     this.loading.set(false);
@@ -224,6 +234,10 @@ export class InitiativesComponent {
 
     const requestId = ++this.detailSequence;
     this.loadingDetail.set(true);
+    this.evidenceCoverage.set(null);
+    this.loadingEvidenceCoverage.set(false);
+    this.evidenceCoverageError.set(null);
+    this.evidenceCoverageSequence += 1;
     this.errorMessage.set(null);
 
     this.api.getInitiative(initiativeId).subscribe({
@@ -235,6 +249,9 @@ export class InitiativesComponent {
         ) return;
         this.detail.set(response);
         this.loadingDetail.set(false);
+        if (response.data.status === 'RESEARCH' || response.data.status === 'ASSESSMENT') {
+          this.loadEvidenceCoverage(initiativeId, tenantId);
+        }
         this.decisionForm.patchValue({
           decision: response.data.status === 'SCREENING' ? 'APPROVE_RESEARCH' : 'APPROVE',
         });
@@ -250,6 +267,34 @@ export class InitiativesComponent {
         this.errorMessage.set(error.status === 404
           ? 'The selected initiative is no longer available in this tenant.'
           : 'Initiative detail could not be loaded.');
+      },
+    });
+  }
+
+  private loadEvidenceCoverage(initiativeId: string, tenantId: string): void {
+    const sequence = ++this.evidenceCoverageSequence;
+    this.loadingEvidenceCoverage.set(true);
+    this.evidenceCoverageError.set(null);
+
+    this.evidencePolicyApi.coverage(initiativeId, 'ASSESSMENT').subscribe({
+      next: (response) => {
+        if (
+          sequence !== this.evidenceCoverageSequence ||
+          this.session.activeTenant()?.id !== tenantId ||
+          this.selectedId() !== initiativeId
+        ) return;
+        this.evidenceCoverage.set(response.data);
+        this.loadingEvidenceCoverage.set(false);
+      },
+      error: () => {
+        if (
+          sequence !== this.evidenceCoverageSequence ||
+          this.session.activeTenant()?.id !== tenantId ||
+          this.selectedId() !== initiativeId
+        ) return;
+        this.evidenceCoverage.set(null);
+        this.loadingEvidenceCoverage.set(false);
+        this.evidenceCoverageError.set('Evidence coverage could not be loaded for this initiative.');
       },
     });
   }
