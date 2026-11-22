@@ -5,7 +5,7 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { AuthSessionService } from '../../core/auth/auth-session.service';
-import { Initiative, LegalEntity } from '../enterprise/../merchandising/merchandising.service';
+import { Initiative } from './merchandising.service';
 import {
   InsightSource,
   InsightSourceInput,
