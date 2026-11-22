@@ -30,13 +30,29 @@ This is the product capability map, not a claim that every capability has alread
 - Configurable fields, forms, document templates, workflows and notification preferences.
 - Integration registry, API keys, webhooks, import/export jobs and monitoring.
 
-## C. Merchandising and commercial
+## C. Merchandising and commercial execution
 
-- Buyer/customer onboarding, supplier and agent profiles, RFQ/enquiry, sample request and sample tracking.
-- Style/collection development, season, product category, size range, colourway and customer specifications.
-- Tech pack, measurement chart, artwork, construction details, trims, labels, packaging and revision control.
-- Quotation, costing, price negotiation, order confirmation, purchase commitment and order amendments.
-- Critical path calendar, milestone ownership, risk/late alerts and buyer communication history.
+Merchandising connects the product strategy and development portfolio to commercial demand, buyers/accounts, channels, orders and profitability. It supports both own-brand/own-store products and buyer-specific development.
+
+### Customer, buyer and account merchandising
+- Buyer/customer onboarding, brand and retailer profiles, buying offices, agents, wholesalers, retail accounts, distributors and reseller partners.
+- Customer hierarchy, bill-to/ship-to, buying contacts, territories, seasons, target markets, delivery windows, compliance requirements and communication history.
+- Buyer enquiry/RFQ, product brief, quotation, target cost, price negotiation, sample request, approval status, order confirmation, amendments and cancellation.
+- Order book, customer PO, style/colour/size breakdown, ratio, quantity, delivery schedule, Incoterms/ship mode, chargebacks/claims and buyer scorecards.
+- Merchandising critical path with task owner, dependencies, planned/actual dates, approval evidence, late-risk forecast, escalation and next action.
+
+### Range, style and assortment execution
+- Connect the approved collection/line plan to style masters, colorways, size ranges, variants/SKUs, planned quantities, target retail/wholesale price, margin and intended sales channels.
+- Coordinate design, technical development, sampling, costing, material sourcing, production, quality, distribution and launch readiness on a shared style/order timeline.
+- Maintain order-independent development for own-brand collections, replenishment/core products, store-exclusive products and new initiatives; a buyer order can also initiate a buyer-specific style.
+- Use store sell-through, returns, customer feedback, wholesale sell-in/sell-through (where available), markdowns and margin to inform next-season range decisions.
+- Track product lifecycle, launch/drop date, channel assortment, replenishment eligibility, markdown/clearance and end-of-life.
+
+### Commercial planning and profitability
+- Target and actual sales, gross margin, contribution margin, channel mix, open-to-buy, inventory exposure, demand scenarios and commercial risk.
+- Quote/order costing linked to approved BOM, route, SMV, supplier quotes, landed cost, process/subcontract costs, freight, duty, overhead and margin assumptions.
+- Manage price changes, customer agreements, discounts, rebates, commissions and approvals with effective dates and full audit history.
+- Show the commercial consequences of product design choices, material substitutions, process routes, collection mix, store allocations and order amendments.
 
 ## D. Design studio, product development, PLM and industrial engineering
 
@@ -68,12 +84,6 @@ Product development is an in-house creative and technical discipline. It must no
 - Style changeover and setup study, quick changeover (SMED), learning curves, efficiency ramp, alternative methods and controlled improvement proposals.
 - IE changes require a measured before/after baseline, approved new method/SMV, training and effective date; preserve historical standards for old production.
 
-
-- Style master, product variants, BOM, material specification and approved substitutes.
-- Operation bulletin, routing, machine class, standard minute value (SMV), skill requirements and operation sequence.
-- Marker planning, fabric width, shrinkage, lay plan, spreading, cutting consumption and marker efficiency.
-- Size/colour ratio, grading, pattern revisions, sample approval and pre-production readiness.
-- Capacity planning, line balancing, takt/target calculation, labour standards and cost simulation.
 
 ## E. Procurement and materials
 
@@ -216,13 +226,33 @@ Manufacturing is a configurable network of specialist departments, work centres 
 ### Department-specific operating results
 Each department reports its own planned/actual quantity, accepted quantity, yield, defects, rework, waste, cycle time, WIP, resource use, safety/maintenance events and hand-off status. A central control tower consolidates them without erasing departmental detail.
 
-## I. Quality assurance, compliance and delivery
+## I. Quality assurance, process control and compliance
 
-- Inline, end-line, final and AQL inspections with configurable sampling plans.
-- Defect taxonomy, severity, repair/reject, rework, CAPA, root cause and supplier corrective action.
-- Fabric testing, shade/colour, measurement, workmanship, needle/metal and packaging checks as applicable.
-- Pre-shipment inspection, buyer compliance, social/environmental evidence and document expiry.
-- Packing list, carton details, assortment, shipping marks, dispatch, delivery, export documents and returns.
+Quality is designed into product definition, supplier/material approval, every manufacturing process and customer delivery. A final inspection alone is not a quality system.
+
+### Quality planning and specifications
+- Quality plan linked to style revision, buyer/brand specification, material, product risk, route, process and market.
+- Approved measurement tables/tolerances, workmanship standards, stitch/seam requirements, appearance references, shade/colour standards, print/embroidery positions, wash/finish standards, label/care requirements and packaging criteria.
+- Control plans define what is checked, sampling/frequency, method/tool, acceptance criteria, owner, evidence, reaction plan and release authority.
+- Gauge/equipment calibration, inspector competency, sample reference control and quality-method revision.
+
+### Quality at source and stage gates
+- Supplier qualification, fabric/trim incoming inspection, fabric defect mapping, shade/lot segregation, material testing and quarantine/release.
+- First-piece/first-off approval at cutting, printing, embroidery, sewing, washing/dyeing, pressing, finishing and packing where relevant.
+- In-process/inline and end-line quality checks, self-inspection, independent verification, AQL/final inspection and shipment audit using configurable plans.
+- Defect containment and stop/hold/andon action before nonconforming work moves downstream; authorized rework/reinspection or disposition.
+- Separate acceptance gates for fit/measurement, shade/colour, workmanship, process recipe/parameters, appearance, safety, packaging and shipment readiness.
+
+### Defect, rework and corrective action
+- Standard defect taxonomy, severity, defect location, detection process, source lot/bundle/operator/line/machine/recipe, quantity inspected and quantity affected.
+- Repair, rework, rewash, re-embroidery, recut, reject, downgrade, scrap, concession and supplier/carrier claim routes with approvals.
+- Root cause analysis (why-why, Pareto, fishbone/5-why), corrective/preventive action (CAPA), responsible owner, due date, evidence and effectiveness verification.
+- First-pass yield, defects per unit, repair/rework minutes, reject rate, cost of poor quality, recurrence and process escape analytics; avoid blame-only reporting.
+
+### Compliance and release
+- Product safety, restricted-substance/chemical evidence, social/environmental compliance, audit findings, corrective action and expiry alerts.
+- Process-specific chemical handling, PPE, ventilation, water/energy/effluent and waste controls where relevant.
+- Shipment inspection, packing/carton audit, customer/buyer compliance evidence, export/shipping documents, certificate and release traceability.
 
 ## J. Finance and administration
 
@@ -261,6 +291,9 @@ HR is a major enterprise domain, not a small employee register.
 - Attendance, assessment, practical sign-off, effectiveness evaluation and training ROI.
 - Career paths, succession, mentoring, coaching, goals, appraisal, performance improvement and engagement.
 - Factory induction, safety, quality, machine operation, supervisor and leadership development.
+- Operational skill matrix by employee, operation, machine, process, style family and skill grade; evidence-backed assessment, assessor, date, recertification/expiry and authorization limits.
+- Link skills to line balancing, shift assignment, absence coverage, bottleneck risk, cross-training, succession and training investment. Supervisors/IE may receive explainable deployment suggestions, never an unreviewable automated worker score.
+- Optional team/individual incentive policies can consume approved productivity and quality evidence only after HR/management policy approval. Keep rules transparent, versioned, auditable, worker-visible and appealable; balance accepted output, first-pass quality, rework, safety, compliance and teamwork.
 
 ### Safety and wellbeing
 - Occupational health and safety, incidents, near misses, risk assessments and corrective actions.
