@@ -62,7 +62,7 @@ Initial bounded contexts:
 2. Organization, legal entities, branches, factories, locations and calendars.
 3. Identity, authentication, authorization, roles, delegated administration and audit.
 4. CRM, customer, supplier, agent, buyer and partner management.
-5. Merchandising, enquiry, quotation, order, style, collection and critical path.
+5. Merchandising, enquiry, sample, style, collection and critical path.
 6. Product lifecycle, tech packs, measurements, grading, BOM, routing and revisions.
 7. Costing, pricing, margin, quotation and profitability.
 8. Procurement, supplier sourcing, contracts, purchase requisitions and purchase orders.
@@ -74,11 +74,11 @@ Initial bounded contexts:
 14. Distribution network management, DC/depot operations, stock allocation, branch/store replenishment and inter-node transfer control.
 15. Order management, ATP/CTP, wholesale, retailer/reseller accounts, company-owned retail, POS, D2C and channel commerce.
 16. Transport, dispatch, delivery tracking, proof of delivery, export documentation, RMA and reverse logistics.
-16. Finance, general ledger, AP, AR, cash, bank, tax, fixed assets, budgets and close.
-17. Human resources, workforce planning, recruitment, onboarding, employee relations and separation.
-18. Time, attendance, shifts, leave, overtime, payroll, benefits, loans and final settlement.
-19. Learning and development, training catalogue, competency, certification, skills matrix and training effectiveness.
-20. Performance, goals, appraisals, succession, engagement, occupational health and safety.
+17. Finance, general ledger, AP, AR, cash, bank, tax, fixed assets, budgets and close.
+18. Human resources, workforce planning, recruitment, onboarding, employee relations and separation.
+19. Time, attendance, shifts, leave, overtime, payroll, benefits, loans and final settlement.
+20. Learning and development, training catalogue, competency, certification, skills matrix and training effectiveness.
+21. Performance, goals, appraisals, succession, engagement, occupational health and safety.
 22. Maintenance, assets, utilities, energy, calibration and facilities.
 23. Documents, workflow, approvals, notifications, reporting, BI and integration management.
 
