@@ -81,6 +81,7 @@ return new class extends Migration
             $table->string('status', 20)->default('ACTIVE');
             $table->timestampsTz();
             $table->unique(['tenant_id', 'id']);
+            $table->unique(['tenant_id', 'id', 'legal_entity_id']);
             $table->unique(['tenant_id', 'code']);
             $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
             $table->foreign(['tenant_id', 'legal_entity_id'])
@@ -92,7 +93,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->uuid('tenant_id');
             $table->uuid('business_site_id');
-            $table->uuid('legal_entity_id')->nullable();
+            $table->uuid('legal_entity_id');
             $table->string('code', 80);
             $table->string('node_type', 40);
             $table->string('name', 180);
@@ -103,10 +104,8 @@ return new class extends Migration
             $table->unique(['tenant_id', 'id']);
             $table->unique(['tenant_id', 'code']);
             $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
-            $table->foreign(['tenant_id', 'business_site_id'])
-                ->references(['tenant_id', 'id'])->on('business_sites')->restrictOnDelete();
-            $table->foreign(['tenant_id', 'legal_entity_id'])
-                ->references(['tenant_id', 'id'])->on('legal_entities')->restrictOnDelete();
+            $table->foreign(['tenant_id', 'business_site_id', 'legal_entity_id'])
+                ->references(['tenant_id', 'id', 'legal_entity_id'])->on('business_sites')->restrictOnDelete();
             $table->index(['tenant_id', 'node_type', 'status']);
         });
 
@@ -125,10 +124,8 @@ return new class extends Migration
             $table->timestampsTz();
             $table->unique(['tenant_id', 'id']);
             $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
-            $table->foreign(['tenant_id', 'legal_entity_id'])
-                ->references(['tenant_id', 'id'])->on('legal_entities')->restrictOnDelete();
-            $table->foreign(['tenant_id', 'business_site_id'])
-                ->references(['tenant_id', 'id'])->on('business_sites')->restrictOnDelete();
+            $table->foreign(['tenant_id', 'business_site_id', 'legal_entity_id'])
+                ->references(['tenant_id', 'id', 'legal_entity_id'])->on('business_sites')->restrictOnDelete();
             $table->index(['tenant_id', 'status', 'valid_to']);
         });
 
@@ -143,12 +140,13 @@ return new class extends Migration
             $table->string('status', 20)->default('ACTIVE');
             $table->timestampsTz();
             $table->unique(['tenant_id', 'id']);
+            $table->unique(['tenant_id', 'operational_node_id', 'id']);
             $table->unique(['tenant_id', 'operational_node_id', 'code']);
             $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
             $table->foreign(['tenant_id', 'operational_node_id'])
                 ->references(['tenant_id', 'id'])->on('operational_nodes')->restrictOnDelete();
-            $table->foreign(['tenant_id', 'parent_id'])
-                ->references(['tenant_id', 'id'])->on('inventory_locations')->restrictOnDelete();
+            $table->foreign(['tenant_id', 'operational_node_id', 'parent_id'])
+                ->references(['tenant_id', 'operational_node_id', 'id'])->on('inventory_locations')->restrictOnDelete();
         });
 
         Schema::create('audit_events', function (Blueprint $table): void {
