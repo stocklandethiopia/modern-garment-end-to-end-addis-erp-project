@@ -141,12 +141,12 @@ return new class extends Migration
             END;
             $$");
 
-        DB::statement("CREATE TRIGGER assortment_account_terms_state_guard
+        DB::statement('CREATE TRIGGER assortment_account_terms_state_guard
             BEFORE UPDATE ON assortment_account_terms
-            FOR EACH ROW EXECUTE FUNCTION guard_assortment_account_terms_state()");
+            FOR EACH ROW EXECUTE FUNCTION guard_assortment_account_terms_state()');
 
-        DB::statement("ALTER TABLE assortment_account_terms ENABLE ROW LEVEL SECURITY");
-        DB::statement("ALTER TABLE assortment_account_terms FORCE ROW LEVEL SECURITY");
+        DB::statement('ALTER TABLE assortment_account_terms ENABLE ROW LEVEL SECURITY');
+        DB::statement('ALTER TABLE assortment_account_terms FORCE ROW LEVEL SECURITY');
         DB::statement(
             "CREATE POLICY tenant_isolation_assortment_account_terms ON assortment_account_terms
              USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid)
