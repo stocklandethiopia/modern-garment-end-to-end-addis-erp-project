@@ -357,7 +357,12 @@ export class PlanningWorkbenchComponent {
   }
 
   approveScenario(scenarioId: string): void {
-    this.perform(() => this.api.approveOtbScenario(scenarioId), 'Scenario approved for planning use only; no purchase order or journal was created.', () => this.loadAll());
+    this.perform(() => this.api.approveOtbScenario(scenarioId), 'Scenario approved for planning use only; no purchase order or journal was created.', () => {
+      this.lastScenario.update((scenario) => scenario?.id === scenarioId
+        ? { ...scenario, status: 'APPROVED_FOR_PLANNING_ONLY' }
+        : scenario);
+      this.loadAll();
+    });
   }
 
   scenarioResult(): { available_budget: string; interpretation: string; formula_version: string; budget_basis: string; valuation_basis: string; warning: string } | null {
@@ -505,7 +510,7 @@ export class PlanningWorkbenchComponent {
     const tenantId = this.session.activeTenant()?.id;
 
     request().subscribe({
-      next: () => {
+      next: (response) => {
         if (this.session.activeTenant()?.id !== tenantId) return;
         this.saving.set(false);
         this.successMessage.set(success);
