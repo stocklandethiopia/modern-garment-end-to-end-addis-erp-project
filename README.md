@@ -41,6 +41,13 @@ Exact supported patch versions are recorded in the platform standard and must be
 10. Payroll and differentiated variable-compensation schemes: docs/hr/payroll-and-variable-compensation.md
 11. Approved reference repository review: docs/references/reference-repositories.md
 
+## Work-package delivery status
+
+- [Requirements traceability catalogue](docs/requirements/requirements-traceability.md)
+- [Tenant, organisation and identity architecture](docs/architecture/tenant-organization-identity.md)
+- [WP-00 to WP-16 handover register](docs/work-packages/handover-register.md)
+- [Ethiopia legal-source register and open holds](docs/localization/ethiopia-legal-regulatory-register.md)
+
 ## Delivery rule
 
 A feature is not complete because a screen exists. It must include its business workflow, permissions, validations, audit trail, API contract, persistence, tests, reporting impact, localization behavior where applicable, and operational documentation. Only a version that passes the repository's quality gates may be promoted to a release.
