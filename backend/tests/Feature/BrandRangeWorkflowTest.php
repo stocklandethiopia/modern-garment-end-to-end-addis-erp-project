@@ -793,7 +793,7 @@ class BrandRangeWorkflowTest extends TestCase
                     'account_reference' => $account,
                     'currency' => 'ETB',
                     'effective_from' => '2026-11-22T00:00:00Z',
-                    'effective_to' => '2027-12-31T23:59:59Z',
+                    'effective_to' => '2028-12-31T23:59:59Z',
                 ])
                 ->assertCreated();
 
@@ -950,6 +950,14 @@ class BrandRangeWorkflowTest extends TestCase
             ])
             ->assertUnprocessable()
             ->assertJsonPath('message', 'Approved account terms already overlap this channel, market, account and effective period. Create a new non-overlapping version.');
+
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/product/assortment-plans/'.$wholesalePlanId.'/account-terms/'.$overlappingId.'/decisions', [
+                'decision' => 'REJECT',
+                'reason' => 'The renewal period overlaps the approved version and must not become effective.',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'REJECTED');
 
         $this->actAsOwner();
         $nextTerms = $this->withHeaders($this->tenantHeader())
