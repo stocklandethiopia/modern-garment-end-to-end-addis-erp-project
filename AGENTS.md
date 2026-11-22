@@ -22,6 +22,12 @@ Before doing any work in this repository, read:
 - No unrelated side projects, technologies, repositories, external services or workspaces. Research only to serve the approved ERP goal.
 - Do not change production data, activate legal rules, deploy or perform irreversible actions without the required explicit human approval.
 
+## Current checkpoint and advancement gate
+
+- WP-00 governance artifacts are committed and the handover is awaiting Product Owner acceptance.
+- Do not begin WP-01 or any later work package until the Product Owner expressly accepts WP-00.
+- After each package, stop at handover and wait for the Product Owner's review/acceptance before proceeding.
+
 ## Required handover format
 
 For each work package report:
