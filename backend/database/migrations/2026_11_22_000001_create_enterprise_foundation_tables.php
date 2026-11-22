@@ -123,6 +123,7 @@ return new class extends Migration
             $table->string('status', 24)->default('REVIEW_REQUIRED');
             $table->timestampsTz();
             $table->unique(['tenant_id', 'id']);
+            $table->unique(['tenant_id', 'commercial_register_reference']);
             $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
             $table->foreign(['tenant_id', 'business_site_id', 'legal_entity_id'])
                 ->references(['tenant_id', 'id', 'legal_entity_id'])->on('business_sites')->restrictOnDelete();
