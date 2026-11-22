@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { EvidencePolicyWorkbenchComponent } from './evidence-policy-workbench.component';
@@ -11,7 +12,7 @@ describe('EvidencePolicyWorkbenchComponent', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [EvidencePolicyWorkbenchComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     });
     http = TestBed.inject(HttpTestingController);
   });
