@@ -187,13 +187,13 @@
           } @else if (record.data.status === 'SCREENING' && canDecide()) {
             <div>
               <strong>Independent owner / administrator decision</strong>
-              <p>Approve research, park or reject with a recorded reason. The approver must differ from the initiative creator.</p>
+              <p>Approve research, park or reject with a recorded reason. The approver must differ from the initiative creator. A matching approved RESEARCH evidence policy is checked before research can be authorized.</p>
             </div>
             <button type="button" class="secondary-button" (click)="showDecisionForm.set(!showDecisionForm())">Record screening decision</button>
           } @else if (record.data.status === 'RESEARCH') {
             <div>
               <strong>Evidence sufficiency gate</strong>
-              <p>At least one sourced insight is required before the initiative enters assessment.</p>
+              <p>A matching approved ASSESSMENT evidence policy is enforced when configured. Otherwise, the existing minimum of one sourced market insight applies.</p>
             </div>
             <div class="action-pair">
               <a routerLink="/product/market-insights" class="text-link">Capture market evidence →</a>
@@ -248,12 +248,12 @@
           </form>
         }
 
-        @if (record.data.status === 'RESEARCH' || record.data.status === 'ASSESSMENT') {
+        @if (record.data.status === 'SCREENING' || record.data.status === 'RESEARCH' || record.data.status === 'ASSESSMENT') {
           <section class="detail-section evidence-coverage-panel" aria-labelledby="evidence-coverage-heading">
             <div class="section-title">
               <div>
                 <h3 id="evidence-coverage-heading">Evidence sufficiency gate</h3>
-                <p>Assessment-stage policy for this initiative's type and target market.</p>
+                <p>{{ record.data.status === 'SCREENING' ? 'Research-stage policy' : 'Assessment-stage policy' }} for this initiative's type and target market.</p>
               </div>
               @if (evidenceCoverage(); as coverageRecord) {
                 <span class="coverage-chip" [attr.data-status]="coverageRecord.evidence_coverage.status">
@@ -268,7 +268,11 @@
             } @else if (evidenceCoverage(); as coverageRecord) {
               @if (coverageRecord.evidence_coverage.status === 'NOT_CONFIGURED') {
                 <div class="empty-inline">
-                  No approved policy matches this initiative type, market and assessment stage. The existing sourced-insight minimum applies; configure and approve a tenant policy for a complete sufficiency gate.
+                  @if (coverageRecord.stage === 'RESEARCH') {
+                    No approved RESEARCH policy matches this initiative type and market. Screening approval therefore has no additional research-stage evidence threshold configured.
+                  } @else {
+                    No approved ASSESSMENT policy matches this initiative type and market. The existing minimum of one sourced market insight remains in force before assessment.
+                  }
                   <a routerLink="/product/evidence-policies" class="text-link">Configure evidence policy →</a>
                 </div>
               } @else {
