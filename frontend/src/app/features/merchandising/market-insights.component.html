@@ -1,0 +1,282 @@
+<section class="insight-page" aria-labelledby="insight-heading">
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">WP-04 · MARKET & CONSUMER EVIDENCE</span>
+      <h1 id="insight-heading">Market insight register</h1>
+      <p>Record what was observed, how it was captured, where it came from, what it can be used for and what its limitations are. Evidence is kept separate from assumptions and decisions.</p>
+    </div>
+    <div class="heading-actions">
+      <a routerLink="/product/initiatives" class="secondary-button">Initiatives pipeline</a>
+      <button type="button" class="primary-button" (click)="showInsightForm.set(!showInsightForm())" [disabled]="sources().length === 0">
+        {{ showInsightForm() ? 'Close evidence form' : 'Capture insight' }}
+      </button>
+    </div>
+  </div>
+
+  <div class="scope-banner">
+    <span class="scope-icon" aria-hidden="true">◎</span>
+    <div>
+      <strong>{{ session.activeTenant()?.name }}</strong>
+      <span>Tenant workspace · source provenance and insight history</span>
+    </div>
+    <span class="scope-count">{{ sources().length }} sources · {{ insights().length }} insights</span>
+  </div>
+
+  @if (successMessage()) {
+    <div class="notice success" role="status" aria-live="polite">{{ successMessage() }}</div>
+  }
+  @if (errorMessage()) {
+    <div class="notice error" role="alert">{{ errorMessage() }}</div>
+  }
+
+  <section class="source-panel" aria-labelledby="source-heading">
+    <div class="panel-heading">
+      <div>
+        <h2 id="source-heading">Evidence sources</h2>
+        <p>Register a source once, then link each observation or finding to it.</p>
+      </div>
+      <button type="button" class="secondary-button" (click)="showSourceForm.set(!showSourceForm())">
+        {{ showSourceForm() ? 'Close source form' : 'Register source' }}
+      </button>
+    </div>
+
+    @if (showSourceForm()) {
+      <form class="data-form source-form" [formGroup]="sourceForm" (ngSubmit)="createSource()" novalidate>
+        <div class="form-grid">
+          <div class="field">
+            <label for="source-type">Source type</label>
+            <select id="source-type" formControlName="source_type">
+              @for (type of sourceTypes; track type.value) {
+                <option [value]="type.value">{{ type.label }}</option>
+              }
+            </select>
+          </div>
+          <div class="field">
+            <label for="source-name">Source name / system</label>
+            <input id="source-name" formControlName="source_name" maxlength="200" required placeholder="e.g. Addis store observation log">
+          </div>
+          <div class="field">
+            <label for="source-reference">Source reference</label>
+            <input id="source-reference" formControlName="source_reference" maxlength="1000" placeholder="URL, document code, report ID or internal reference">
+          </div>
+          <div class="field">
+            <label for="capture-method">Capture method</label>
+            <input id="capture-method" formControlName="capture_method" maxlength="80" required placeholder="e.g. STORE_VISIT, SURVEY, SYSTEM_EXPORT">
+          </div>
+          <div class="field">
+            <label for="source-geography">Geography</label>
+            <input id="source-geography" formControlName="geography" maxlength="160" placeholder="Market / city / region">
+          </div>
+          <div class="field">
+            <label for="source-reliability">Source reliability (0–1, optional)</label>
+            <input id="source-reliability" type="number" formControlName="reliability_score" min="0" max="1" step="0.01" placeholder="e.g. 0.85">
+          </div>
+          <div class="field span-two">
+            <label for="source-permitted-use">Permitted use / lawful basis</label>
+            <input id="source-permitted-use" formControlName="permitted_use_basis" maxlength="200" required placeholder="Why this source may be used for this business purpose">
+          </div>
+          <div class="field span-two">
+            <label for="source-limitations">Limitations / conflicts of interest</label>
+            <textarea id="source-limitations" formControlName="limitations" rows="2" maxlength="5000"></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <span class="form-hint">Do not upload unnecessary personal or sensitive consumer data. Use aggregated or de-identified evidence where possible.</span>
+          <button type="submit" class="primary-button" [disabled]="sourceForm.invalid || savingSource()">
+            @if (savingSource()) { Saving… } @else { Save source provenance }
+          </button>
+        </div>
+      </form>
+    }
+
+    @if (loading()) {
+      <div class="loading-state" role="status">Loading source register…</div>
+    } @else if (sources().length === 0) {
+      <div class="empty-inline">No sources registered. Register a store observation source, survey, buyer request, system export or external benchmark before capturing insights.</div>
+    } @else {
+      <div class="source-list">
+        @for (source of sources(); track source.id) {
+          <article class="source-card">
+            <span class="source-icon" aria-hidden="true">⌁</span>
+            <div class="source-copy">
+              <strong>{{ source.source_name }}</strong>
+              <small>{{ source.source_type.replaceAll('_', ' ') }} · {{ source.capture_method.replaceAll('_', ' ') }}</small>
+              <span>{{ source.geography || 'Geography not specified' }} · permitted use: {{ source.permitted_use_basis }}</span>
+            </div>
+            @if (source.reliability_score !== null) {
+              <span class="score-chip">Reliability {{ source.reliability_score }}</span>
+            }
+          </article>
+        }
+      </div>
+    }
+  </section>
+
+  @if (showInsightForm() && sources().length > 0) {
+    <form class="data-form insight-form" [formGroup]="insightForm" (ngSubmit)="createInsight()" novalidate>
+      <div class="form-heading">
+        <div>
+          <h2>Capture a market insight</h2>
+          <p>Preserve observed fact, survey, benchmark, assumption or forecast signal as distinct evidence categories.</p>
+        </div>
+        <span class="draft-label">SOURCE REQUIRED</span>
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="insight-source">Evidence source</label>
+          <select id="insight-source" formControlName="source_id" required>
+            <option value="">Select a registered source</option>
+            @for (source of sources(); track source.id) {
+              <option [value]="source.id">{{ source.source_name }} · {{ source.source_type.replaceAll('_', ' ') }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label for="insight-type">Evidence classification</label>
+          <select id="insight-type" formControlName="insight_type">
+            @for (type of insightTypes; track type.value) {
+              <option [value]="type.value">{{ type.label }}</option>
+            }
+          </select>
+        </div>
+        <div class="field span-two">
+          <label for="insight-title">Insight title</label>
+          <input id="insight-title" formControlName="title" maxlength="200" required>
+        </div>
+        <div class="field span-two">
+          <label for="insight-summary">Observation / finding</label>
+          <textarea id="insight-summary" formControlName="summary" rows="3" maxlength="10000" required></textarea>
+        </div>
+        <div class="field">
+          <label for="insight-observed-at">Observed at</label>
+          <input id="insight-observed-at" type="datetime-local" formControlName="observed_at" required>
+        </div>
+        <div class="field">
+          <label for="insight-initiative">Link to initiative (optional)</label>
+          <select id="insight-initiative" formControlName="initiative_id">
+            <option value="">Unlinked / general market evidence</option>
+            @for (initiative of initiatives(); track initiative.id) {
+              <option [value]="initiative.id">{{ initiative.code }} · {{ initiative.title }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label for="insight-geography">Geography</label>
+          <input id="insight-geography" formControlName="geography" maxlength="160">
+        </div>
+        <div class="field">
+          <label for="insight-segment">Consumer / customer segment</label>
+          <input id="insight-segment" formControlName="target_segment" maxlength="160">
+        </div>
+        <div class="field">
+          <label for="insight-channel">Channel code</label>
+          <input id="insight-channel" formControlName="channel_code" maxlength="60" placeholder="e.g. OWN_RETAIL, WHOLESALE">
+        </div>
+        <div class="field">
+          <label for="insight-category">Product category code</label>
+          <input id="insight-category" formControlName="category_code" maxlength="80">
+        </div>
+        <div class="field">
+          <label for="insight-metric">Metric name (optional)</label>
+          <input id="insight-metric" formControlName="metric_name" maxlength="120">
+        </div>
+        <div class="field">
+          <label for="insight-number">Numeric value</label>
+          <input id="insight-number" type="number" formControlName="metric_value_numeric" step="any">
+        </div>
+        <div class="field">
+          <label for="insight-text-value">Text value</label>
+          <input id="insight-text-value" formControlName="metric_value_text" maxlength="300">
+        </div>
+        <div class="field">
+          <label for="insight-unit">Metric unit</label>
+          <input id="insight-unit" formControlName="metric_unit" maxlength="40" placeholder="ETB, units, %, index">
+        </div>
+        <div class="field">
+          <label for="insight-sample">Sample size</label>
+          <input id="insight-sample" type="number" formControlName="sample_size" min="0" step="1">
+        </div>
+        <div class="field">
+          <label for="insight-denominator">Population / denominator</label>
+          <input id="insight-denominator" type="number" formControlName="denominator" min="0" step="1">
+        </div>
+        <div class="field">
+          <label for="insight-confidence">Confidence (0–1)</label>
+          <input id="insight-confidence" type="number" formControlName="confidence" min="0" max="1" step="0.01">
+        </div>
+        <div class="field span-two">
+          <label for="insight-limitations">Limitations / uncertainty</label>
+          <textarea id="insight-limitations" formControlName="limitations" rows="2" maxlength="5000"></textarea>
+        </div>
+        <div class="field span-two">
+          <label for="insight-privacy">Privacy / permitted-use basis</label>
+          <input id="insight-privacy" formControlName="privacy_basis" maxlength="200" required placeholder="Purpose and permitted use of this evidence">
+        </div>
+      </div>
+      <div class="form-actions">
+        <span class="form-hint">Observed facts, survey results, hypotheses and model outputs remain separately classified; a forecast is not actual demand.</span>
+        <button type="submit" class="primary-button" [disabled]="insightForm.invalid || savingInsight()">
+          @if (savingInsight()) { Saving… } @else { Save market insight }
+        </button>
+      </div>
+    </form>
+  }
+
+  <section class="insight-register" aria-labelledby="register-heading">
+    <div class="panel-heading">
+      <div>
+        <h2 id="register-heading">Captured market insights</h2>
+        <p>Source-linked observations and assumptions</p>
+      </div>
+      <div class="filter-field">
+        <label for="initiative-filter">Initiative filter</label>
+        <select id="initiative-filter" [value]="selectedInitiativeId()" (change)="onInitiativeFilter($any($event.target).value)">
+          <option value="">All initiatives / general</option>
+          @for (initiative of initiatives(); track initiative.id) {
+            <option [value]="initiative.id">{{ initiative.code }} · {{ initiative.title }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    @if (insights().length === 0) {
+      <div class="empty-state">
+        <strong>No market insights in this view</strong>
+        <p>Capture store, consumer, wholesale, digital, competitor, supplier or production evidence and preserve its provenance.</p>
+      </div>
+    } @else {
+      <div class="insight-list">
+        @for (insight of insights(); track insight.id) {
+          <article class="insight-card">
+            <div class="insight-card-heading">
+              <div>
+                <span class="type-label">{{ insight.insight_type.replaceAll('_', ' ') }}</span>
+                <h3>{{ insight.title }}</h3>
+              </div>
+              <span class="date-label">{{ insight.observed_at | date:'d MMM y, HH:mm' }}</span>
+            </div>
+            <p class="insight-summary">{{ insight.summary }}</p>
+            <div class="insight-meta">
+              <span>Source: <strong>{{ insight.source_name }}</strong></span>
+              <span>{{ insight.geography || 'Geography not specified' }}</span>
+              @if (insight.metric_name) {
+                <span>{{ insight.metric_name }}: <strong>{{ insight.metric_value_numeric ?? insight.metric_value_text ?? '—' }} {{ insight.metric_unit || '' }}</strong></span>
+              }
+              @if (insight.sample_size !== null) {
+                <span>Sample {{ insight.sample_size }} / {{ insight.denominator ?? 'not stated' }}</span>
+              }
+            </div>
+            @if (insight.limitations) {
+              <div class="limitations">Limitation: {{ insight.limitations }}</div>
+            }
+          </article>
+        }
+      </div>
+    }
+  </section>
+
+  <div class="legal-note">
+    <strong>Evidence, privacy and decision boundary</strong>
+    <p>Source reliability and analyst confidence are contextual indicators, not proof. Preserve evidence limitations and permitted-use basis. Use aggregated/de-identified evidence where possible; no consumer or worker personal data should be collected without a valid purpose and approved access/retention controls.</p>
+  </div>
+</section>
