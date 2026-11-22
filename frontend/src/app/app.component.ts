@@ -19,6 +19,8 @@ export class AppComponent {
     { label: 'Overview', path: '/', icon: '◫' },
     { label: 'Legal entities', path: '/enterprise/legal-entities', icon: '▦' },
     { label: 'Business sites & nodes', path: '/enterprise/sites', icon: '⌖' },
+    { label: 'Initiatives & opportunities', path: '/product/initiatives', icon: '⌁' },
+    { label: 'Market insight register', path: '/product/market-insights', icon: '◉' },
   ];
 
   readonly domainGroups = [
