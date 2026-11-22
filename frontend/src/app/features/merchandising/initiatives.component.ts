@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -16,7 +17,7 @@ import {
 @Component({
   selector: 'app-initiatives',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [DatePipe, ReactiveFormsModule, RouterLink],
   templateUrl: './initiatives.component.html',
   styleUrl: './initiatives.component.css',
 })
