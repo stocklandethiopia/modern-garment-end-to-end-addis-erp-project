@@ -179,10 +179,15 @@
               <p>Confirm a named sponsor and a sufficiently clear opportunity statement before research.</p>
             </div>
             <button type="button" class="primary-button" (click)="submitForScreening()" [disabled]="saving()">Submit for screening</button>
+          } @else if (record.data.status === 'SCREENING' && !canDecide()) {
+            <div>
+              <strong>Independent screening approval required</strong>
+              <p>The initiative creator cannot approve their own work. A different authorized tenant owner or administrator must record the screening decision.</p>
+            </div>
           } @else if (record.data.status === 'SCREENING' && canDecide()) {
             <div>
-              <strong>Owner / administrator screening decision</strong>
-              <p>Approve research, park or reject with a recorded reason.</p>
+              <strong>Independent owner / administrator decision</strong>
+              <p>Approve research, park or reject with a recorded reason. The approver must differ from the initiative creator.</p>
             </div>
             <button type="button" class="secondary-button" (click)="showDecisionForm.set(!showDecisionForm())">Record screening decision</button>
           } @else if (record.data.status === 'RESEARCH') {
@@ -194,10 +199,15 @@
               <a routerLink="/product/market-insights" class="text-link">Capture market evidence →</a>
               <button type="button" class="primary-button" (click)="advanceToAssessment()" [disabled]="saving()">Advance to assessment</button>
             </div>
+          } @else if (record.data.status === 'ASSESSMENT' && !canDecide()) {
+            <div>
+              <strong>Independent assessment approval required</strong>
+              <p>A different authorized tenant owner or administrator must record the assessment decision. The initiator cannot approve their own proposal.</p>
+            </div>
           } @else if (record.data.status === 'ASSESSMENT' && canDecide()) {
             <div>
-              <strong>Assessment decision</strong>
-              <p>Approve, conditionally approve, return to research, park or reject.</p>
+              <strong>Independent assessment decision</strong>
+              <p>Approve, conditionally approve, return to research, park or reject with a recorded reason.</p>
             </div>
             <button type="button" class="secondary-button" (click)="showDecisionForm.set(!showDecisionForm())">Record assessment decision</button>
           } @else {
