@@ -11,7 +11,8 @@ class AssortmentAccountTermsService
 
     public function index(string $tenantId, string $assortmentPlanId): mixed
     {
-        $this->plan($tenantId, $assortmentPlanId);
+        $plan = $this->plan($tenantId, $assortmentPlanId);
+        abort_if($plan === null, 404);
 
         return DB::table('assortment_account_terms as t')
             ->join('price_lists as p', function ($join): void {
@@ -29,6 +30,7 @@ class AssortmentAccountTermsService
     {
         return DB::transaction(function () use ($tenantId, $assortmentPlanId, $actorId, $data): object {
             $plan = $this->plan($tenantId, $assortmentPlanId, true);
+            abort_if($plan === null, 404);
             abort_unless($plan->status === 'DRAFT', 422, 'Account terms can only be added to a draft assortment plan.');
             abort_unless(in_array($plan->channel_code, self::CHANNELS, true), 422, 'This channel does not use wholesale/reseller account terms.');
             abort_unless(
@@ -78,13 +80,20 @@ class AssortmentAccountTermsService
                 422,
                 'The published price list belongs to a different brand.',
             );
+            $priceListStart = \Carbon\CarbonImmutable::parse($priceList->effective_from);
+            $termsStart = \Carbon\CarbonImmutable::parse($data['effective_from'])->startOfDay();
+            $priceListEnd = $priceList->effective_to === null
+                ? null
+                : \Carbon\CarbonImmutable::parse($priceList->effective_to);
+            $termsEnd = isset($data['effective_to'])
+                ? \Carbon\CarbonImmutable::parse($data['effective_to'])->endOfDay()
+                : null;
+
             abort_unless(
-                $priceList->effective_from <= $data['effective_from']
-                    && ($priceList->effective_to === null
-                        || ($data['effective_to'] !== null && $priceList->effective_to >= $data['effective_to'])
-                        || ($data['effective_to'] === null && $priceList->effective_to >= '9999-12-31 00:00:00+00')),
+                $priceListStart->lessThanOrEqualTo($termsStart)
+                    && ($priceListEnd === null || ($termsEnd !== null && $priceListEnd->greaterThanOrEqualTo($termsEnd))),
                 422,
-                'The published price list does not cover the account terms effective period.',
+                'The published price list does not cover the complete account-terms effective period.',
             );
 
             DB::selectOne(
