@@ -116,6 +116,62 @@ export interface AssortmentPlanRecord {
   owner_user_id: string;
 }
 
+export interface PublishedPriceListOption {
+  id: string;
+  code: string;
+  version_no: number;
+  channel_code: string;
+  market_scope: string;
+  account_reference: string | null;
+  currency: string;
+  effective_from: string;
+  effective_to: string | null;
+  status: string;
+}
+
+export interface AssortmentAccountTermsRecord {
+  id: string;
+  assortment_plan_id: string;
+  price_list_id: string;
+  price_list_code: string;
+  price_list_currency: string;
+  version_no: number;
+  channel_code: string;
+  market_scope: string;
+  account_reference: string;
+  account_tier: string | null;
+  commercial_terms_reference: string;
+  payment_terms_reference: string;
+  delivery_terms_reference: string;
+  returns_policy_reference: string | null;
+  currency: string;
+  minimum_order_units: number;
+  order_multiple_units: number;
+  effective_from: string;
+  effective_to: string | null;
+  change_reason: string;
+  status: 'DRAFT' | 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED';
+  created_by: string;
+  submitted_by: string | null;
+  decided_by: string | null;
+  decision_reason: string | null;
+  created_at: string;
+}
+
+export interface AssortmentAccountTermsInput {
+  price_list_id: string;
+  account_tier: string | null;
+  commercial_terms_reference: string;
+  payment_terms_reference: string;
+  delivery_terms_reference: string;
+  returns_policy_reference: string | null;
+  minimum_order_units: number;
+  order_multiple_units: number;
+  effective_from: string;
+  effective_to: string | null;
+  change_reason: string;
+}
+
 export interface AssortmentLineRecord {
   id: string;
   assortment_plan_id: string;
@@ -319,6 +375,50 @@ export class RangePlanningService {
 
   createAssortmentPlan(input: AssortmentPlanInput): Observable<PlanningResourceResponse<AssortmentPlanRecord>> {
     return this.http.post<PlanningResourceResponse<AssortmentPlanRecord>>(this.base + '/assortment-plans', input);
+  }
+
+  listPublishedPriceLists(): Observable<PlanningPageResponse<PublishedPriceListOption>> {
+    return this.http.get<PlanningPageResponse<PublishedPriceListOption>>(this.base + '/price-lists');
+  }
+
+  listAssortmentAccountTerms(assortmentPlanId: string): Observable<PlanningPageResponse<AssortmentAccountTermsRecord>> {
+    return this.http.get<PlanningPageResponse<AssortmentAccountTermsRecord>>(
+      this.base + '/assortment-plans/' + encodeURIComponent(assortmentPlanId) + '/account-terms',
+    );
+  }
+
+  createAssortmentAccountTerms(
+    assortmentPlanId: string,
+    input: AssortmentAccountTermsInput,
+  ): Observable<PlanningResourceResponse<AssortmentAccountTermsRecord>> {
+    return this.http.post<PlanningResourceResponse<AssortmentAccountTermsRecord>>(
+      this.base + '/assortment-plans/' + encodeURIComponent(assortmentPlanId) + '/account-terms',
+      input,
+    );
+  }
+
+  submitAssortmentAccountTerms(
+    assortmentPlanId: string,
+    termsId: string,
+  ): Observable<PlanningResourceResponse<AssortmentAccountTermsRecord>> {
+    return this.http.post<PlanningResourceResponse<AssortmentAccountTermsRecord>>(
+      this.base + '/assortment-plans/' + encodeURIComponent(assortmentPlanId)
+        + '/account-terms/' + encodeURIComponent(termsId) + '/submit',
+      {},
+    );
+  }
+
+  decideAssortmentAccountTerms(
+    assortmentPlanId: string,
+    termsId: string,
+    decision: 'APPROVE' | 'REJECT',
+    reason: string,
+  ): Observable<PlanningResourceResponse<AssortmentAccountTermsRecord>> {
+    return this.http.post<PlanningResourceResponse<AssortmentAccountTermsRecord>>(
+      this.base + '/assortment-plans/' + encodeURIComponent(assortmentPlanId)
+        + '/account-terms/' + encodeURIComponent(termsId) + '/decisions',
+      { decision, reason },
+    );
   }
 
   listAssortmentLines(assortmentPlanId: string): Observable<PlanningPageResponse<AssortmentLineRecord>> {
