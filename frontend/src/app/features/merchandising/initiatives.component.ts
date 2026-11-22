@@ -44,7 +44,12 @@ export class InitiativesComponent {
 
   readonly canDecide = computed(() => {
     const role = this.session.activeTenant()?.membership_role;
-    return role === 'OWNER' || role === 'ADMIN';
+    const creatorId = this.detail()?.data.owner_user_id;
+    const currentUserId = this.session.user()?.id;
+    return (role === 'OWNER' || role === 'ADMIN')
+      && !!creatorId
+      && !!currentUserId
+      && creatorId !== currentUserId;
   });
 
   readonly selectedStatus = computed(() => this.detail()?.data.status ?? null);
