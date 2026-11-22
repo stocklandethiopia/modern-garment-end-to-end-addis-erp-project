@@ -18,6 +18,7 @@ class TenantIsolationTest extends TestCase
     private string $legalEntityB;
     private string $siteA;
     private string $warehouseNodeA;
+    private string $warehouseNodeB;
     private string $branchNodeA;
 
     protected function setUp(): void
@@ -88,6 +89,7 @@ class TenantIsolationTest extends TestCase
 
         $this->siteA = (string) Str::uuid();
         $this->warehouseNodeA = (string) Str::uuid();
+        $this->warehouseNodeB = (string) Str::uuid();
         $this->branchNodeA = (string) Str::uuid();
 
         $admin->table('business_sites')->insert([
@@ -129,6 +131,20 @@ class TenantIsolationTest extends TestCase
                 'name' => 'Test Branch',
                 'capabilities' => json_encode([], JSON_THROW_ON_ERROR),
                 'stock_holding_enabled' => false,
+                'status' => 'DRAFT',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'id' => $this->warehouseNodeB,
+                'tenant_id' => $this->tenantA,
+                'business_site_id' => $this->siteA,
+                'legal_entity_id' => $this->legalEntityA,
+                'code' => 'TEST-WH2-'.Str::upper(Str::random(6)),
+                'node_type' => 'WAREHOUSE',
+                'name' => 'Second Test Warehouse',
+                'capabilities' => json_encode(['STOCK_HOLDING'], JSON_THROW_ON_ERROR),
+                'stock_holding_enabled' => true,
                 'status' => 'DRAFT',
                 'created_at' => $now,
                 'updated_at' => $now,
@@ -416,6 +432,35 @@ class TenantIsolationTest extends TestCase
             ->assertForbidden();
     }
 
+
+    public function test_operating_node_requires_a_legal_entity_linked_site(): void
+    {
+        $siteId = (string) Str::uuid();
+        $now = now();
+        DB::connection('pgsql_test_admin')->table('business_sites')->insert([
+            'id' => $siteId,
+            'tenant_id' => $this->tenantA,
+            'legal_entity_id' => null,
+            'code' => 'UNASSIGNED-SITE',
+            'site_type' => 'FACTORY_CAMPUS',
+            'name' => 'Unassigned Site',
+            'country_code' => 'ET',
+            'timezone' => 'Africa/Addis_Ababa',
+            'status' => 'DRAFT',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        $this->withHeader('X-Tenant-Id', $this->tenantA)
+            ->postJson('/api/v1/enterprise/sites/'.$siteId.'/nodes', [
+                'code' => 'NO-ENTITY-NODE',
+                'node_type' => 'FACTORY',
+                'name' => 'No Entity Factory',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('legal_entity_id');
+    }
+
     public function test_stock_capable_node_can_create_an_inventory_location(): void
     {
         $response = $this->withHeader('X-Tenant-Id', $this->tenantA)
@@ -470,7 +515,7 @@ class TenantIsolationTest extends TestCase
         ]);
 
         $this->withHeader('X-Tenant-Id', $this->tenantA)
-            ->postJson('/api/v1/enterprise/nodes/'.$this->warehouseNodeA.'/inventory-locations', [
+            ->postJson('/api/v1/enterprise/nodes/'.$this->warehouseNodeB.'/inventory-locations', [
                 'code' => 'ZONE-CHILD-01',
                 'location_type' => 'BIN',
                 'parent_id' => $this->branchNodeA,
