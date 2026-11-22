@@ -40,9 +40,9 @@ return new class extends Migration
             $table->timestampTz('approved_at')->nullable();
             $table->timestampTz('created_at');
             $table->unique(['tenant_id', 'id']);
-            $table->unique(['tenant_id', 'style_id', 'style_revision_no', 'version_no']);
+            $table->unique(['tenant_id', 'style_id', 'style_revision_no', 'version_no'], 'measurement_spec_versions_style_rev_version_uq');
             $table->foreign('tenant_id')->references('id')->on('tenants')->restrictOnDelete();
-            $table->foreign(['tenant_id', 'style_id', 'style_revision_no'])
+            $table->foreign(['tenant_id', 'style_id', 'style_revision_no'], 'measurement_spec_versions_style_revision_fk')
                 ->references(['tenant_id', 'style_id', 'revision_no'])->on('style_revisions')->restrictOnDelete();
             $table->foreign('created_by')->references('id')->on('users')->restrictOnDelete();
             $table->foreign('approved_by')->references('id')->on('users')->restrictOnDelete();
