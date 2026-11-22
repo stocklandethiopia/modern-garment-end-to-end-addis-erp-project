@@ -120,15 +120,12 @@ class OtbPlanningController extends Controller
                 ->where('id', '<>', $policyId)
                 ->where(function ($query) use ($policy): void {
                     $query->whereNull('effective_to')
-                        ->orWhere('effective_to', '>=', $policy->effective_from);
+                        ->orWhereDate('effective_to', '>=', $policy->effective_from);
                 })
-                ->where(function ($query) use ($policy): void {
-                    if ($policy->effective_to === null) {
-                        $query->whereNotNull('id');
-                    } else {
-                        $query->where('effective_from', '<=', $policy->effective_to);
-                    }
-                })
+                ->when(
+                    $policy->effective_to !== null,
+                    fn ($query) => $query->whereDate('effective_from', '<=', $policy->effective_to),
+                )
                 ->exists();
 
             abort_unless(! $overlap, 422, 'Another active OTB policy overlaps this entity and effective period.');
@@ -220,13 +217,13 @@ class OtbPlanningController extends Controller
 
             $rules = json_decode($policy->inclusion_rules, true, 512, JSON_THROW_ON_ERROR);
             $input = [
-                'beginning_inventory' => (float) $data['beginning_inventory'],
-                'planned_sales' => (float) $data['planned_sales'],
-                'planned_markdowns' => (float) $data['planned_markdowns'],
-                'planned_ending_inventory' => (float) $data['planned_ending_inventory'],
-                'on_order_purchases' => (float) $data['on_order_purchases'],
-                'commitments' => (float) $data['commitments'],
-                'actual_receipts' => (float) $data['actual_receipts'],
+                'beginning_inventory' => $this->decimal($data['beginning_inventory']),
+                'planned_sales' => $this->decimal($data['planned_sales']),
+                'planned_markdowns' => $this->decimal($data['planned_markdowns']),
+                'planned_ending_inventory' => $this->decimal($data['planned_ending_inventory']),
+                'on_order_purchases' => $this->decimal($data['on_order_purchases']),
+                'commitments' => $this->decimal($data['commitments']),
+                'actual_receipts' => $this->decimal($data['actual_receipts']),
             ];
             $calculation = $this->calculate($input, $rules);
 
@@ -299,17 +296,17 @@ class OtbPlanningController extends Controller
             abort_unless($policy->status === 'ACTIVE', 422, 'The OTB policy is no longer active.');
 
             $input = [
-                'beginning_inventory' => (float) $period->beginning_inventory,
-                'planned_sales' => (float) $period->planned_sales,
-                'planned_markdowns' => (float) $period->planned_markdowns,
-                'planned_ending_inventory' => (float) $period->planned_ending_inventory,
-                'on_order_purchases' => (float) $period->on_order_purchases,
-                'commitments' => (float) $period->commitments,
-                'actual_receipts' => (float) $period->actual_receipts,
+                'beginning_inventory' => $this->decimal($period->beginning_inventory),
+                'planned_sales' => $this->decimal($period->planned_sales),
+                'planned_markdowns' => $this->decimal($period->planned_markdowns),
+                'planned_ending_inventory' => $this->decimal($period->planned_ending_inventory),
+                'on_order_purchases' => $this->decimal($period->on_order_purchases),
+                'commitments' => $this->decimal($period->commitments),
+                'actual_receipts' => $this->decimal($period->actual_receipts),
             ];
 
             foreach ($data['assumptions'] as $key => $value) {
-                $input[$key] = (float) $value;
+                $input[$key] = $this->decimal($value);
             }
 
             $rules = json_decode($policy->inclusion_rules, true, 512, JSON_THROW_ON_ERROR);
@@ -392,24 +389,53 @@ class OtbPlanningController extends Controller
 
     private function calculate(array $input, array $rules): array
     {
-        $available = $input['planned_ending_inventory']
-            + $input['planned_sales']
-            + $input['planned_markdowns']
-            - $input['beginning_inventory']
-            - $input['on_order_purchases'];
+        $commitmentsDeduction = ($rules['commitments_mode'] ?? 'ADDITIONAL') === 'ADDITIONAL'
+            ? $input['commitments']
+            : '0.0000';
+        $receiptDeduction = ($rules['actual_receipts_reduce_otb'] ?? true) === true
+            ? $input['actual_receipts']
+            : '0.0000';
 
-        if (($rules['commitments_mode'] ?? 'ADDITIONAL') === 'ADDITIONAL') {
-            $available -= $input['commitments'];
-        }
-
-        if (($rules['actual_receipts_reduce_otb'] ?? true) === true) {
-            $available -= $input['actual_receipts'];
-        }
+        // PostgreSQL NUMERIC performs the calculation without a binary-float
+        // conversion; values remain exact to the four-decimal ledger scale.
+        $result = DB::selectOne(
+            'SELECT (
+                ?::numeric + ?::numeric + ?::numeric
+                - ?::numeric - ?::numeric - ?::numeric - ?::numeric
+            )::numeric(20,4) AS available_budget',
+            [
+                $input['planned_ending_inventory'],
+                $input['planned_sales'],
+                $input['planned_markdowns'],
+                $input['beginning_inventory'],
+                $input['on_order_purchases'],
+                $commitmentsDeduction,
+                $receiptDeduction,
+            ],
+        );
 
         return [
-            'available_budget' => round($available, 4),
+            'available_budget' => (string) $result->available_budget,
             'interpretation' => 'Planned ending inventory + planned sales + planned markdowns - beginning inventory - open on-order purchases, adjusted for separately identified commitments and actual receipts according to the selected policy.',
         ];
+    }
+
+    private function decimal(int|float|string $value): string
+    {
+        $raw = trim((string) $value);
+
+        if (! preg_match('/^-?\\d+(?:\\.\\d{1,4})?$/', $raw)) {
+            abort(422, 'OTB values must be numeric with at most four decimal places.');
+        }
+
+        $negative = str_starts_with($raw, '-');
+        $unsigned = ltrim($raw, '-');
+        [$whole, $fraction] = array_pad(explode('.', $unsigned, 2), 2, '');
+        $whole = ltrim($whole, '0');
+        $whole = $whole === '' ? '0' : $whole;
+        $normalized = $whole.'.'.str_pad($fraction, 4, '0');
+
+        return $negative && $normalized !== '0.0000' ? '-'.$normalized : $normalized;
     }
 
     private function audit(string $tenantId, string $actorId, string $action, string $objectType, string $objectId, string $reason): void
