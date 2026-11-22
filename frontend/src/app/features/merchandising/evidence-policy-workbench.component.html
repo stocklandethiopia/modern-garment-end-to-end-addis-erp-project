@@ -1,0 +1,200 @@
+<section class="page-heading">
+  <div>
+    <div class="eyebrow">WP-04 · MERCHANDISING GOVERNANCE</div>
+    <h1>Evidence requirement policies</h1>
+    <p>Configure tenant-approved evidence thresholds by initiative type, decision stage and market.</p>
+  </div>
+  <button class="secondary-button" type="button" (click)="load()" [disabled]="loading()">Refresh policies</button>
+</section>
+
+@if (errorMessage()) {
+  <div class="notice error" role="alert">{{ errorMessage() }}</div>
+}
+@if (successMessage()) {
+  <div class="notice success" role="status">{{ successMessage() }}</div>
+}
+
+<section class="governance-note">
+  <strong>Tenant-configured thresholds — not universal defaults</strong>
+  <p>Set each rule to match approved internal standards and the evidence needed for that initiative. Policies become immutable after submission; only a different tenant owner or administrator may approve or reject them. An approved effective policy is enforced before the initiative enters its configured stage.</p>
+  <p>A blank market applies as the tenant-wide fallback. A market-specific approved policy takes precedence for that market. Overlapping approved policies for the same scope and effective period are rejected.</p>
+</section>
+
+@if (canAdminister()) {
+  <section class="panel">
+    <div class="panel-heading">
+      <div>
+        <span class="panel-kicker">POLICY CONFIGURATION</span>
+        <h2>{{ showPolicyForm() ? 'New evidence policy version' : 'Evidence policy catalogue' }}</h2>
+        <p>Create a policy and one or more evidence rules. Existing versions remain unchanged.</p>
+      </div>
+      <button class="secondary-button" type="button" (click)="showPolicyForm.set(!showPolicyForm())">
+        {{ showPolicyForm() ? 'Close form' : 'Create policy version' }}
+      </button>
+    </div>
+
+    @if (showPolicyForm()) {
+      <form [formGroup]="policyForm" (ngSubmit)="createPolicy()">
+        <div class="form-grid">
+          <label>Policy code
+            <input formControlName="code" maxlength="80" placeholder="NEW_COLLECTION_ASSESSMENT">
+          </label>
+          <label>Policy name
+            <input formControlName="name" maxlength="180" placeholder="New collection assessment evidence">
+          </label>
+          <label>Initiative type
+            <select formControlName="initiative_type">
+              @for (item of initiativeTypes; track item.value) {
+                <option [value]="item.value">{{ item.label }}</option>
+              }
+            </select>
+          </label>
+          <label>Gate stage
+            <select formControlName="stage">
+              <option value="RESEARCH">Research</option>
+              <option value="ASSESSMENT">Assessment</option>
+            </select>
+          </label>
+          <label>Target market
+            <input formControlName="target_market" maxlength="160" placeholder="Leave blank for tenant-wide fallback">
+          </label>
+          <label>Effective from
+            <input type="date" formControlName="effective_from">
+          </label>
+          <label>Effective to (optional)
+            <input type="date" formControlName="effective_to">
+          </label>
+          <label class="full-span">Change reason
+            <textarea formControlName="change_reason" rows="2" maxlength="5000"></textarea>
+          </label>
+        </div>
+
+        <div class="rules-heading">
+          <div>
+            <h3>Evidence rules</h3>
+            <p>Each rule applies to one insight type. At least one rule must be mandatory.</p>
+          </div>
+          <button class="secondary-button" type="button" (click)="addRule()" [disabled]="ruleForms.length >= 20">Add rule</button>
+        </div>
+
+        <div formArrayName="rules" class="rule-list">
+          @for (rule of ruleForms.controls; track $index; let index = $index) {
+            <section class="rule-card" [formGroupName]="index">
+              <div class="rule-title">
+                <strong>Rule {{ index + 1 }}</strong>
+                <button class="text-button" type="button" (click)="removeRule(index)" [disabled]="ruleForms.length <= 1">Remove</button>
+              </div>
+              <div class="form-grid">
+                <label>Requirement code
+                  <input formControlName="requirement_code" maxlength="80">
+                </label>
+                <label>Insight type
+                  <select formControlName="insight_type">
+                    @for (item of insightTypes; track item.value) {
+                      <option [value]="item.value">{{ item.label }}</option>
+                    }
+                  </select>
+                </label>
+                <label>Minimum evidence records
+                  <input type="number" min="1" max="500" formControlName="minimum_records">
+                </label>
+                <label>Minimum distinct sources
+                  <input type="number" min="1" max="500" formControlName="minimum_distinct_sources">
+                </label>
+                <label>Minimum confidence (0–1, optional)
+                  <input type="number" min="0" max="1" step="0.01" formControlName="minimum_confidence" placeholder="No threshold">
+                </label>
+                <label>Minimum source reliability (0–1, optional)
+                  <input type="number" min="0" max="1" step="0.01" formControlName="minimum_source_reliability" placeholder="No threshold">
+                </label>
+                <label>Maximum evidence age in days
+                  <input type="number" min="1" max="3650" formControlName="max_age_days" placeholder="No age limit">
+                </label>
+                <div class="checkbox-group">
+                  <label><input type="checkbox" formControlName="require_geography"> Require geography</label>
+                  <label><input type="checkbox" formControlName="require_target_segment"> Require target segment</label>
+                  <label><input type="checkbox" formControlName="require_sample_denominator"> Require sample and denominator</label>
+                  <label><input type="checkbox" formControlName="is_mandatory"> Mandatory for gate</label>
+                </div>
+              </div>
+            </section>
+          }
+        </div>
+
+        <div class="form-footer">
+          <p>Minimum distinct sources cannot exceed minimum records. Policy content and rules cannot be edited after submission.</p>
+          <button class="primary-button" type="submit" [disabled]="saving()">Save policy draft</button>
+        </div>
+      </form>
+    }
+  </section>
+}
+
+<section class="panel">
+  <div class="panel-heading">
+    <div>
+      <span class="panel-kicker">VERSIONED POLICY REGISTER</span>
+      <h2>Tenant evidence policies</h2>
+      <p>Draft, pending, approved and rejected versions retain their decision history.</p>
+    </div>
+    <span class="count-tag">{{ policies().length }} policies</span>
+  </div>
+
+  @if (loading() && policies().length === 0) {
+    <div class="empty-state">Loading the tenant policy register…</div>
+  } @else if (policies().length === 0) {
+    <div class="empty-state">
+      <strong>No evidence policies configured</strong>
+      <p>Until an approved policy exists for an initiative scope, the workflow retains its original sourced-insight minimum and reports coverage as not configured.</p>
+    </div>
+  } @else {
+    <div class="policy-list">
+      @for (policy of policies(); track policy.id) {
+        <article class="policy-card">
+          <div class="policy-main">
+            <div class="policy-title">
+              <div>
+                <strong>{{ policy.name }}</strong>
+                <span>{{ policy.code }} · v{{ policy.version_no }}</span>
+              </div>
+              <span class="status-pill" [class.approved]="policy.status === 'APPROVED'" [class.pending]="policy.status === 'PENDING_APPROVAL'">
+                {{ policy.status.replaceAll('_', ' ') }}
+              </span>
+            </div>
+            <div class="policy-meta">
+              <span>{{ policy.initiative_type.replaceAll('_', ' ') }}</span>
+              <span>{{ policy.stage }}</span>
+              <span>{{ policy.target_market || 'Tenant-wide fallback' }}</span>
+              <span>{{ policy.rule_count ?? policy.rules?.length ?? 0 }} rules</span>
+              <span>Effective {{ policy.effective_from | date:'d MMM y' }}{{ policy.effective_to ? ' – ' + (policy.effective_to | date:'d MMM y') : ' onward' }}</span>
+            </div>
+            <p class="change-reason">{{ policy.change_reason }}</p>
+          </div>
+          @if (canSubmit(policy) || canReview(policy)) {
+            <div class="policy-actions">
+              @if (canSubmit(policy)) {
+                <button class="primary-button" type="button" (click)="submitPolicy(policy)" [disabled]="saving()">Submit for approval</button>
+              }
+              @if (canReview(policy)) {
+                <button class="secondary-button" type="button" (click)="beginReview(policy, 'APPROVE')">Approve</button>
+                <button class="text-button danger" type="button" (click)="beginReview(policy, 'REJECT')">Reject</button>
+              }
+            </div>
+          }
+          @if (reviewingPolicy()?.id === policy.id) {
+            <form class="decision-form" [formGroup]="decisionForm" (ngSubmit)="decidePolicy()">
+              <strong>{{ reviewDecision() === 'APPROVE' ? 'Approve' : 'Reject' }} {{ policy.code }} v{{ policy.version_no }}</strong>
+              <label>Decision reason
+                <textarea formControlName="reason" rows="2" minlength="10" maxlength="5000"></textarea>
+              </label>
+              <div class="decision-actions">
+                <button class="primary-button" type="submit" [disabled]="saving()">Record decision</button>
+                <button class="secondary-button" type="button" (click)="cancelReview()">Cancel</button>
+              </div>
+            </form>
+          }
+        </article>
+      }
+    </div>
+  }
+</section>
