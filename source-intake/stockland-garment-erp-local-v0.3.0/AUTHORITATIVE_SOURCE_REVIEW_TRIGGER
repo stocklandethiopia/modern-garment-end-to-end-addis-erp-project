@@ -1,1 +1,1 @@
-Audit-only trigger for Product Owner's newly supplied authoritative Drive source folder. Do not change or replace the currently committed application until this source has been inventoried and compared.
+Audit-only trigger for the new Product Owner supplied authoritative Drive source. Inventory all files, inspect BUILD_MANIFEST entries and adoption/reference cross-check documents, and compare all candidate source files with the existing import. Do not replace the imported application in this job.
