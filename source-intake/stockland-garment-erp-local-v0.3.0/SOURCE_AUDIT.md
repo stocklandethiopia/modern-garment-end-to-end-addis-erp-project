@@ -1,6 +1,6 @@
 # Source audit — Stockland Garment ERP local source v0.3.0
 
-**Audit state:** INTAKE / STRUCTURAL REVIEW COMPLETE / LOSSLESS SOURCE TRANSFER PREPARED / GITHUB EXTRACTION AND CI PENDING  
+**Audit state:** SOURCE IMPORTED / 107-FILE TREE COMMITTED / MANIFEST VERIFIED / GITHUB ACTIONS CHECKS PASSED  
 **Package:** `STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK_v0.3.0.zip`  
 **Submitted:** 23 November 2026  
 **Canonical repository:** `stocklandethiopia/modern-garment-end-to-end-addis-erp-project`  
@@ -24,7 +24,7 @@
 | ZIP structure | PASS — no absolute or parent-traversal archive paths found |
 | Source provenance | Six selected X POS reference files are isolated in a separate MIT reference kit with licence and source manifest; reuse still requires file-by-file provenance/licence review |
 
-The original uploaded ZIP is retained unchanged as the source-of-truth attachment; committing its binary bytes into this Git branch remains pending. The archive's own `docs/VERIFICATION_REPORT.md` reports 15 tests, 14 workflow scenarios and local static/release checks on Node 22.16.0. Those are **author-supplied claims**, not independent test results. GitHub Actions is being used to independently execute the package's declared quality commands.
+The original uploaded ZIP was checksum-verified unchanged before extraction. The complete extracted application tree—107 files including `BUILD_MANIFEST.json`—is committed in the isolated intake folder. The ZIP binary itself is not committed. The archive's own `docs/VERIFICATION_REPORT.md` reports 15 tests, 14 workflow scenarios and local static/release checks on Node 22.16.0. Those remain **author-supplied claims**; independently, GitHub Actions run #7 passed the package's declared check, test, manifest-verification and release-gate commands.
 
 ## 2. Architectural comparison with the approved baseline
 
@@ -74,16 +74,20 @@ Further independent review is still required for:
 
 No claim of independent penetration test, statutory compliance sign-off or production readiness is made.
 
-## 5. GitHub-hosted verification to run
+## 5. GitHub-hosted verification completed
 
-The root workflow `.github/workflows/source-intake-audit.yml` is dedicated to this isolated intake. After the lossless source transfer bundle is committed under `archive-parts/`, it will:
-1. Reconstruct and SHA-256-verify the lossless TAR.XZ source transfer bundle. The originally supplied ZIP was separately verified during intake.
-2. Extract the source tree and run the internal 106-file SHA-256 build-manifest check.
-3. Extract into an ephemeral GitHub-hosted runner directory.
-4. Run `npm run check`, `npm test`, `npm run verify:manifest` and `npm run release:gate` with Node 22.16.0.
-5. Upload the expanded original source as a downloadable GitHub Actions artifact, whether the checks pass or fail.
+The isolated intake workflow completed the following on the GitHub-hosted runner:
 
-A green run confirms only that the submitted local application passes its own package checks. It does **not** satisfy the canonical ERP's WP-00…WP-16 acceptance gates.
+1. Downloaded the original application archive from the supplied Google Drive folder.
+2. Verified the archive SHA-256 against the previously verified uploaded ZIP: `5e505f3ccccf930d8644187a3143c5277edae2ac9de3bd9f4305945232668fd1`.
+3. Extracted the original application folder without changing its internal paths.
+4. Verified all 106 manifest entries, including each recorded file size and SHA-256 digest, plus the build-manifest checksum.
+5. Committed the complete 107-file application tree under `source-intake/stockland-garment-erp-local-v0.3.0/source/`.
+6. Re-verified the committed source manifest and ran the package's declared quality commands.
+
+**Evidence:** GitHub Actions [run #7](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45266965264) completed with conclusion `success`. The following steps passed: `npm run verify:manifest`, `npm run check`, `npm test`, and `npm run release:gate`.
+
+This green run confirms the submitted local application passed its own package checks on that runner. It does **not** satisfy the canonical ERP's WP-00…WP-16 acceptance gates or approve production deployment.
 
 ## 6. Release and integration disposition
 
