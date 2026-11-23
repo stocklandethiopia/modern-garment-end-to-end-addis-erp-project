@@ -1,6 +1,6 @@
 # Source audit — Stockland Garment ERP local source v0.3.0
 
-**Audit state:** INTAKE / STRUCTURAL REVIEW COMPLETE / ORIGINAL ZIP UPLOAD PENDING / AUTOMATED CI PENDING  
+**Audit state:** INTAKE / STRUCTURAL REVIEW COMPLETE / LOSSLESS SOURCE TRANSFER PREPARED / GITHUB EXTRACTION AND CI PENDING  
 **Package:** `STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK_v0.3.0.zip`  
 **Submitted:** 23 November 2026  
 **Canonical repository:** `stocklandethiopia/modern-garment-end-to-end-addis-erp-project`  
@@ -76,9 +76,9 @@ No claim of independent penetration test, statutory compliance sign-off or produ
 
 ## 5. GitHub-hosted verification to run
 
-The root workflow `.github/workflows/source-intake-audit.yml` is dedicated to this isolated intake. After the original ZIP is uploaded at the exact path in the intake README, it will:
-1. Verify the original ZIP committed unchanged at `source-intake/stockland-garment-erp-local-v0.3.0/STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK_v0.3.0.zip`.
-2. Verify the archive SHA-256 against the supplied checksum.
+The root workflow `.github/workflows/source-intake-audit.yml` is dedicated to this isolated intake. After the lossless source transfer bundle is committed under `archive-parts/`, it will:
+1. Reconstruct and SHA-256-verify the lossless TAR.XZ source transfer bundle. The originally supplied ZIP was separately verified during intake.
+2. Extract the source tree and run the internal 106-file SHA-256 build-manifest check.
 3. Extract into an ephemeral GitHub-hosted runner directory.
 4. Run `npm run check`, `npm test`, `npm run verify:manifest` and `npm run release:gate` with Node 22.16.0.
 5. Upload the expanded original source as a downloadable GitHub Actions artifact, whether the checks pass or fail.
