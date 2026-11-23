@@ -1,1 +1,1 @@
-Trigger the GitHub-hosted intake of the already-extracted Stockland Garment ERP v0.3.0 source folder from the Product Owner's public Google Drive folder. The workflow must verify BUILD_MANIFEST.json and all 106 tracked files before committing the untouched source tree.
+Trigger the import from the source archive stored in the Product Owner's supplied public Google Drive folder. The runner must verify archive SHA-256 5e505f3ccccf930d8644187a3143c5277edae2ac9de3bd9f4305945232668fd1, extract the exact application tree, and verify every manifest entry before commit.
