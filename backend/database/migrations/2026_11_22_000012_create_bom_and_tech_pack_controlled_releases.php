@@ -519,7 +519,7 @@ return new class extends Migration
 
                 RETURN NEW;
             END;
-            $");
+            $$");
 
         DB::statement('CREATE TRIGGER style_bom_substitution_state_guard
             BEFORE INSERT ON style_bom_substitution_candidates
@@ -543,7 +543,7 @@ return new class extends Migration
 
                 RETURN NEW;
             END;
-            $");
+            $$");
 
         DB::statement('CREATE TRIGGER tech_pack_receipt_release_guard
             BEFORE INSERT ON tech_pack_delivery_receipts
