@@ -24,7 +24,7 @@
 | ZIP structure | PASS — no absolute or parent-traversal archive paths found |
 | Source provenance | Six selected X POS reference files are isolated in a separate MIT reference kit with licence and source manifest; reuse still requires file-by-file provenance/licence review |
 
-The ZIP is retained without editing. The archive's own `docs/VERIFICATION_REPORT.md` reports 15 tests, 14 workflow scenarios and local static/release checks on Node 22.16.0. Those are **author-supplied claims**, not independent test results. GitHub Actions is being used to independently execute the package's declared quality commands.
+The original uploaded ZIP is retained unchanged as the source-of-truth attachment; committing its binary bytes into this Git branch remains pending. The archive's own `docs/VERIFICATION_REPORT.md` reports 15 tests, 14 workflow scenarios and local static/release checks on Node 22.16.0. Those are **author-supplied claims**, not independent test results. GitHub Actions is being used to independently execute the package's declared quality commands.
 
 ## 2. Architectural comparison with the approved baseline
 
