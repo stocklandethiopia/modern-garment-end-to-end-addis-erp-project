@@ -2,28 +2,32 @@
 
 This is the isolated source-intake location for the submitted local application. It is not the canonical Modern Garment End-to-End Addis ERP runtime and is not approved for merge, deployment or production release.
 
-## Automated extraction and source commit
+## Committed application source
 
-The original archive was integrity-checked and extracted. A lossless TAR.XZ transfer bundle is stored as ordered Base64 parts under `archive-parts/`. GitHub Actions reconstructs and SHA-256-verifies that bundle, extracts it on a GitHub-hosted runner, and commits the full application tree under:
+The complete extracted application is committed under:
 
 `source-intake/stockland-garment-erp-local-v0.3.0/source/`
 
-The extracted directory preserves the submitted project structure: `src/`, `public/`, `docs/`, `tests/`, `scripts/`, `templates/`, `reference-sources/`, `.github/`, and the root package/configuration files.
+The source root preserves the submitted project structure, including `.github/`, `docs/`, `public/`, `reference-sources/`, `scripts/`, `src/`, `templates/`, `tests/`, and root configuration files.
 
-The same workflow runs the package's declared checks and publishes the expanded source as a downloadable workflow artifact. No local terminal, VS Code or Codespaces are required.
+The GitHub-hosted intake workflow downloaded the original archive from the Product Owner's supplied Google Drive folder, verified the archive SHA-256, extracted it without renaming the internal source paths, verified the internal build manifest, and committed the full application tree. No local terminal, VS Code or Codespace was used for the import.
 
-## Integrity evidence
+## Integrity and verification evidence
 
-Original uploaded ZIP SHA-256:
+Original source archive SHA-256:
 
 `5e505f3ccccf930d8644187a3143c5277edae2ac9de3bd9f4305945232668fd1`
 
-Lossless transfer TAR.XZ SHA-256:
+Internal `BUILD_MANIFEST.json` SHA-256:
 
-`0b965ccc8f4e34e9887790f37ff6de96127ab53066db074725ce290b4d40cd9d`
+`0d7c03dac0be52df3a4699fc9db93b4da8b45cb853980dcc0a62a598568722c0`
 
-The application's internal `BUILD_MANIFEST.json` records the SHA-256 and byte size of all 106 maintained source/documentation files. The GitHub workflow runs `npm run verify:manifest` after extraction.
+The application contains 106 manifest-tracked files plus `BUILD_MANIFEST.json`, for 107 committed application files. The complete file checksum inventory is stored in `SOURCE_TREE_SHA256SUMS.txt`.
+
+GitHub Actions run #7 completed successfully. It verified the source manifest after commit and passed `npm run check`, `npm test`, `npm run verify:manifest`, and `npm run release:gate`.
+
+See `SOURCE_IMPORT_REPORT.md` for the source identity, destination, commit and run evidence. See `SOURCE_AUDIT.md` for the architectural and functional scope comparison.
 
 ## Architecture boundary
 
-The submitted package describes itself as a Stockland-specific local Node.js/SQLite application. The canonical ERP baseline requires a customer-neutral multi-tenant SaaS on Angular/Laravel/PostgreSQL. Keep this package under this isolated source-intake folder; do not replace `backend/` or `frontend/`.
+The submitted package describes itself as a Stockland-specific local Node.js/SQLite application. The canonical ERP baseline requires a customer-neutral multi-tenant SaaS on Angular/Laravel/PostgreSQL. Keep this package under this isolated source-intake folder; do not replace `backend/` or `frontend/`. Any integration or architecture change requires explicit Product Owner change control.
