@@ -10,7 +10,7 @@ on:
     branches:
       - main
     paths:
-      - source-intake/stockland-garment-erp-local-v0.3.0/**
+      - source-intake/stockland-garment-erp-local-v0.3.0/STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK_v0.3.0.zip
   workflow_dispatch:
 
 permissions:
