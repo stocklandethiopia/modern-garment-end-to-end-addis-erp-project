@@ -503,7 +503,7 @@ return new class extends Migration
             FOR EACH ROW EXECUTE FUNCTION guard_tech_pack_assets_state()');
 
         DB::statement("CREATE OR REPLACE FUNCTION guard_style_bom_substitution_state()
-            RETURNS trigger LANGUAGE plpgsql AS $
+            RETURNS trigger LANGUAGE plpgsql AS $$
             DECLARE
                 parent_status text;
             BEGIN
@@ -526,7 +526,7 @@ return new class extends Migration
             FOR EACH ROW EXECUTE FUNCTION guard_style_bom_substitution_state()');
 
         DB::statement("CREATE OR REPLACE FUNCTION guard_tech_pack_delivery_receipt()
-            RETURNS trigger LANGUAGE plpgsql AS $
+            RETURNS trigger LANGUAGE plpgsql AS $$
             DECLARE
                 parent_status text;
                 parent_manifest char(64);
