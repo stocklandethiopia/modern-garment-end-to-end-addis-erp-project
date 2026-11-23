@@ -1,0 +1,20 @@
+{
+  "name": "stockland-garment-erp-local",
+  "version": "0.3.0",
+  "private": true,
+  "description": "Stockland Ethiopia garment retail, wholesale, warehouse, finance and HR ERP full-stack local application",
+  "type": "module",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "start": "node src/server.mjs",
+    "dev": "node --watch src/server.mjs",
+    "test": "node --test",
+    "check": "node scripts/check.mjs",
+    "bootstrap": "node scripts/bootstrap.mjs",
+    "release:gate": "node scripts/release-gate.mjs",
+    "verify:manifest": "node scripts/verify-manifest.mjs",
+    "manifest:build": "node scripts/build-manifest.mjs"
+  }
+}
