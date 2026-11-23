@@ -6,13 +6,11 @@ on:
       - audit/stockland-local-source-v0.3.0
     paths:
       - source-intake/stockland-garment-erp-local-v0.3.0/**
-      - .github/workflows/source-intake-audit.yml
   pull_request:
     branches:
       - main
     paths:
       - source-intake/stockland-garment-erp-local-v0.3.0/**
-      - .github/workflows/source-intake-audit.yml
   workflow_dispatch:
 
 permissions:
