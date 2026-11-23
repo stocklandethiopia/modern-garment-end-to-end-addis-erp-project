@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   extract-commit-and-audit:
-    name: Extract and audit supplied source on GitHub
+    name: Extract and audit submitted source on GitHub
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -32,25 +32,24 @@ jobs:
         with:
           node-version: 22.16.0
 
-      - name: Reconstruct and verify original ZIP
+      - name: Reconstruct and verify source transfer bundle
         shell: bash
         run: |
           set -euo pipefail
           intake="source-intake/stockland-garment-erp-local-v0.3.0"
-          archive="$RUNNER_TEMP/STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK_v0.3.0.zip"
-          cat "$intake"/archive-parts/*.b64 | base64 --decode > "$archive"
-          echo "5e505f3ccccf930d8644187a3143c5277edae2ac9de3bd9f4305945232668fd1  $archive" | sha256sum --check -
-          unzip -tq "$archive"
+          bundle="$RUNNER_TEMP/stockland-source-v0.3.0.tar.xz"
+          cat "$intake"/archive-parts/*.b64 | base64 --decode > "$bundle"
+          echo "0b965ccc8f4e34e9887790f37ff6de96127ab53066db074725ce290b4d40cd9d  $bundle" | sha256sum --check -
           mkdir -p "$RUNNER_TEMP/source-unpacked"
-          unzip -q "$archive" -d "$RUNNER_TEMP/source-unpacked"
-          test -f "$RUNNER_TEMP/source-unpacked/STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK/package.json"
-          test -f "$RUNNER_TEMP/source-unpacked/STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK/BUILD_MANIFEST.json"
+          tar -xJf "$bundle" -C "$RUNNER_TEMP/source-unpacked"
+          test -f "$RUNNER_TEMP/source-unpacked/package.json"
+          test -f "$RUNNER_TEMP/source-unpacked/BUILD_MANIFEST.json"
 
       - name: Commit extracted application source to audit branch
         shell: bash
         run: |
           set -euo pipefail
-          source_root="$RUNNER_TEMP/source-unpacked/STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK"
+          source_root="$RUNNER_TEMP/source-unpacked"
           destination="source-intake/stockland-garment-erp-local-v0.3.0/source"
           mkdir -p "$destination"
           cp -a "$source_root"/. "$destination"/
