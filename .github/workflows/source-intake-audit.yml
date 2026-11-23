@@ -1,0 +1,78 @@
+name: Stockland local source intake audit
+
+on:
+  push:
+    branches:
+      - audit/stockland-local-source-v0.3.0
+    paths:
+      - source-intake/stockland-garment-erp-local-v0.3.0/**
+      - .github/workflows/source-intake-audit.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - source-intake/stockland-garment-erp-local-v0.3.0/**
+      - .github/workflows/source-intake-audit.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stockland-source-intake-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-uploaded-source:
+    name: Verify submitted source archive (Node 22.16.0)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout audit candidate
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+
+      - name: Record runner runtime
+        run: node --version
+
+      - name: Reconstruct original source archive and verify SHA-256
+        shell: bash
+        run: |
+          set -euo pipefail
+          intake="source-intake/stockland-garment-erp-local-v0.3.0"
+          archive="$intake/STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK_v0.3.0.zip"
+          cat "$intake"/STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK_v0.3.0.zip.part-*.b64 | base64 --decode > "$archive"
+          echo "5e505f3ccccf930d8644187a3143c5277edae2ac9de3bd9f4305945232668fd1  $archive" | sha256sum --check -
+          mkdir -p "$RUNNER_TEMP/stockland-source"
+          unzip -q "$archive" -d "$RUNNER_TEMP/stockland-source"
+          test -f "$RUNNER_TEMP/stockland-source/STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK/package.json"
+          test -f "$RUNNER_TEMP/stockland-source/STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK/BUILD_MANIFEST.json"
+
+      - name: Check JavaScript syntax and static rules
+        working-directory: ${{ runner.temp }}/stockland-source/STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK
+        run: npm run check
+
+      - name: Run application integration tests
+        working-directory: ${{ runner.temp }}/stockland-source/STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK
+        run: npm test
+
+      - name: Verify source build manifest
+        working-directory: ${{ runner.temp }}/stockland-source/STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK
+        run: npm run verify:manifest
+
+      - name: Run local application release gates
+        working-directory: ${{ runner.temp }}/stockland-source/STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK
+        run: npm run release:gate
+
+      - name: Publish expanded source package for download
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stockland-garment-erp-local-source-v0.3.0
+          path: ${{ runner.temp }}/stockland-source/STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK/
+          if-no-files-found: warn
+          retention-days: 14
