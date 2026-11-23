@@ -6,6 +6,8 @@ on:
       - audit/stockland-local-source-v0.3.0
     paths:
       - source-intake/stockland-garment-erp-local-v0.3.0/DRIVE_IMPORT_TRIGGER
+      - source-intake/stockland-garment-erp-local-v0.3.0/AUTHORITATIVE_SOURCE_REVIEW_TRIGGER
+      - source-intake/stockland-garment-erp-local-v0.3.0/AUTHORITATIVE_SOURCE_REVIEW_TRIGGER
   workflow_dispatch:
 
 permissions:
@@ -17,6 +19,7 @@ concurrency:
 
 jobs:
   import-and-audit:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, 'retry exact source import')
     name: Import extracted source from public Drive folder and verify
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -221,3 +224,190 @@ jobs:
           path: ${{ env.SOURCE_DESTINATION }}/
           if-no-files-found: warn
           retention-days: 14
+
+
+  inspect-authoritative-drive:
+    if: github.event_name == 'push' && contains(github.event.head_commit.message, 'inspect authoritative source evidence')
+    name: Inspect newly supplied authoritative Drive source without modifying the app
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      DRIVE_FOLDER_ID: 146liRDU7W1-kWZxgN_LGklEgsUlAFTLE
+      IMPORTED_SOURCE: source-intake/stockland-garment-erp-local-v0.3.0/source
+    steps:
+      - name: Checkout current committed source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download newly supplied Drive folder
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check "gdown==5.2.0"
+          destination="$RUNNER_TEMP/authoritative-drive-source"
+          mkdir -p "$destination"
+          gdown --folder "https://drive.google.com/drive/folders/${DRIVE_FOLDER_ID}" --output "$destination" --remaining-ok
+          echo "DRIVE_SOURCE_ROOT=$destination" >> "$GITHUB_ENV"
+
+      - name: Inventory Drive tree, manifests and adoption/reference material
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - "$DRIVE_SOURCE_ROOT" "$GITHUB_WORKSPACE/$IMPORTED_SOURCE" "$GITHUB_WORKSPACE" <<'PY'
+          import os, sys, json, hashlib, pathlib, datetime
+          drive_root = pathlib.Path(sys.argv[1]).resolve()
+          imported_root = pathlib.Path(sys.argv[2]).resolve()
+          workspace = pathlib.Path(sys.argv[3]).resolve()
+
+          def digest(path):
+              h=hashlib.sha256()
+              with open(path,"rb") as stream:
+                  for block in iter(lambda:stream.read(1024*1024),b""):
+                      h.update(block)
+              return h.hexdigest()
+
+          def inventory(root):
+              rows=[]
+              for current,dirs,files in os.walk(root,followlinks=False):
+                  dirs[:]=sorted(d for d in dirs if not os.path.islink(os.path.join(current,d)))
+                  for name in sorted(files):
+                      p=pathlib.Path(current)/name
+                      rel=p.relative_to(root).as_posix()
+                      if p.is_symlink():
+                          rows.append({"path":rel,"type":"symlink"})
+                      else:
+                          rows.append({"path":rel,"type":"file","size":p.stat().st_size,"sha256":digest(p)})
+              return rows
+
+          drive=inventory(drive_root)
+          imported=inventory(imported_root)
+          manifests=[]
+          candidate_roots=set()
+          for item in drive:
+              if item["type"]!="file" or not item["path"].lower().endswith("build_manifest.json"):
+                  continue
+              p=drive_root/item["path"]
+              root=p.parent
+              package=root/"package.json"
+              record={"manifest_path":item["path"],"candidate_root":root.relative_to(drive_root).as_posix(),
+                      "manifest_sha256":item["sha256"],"has_package_json":package.is_file()}
+              try:
+                  m=json.loads(p.read_text(encoding="utf-8"))
+                  entries=m.get("files",[])
+                  statuses=[]
+                  for entry in entries:
+                      rel=entry.get("path")
+                      if not isinstance(rel,str) or rel.startswith("/") or ".." in pathlib.PurePosixPath(rel).parts:
+                          statuses.append({"path":str(rel),"status":"unsafe"})
+                          continue
+                      target=root/rel
+                      if not target.is_file():
+                          statuses.append({"path":rel,"status":"missing"})
+                      else:
+                          got=digest(target)
+                          sz=target.stat().st_size
+                          statuses.append({"path":rel,"status":"match" if got==entry.get("sha256") and sz==entry.get("size_bytes") else "mismatch"})
+                  record.update({"application":m.get("application"),"version":m.get("version"),
+                                 "declared_file_count":m.get("file_count"),"manifest_entries":len(entries),
+                                 "matched":sum(x["status"]=="match" for x in statuses),
+                                 "missing":sum(x["status"]=="missing" for x in statuses),
+                                 "mismatched":sum(x["status"]=="mismatch" for x in statuses),
+                                 "unsafe":sum(x["status"]=="unsafe" for x in statuses),
+                                 "check":"PASS" if package.is_file() and len(statuses)==len(entries) and all(x["status"]=="match" for x in statuses) else "FAIL",
+                                 "results":statuses})
+                  candidate_roots.add(record["candidate_root"])
+              except Exception as e:
+                  record["error"]=str(e)
+                  record["check"]="ERROR"
+              manifests.append(record)
+
+          comparisons=[]
+          for rel in sorted(candidate_roots):
+              root=drive_root/rel
+              try:
+                  m=json.loads((root/"BUILD_MANIFEST.json").read_text(encoding="utf-8"))
+                  same=[]; changed=[]; missing=[]
+                  declared=set()
+                  for e in m.get("files",[]):
+                      path=e.get("path")
+                      if not isinstance(path,str): continue
+                      declared.add(path)
+                      d=root/path; old=imported_root/path
+                      if not d.is_file(): missing.append(path)
+                      elif old.is_file() and digest(d)==digest(old) and d.stat().st_size==old.stat().st_size: same.append(path)
+                      else: changed.append(path)
+                  drive_declared=declared|{"BUILD_MANIFEST.json"}
+                  extra=[x["path"] for x in inventory(root) if x["type"]=="file" and x["path"] not in drive_declared]
+                  comparisons.append({"candidate_root":rel,"same_as_current":len(same),
+                      "different_or_not_current":len(changed),"missing_from_candidate":len(missing),
+                      "extra_not_in_manifest":len(extra),"changed_paths":changed,
+                      "missing_paths":missing,"extra_paths":extra})
+              except Exception as e:
+                  comparisons.append({"candidate_root":rel,"error":str(e)})
+
+          keywords=("adoption","cross-check","cross_check","crosscheck","reference","source-review","source_review","provenance")
+          evidence=[x for x in drive if x["type"]=="file" and any(k in x["path"].lower() for k in keywords)]
+          likely_docs=[]
+          for x in evidence:
+              if x["path"].lower().endswith((".md",".txt",".csv",".json",".yml",".yaml")):
+                  p=drive_root/x["path"]
+                  try:
+                      body=p.read_text(encoding="utf-8",errors="replace")
+                  except Exception:
+                      continue
+                  if len(body)>20000: body=body[:20000]+"\n[TRUNCATED FOR REVIEW]"
+                  likely_docs.append({"path":x["path"],"content":body})
+
+          report={"audit_time_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                  "drive_folder_id":os.environ["DRIVE_FOLDER_ID"],
+                  "drive_file_count":len(drive),"current_import_file_count":len(imported),
+                  "drive_inventory":drive,"current_import_inventory":imported,
+                  "candidate_manifests":manifests,"candidate_comparisons":comparisons,
+                  "adoption_reference_evidence":evidence,"evidence_document_contents":likely_docs}
+          (workspace/"authoritative-drive-source-audit.json").write_text(json.dumps(report,indent=2),encoding="utf-8")
+
+          with open(workspace/"drive-source-summary.md","w",encoding="utf-8") as f:
+              f.write("# Authoritative Drive source audit\n\n")
+              f.write(f"- Drive folder ID: `{report['drive_folder_id']}`\n")
+              f.write(f"- Drive files retrieved: {len(drive)}\n")
+              f.write(f"- Existing imported source files: {len(imported)}\n")
+              f.write(f"- Candidate app manifests: {len(manifests)}\n")
+              for x in manifests:
+                  f.write(f"\n## Candidate `{x['candidate_root']}`\n")
+                  f.write(f"- App/version: {x.get('application')} / {x.get('version')}\n")
+                  f.write(f"- Manifest SHA-256: `{x['manifest_sha256']}`\n")
+                  f.write(f"- Manifest result: {x.get('check')} — {x.get('matched')} matched, {x.get('missing')} missing, {x.get('mismatched')} changed\n")
+              for x in comparisons:
+                  f.write(f"\n## Comparison with currently imported source: `{x['candidate_root']}`\n")
+                  f.write(f"- Same: {x.get('same_as_current')}\n- Different/new: {x.get('different_or_not_current')}\n")
+                  f.write(f"- Missing from Drive candidate: {x.get('missing_from_candidate')}\n")
+                  f.write(f"- Extra outside manifest: {x.get('extra_not_in_manifest')}\n")
+                  if x.get("changed_paths"): f.write("- Changed paths: "+", ".join(x["changed_paths"])+"\n")
+                  if x.get("extra_paths"): f.write("- Extra paths: "+", ".join(x["extra_paths"])+"\n")
+              f.write("\n## Adoption/reference evidence files\n")
+              for x in evidence: f.write(f"- `{x['path']}` ({x.get('size')} bytes)\n")
+          print((workspace/"drive-source-summary.md").read_text(encoding="utf-8"))
+          PY
+
+      - name: Upload full audit inventory and adoption/reference evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: authoritative-stockland-source-audit
+          path: |
+            authoritative-drive-source-audit.json
+            drive-source-summary.md
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Add summary to GitHub Actions run
+        if: always()
+        shell: bash
+        run: |
+          if [ -f drive-source-summary.md ]; then cat drive-source-summary.md >> "$GITHUB_STEP_SUMMARY"; fi
