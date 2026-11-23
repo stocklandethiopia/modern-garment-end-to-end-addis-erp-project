@@ -1,24 +1,25 @@
 # Stockland Garment ERP v0.3.0 — Source Intake
 
-This directory preserves the source package supplied for independent audit. It is **not** the canonical Modern Garment End-to-End Addis ERP runtime and is not approved for merge, deployment or release.
+This folder is the isolated intake point for the original source archive supplied for audit. It is **not** the canonical Modern Garment End-to-End Addis ERP runtime and is not approved for merge, deployment or release.
 
-## Contents
+## Files in this folder
 
-- `STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK_v0.3.0.zip` — original uploaded source archive, to be uploaded unchanged as the binary ZIP file at this exact path; the current Git branch contains the audit controls and checksum while the raw archive upload remains the final intake step.
-- `SHA256SUMS.txt` — user-supplied checksum manifest for the ZIP and its internal build manifest.
-- `SOURCE_AUDIT.md` — scope and architecture assessment against the approved WP-00…WP-16 plan.
+- `STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK_v0.3.0.zip` — upload the original ZIP here unchanged.
+- `SHA256SUMS.txt` — supplied checksum record.
+- `SOURCE_AUDIT.md` — comparison with the canonical WP-00…WP-16 plan.
 
-## Reconstruct the original ZIP
+## Upload from GitHub's browser interface
 
-From this folder, concatenate the parts in filename order and decode:
+1. Open branch `audit/stockland-local-source-v0.3.0`.
+2. Navigate to this folder.
+3. Select **Add file → Upload files**.
+4. Upload the original `STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK_v0.3.0.zip` without extracting or modifying it.
+5. Commit to `audit/stockland-local-source-v0.3.0`, not `main`.
 
-```sh
-cat STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK_v0.3.0.zip.part-*.b64 | base64 --decode > STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK_v0.3.0.zip
-sha256sum -c SHA256SUMS.txt
-```
+The workflow is configured to start when that exact ZIP path is committed. It verifies the archive SHA-256, extracts the files on a GitHub-hosted runner, runs `npm run check`, `npm test`, `npm run verify:manifest` and `npm run release:gate`, then publishes an expanded-source artifact for download.
 
-After the ZIP is committed at this path, the CI workflow verifies its SHA-256, extracts it on a GitHub-hosted runner, runs the package's declared checks, and publishes the expanded source as a downloadable workflow artifact.
+No local terminal, VS Code or Codespaces are required. Do not create a production release from this intake branch.
 
-## Important boundary
+## Architecture boundary
 
-The source package describes itself as a Stockland-specific local application using Node.js and SQLite. The canonical product baseline requires a customer-neutral multi-tenant SaaS on Angular/Laravel/PostgreSQL with the full garment value stream. The archive is therefore isolated for comparison and audit. No canonical source files are replaced by this intake.
+The source describes itself as a Stockland-specific local application using Node.js and SQLite. The canonical ERP baseline is a customer-neutral multi-tenant SaaS on Angular/Laravel/PostgreSQL with the full garment value stream. Preserve this package separately for audit; do not copy it over `backend/` or `frontend/`.
