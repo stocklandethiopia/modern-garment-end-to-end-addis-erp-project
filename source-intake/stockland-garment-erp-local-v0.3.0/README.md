@@ -4,7 +4,7 @@ This directory preserves the source package supplied for independent audit. It i
 
 ## Contents
 
-- `STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK_v0.3.0.zip` — original uploaded source archive, stored unchanged as ordered Base64 Git blobs (`*.part-XX.b64`) because GitHub's repository contents API accepts text content while this source is a binary ZIP.
+- `STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK_v0.3.0.zip` — original uploaded source archive, to be uploaded unchanged as the binary ZIP file at this exact path; the current Git branch contains the audit controls and checksum while the raw archive upload remains the final intake step.
 - `SHA256SUMS.txt` — user-supplied checksum manifest for the ZIP and its internal build manifest.
 - `SOURCE_AUDIT.md` — scope and architecture assessment against the approved WP-00…WP-16 plan.
 
@@ -17,7 +17,7 @@ cat STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK_v0.3.0.zip.part-*.b64 | base64 --decod
 sha256sum -c SHA256SUMS.txt
 ```
 
-The CI workflow reconstructs the ZIP on a GitHub-hosted runner, verifies its SHA-256, extracts it, runs the package's declared checks, and publishes the expanded source as a downloadable workflow artifact.
+After the ZIP is committed at this path, the CI workflow verifies its SHA-256, extracts it on a GitHub-hosted runner, runs the package's declared checks, and publishes the expanded source as a downloadable workflow artifact.
 
 ## Important boundary
 
