@@ -5,8 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         if (DB::connection()->getDriverName() !== 'pgsql') {
@@ -331,9 +330,9 @@ return new class extends Migration
             END;
             $$");
 
-        DB::statement("CREATE TRIGGER style_bom_version_state_guard
+        DB::statement('CREATE TRIGGER style_bom_version_state_guard
             BEFORE UPDATE ON style_bom_versions
-            FOR EACH ROW EXECUTE FUNCTION guard_style_bom_version_state()");
+            FOR EACH ROW EXECUTE FUNCTION guard_style_bom_version_state()');
 
         DB::statement("CREATE OR REPLACE FUNCTION guard_style_bom_lines_state()
             RETURNS trigger LANGUAGE plpgsql AS $$
@@ -363,9 +362,9 @@ return new class extends Migration
             END;
             $$");
 
-        DB::statement("CREATE TRIGGER style_bom_lines_state_guard
+        DB::statement('CREATE TRIGGER style_bom_lines_state_guard
             BEFORE INSERT OR UPDATE OR DELETE ON style_bom_lines
-            FOR EACH ROW EXECUTE FUNCTION guard_style_bom_lines_state()");
+            FOR EACH ROW EXECUTE FUNCTION guard_style_bom_lines_state()');
 
         DB::statement("CREATE OR REPLACE FUNCTION guard_tech_pack_version_state()
             RETURNS trigger LANGUAGE plpgsql AS $$
@@ -548,8 +547,6 @@ return new class extends Migration
         DB::statement('CREATE TRIGGER tech_pack_receipt_release_guard
             BEFORE INSERT ON tech_pack_delivery_receipts
             FOR EACH ROW EXECUTE FUNCTION guard_tech_pack_delivery_receipt()');
-
-
 
         foreach ([
             'style_bom_versions',
