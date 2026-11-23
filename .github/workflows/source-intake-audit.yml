@@ -187,8 +187,9 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "$SOURCE_DESTINATION" "$INTAKE_DIR/SOURCE_TREE_SHA256SUMS.txt" "$INTAKE_DIR/SOURCE_IMPORT_REPORT.md"
-          git diff --cached --check
+          git add -f "$SOURCE_DESTINATION" "$INTAKE_DIR/SOURCE_TREE_SHA256SUMS.txt" "$INTAKE_DIR/SOURCE_IMPORT_REPORT.md"
+          staged_source_files="$(git diff --cached --name-only -- "$SOURCE_DESTINATION" | wc -l | tr -d ' ')"
+          test "$staged_source_files" = "107"
           git commit -m "chore(audit): import verified extracted Stockland ERP v0.3.0 source"
           git push origin "HEAD:${GITHUB_REF_NAME}"
 
