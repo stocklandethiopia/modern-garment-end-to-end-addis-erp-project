@@ -39,13 +39,13 @@ jobs:
       - name: Record runner runtime
         run: node --version
 
-      - name: Reconstruct original source archive and verify SHA-256
+      - name: Verify uploaded source archive and extract
         shell: bash
         run: |
           set -euo pipefail
           intake="source-intake/stockland-garment-erp-local-v0.3.0"
           archive="$intake/STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK_v0.3.0.zip"
-          cat "$intake"/STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK_v0.3.0.zip.part-*.b64 | base64 --decode > "$archive"
+          test -f "$archive"
           echo "5e505f3ccccf930d8644187a3143c5277edae2ac9de3bd9f4305945232668fd1  $archive" | sha256sum --check -
           mkdir -p "$RUNNER_TEMP/stockland-source"
           unzip -q "$archive" -d "$RUNNER_TEMP/stockland-source"
