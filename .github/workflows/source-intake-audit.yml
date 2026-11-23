@@ -41,24 +41,20 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Download the already-extracted application folder from Google Drive
+      - name: Download original application archive from the supplied Google Drive folder
         shell: bash
         run: |
           set -euo pipefail
           python -m pip install --disable-pip-version-check "gdown==5.2.0"
-          drive_url="https://drive.google.com/drive/folders/${DRIVE_FOLDER_ID}"
-          drive_dir="$RUNNER_TEMP/stockland-drive-extracted"
-          mkdir -p "$drive_dir"
-          gdown --folder "$drive_url" --output "$drive_dir" --remaining-ok
-          test -d "$drive_dir"
-          mapfile -d '' manifests < <(find "$drive_dir" -type f -name BUILD_MANIFEST.json -print0)
-          if [ "${#manifests[@]}" -ne 1 ]; then
-            echo "::error::Expected exactly one BUILD_MANIFEST.json in the shared Drive folder; found ${#manifests[@]}."
-            find "$drive_dir" -maxdepth 4 -print | sort | head -300
-            exit 1
-          fi
-          app_root="$(dirname "${manifests[0]}")"
+          archive="$RUNNER_TEMP/STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK_v0.3.0.zip"
+          gdown "https://drive.google.com/uc?id=154AS8tLmmUEoKcUC6VKA9grL3Yx2p2Wl" --output "$archive"
+          echo "5e505f3ccccf930d8644187a3143c5277edae2ac9de3bd9f4305945232668fd1  $archive" | sha256sum --check -
+          unpack="$RUNNER_TEMP/stockland-source-unpacked"
+          mkdir -p "$unpack"
+          unzip -q "$archive" -d "$unpack"
+          app_root="$unpack/STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK"
           test -f "$app_root/package.json"
+          test -f "$app_root/BUILD_MANIFEST.json"
           for required_dir in .github docs public reference-sources scripts src templates tests; do
             test -d "$app_root/$required_dir" || {
               echo "::error::Required application directory is missing: $required_dir"
@@ -66,7 +62,7 @@ jobs:
             }
           done
           echo "APP_ROOT=$app_root" >> "$GITHUB_ENV"
-          echo "Located extracted application root: $app_root"
+          echo "Original archive SHA-256 verified and exact application folder extracted: $app_root"
 
       - name: Verify the complete application SHA-256 manifest and exact file inventory
         shell: bash
