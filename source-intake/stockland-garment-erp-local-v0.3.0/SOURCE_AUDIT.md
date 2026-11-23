@@ -77,7 +77,7 @@ No claim of independent penetration test, statutory compliance sign-off or produ
 ## 5. GitHub-hosted verification to run
 
 The root workflow `.github/workflows/source-intake-audit.yml` is dedicated to this isolated intake. It will:
-1. Reconstruct the original ZIP from the ordered Base64 parts.
+1. Verify the original ZIP committed unchanged at `source-intake/stockland-garment-erp-local-v0.3.0/STOCKLAND_GARMENT_ERP_LOCAL_FULLSTACK_v0.3.0.zip`.
 2. Verify the archive SHA-256 against the supplied checksum.
 3. Extract into an ephemeral GitHub-hosted runner directory.
 4. Run `npm run check`, `npm test`, `npm run verify:manifest` and `npm run release:gate` with Node 22.16.0.
