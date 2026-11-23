@@ -1,1 +1,1 @@
-Trigger the import from the source archive stored in the Product Owner's supplied public Google Drive folder. The runner must verify archive SHA-256 5e505f3ccccf930d8644187a3143c5277edae2ac9de3bd9f4305945232668fd1, extract the exact application tree, and verify every manifest entry before commit.
+Retry exact import after removing the whitespace-only check. The source must retain its original bytes; require 107 staged files and re-run manifest SHA-256 verification after commit.
