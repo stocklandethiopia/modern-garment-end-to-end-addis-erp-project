@@ -1,11 +1,11 @@
-name: Stockland local source intake audit
+name: Stockland extracted source intake audit
 
 on:
   push:
     branches:
       - audit/stockland-local-source-v0.3.0
     paths:
-      - source-intake/stockland-garment-erp-local-v0.3.0/archive-parts/**
+      - source-intake/stockland-garment-erp-local-v0.3.0/DRIVE_IMPORT_TRIGGER
   workflow_dispatch:
 
 permissions:
@@ -13,13 +13,17 @@ permissions:
 
 concurrency:
   group: stockland-source-intake-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
-  extract-commit-and-audit:
-    name: Extract and audit submitted source on GitHub
+  import-and-audit:
+    name: Import extracted source from public Drive folder and verify
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
+    env:
+      DRIVE_FOLDER_ID: 1Kl3hwG0yeyncn_8Gw3Dr3QrVCciArX3U
+      INTAKE_DIR: source-intake/stockland-garment-erp-local-v0.3.0
+      SOURCE_DESTINATION: source-intake/stockland-garment-erp-local-v0.3.0/source
     steps:
       - name: Checkout isolated audit branch
         uses: actions/checkout@v4
@@ -32,58 +36,191 @@ jobs:
         with:
           node-version: 22.16.0
 
-      - name: Reconstruct and verify source transfer bundle
-        shell: bash
-        run: |
-          set -euo pipefail
-          intake="source-intake/stockland-garment-erp-local-v0.3.0"
-          bundle="$RUNNER_TEMP/stockland-source-v0.3.0.tar.xz"
-          cat "$intake"/archive-parts/*.b64 | base64 --decode > "$bundle"
-          echo "0b965ccc8f4e34e9887790f37ff6de96127ab53066db074725ce290b4d40cd9d  $bundle" | sha256sum --check -
-          mkdir -p "$RUNNER_TEMP/source-unpacked"
-          tar -xJf "$bundle" -C "$RUNNER_TEMP/source-unpacked"
-          test -f "$RUNNER_TEMP/source-unpacked/package.json"
-          test -f "$RUNNER_TEMP/source-unpacked/BUILD_MANIFEST.json"
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
-      - name: Commit extracted application source to audit branch
+      - name: Download the already-extracted application folder from Google Drive
         shell: bash
         run: |
           set -euo pipefail
-          source_root="$RUNNER_TEMP/source-unpacked"
-          destination="source-intake/stockland-garment-erp-local-v0.3.0/source"
+          python -m pip install --disable-pip-version-check "gdown==5.2.0"
+          drive_url="https://drive.google.com/drive/folders/${DRIVE_FOLDER_ID}"
+          drive_dir="$RUNNER_TEMP/stockland-drive-extracted"
+          mkdir -p "$drive_dir"
+          gdown --folder "$drive_url" --output "$drive_dir" --remaining-ok
+          test -d "$drive_dir"
+          mapfile -d '' manifests < <(find "$drive_dir" -type f -name BUILD_MANIFEST.json -print0)
+          if [ "${#manifests[@]}" -ne 1 ]; then
+            echo "::error::Expected exactly one BUILD_MANIFEST.json in the shared Drive folder; found ${#manifests[@]}."
+            find "$drive_dir" -maxdepth 4 -print | sort | head -300
+            exit 1
+          fi
+          app_root="$(dirname "${manifests[0]}")"
+          test -f "$app_root/package.json"
+          for required_dir in .github docs public reference-sources scripts src templates tests; do
+            test -d "$app_root/$required_dir" || {
+              echo "::error::Required application directory is missing: $required_dir"
+              exit 1
+            }
+          done
+          echo "APP_ROOT=$app_root" >> "$GITHUB_ENV"
+          echo "Located extracted application root: $app_root"
+
+      - name: Verify the complete application SHA-256 manifest and exact file inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module - "$APP_ROOT" <<'NODE'
+          import fs from "node:fs";
+          import path from "node:path";
+          import crypto from "node:crypto";
+
+          const root = path.resolve(process.argv[2]);
+          const manifestPath = path.join(root, "BUILD_MANIFEST.json");
+          const raw = fs.readFileSync(manifestPath);
+          const manifestSha = crypto.createHash("sha256").update(raw).digest("hex");
+          const expectedManifestSha = "0d7c03dac0be52df3a4699fc9db93b4da8b45cb853980dcc0a62a598568722c0";
+          if (manifestSha !== expectedManifestSha) {
+            throw new Error(`BUILD_MANIFEST.json SHA-256 mismatch: ${manifestSha}`);
+          }
+
+          const manifest = JSON.parse(raw.toString("utf8"));
+          if (manifest.application !== "Stockland Garment ERP" || manifest.version !== "0.3.0") {
+            throw new Error("The Drive folder contains a different application or version.");
+          }
+          if (!Array.isArray(manifest.files) || manifest.files.length !== 106 || manifest.file_count !== 106) {
+            throw new Error(`Expected 106 manifest records; received ${manifest.files?.length ?? "invalid"}.`);
+          }
+
+          const expected = new Set(["BUILD_MANIFEST.json"]);
+          const failures = [];
+          for (const entry of manifest.files) {
+            if (typeof entry.path !== "string" || entry.path.startsWith("/") || entry.path.split(/[\\/]/).includes("..")) {
+              failures.push(`unsafe manifest path: ${entry.path}`);
+              continue;
+            }
+            const fullPath = path.resolve(root, entry.path);
+            if (!fullPath.startsWith(root + path.sep)) {
+              failures.push(`path escapes application root: ${entry.path}`);
+              continue;
+            }
+            expected.add(entry.path.split(path.sep).join("/"));
+            if (!fs.existsSync(fullPath) || !fs.statSync(fullPath).isFile()) {
+              failures.push(`missing file: ${entry.path}`);
+              continue;
+            }
+            const bytes = fs.readFileSync(fullPath);
+            const digest = crypto.createHash("sha256").update(bytes).digest("hex");
+            if (bytes.length !== entry.size_bytes) failures.push(`size mismatch: ${entry.path}`);
+            if (digest !== entry.sha256) failures.push(`SHA-256 mismatch: ${entry.path}`);
+          }
+
+          const actual = [];
+          const walk = (dir, relative = "") => {
+            for (const item of fs.readdirSync(dir, { withFileTypes: true })) {
+              const rel = relative ? `${relative}/${item.name}` : item.name;
+              const full = path.join(dir, item.name);
+              if (item.isSymbolicLink()) {
+                failures.push(`symbolic link not allowed in source package: ${rel}`);
+              } else if (item.isDirectory()) {
+                walk(full, rel);
+              } else if (item.isFile()) {
+                actual.push(rel);
+              }
+            }
+          };
+          walk(root);
+          const unexpected = actual.filter(p => !expected.has(p));
+          const missing = [...expected].filter(p => !actual.includes(p));
+          for (const p of unexpected) failures.push(`unexpected/unmanifested file: ${p}`);
+          for (const p of missing) failures.push(`missing manifest file: ${p}`);
+
+          if (actual.length !== 107) failures.push(`expected 107 total files including BUILD_MANIFEST.json; found ${actual.length}`);
+          if (failures.length) {
+            console.error(failures.join("\n"));
+            process.exit(1);
+          }
+
+          console.log(JSON.stringify({
+            application: manifest.application,
+            version: manifest.version,
+            files_in_manifest: manifest.files.length,
+            total_files_in_folder: actual.length,
+            build_manifest_sha256: manifestSha,
+            result: "PASS"
+          }, null, 2));
+          NODE
+
+      - name: Copy the original extracted folder into the isolated GitHub intake path
+        shell: bash
+        run: |
+          set -euo pipefail
+          destination="$GITHUB_WORKSPACE/$SOURCE_DESTINATION"
+          if [ -d "$destination" ] && find "$destination" -mindepth 1 -print -quit | grep -q .; then
+            echo "::error::The destination already contains files. Refusing to overwrite an existing source import."
+            exit 1
+          fi
           mkdir -p "$destination"
-          cp -a "$source_root"/. "$destination"/
+          cp -a "$APP_ROOT"/. "$destination"/
+          cd "$destination"
+          find . -type f -print0 | sort -z | xargs -0 sha256sum > "$GITHUB_WORKSPACE/$INTAKE_DIR/SOURCE_TREE_SHA256SUMS.txt"
+          cd "$GITHUB_WORKSPACE"
+          cat > "$INTAKE_DIR/SOURCE_IMPORT_REPORT.md" <<EOF
+          # Source import report — Stockland Garment ERP v0.3.0
+
+          - Import source: public Google Drive folder supplied by the Product Owner
+          - Drive folder ID: ${DRIVE_FOLDER_ID}
+          - Destination: `${SOURCE_DESTINATION}/`
+          - Import method: download the already-extracted application folder; no ZIP re-extraction
+          - Application manifest: `BUILD_MANIFEST.json`
+          - Expected maintained files: 106
+          - Total application files including build manifest: 107
+          - Build manifest SHA-256: `0d7c03dac0be52df3a4699fc9db93b4da8b45cb853980dcc0a62a598568722c0`
+          - Per-file verification: PASS before copy
+          - Full imported source checksums: `SOURCE_TREE_SHA256SUMS.txt`
+          - Imported at (UTC): $(date -u +'%Y-%m-%dT%H:%M:%SZ')
+
+          The application content is copied without renaming or restructuring its internal folders. It remains isolated from the canonical application runtime pending separate architecture and product-owner review.
+          EOF
+
+      - name: Commit full extracted application tree and checksum inventory
+        shell: bash
+        run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "$destination"
-          if git diff --cached --quiet; then
-            echo "Extracted source is already committed."
-          else
-            git commit -m "chore(audit): commit extracted Stockland ERP v0.3.0 source"
-            git push origin "HEAD:${GITHUB_REF_NAME}"
-          fi
+          git add "$SOURCE_DESTINATION" "$INTAKE_DIR/SOURCE_TREE_SHA256SUMS.txt" "$INTAKE_DIR/SOURCE_IMPORT_REPORT.md"
+          git diff --cached --check
+          git commit -m "chore(audit): import verified extracted Stockland ERP v0.3.0 source"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Verify committed source file count and manifest again
+        working-directory: ${{ env.SOURCE_DESTINATION }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(find . -type f | wc -l | tr -d ' ')" = "107"
+          npm run verify:manifest
 
       - name: Check JavaScript syntax and static rules
-        working-directory: source-intake/stockland-garment-erp-local-v0.3.0/source
+        working-directory: ${{ env.SOURCE_DESTINATION }}
         run: npm run check
 
       - name: Run application integration tests
-        working-directory: source-intake/stockland-garment-erp-local-v0.3.0/source
+        working-directory: ${{ env.SOURCE_DESTINATION }}
         run: npm test
 
-      - name: Verify source build manifest
-        working-directory: source-intake/stockland-garment-erp-local-v0.3.0/source
-        run: npm run verify:manifest
-
       - name: Run submitted application's release gate
-        working-directory: source-intake/stockland-garment-erp-local-v0.3.0/source
+        working-directory: ${{ env.SOURCE_DESTINATION }}
         run: npm run release:gate
 
-      - name: Publish expanded source package for download
+      - name: Publish imported source tree for review
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: stockland-garment-erp-local-source-v0.3.0
-          path: source-intake/stockland-garment-erp-local-v0.3.0/source/
+          path: ${{ env.SOURCE_DESTINATION }}/
           if-no-files-found: warn
           retention-days: 14
