@@ -55,12 +55,13 @@ class TenantInvitationService
         string $tenantName,
         string $inviterName,
         string $actorId,
+        string $reason,
     ): array {
         $token = bin2hex(random_bytes(32));
         $expiresAt = now()->addHours(72);
         $this->callScalar(
             'SELECT public.rotate_tenant_invitation(?::uuid, ?, ?::timestamptz, ?) AS invitation_id',
-            [$invitationId, hash('sha256', $token), $expiresAt->toIso8601String(), 'Resend invitation with a newly generated single-use token.'],
+            [$invitationId, hash('sha256', $token), $expiresAt->toIso8601String(), $reason],
         );
 
         $this->deliverAfterCommit($invitationId, $email, $role, $tenantId, $tenantName, $inviterName, $actorId, $token, $expiresAt->toIso8601String());
