@@ -224,3 +224,10 @@ Industry design references:
 Legal source register: ../localization/ethiopia-legal-regulatory-register.md
 
 All Ethiopia statutory rates, payroll classification, wage/overtime, pension base, creator taxation, withholding and VAT treatment require the complete current law/directive and qualified local sign-off before activation.
+
+
+## AI assistance and people-related decision controls
+
+AI may assist with policy retrieval, workforce planning scenarios, training suggestions, skill/coverage analysis, time-record exception detection and preparation of payroll review evidence. It must not autonomously determine worker classification, make adverse employment decisions, approve its own payroll output, change compensation policy or activate statutory rates.
+
+Employee and candidate data remains purpose-limited, tenant/role-restricted and minimized in external model processing. Calculations use approved deterministic rules and effective dates. Qualified local review and existing human approval gates remain mandatory for statutory interpretation, payroll execution, pension, tax and payment.

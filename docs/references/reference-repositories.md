@@ -38,3 +38,10 @@ For every candidate workflow, record:
 8. License and attribution requirements before any direct code reuse.
 
 A feature is adopted only after it passes this review and is implemented in the product's selected architecture. Public GitHub visibility is not a license to copy code.
+
+
+## AI-assisted source and code reuse
+
+AI research/coding agents may inspect reference repositories and summarize patterns, licence and security evidence. They do not change the reference-only status.
+
+Before reuse, inspect exact upstream files, current licence, attribution/notice requirements, dependency licences, security history and compatibility. Never copy secrets, customer/personal data or unverified source. Record provenance and adaptations. A model-generated explanation is not proof that source is safe, licensed or production-ready.
