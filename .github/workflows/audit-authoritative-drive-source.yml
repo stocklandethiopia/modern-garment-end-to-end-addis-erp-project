@@ -31,49 +31,43 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Resolve authoritative Drive folder listing
+      - name: Retry listing and download all supplied Drive files read-only
         shell: bash
         run: |
           set -euo pipefail
           python -m pip install --disable-pip-version-check "gdown==5.2.0"
-          python - "$DRIVE_FOLDER_ID" "$RUNNER_TEMP/drive-listing.json" <<'PY'
-          import sys, json, pathlib, gdown
+          python - "$DRIVE_FOLDER_ID" "$RUNNER_TEMP/drive-intake-download" <<'PY'
+          import sys, json, pathlib, hashlib, concurrent.futures, gdown, time, zipfile, tarfile
           folder_id, output = sys.argv[1], sys.argv[2]
-          files = gdown.download_folder(
-              url=f"https://drive.google.com/drive/folders/{folder_id}",
-              quiet=True,
-              remaining_ok=True,
-              skip_download=True,
-          )
-          payload = []
-          for f in files or []:
-              rel = pathlib.PurePosixPath(f.path)
-              if rel.is_absolute() or ".." in rel.parts:
-                  raise SystemExit(f"Unsafe path returned by Drive listing: {f.path}")
-              payload.append({"id": f.id, "path": rel.as_posix(), "local_path": f.local_path})
-          if not payload:
-              raise SystemExit("The supplied Drive folder returned no files.")
-          payload.sort(key=lambda x: x["path"].casefold())
-          with open(output, "w", encoding="utf-8") as out:
-              json.dump(payload, out, indent=2)
-          print(f"Drive folder listing resolved: {len(payload)} files.")
-          for item in payload:
-              print(f"- {item['path']} (Drive file ID {item['id']})")
-          PY
-          echo "DRIVE_LISTING=$RUNNER_TEMP/drive-listing.json" >> "$GITHUB_ENV"
+          root = pathlib.Path(output)
+          files_root = root / "files"
+          files_root.mkdir(parents=True, exist_ok=True)
+          errors = []
+          listing = []
+          for attempt in range(1, 5):
+              try:
+                  files = gdown.download_folder(
+                      url=f"https://drive.google.com/drive/folders/{folder_id}",
+                      quiet=True,
+                      remaining_ok=True,
+                      skip_download=True,
+                  )
+                  listing = []
+                  for f in files or []:
+                      rel = pathlib.PurePosixPath(f.path)
+                      if rel.is_absolute() or ".." in rel.parts:
+                          errors.append(f"Unsafe path returned by Drive listing: {f.path}")
+                          continue
+                      listing.append({"id": f.id, "path": rel.as_posix()})
+                  if listing:
+                      break
+                  errors.append(f"Attempt {attempt}: Drive listing returned no files.")
+              except Exception as exc:
+                  errors.append(f"Attempt {attempt}: {type(exc).__name__}: {exc}")
+              if attempt < 4:
+                  time.sleep(5 * attempt)
 
-      - name: Download exact Drive files and build SHA-256 inventory
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - "$DRIVE_LISTING" "$RUNNER_TEMP/drive-intake-download" <<'PY'
-          import sys, json, pathlib, hashlib, concurrent.futures, gdown, zipfile, tarfile
-          listing=json.load(open(sys.argv[1],encoding="utf-8"))
-          root=pathlib.Path(sys.argv[2])
-          files_root=root/"files"
-          files_root.mkdir(parents=True,exist_ok=True)
-
-          def digest(path):
+          def sha256(path):
               h=hashlib.sha256()
               with open(path,"rb") as f:
                   for block in iter(lambda:f.read(1024*1024),b""):
@@ -82,88 +76,74 @@ jobs:
 
           def download(item):
               rel=pathlib.PurePosixPath(item["path"])
-              if rel.is_absolute() or ".." in rel.parts:
-                  return {"path":item["path"],"drive_file_id":item["id"],"status":"BLOCKED_UNSAFE_PATH"}
               dest=files_root.joinpath(*rel.parts)
               dest.parent.mkdir(parents=True,exist_ok=True)
               try:
                   result=gdown.download(id=item["id"],output=str(dest),quiet=True)
                   if not result or not dest.is_file():
-                      raise RuntimeError("gdown returned no file")
+                      raise RuntimeError("gdown returned no downloaded file")
                   return {"path":item["path"],"drive_file_id":item["id"],"status":"DOWNLOADED",
-                          "size_bytes":dest.stat().st_size,"sha256":digest(dest)}
+                          "size_bytes":dest.stat().st_size,"sha256":sha256(dest)}
               except Exception as exc:
                   return {"path":item["path"],"drive_file_id":item["id"],"status":"FAILED","error":str(exc)}
 
-          with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
-              results=list(pool.map(download,listing))
+          results=[]
+          if listing:
+              with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+                  results=list(pool.map(download,listing))
 
-          app_roots=set()
-          for rel in [x["path"] for x in results if x["status"]=="DOWNLOADED"]:
-              p=pathlib.PurePosixPath(rel)
-              if p.name=="package.json":
-                  app_roots.add(str(p.parent))
-          direct_manifests={str(pathlib.PurePosixPath(x["path"]).parent) for x in results
-                            if x["status"]=="DOWNLOADED" and pathlib.PurePosixPath(x["path"]).name=="BUILD_MANIFEST.json"}
-          direct_roots=sorted(app_roots & direct_manifests)
+          direct_package_roots={str(pathlib.PurePosixPath(x["path"]).parent) for x in results
+                                if x["status"]=="DOWNLOADED" and pathlib.PurePosixPath(x["path"]).name=="package.json"}
+          direct_manifest_roots={str(pathlib.PurePosixPath(x["path"]).parent) for x in results
+                                 if x["status"]=="DOWNLOADED" and pathlib.PurePosixPath(x["path"]).name=="BUILD_MANIFEST.json"}
           archives=[]
           for item in results:
               if item["status"]!="DOWNLOADED":
                   continue
               p=files_root.joinpath(*pathlib.PurePosixPath(item["path"]).parts)
               low=p.name.casefold()
-              if low.endswith(".zip"):
-                  try:
+              try:
+                  if low.endswith(".zip"):
                       with zipfile.ZipFile(p) as z:
                           members=[x for x in z.namelist() if not x.endswith("/")]
-                          safe=all(not pathlib.PurePosixPath(x).is_absolute() and ".." not in pathlib.PurePosixPath(x).parts for x in members)
-                          package_roots={str(pathlib.PurePosixPath(x).parent) for x in members if pathlib.PurePosixPath(x).name=="package.json"}
-                          manifest_roots={str(pathlib.PurePosixPath(x).parent) for x in members if pathlib.PurePosixPath(x).name=="BUILD_MANIFEST.json"}
-                          archives.append({"path":item["path"],"format":"zip","member_count":len(members),"safe_paths":safe,
-                                           "application_roots":sorted(package_roots & manifest_roots)})
-                  except Exception as exc:
-                      archives.append({"path":item["path"],"format":"zip","inspection_error":str(exc)})
-              elif low.endswith(".tar.gz") or low.endswith(".tgz"):
-                  try:
+                  elif low.endswith(".tar.gz") or low.endswith(".tgz"):
                       with tarfile.open(p,"r:gz") as t:
                           members=[x.name for x in t.getmembers() if x.isfile()]
-                          safe=all(not pathlib.PurePosixPath(x).is_absolute() and ".." not in pathlib.PurePosixPath(x).parts for x in members)
-                          package_roots={str(pathlib.PurePosixPath(x).parent) for x in members if pathlib.PurePosixPath(x).name=="package.json"}
-                          manifest_roots={str(pathlib.PurePosixPath(x).parent) for x in members if pathlib.PurePosixPath(x).name=="BUILD_MANIFEST.json"}
-                          archives.append({"path":item["path"],"format":"tar.gz","member_count":len(members),"safe_paths":safe,
-                                           "application_roots":sorted(package_roots & manifest_roots)})
-                  except Exception as exc:
-                      archives.append({"path":item["path"],"format":"tar.gz","inspection_error":str(exc)})
+                  else:
+                      continue
+                  safe=all(not pathlib.PurePosixPath(x).is_absolute() and ".." not in pathlib.PurePosixPath(x).parts for x in members)
+                  package_roots={str(pathlib.PurePosixPath(x).parent) for x in members if pathlib.PurePosixPath(x).name=="package.json"}
+                  manifest_roots={str(pathlib.PurePosixPath(x).parent) for x in members if pathlib.PurePosixPath(x).name=="BUILD_MANIFEST.json"}
+                  archives.append({"path":item["path"],"member_count":len(members),"safe_paths":safe,
+                                   "application_roots":sorted(package_roots & manifest_roots)})
+              except Exception as exc:
+                  archives.append({"path":item["path"],"inspection_error":str(exc)})
 
           failed=sum(x["status"]!="DOWNLOADED" for x in results)
-          inventory={"drive_folder_id": "1o4y6s2hP81sNra93112s2V7ldJNty9-2",
+          state="BLOCKED_DRIVE_LISTING" if not listing else ("PARTIAL_DOWNLOAD" if failed else "FILES_DOWNLOADED")
+          inventory={"drive_folder_id":folder_id,"status":state,"listing_errors":errors,
                      "listed_file_count":len(listing),"downloaded_file_count":len(results)-failed,
-                     "failed_file_count":failed,"files":results,"direct_application_roots":direct_roots,
+                     "failed_file_count":failed,"files":results,"direct_application_roots":sorted(direct_package_roots & direct_manifest_roots),
                      "archives":archives}
           (root/"drive-folder-inventory.json").write_text(json.dumps(inventory,indent=2),encoding="utf-8")
-          summary=[
-            "# Authoritative Drive folder inventory","",
-            f"- Drive folder ID: `{inventory['drive_folder_id']}`",
-            f"- Listed files: {len(listing)}",
-            f"- Downloaded: {len(listing)-failed}",
-            f"- Failed: {failed}",
-            f"- Direct app roots (package + manifest): {len(direct_roots)}",
-            f"- Archives detected: {len(archives)}","",
-            "## File inventory"
-          ]
-          for x in results:
-              summary.append(f"- `{x['path']}`: {x['status']}, size={x.get('size_bytes','')}, SHA-256={x.get('sha256','')}, error={x.get('error','')}")
-          summary += ["","## Application archive inspection"]
-          for x in archives:
-              summary.append(f"- `{x['path']}`: {json.dumps(x,sort_keys=True)}")
-          summary += ["","## Intake decision","",
-                      "This workflow downloads and inventories the source folder only. It does not alter the committed application tree. A source application may be promoted only after its complete extracted root, build manifest, per-file hashes, licensing/provenance and scope compatibility are reviewed."]
+          summary=["# Authoritative Drive folder inventory","",
+                   f"- Drive folder ID: `{folder_id}`",f"- Status: **{state}**",
+                   f"- Listed files: {len(listing)}",f"- Downloaded: {len(listing)-failed}",
+                   f"- Failed: {failed}",f"- Direct app roots (package + manifest): {len(direct_package_roots & direct_manifest_roots)}",
+                   f"- Archives detected: {len(archives)}","","## Listing/download errors"]
+          summary += [f"- {x}" for x in errors] or ["- None."]
+          summary += ["","## File inventory"]
+          summary += [f"- `{x['path']}`: {x['status']}, size={x.get('size_bytes','')}, SHA-256={x.get('sha256','')}, error={x.get('error','')}" for x in results]
+          summary += ["","## Archive inspection"]
+          summary += [f"- `{x['path']}`: {json.dumps(x,sort_keys=True)}" for x in archives]
+          summary += ["","## Decision","",
+                      "This workflow only downloads and inventories the supplied Drive folder. It does not change the committed application source. A source application may be promoted only after its complete extracted root, build manifest, per-file hashes, licensing/provenance and compatibility with the approved canonical ERP architecture are reviewed."]
           (root/"drive-folder-inventory.md").write_text("\n".join(summary)+"\n",encoding="utf-8")
-          (root/"SHA256SUMS.txt").write_text("\n".join(f"{x.get('sha256','')}  {x['path']}" for x in results if x["status"]=="DOWNLOADED")+"\n",encoding="utf-8")
+          (root/"SHA256SUMS.txt").write_text("\n".join(f"{x['sha256']}  {x['path']}" for x in results if x["status"]=="DOWNLOADED")+"\n",encoding="utf-8")
           print((root/"drive-folder-inventory.md").read_text(encoding="utf-8"))
           PY
 
-      - name: Publish downloaded Drive source files and inventory
+      - name: Publish downloaded Drive source files and diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
