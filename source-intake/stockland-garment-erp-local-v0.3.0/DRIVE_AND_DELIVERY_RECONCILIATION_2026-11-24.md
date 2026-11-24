@@ -113,3 +113,61 @@ The workspace administrator must enable the Google Drive integration for this ac
 
 ---
 **Final disposition:** existing v0.3.0 source-intake preserved; X POS reference preserved; canonical delivery branch and CI state reconciled; latest Drive folders remain unverified; Drive upload not performed; canonical ERP and production concurrency gates remain open.
+
+
+## 9. Google AI Studio commit provenance audit — follow-up
+
+**Scope of inspection:** GitHub repository history and branches, not the inaccessible Google Drive folder contents.
+
+- Repository PR #1 has **493 commits**, **201 changed files**, **52,475 additions** and **19 deletions** in its current draft comparison to `main`.
+- The available PR commit listing returned 250 entries; all returned author identities were `stocklandethiopia`. GitHub commit searches for `AI Studio`, `Google AI` and `aistudio` returned no explicitly attributed commits. Branch searches for `ai`, `studio` and `gemini` found no corresponding AI Studio/Gemini branch.
+- The only commit message in the retrieved PR commit history containing the word `studio` is `feat(wp-05): add product development studio workspace`, commit `0c2c0801c761fa889f7f20b8b4e7f9b5337e33fb`, authored as `stocklandethiopia`. This is the ERP's product-development studio workspace, not evidence of Google AI Studio provenance.
+- The separate scratch branch `scratch/local-verification-export-2026-11-24` records temporary source-export workflow trigger/cleanup commits. Those messages do not identify Google AI Studio as the author or source.
+- No source bundle, AI Studio project export, commit log, file manifest or version history from the three newly supplied Drive folders could be read in this session. A Git commit authored by the connected GitHub identity cannot disclose which external editor or AI tool may have assisted in writing it.
+
+**Conclusion:** no explicit Google AI Studio/Gemini attribution was found in the inspected GitHub commit messages, branch names or author identities. This is not proof that no code was authored or edited in Google AI Studio; its provenance cannot be established without the actual exported files or accessible project/version history.
+
+## 10. Exact source-intake tree reconciliation
+
+At audit branch snapshot `f8975ad8b20736fbb9f3cfe2c6ba8ca8b9e38fae`, the application directory is:
+
+`source-intake/stockland-garment-erp-local-v0.3.0/source/`
+
+The current Git tree contains **109 files** at that path:
+- 106 files listed in the original `BUILD_MANIFEST.json`;
+- the `BUILD_MANIFEST.json` itself;
+- two subsequently added reference ZIPs under `reference-sources/`.
+
+The two reference ZIPs are not entries in the original 106-entry application build manifest and were added after the original v0.3 application import. They are reference-runtime evidence, not runnable application modules:
+- `reference-sources/files.zip` — archive SHA-256 `b8b58c8d25655777ed1e97bafd62f3418975701d17f08c06c3746f4a714e40eb`;
+- `reference-sources/stockland-local-erp-v0.1.zip` — archive SHA-256 `c2124bb8a625c7221c9f9ee8701ae70e1f5b18b235703654ea2a0156e8f02c0b`.
+
+Their separate reference verification is [GitHub Actions run 45397701554](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45397701554): 7/7 declared Python file hashes matched and 16/16 Python tests passed. Keep these files classified as reference attachments; do not count them as application runtime files or as evidence that canonical WP-09 has been implemented.
+
+## 11. Current canonical delivery checkpoint — refreshed
+
+- `main` remains `adca71a053290eb768987a7644d4b13c267cf2a9`.
+- `delivery/autonomous-wp-01-16` remains at `fd09e5da87509953c2b5b54a98701508baffdb24`.
+- PR #1 remains **OPEN / DRAFT / UNMERGED**, from delivery branch to `main`.
+- Latest inspected CI is [run #689 / 45412791527](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45412791527), event `pull_request`, exact head `fd09e5da87509953c2b5b54a98701508baffdb24`, conclusion **SUCCESS**.
+- Backend job: Laravel 13 / PHP 8.5, PostgreSQL 18.7 and Redis 8.2. Migrations ran using the restricted `erp_migrator` role; PHPUnit reported **70 tests / 768 assertions**. The tenant runtime role is `app_runtime NOBYPASSRLS`; the feature suite checks forced RLS, missing-tenant-context default deny and cross-tenant selection/read protections.
+- Frontend job: Angular 22 production build passed; **27 tests across 7 test files** passed; npm audit passed. Backend Composer audit, PHP Pint/style/syntax and migrations passed.
+- The lockfile reconciliation job was **skipped** on this pull-request event because the workflow runs that job only on pushes to the delivery branch; the backend and frontend lockfiles were uploaded as workflow artifacts.
+- Non-blocking Angular warnings remain: initial bundle **844.03 kB** exceeds the configured **750 kB** budget by 94.03 kB; initiatives component CSS **9.67 kB** exceeds the **8 kB** budget by 1.67 kB. The job also logged Node.js 20 deprecation notices for the v4 GitHub Actions used in the workflow. These should be handled as quality follow-ups, not mistaken for test failures.
+- The CI workflow's `concurrency` group with `cancel-in-progress: true` controls overlapping CI runs. It is **not** production transaction concurrency testing. No load, stress, soak, race/deadlock or peak factory scan/stock allocation campaign is evidenced by this run.
+- WP-03 has a tested tenant membership/invitation foundation, but its package handover remains **OPEN**. WP-04 and WP-05 remain partial; WP-06–WP-15 have design/requirements but their full executable domain workflows remain pending; WP-16 full E2E, independent security/performance, restore rehearsal, staging/UAT and deployment/rollback evidence remain incomplete.
+
+## 12. Adoption decision for the three newly supplied Drive folders
+
+**No application source was imported, changed or uploaded from the three folders in this session.** The correct decision under the approved governance is to preserve the current source and canonical delivery branches until the exact candidate files can be inspected.
+
+Once Drive access is restored or an export is supplied:
+1. Inventory each unique Drive folder independently; treat the repeated `1x-YtJNsEML2mEO_nOILkOXDvXxOMsVCC` link as one folder, not two.
+2. Identify archives, Google AI Studio exports, commit metadata, source manifests, lockfiles, licence/provenance files and any local/production credentials.
+3. Compute the archive SHA-256 and every file SHA-256, then compare with the existing 106-entry manifest and Git tree.
+4. Classify each item as: exact duplicate; valid reference-only addition; candidate implementation delta; manifest violation; unlicensed/unclear provenance; or secret/runtime data that must not be committed.
+5. Review code against the canonical Angular/Laravel/PostgreSQL architecture and the fixed WP-03 checkpoint. Preserve X POS only as reference material until WP-12 / WP-15 are reached.
+6. Stage accepted source as a separately named incoming/reference candidate on an audit branch. Do not overwrite the existing `source/` tree or cherry-pick app code into canonical `backend/` / `frontend/` merely because it came from AI Studio.
+7. Run the candidate's tests and the canonical exact-SHA CI/acceptance gates; document additions, replacements and rejected files; then request review.
+
+**Current final disposition:** GitHub canonical delivery reconciled and latest CI PASS; existing Node/Python reference evidence preserved; no explicit Google AI Studio attribution found in the inspected GitHub history; all three latest Drive folders remain unreadable in this session; no Drive upload performed; production concurrency and complete canonical ERP acceptance remain NOT VERIFIED / NOT COMPLETE.
