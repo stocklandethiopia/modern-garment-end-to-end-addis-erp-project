@@ -7,6 +7,7 @@ use App\Http\Controllers\Enterprise\InventoryLocationController;
 use App\Http\Controllers\Enterprise\LegalEntityController;
 use App\Http\Controllers\Enterprise\LicensingEvidenceController;
 use App\Http\Controllers\Enterprise\TenantController;
+use App\Http\Controllers\Enterprise\TenantMembershipController;
 use App\Http\Controllers\Merchandising\AssortmentAccountTermsController;
 use App\Http\Controllers\Merchandising\CommercialPricingController;
 use App\Http\Controllers\Merchandising\DemandPlanningController;
