@@ -114,7 +114,7 @@ return new class extends Migration
                 PERFORM pg_advisory_xact_lock(hashtextextended(v_tenant_id::text || ':invitation:' || v_email, 0));
 
                 UPDATE public.tenant_invitations
-                SET status = 'EXPIRED', token_hash = repeat('0', 64), updated_at = clock_timestamp()
+                SET status = 'EXPIRED', token_hash = repeat('0', 32) || replace(id::text, '-', ''), updated_at = clock_timestamp()
                 WHERE tenant_id = v_tenant_id AND email_normalized = v_email
                   AND status IN ('PENDING', 'DELIVERY_FAILED') AND expires_at <= clock_timestamp();
 
@@ -298,7 +298,7 @@ return new class extends Migration
                     RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'A reason of at least 10 characters is required.';
                 END IF;
                 UPDATE public.tenant_invitations
-                SET status = 'REVOKED', revoked_at = clock_timestamp(), token_hash = repeat('0', 64), updated_at = clock_timestamp()
+                SET status = 'REVOKED', revoked_at = clock_timestamp(), token_hash = repeat('0', 32) || replace(id::text, '-', ''), updated_at = clock_timestamp()
                 WHERE id = invitation_id AND tenant_id = v_tenant_id;
                 INSERT INTO public.audit_events (
                     id, tenant_id, actor_user_id, action, object_type, object_id, scope, reason, occurred_at, created_at, updated_at
@@ -349,7 +349,7 @@ return new class extends Migration
                 );
                 UPDATE public.tenant_invitations
                 SET status = 'ACCEPTED', accepted_by = new_user_id, accepted_at = v_now,
-                    token_hash = repeat('0', 64), updated_at = v_now
+                    token_hash = repeat('0', 32) || replace(id::text, '-', ''), updated_at = v_now
                 WHERE id = v_invitation.id;
                 INSERT INTO public.audit_events (
                     id, tenant_id, actor_user_id, action, object_type, object_id, scope, reason, occurred_at, created_at, updated_at
@@ -405,7 +405,7 @@ return new class extends Migration
                 UPDATE public.users SET email_verified_at = coalesce(email_verified_at, v_now), updated_at = v_now WHERE id = target_user_id;
                 UPDATE public.tenant_invitations
                 SET status = 'ACCEPTED', accepted_by = target_user_id, accepted_at = v_now,
-                    token_hash = repeat('0', 64), updated_at = v_now
+                    token_hash = repeat('0', 32) || replace(id::text, '-', ''), updated_at = v_now
                 WHERE id = v_invitation.id;
                 INSERT INTO public.audit_events (
                     id, tenant_id, actor_user_id, action, object_type, object_id, scope, reason, occurred_at, created_at, updated_at
