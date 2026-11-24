@@ -420,3 +420,8 @@ The ERP must be decision-supporting and improvement-oriented, not merely a datab
 Every domain may expose approved business capabilities to the Operational ERP Agent through versioned contracts. Users can initiate appropriate work through natural language, voice, images or file uploads while traditional Angular/API workflows remain fully supported.
 
 Agents use the owning domain's Laravel services, validation, permissions, ledger and audit. New devices, external systems, workflows, models and capability classes enter through the open-ended extension architecture rather than direct table writes or one-off prompts. Capability availability is discovered from the authenticated registry. Current-generation features are adopted when production-ready and valuable; experimental features are piloted; unknown future categories are not restricted by a static list. See [Agent-Native Technology Integration Standard](../architecture/agent-native-technology-integration-standard.md).
+
+
+## Application experience and technology blueprint
+
+The user-facing shell, role workspaces, chatbot, contextual popups, voice, document upload, scanning, offline use, event integration and stage-by-stage agent involvement are specified in [End-to-End ERP Technology and Intelligent Experience Blueprint](../architecture/end-to-end-erp-technology-and-experience-blueprint.md). Every domain must map its actual process, user roles, data owner, UI surfaces, tools, approvals and acceptance journeys to that blueprint.

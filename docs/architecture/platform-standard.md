@@ -176,3 +176,8 @@ The platform must deliver relevant, production-ready modern capabilities now and
 - Device and edge adapters must be independent of a single scanner, camera, reader, printer, sensor or vendor.
 - Extension types remain open-ended; do not create speculative placeholder modules for unknown future devices.
 - Conventional Angular/API operations remain usable when AI, queues, external providers or internet are unavailable.
+
+
+## 14. End-to-end application experience
+
+The full application and interaction design across the initiative-to-customer value stream is defined in [End-to-End ERP Technology and Intelligent Experience Blueprint](end-to-end-erp-technology-and-experience-blueprint.md). Read it with this platform standard before designing a domain UI, device adapter, document workflow, conversational interface or runtime agent. It assigns responsibilities to the existing Angular/Laravel/PostgreSQL/Redis/Python/Docker stack and does not approve an unreviewed parallel stack.

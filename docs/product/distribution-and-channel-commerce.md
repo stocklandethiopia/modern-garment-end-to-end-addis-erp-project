@@ -199,3 +199,8 @@ The same governed distribution, inventory and POS application services must be c
 - Offline capture reconciles idempotently after reconnection. A scan alone is not proof of a stock movement; the authorized workflow must commit a ledger transaction.
 - Sales, tender/payment, inventory and finance reconciliation remain owned by their respective domains. Agent success responses require a confirmed backend receipt.
 - New channel technology is evaluated through the open-ended integration standard; no single device/protocol/vendor is assumed to be the future standard.
+
+
+## 13. End-to-end application and customer experience
+
+The complete distribution, store, wholesale, POS, digital commerce, delivery, customer, returns and closed-loop experience is part of [End-to-End ERP Technology and Intelligent Experience Blueprint](../architecture/end-to-end-erp-technology-and-experience-blueprint.md). It defines the contextual assistant, POS workbook intake, device/scan adapters, notifications, customer-facing agent limits, proof of delivery and post-sale feedback requirements.

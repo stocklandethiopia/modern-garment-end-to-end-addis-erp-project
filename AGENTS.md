@@ -53,3 +53,8 @@ For each work package report:
 - Make development operable with local Codex on the user's available plan; do not require Codex Cloud or paid-only services. Run specialist roles sequentially when parallel subagents or usage are unavailable.
 - Codex custom agents inherit parent-session permissions; TOML files are role prompts, not security boundaries. Enforce sandbox, approvals and repository access at the parent/runtime level.
 - Apply these rules across every affected domain document. New technology cannot silently alter approved business scope, legal interpretation, package order or production release gates.
+
+
+## Full application and interaction blueprint
+
+Before designing any new domain screen, user interaction, device, integration or runtime agent, read `docs/architecture/end-to-end-erp-technology-and-experience-blueprint.md`. It covers the complete business application journey and defines the role of persistent chat, contextual popup/message boxes, action cards, voice, camera/scanning, file/document upload, notification center, mobile/offline mode, customer experience and human/agent responsibilities. Do not reduce the product to an agent-only application or a chat-only interface.

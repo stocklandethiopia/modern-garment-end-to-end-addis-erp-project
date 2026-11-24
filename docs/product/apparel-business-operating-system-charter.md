@@ -149,3 +149,8 @@ The garment ERP is a modern operating platform, not a collection of forms with a
 - Management can ask natural-language questions over governed KPIs and permission-filtered business knowledge.
 - Every action uses domain services, approved SOPs, versioned workflows and traceable audit. AI does not replace approved SMV/SAM, method standards, human design/fit acceptance, quality gates or worker safeguards.
 - Future technology categories remain open through the extension standard; do not constrain the garment operating system to a predefined device/vendor list.
+
+
+## 14. Full application and user-experience blueprint
+
+The product-wide application shell and detailed technology applications from initiative through product design, materials, specialized production, quality, warehouse and customer endpoint are specified in [End-to-End ERP Technology and Intelligent Experience Blueprint](../architecture/end-to-end-erp-technology-and-experience-blueprint.md). This includes conversational, popover/popup, notification, voice, camera/scan and document-intake experiences, plus agent/human responsibilities at each stage.

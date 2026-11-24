@@ -55,3 +55,8 @@ This initial repository foundation records the architecture and quality standard
 - [Agent-Native Technology Integration Standard](docs/architecture/agent-native-technology-integration-standard.md) — current-generation features, operational/evolution agent separation, extensibility, contracts and controls.
 - [Codex Agent Operating Model](docs/agent/codex-agent-operating-model.md) — local/Free-plan-compatible specialist roles, skills and sequential fallback.
 - Project Codex agents are in `.codex/agents/`; reusable skills are in `.agents/skills/`. These are development-time instructions, not production ERP permissions.
+
+
+## End-to-end technology and application experience
+
+- [End-to-End ERP Technology and Intelligent Experience Blueprint](docs/architecture/end-to-end-erp-technology-and-experience-blueprint.md) — the full application journey from initiative and product design through manufacturing, distribution, channels and end customer; includes UI surfaces (chatbot, popup/message boxes, voice, uploads, scanning), domain technology, device integrations and runtime agent involvement.
