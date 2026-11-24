@@ -84,10 +84,29 @@ class TenantInvitationService
 
     public function acceptForExistingUser(string $token, string $userId): array
     {
-        return $this->callJson(
-            'SELECT public.accept_tenant_invitation_for_existing_user(?, ?::uuid) AS result',
-            [hash('sha256', $token), $userId],
-        );
+        $connection = DB::connection('pgsql');
+
+        try {
+            return $connection->transaction(function () use ($connection, $token, $userId): array {
+                // Bind authenticated identity in the same transaction and connection
+                // used by the SECURITY DEFINER invitation-acceptance function.
+                $connection->select(
+                    "select set_config('app.current_user_id', ?, true)",
+                    [$userId],
+                );
+
+                $result = $connection->selectOne(
+                    'SELECT public.accept_tenant_invitation_for_existing_user(?, ?::uuid) AS result',
+                    [hash('sha256', $token), $userId],
+                )->result;
+
+                return is_string($result)
+                    ? (array) json_decode($result, true, 512, JSON_THROW_ON_ERROR)
+                    : (array) $result;
+            });
+        } catch (QueryException $exception) {
+            $this->translate($exception);
+        }
     }
 
     private function deliverAfterCommit(
