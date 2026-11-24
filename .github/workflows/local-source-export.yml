@@ -1,0 +1,35 @@
+name: Temporary local source export
+
+on:
+  push:
+    branches:
+      - scratch/local-verification-export-2026-11-24
+    paths:
+      - .github/workflows/local-source-export.yml
+      - LOCAL_SOURCE_EXPORT_TRIGGER.txt
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the exact scratch-branch source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 1
+      - name: Create source archive from tracked files only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git archive --format=tar HEAD | gzip -9 > "$RUNNER_TEMP/stockland-delivery-source.tar.gz"
+          sha256sum "$RUNNER_TEMP/stockland-delivery-source.tar.gz"
+      - name: Upload source archive for local verification
+        uses: actions/upload-artifact@v4
+        with:
+          name: stockland-delivery-source
+          path: ${{ runner.temp }}/stockland-delivery-source.tar.gz
+          if-no-files-found: error
+          retention-days: 1
