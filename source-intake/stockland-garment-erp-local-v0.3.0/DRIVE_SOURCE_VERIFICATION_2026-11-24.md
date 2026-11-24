@@ -73,3 +73,11 @@ One of the following access paths is required:
 2. The Product Owner attaches the source ZIP (or a complete export of the app root) directly to the conversation.
 
 After source bytes are accessible, the safe sequence is: inventory → identify application root/version → verify manifest and per-file SHA-256 → compare with the committed source and reference/adoption evidence → preserve a checksum-backed intake → run the package's declared tests/release gates → present a reviewable release proposal. No source replacement or merge to `main` should occur before those checks and the applicable Product Owner approval.
+
+## 8. Re-check after Product Owner follow-up
+
+A second attempt to open the exact supplied Drive folder URL on 24 November 2026 returned a provider fetch `DisabledError`. A fresh inventory of currently callable integrations also found no Google Drive read/list/download action exposed to this session. The Google Drive integration remains reported as disabled by the workspace administrator; no Drive file bytes or folder listing were returned.
+
+The repository workflow configuration still targets the supplied folder ID, but the private repository's workflow-run listing could not be queried through the available GitHub fetch endpoint. Consequently, the workflow's queued/running/completed state and any downloaded artifact remain **NOT VERIFIED**. This must not be represented as a successful Drive download or import.
+
+The authenticated GitHub integration remains usable for repository operations; this does not establish Google Drive access. No classic personal access token was supplied, used, exposed or committed. The connected GitHub authorization was used for Git operations instead.
