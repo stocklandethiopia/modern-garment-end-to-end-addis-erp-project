@@ -55,7 +55,7 @@ class TenantInvitationController extends Controller
     ): JsonResponse {
         abort_unless($context->canAdministerTenant(), 403, 'Tenant administrator permission is required.');
 
-        $request->validate(['reason' => ['required', 'string', 'min:10', 'max:2000']]);
+        $data = $request->validate(['reason' => ['required', 'string', 'min:10', 'max:2000']]);
         $invitation = DB::table('tenant_invitations')
             ->where('tenant_id', $context->tenantId())
             ->where('id', $invitationId)
@@ -73,6 +73,7 @@ class TenantInvitationController extends Controller
             tenantName: (string) $tenant->name,
             inviterName: (string) $request->user()->name,
             actorId: (string) $request->user()->id,
+            reason: trim($data['reason']),
         );
 
         return response()->json(['data' => $result, 'message' => 'A replacement single-use invitation has been queued for delivery.'], 202);
