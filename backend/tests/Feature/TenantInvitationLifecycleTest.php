@@ -104,8 +104,9 @@ class TenantInvitationLifecycleTest extends TestCase
             TenantInvitationNotification::class,
             function (TenantInvitationNotification $notification, array $channels, object $notifiable) use (&$token): bool {
                 $query = [];
-                parse_str((string) parse_url($notification->acceptanceUrl, PHP_URL_QUERY), $query);
-                $token = $query['token'] ?? null;
+                $fragment = (string) parse_url($notification->acceptanceUrl, PHP_URL_FRAGMENT);
+                parse_str($fragment, $fragmentParams);
+                $token = $fragmentParams['token'] ?? null;
 
                 return in_array('mail', $channels, true) && is_string($token) && strlen($token) === 64;
             },
