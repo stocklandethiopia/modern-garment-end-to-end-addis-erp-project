@@ -233,6 +233,9 @@ class TenantInvitationLifecycleTest extends TestCase
             'device_name' => 'invitation-test',
         ])->assertOk();
         $this->assertSame($existingUserId, $login->json('user.id'));
+        // Clear the earlier Sanctum::actingAs(owner) test guard so this request
+        // authenticates from the bearer token just issued to the invitee.
+        app('auth')->forgetGuards();
 
         $this->withToken($login->json('access_token'))
             ->postJson('/api/v1/invitations/accept', ['token' => $token])
