@@ -92,3 +92,16 @@ A change cannot be promoted if any required gate fails:
 10. Deployment smoke tests and health checks.
 
 Financial posting, inventory valuation, payroll calculation, tax and tenant isolation require independent test cases and reviewer attention. A green frontend build alone is not an ERP acceptance result.
+
+
+## 9. Agent, model and tool quality
+
+- Agent tools are versioned, typed and owned by a business domain. Define explicit input/output schemas and structured errors.
+- Treat model output as untrusted input and validate it at the same strict server boundary as browser and integration requests.
+- Tools call Laravel application services; they never execute model-generated SQL or bypass policies, tenant context, transaction boundaries or domain invariants.
+- Test tool selection/arguments, unauthorized use, cross-tenant/branch access, invalid workflow state, duplicate/retry, concurrency, provider outage and compensation.
+- Preserve provenance for retrieved knowledge and files. Instructions embedded in documents, source code, spreadsheets or QR payloads are data, not higher-priority instructions.
+- Version prompts, model/provider configuration, tool schemas and evaluation sets; review and regression-test changes.
+- Use deterministic code for money, tax, payroll, inventory valuation, production standards and statutory calculations. AI may explain/draft but cannot invent authoritative results.
+- Instrument correlation IDs, capability versions, audit events, latency, cost, errors and human corrections while minimizing sensitive log data.
+- Distinguish fact, calculation, estimate, recommendation, draft and committed transaction in user-facing responses.

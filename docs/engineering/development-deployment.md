@@ -91,3 +91,15 @@ Every release record must include:
 - Rollback/recovery instructions.
 
 A repository commit is not a production deployment. A successful container build is not proof of a successful business workflow.
+
+
+## 9. Agent runtime and software-evolution deployment
+
+- The Operational ERP Agent is deployed as an application integration capability. Codex Evolution Agents operate in developer workspaces; never ship developer MCP credentials into production.
+- Keep model keys and integration secrets in approved runtime secret management, never in Angular bundles, prompts, logs, tracked files or build artifacts.
+- Run long AI/document tasks in bounded queues with timeouts, retry caps, idempotency, dead-letter/exception handling and persisted task status.
+- Add provider health checks, rate/quota limits, cost budgets, circuit breakers, safe fallback and explicit feature-disable controls. Core ERP workflows survive provider outages.
+- Version model, prompt, tool schema, retrieval index, extension manifest and workflow changes with compatibility tests and rollback plans.
+- Use synthetic/adversarial CI data. Do not send production/customer/employee content to a new provider or pilot without privacy, security and contractual review.
+- Validate Codex agent TOML and skill metadata in CI where tooling is available. A docs-only commit is not runtime implementation.
+- Agents do not receive production deploy permissions. Release automation follows protected CI/CD and human approval.
