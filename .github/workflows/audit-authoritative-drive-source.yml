@@ -1,9 +1,10 @@
-name: Audit authoritative Stockland source folder
+name: Inspect authoritative Drive source intake
 
 on:
   push:
     branches:
       - audit/stockland-local-source-v0.3.0
+      - audit/inspect-drive-folder-2026-11-24
     paths:
       - source-intake/stockland-garment-erp-local-v0.3.0/AUTHORITATIVE_SOURCE_REVIEW_TRIGGER
   workflow_dispatch:
@@ -12,15 +13,14 @@ permissions:
   contents: read
 
 jobs:
-  inspect-drive-source:
-    name: Verify authoritative Drive manifest, source files and adoption references
+  inspect-drive-folder:
+    name: Download and inventory supplied Drive folder (read-only)
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
-      DRIVE_FOLDER_ID: 1o4y6s2hP81sNra93112s2V7ldJNty9-2
-      IMPORTED_SOURCE: source-intake/stockland-garment-erp-local-v0.3.0/source
+      DRIVE_FOLDER_ID: 1o4y6s2hP81sNra93112sV7ldJNty9-2
     steps:
-      - name: Checkout current committed application
+      - name: Checkout current audit snapshot
         uses: actions/checkout@v4
         with:
           ref: ${{ github.ref_name }}
@@ -31,13 +31,13 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Resolve Drive folder listing without bulk downloading all folder contents
+      - name: Resolve authoritative Drive folder listing
         shell: bash
         run: |
           set -euo pipefail
           python -m pip install --disable-pip-version-check "gdown==5.2.0"
           python - "$DRIVE_FOLDER_ID" "$RUNNER_TEMP/drive-listing.json" <<'PY'
-          import sys, json, gdown
+          import sys, json, pathlib, gdown
           folder_id, output = sys.argv[1], sys.argv[2]
           files = gdown.download_folder(
               url=f"https://drive.google.com/drive/folders/{folder_id}",
@@ -47,168 +47,136 @@ jobs:
           )
           payload = []
           for f in files or []:
-              payload.append({"id": f.id, "path": f.path, "local_path": f.local_path})
-          with open(output,"w",encoding="utf-8") as out:
-              json.dump(payload,out,indent=2)
+              rel = pathlib.PurePosixPath(f.path)
+              if rel.is_absolute() or ".." in rel.parts:
+                  raise SystemExit(f"Unsafe path returned by Drive listing: {f.path}")
+              payload.append({"id": f.id, "path": rel.as_posix(), "local_path": f.local_path})
+          if not payload:
+              raise SystemExit("The supplied Drive folder returned no files.")
+          payload.sort(key=lambda x: x["path"].casefold())
+          with open(output, "w", encoding="utf-8") as out:
+              json.dump(payload, out, indent=2)
           print(f"Drive folder listing resolved: {len(payload)} files.")
+          for item in payload:
+              print(f"- {item['path']} (Drive file ID {item['id']})")
           PY
           echo "DRIVE_LISTING=$RUNNER_TEMP/drive-listing.json" >> "$GITHUB_ENV"
 
-      - name: Download the candidate application manifest and verify exact application folder identity
+      - name: Download exact Drive files and build SHA-256 inventory
         shell: bash
         run: |
           set -euo pipefail
-          python - "$DRIVE_LISTING" "$RUNNER_TEMP/manifest.json" "$RUNNER_TEMP/app-root.txt" <<'PY'
-          import sys, json, pathlib, gdown
+          python - "$DRIVE_LISTING" "$RUNNER_TEMP/drive-intake-download" <<'PY'
+          import sys, json, pathlib, hashlib, concurrent.futures, gdown, zipfile, tarfile
           listing=json.load(open(sys.argv[1],encoding="utf-8"))
-          manifests=[x for x in listing if pathlib.PurePosixPath(x["path"]).name=="BUILD_MANIFEST.json"]
-          packages={str(pathlib.PurePosixPath(x["path"]).parent) for x in listing if pathlib.PurePosixPath(x["path"]).name=="package.json"}
-          candidates=[]
-          for x in manifests:
-              root=str(pathlib.PurePosixPath(x["path"]).parent)
-              if root in packages:
-                  candidates.append((root,x))
-          if len(candidates)!=1:
-              raise SystemExit(f"Expected exactly one app root containing both package.json and BUILD_MANIFEST.json; found {len(candidates)}. Manifests={[x['path'] for x in manifests]}, package roots={sorted(packages)}")
-          root, entry=candidates[0]
-          result=gdown.download(id=entry["id"],output=sys.argv[2],quiet=True)
-          if not result:
-              raise SystemExit("Could not download BUILD_MANIFEST.json from the authoritative Drive folder.")
-          pathlib.Path(sys.argv[3]).write_text(root,encoding="utf-8")
-          print(f"Application root: {root}")
-          print(f"Manifest Drive file ID: {entry['id']}")
-          PY
-          echo "APP_ROOT=$(cat "$RUNNER_TEMP/app-root.txt")" >> "$GITHUB_ENV"
-          echo "MANIFEST_FILE=$RUNNER_TEMP/manifest.json" >> "$GITHUB_ENV"
+          root=pathlib.Path(sys.argv[2])
+          files_root=root/"files"
+          files_root.mkdir(parents=True,exist_ok=True)
 
-      - name: Download and hash each manifest-listed source file, then compare with current GitHub import
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - "$DRIVE_LISTING" "$APP_ROOT" "$MANIFEST_FILE" "$GITHUB_WORKSPACE/$IMPORTED_SOURCE" "$RUNNER_TEMP/drive-source-audit" <<'PY'
-          import sys, json, pathlib, hashlib, concurrent.futures, os, traceback, gdown
-          listing=json.load(open(sys.argv[1],encoding="utf-8"))
-          app_root=sys.argv[2].strip("/")
-          manifest_path=pathlib.Path(sys.argv[3])
-          imported=pathlib.Path(sys.argv[4])
-          out=pathlib.Path(sys.argv[5]); out.mkdir(parents=True,exist_ok=True)
-          manifest_bytes=manifest_path.read_bytes()
-          manifest_sha=hashlib.sha256(manifest_bytes).hexdigest()
-          manifest=json.loads(manifest_bytes)
-          if manifest.get("application")!="Stockland Garment ERP" or manifest.get("version")!="0.3.0":
-              raise SystemExit(f"Wrong source package identity: {manifest.get('application')} {manifest.get('version')}")
-          entries=manifest.get("files",[])
-          if not isinstance(entries,list):
-              raise SystemExit("BUILD_MANIFEST.json has no files array.")
-          by_path={x["path"].replace("\\","/"):x for x in listing}
-          def sha(p):
+          def digest(path):
               h=hashlib.sha256()
-              with open(p,"rb") as f:
-                  for block in iter(lambda:f.read(1024*1024),b""): h.update(block)
+              with open(path,"rb") as f:
+                  for block in iter(lambda:f.read(1024*1024),b""):
+                      h.update(block)
               return h.hexdigest()
-          tasks=[]
-          for e in entries:
-              rel=e.get("path")
-              if not isinstance(rel,str) or rel.startswith("/") or ".." in pathlib.PurePosixPath(rel).parts:
-                  tasks.append((rel,e,None,"unsafe manifest path"))
-                  continue
-              drive_path=(pathlib.PurePosixPath(app_root)/rel).as_posix()
-              item=by_path.get(drive_path)
-              if item is None:
-                  tasks.append((rel,e,None,"not found in Drive folder listing"))
-              else:
-                  tasks.append((rel,e,item,None))
-          def fetch(task):
-              rel,e,item,error=task
-              current=imported/rel
-              current_sha=sha(current) if current.is_file() else None
-              current_size=current.stat().st_size if current.is_file() else None
-              result={"path":rel,"expected_sha256":e.get("sha256"),"expected_size":e.get("size_bytes"),
-                      "current_git_sha256":current_sha,"current_git_size":current_size}
-              if error:
-                  result["drive_status"]="missing"
-                  result["error"]=error
-                  return result
-              local=out/"download"/rel
-              local.parent.mkdir(parents=True,exist_ok=True)
+
+          def download(item):
+              rel=pathlib.PurePosixPath(item["path"])
+              if rel.is_absolute() or ".." in rel.parts:
+                  return {"path":item["path"],"drive_file_id":item["id"],"status":"BLOCKED_UNSAFE_PATH"}
+              dest=files_root.joinpath(*rel.parts)
+              dest.parent.mkdir(parents=True,exist_ok=True)
               try:
-                  got=gdown.download(id=item["id"],output=str(local),quiet=True)
-                  if not got or not local.is_file():
-                      raise RuntimeError("gdown returned no downloaded file")
-                  actual_sha=sha(local); actual_size=local.stat().st_size
-                  result.update({"drive_file_id":item["id"],"drive_status":"downloaded",
-                                 "drive_sha256":actual_sha,"drive_size":actual_size,
-                                 "drive_manifest_match":actual_sha==e.get("sha256") and actual_size==e.get("size_bytes"),
-                                 "same_as_current_git":actual_sha==current_sha and actual_size==current_size})
+                  result=gdown.download(id=item["id"],output=str(dest),quiet=True)
+                  if not result or not dest.is_file():
+                      raise RuntimeError("gdown returned no file")
+                  return {"path":item["path"],"drive_file_id":item["id"],"status":"DOWNLOADED",
+                          "size_bytes":dest.stat().st_size,"sha256":digest(dest)}
               except Exception as exc:
-                  result.update({"drive_file_id":item["id"],"drive_status":"blocked_or_failed","error":str(exc)})
-              return result
+                  return {"path":item["path"],"drive_file_id":item["id"],"status":"FAILED","error":str(exc)}
+
           with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
-              results=list(pool.map(fetch,tasks))
-          # Include the manifest as a separately downloaded, unhashed source control file.
-          manifest_report={"application":manifest.get("application"),"version":manifest.get("version"),
-                           "declared_file_count":manifest.get("file_count"),"manifest_entries":len(entries),
-                           "manifest_sha256":manifest_sha}
-          # Capture the exact content of all source/adoption/reference docs that were downloaded.
-          evidence=[]
-          terms=("reference","adoption","cross","source-review","source_review","provenance","module_mapping","contract")
-          for r in results:
-              if r["drive_status"]!="downloaded": continue
-              p=out/"download"/r["path"]
-              if any(t in r["path"].lower() for t in terms) and p.suffix.lower() in (".md",".txt",".csv",".json",".yml",".yaml"):
-                  body=p.read_text(encoding="utf-8",errors="replace")
-                  if len(body)>30000: body=body[:30000]+"\n[TRUNCATED]"
-                  evidence.append({"path":r["path"],"content":body})
-          # Enumerate files in the app folder that are outside its build manifest.
-          declared={e.get("path") for e in entries if isinstance(e.get("path"),str)}|{"BUILD_MANIFEST.json"}
-          extra=[x["path"][len(app_root)+1:] for x in listing if x["path"].startswith(app_root+"/") and x["path"][len(app_root)+1:] not in declared]
-          report={"drive_folder_id":os.environ["DRIVE_FOLDER_ID"],"candidate_app_root":app_root,
-                  "manifest":manifest_report,"per_file_results":results,"adoption_reference_evidence":evidence,
-                  "extra_files_outside_manifest":sorted(extra)}
-          (out/"authoritative-drive-source-audit.json").write_text(json.dumps(report,indent=2),encoding="utf-8")
-          good=sum(r.get("drive_status")=="downloaded" and r.get("drive_manifest_match") and r.get("same_as_current_git") for r in results)
-          failed=sum(r.get("drive_status")!="downloaded" for r in results)
-          changed=sum(r.get("drive_status")=="downloaded" and not r.get("same_as_current_git") for r in results)
+              results=list(pool.map(download,listing))
+
+          app_roots=set()
+          for rel in [x["path"] for x in results if x["status"]=="DOWNLOADED"]:
+              p=pathlib.PurePosixPath(rel)
+              if p.name=="package.json":
+                  app_roots.add(str(p.parent))
+          direct_manifests={str(pathlib.PurePosixPath(x["path"]).parent) for x in results
+                            if x["status"]=="DOWNLOADED" and pathlib.PurePosixPath(x["path"]).name=="BUILD_MANIFEST.json"}
+          direct_roots=sorted(app_roots & direct_manifests)
+          archives=[]
+          for item in results:
+              if item["status"]!="DOWNLOADED":
+                  continue
+              p=files_root.joinpath(*pathlib.PurePosixPath(item["path"]).parts)
+              low=p.name.casefold()
+              if low.endswith(".zip"):
+                  try:
+                      with zipfile.ZipFile(p) as z:
+                          members=[x for x in z.namelist() if not x.endswith("/")]
+                          safe=all(not pathlib.PurePosixPath(x).is_absolute() and ".." not in pathlib.PurePosixPath(x).parts for x in members)
+                          package_roots={str(pathlib.PurePosixPath(x).parent) for x in members if pathlib.PurePosixPath(x).name=="package.json"}
+                          manifest_roots={str(pathlib.PurePosixPath(x).parent) for x in members if pathlib.PurePosixPath(x).name=="BUILD_MANIFEST.json"}
+                          archives.append({"path":item["path"],"format":"zip","member_count":len(members),"safe_paths":safe,
+                                           "application_roots":sorted(package_roots & manifest_roots)})
+                  except Exception as exc:
+                      archives.append({"path":item["path"],"format":"zip","inspection_error":str(exc)})
+              elif low.endswith(".tar.gz") or low.endswith(".tgz"):
+                  try:
+                      with tarfile.open(p,"r:gz") as t:
+                          members=[x.name for x in t.getmembers() if x.isfile()]
+                          safe=all(not pathlib.PurePosixPath(x).is_absolute() and ".." not in pathlib.PurePosixPath(x).parts for x in members)
+                          package_roots={str(pathlib.PurePosixPath(x).parent) for x in members if pathlib.PurePosixPath(x).name=="package.json"}
+                          manifest_roots={str(pathlib.PurePosixPath(x).parent) for x in members if pathlib.PurePosixPath(x).name=="BUILD_MANIFEST.json"}
+                          archives.append({"path":item["path"],"format":"tar.gz","member_count":len(members),"safe_paths":safe,
+                                           "application_roots":sorted(package_roots & manifest_roots)})
+                  except Exception as exc:
+                      archives.append({"path":item["path"],"format":"tar.gz","inspection_error":str(exc)})
+
+          failed=sum(x["status"]!="DOWNLOADED" for x in results)
+          inventory={"drive_folder_id": "1o4y6s2hP81sNra93112s2V7ldJNty9-2",
+                     "listed_file_count":len(listing),"downloaded_file_count":len(results)-failed,
+                     "failed_file_count":failed,"files":results,"direct_application_roots":direct_roots,
+                     "archives":archives}
+          (root/"drive-folder-inventory.json").write_text(json.dumps(inventory,indent=2),encoding="utf-8")
           summary=[
-            "# Authoritative Stockland source comparison",
-            "",
-            f"- Drive folder ID: `{os.environ['DRIVE_FOLDER_ID']}`",
-            f"- Candidate app root: `{app_root}`",
-            f"- Manifest SHA-256: `{manifest_sha}`",
-            f"- Manifest-tracked files: {len(entries)}",
-            f"- Downloaded and verified identical to current GitHub import: {good}",
-            f"- Drive files blocked/not downloaded: {failed}",
-            f"- Downloaded files differing from current GitHub import: {changed}",
-            f"- Files outside manifest: {len(extra)}",
-            f"- Reference/adoption documents captured: {len(evidence)}",
-            "",
-            "## Deviations and inaccessible files",
+            "# Authoritative Drive folder inventory","",
+            f"- Drive folder ID: `{inventory['drive_folder_id']}`",
+            f"- Listed files: {len(listing)}",
+            f"- Downloaded: {len(listing)-failed}",
+            f"- Failed: {failed}",
+            f"- Direct app roots (package + manifest): {len(direct_roots)}",
+            f"- Archives detected: {len(archives)}","",
+            "## File inventory"
           ]
-          for r in results:
-              if r.get("drive_status")!="downloaded" or not r.get("same_as_current_git") or not r.get("drive_manifest_match"):
-                  summary.append(f"- {r['path']}: status={r.get('drive_status')}, same_as_current={r.get('same_as_current_git')}, manifest_match={r.get('drive_manifest_match')}, error={r.get('error','')}")
-          if not any(r.get("drive_status")!="downloaded" or not r.get("same_as_current_git") or not r.get("drive_manifest_match") for r in results):
-              summary.append("- None.")
-          summary += ["","## Adoption/reference evidence paths"]
-          summary += [f"- {e['path']}" for e in evidence]
-          (out/"drive-source-summary.md").write_text("\n".join(summary)+"\n",encoding="utf-8")
-          print((out/"drive-source-summary.md").read_text(encoding="utf-8"))
-          if failed or changed or any(not r.get("drive_manifest_match") for r in results if r.get("drive_status")=="downloaded"):
-              print("SOURCE COMPARISON IS NOT FULLY IDENTICAL; review report before replacing repository source.")
+          for x in results:
+              summary.append(f"- `{x['path']}`: {x['status']}, size={x.get('size_bytes','')}, SHA-256={x.get('sha256','')}, error={x.get('error','')}")
+          summary += ["","## Application archive inspection"]
+          for x in archives:
+              summary.append(f"- `{x['path']}`: {json.dumps(x,sort_keys=True)}")
+          summary += ["","## Intake decision","",
+                      "This workflow downloads and inventories the source folder only. It does not alter the committed application tree. A source application may be promoted only after its complete extracted root, build manifest, per-file hashes, licensing/provenance and scope compatibility are reviewed."]
+          (root/"drive-folder-inventory.md").write_text("\n".join(summary)+"\n",encoding="utf-8")
+          (root/"SHA256SUMS.txt").write_text("\n".join(f"{x.get('sha256','')}  {x['path']}" for x in results if x["status"]=="DOWNLOADED")+"\n",encoding="utf-8")
+          print((root/"drive-folder-inventory.md").read_text(encoding="utf-8"))
           PY
 
-      - name: Publish manifest, file-by-file comparison and reference/adoption evidence
+      - name: Publish downloaded Drive source files and inventory
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: authoritative-stockland-source-comparison
-          path: ${{ runner.temp }}/drive-source-audit/
+          name: authoritative-drive-folder-download
+          path: ${{ runner.temp }}/drive-intake-download/
           if-no-files-found: error
           retention-days: 14
 
-      - name: Add comparison report to GitHub Actions summary
+      - name: Add source inventory to GitHub Actions summary
         if: always()
         shell: bash
         run: |
-          if [ -f "$RUNNER_TEMP/drive-source-audit/drive-source-summary.md" ]; then
-            cat "$RUNNER_TEMP/drive-source-audit/drive-source-summary.md" >> "$GITHUB_STEP_SUMMARY"
+          REPORT="$RUNNER_TEMP/drive-intake-download/drive-folder-inventory.md"
+          if [ -f "$REPORT" ]; then
+            cat "$REPORT" >> "$GITHUB_STEP_SUMMARY"
           fi
