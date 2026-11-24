@@ -71,7 +71,7 @@ class TenantInvitationService
 
     public function revoke(string $invitationId, string $reason): void
     {
-        $this->callScalar('SELECT public.revoke_tenant_invitation(?::uuid, ?) AS revoked', [$invitationId, $reason]);
+        $this->callVoid('SELECT public.revoke_tenant_invitation(?::uuid, ?)', [$invitationId, $reason]);
     }
 
     public function acceptForNewUser(string $token, string $email, string $name, string $passwordHash, string $userId): array
@@ -106,7 +106,7 @@ class TenantInvitationService
             throw new RuntimeException('FRONTEND_URL must be configured before tenant invitations can be issued.');
         }
 
-        $url = $frontendUrl.'/accept-invitation?token='.rawurlencode($token).'&email='.rawurlencode(mb_strtolower(trim($email)));
+        $url = $frontendUrl.'/accept-invitation?email='.rawurlencode(mb_strtolower(trim($email))).'#token='.rawurlencode($token);
 
         // Send only after the tenant request transaction commits. The callback
         // records SENT/DELIVERY_FAILED in a new short transaction; the raw token
@@ -121,7 +121,7 @@ class TenantInvitationService
                     assignedRole: $role,
                 ));
 
-                $this->withInvitationContext($tenantId, $actorId, function (): void {
+                $this->withInvitationContext($tenantId, $actorId, function () use ($id): void {
                     DB::select('SELECT public.mark_tenant_invitation_sent(?::uuid)', [$id]);
                 });
             } catch (Throwable $exception) {
@@ -132,7 +132,7 @@ class TenantInvitationService
                     );
                 });
 
-                report(new RuntimeException('Tenant invitation email delivery failed; invitation was recorded as DELIVERY_FAILED.'));
+                report($exception);
             }
         });
     }
@@ -150,6 +150,15 @@ class TenantInvitationService
     {
         try {
             return (string) DB::selectOne($sql, $bindings)->invitation_id;
+        } catch (QueryException $exception) {
+            $this->translate($exception);
+        }
+    }
+
+    private function callVoid(string $sql, array $bindings): void
+    {
+        try {
+            DB::select($sql, $bindings);
         } catch (QueryException $exception) {
             $this->translate($exception);
         }
