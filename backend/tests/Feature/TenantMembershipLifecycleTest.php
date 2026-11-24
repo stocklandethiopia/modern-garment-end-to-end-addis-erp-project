@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -80,7 +81,7 @@ class TenantMembershipLifecycleTest extends TestCase
 
     private function actAs(string $userId): void
     {
-        $user = \App\Models\User::query()->findOrFail($userId);
+        $user = User::query()->findOrFail($userId);
         Sanctum::actingAs($user, ['tenant:select', 'erp:access']);
         $this->withHeader('X-Tenant-Id', $this->tenantId);
     }
@@ -222,6 +223,17 @@ class TenantMembershipLifecycleTest extends TestCase
         $this->getJson('/api/v1/enterprise/members')
             ->assertOk()
             ->assertJsonFragment(['email' => $this->ownerTokenUserEmail]);
+
+        DB::connection('pgsql_test_admin')->table('tenant_memberships')->insert([
+            'id' => (string) Str::uuid(),
+            'tenant_id' => $this->tenantId,
+            'user_id' => $this->memberId,
+            'membership_role' => 'MEMBER',
+            'status' => 'ACTIVE',
+            'joined_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
         $this->actAs($this->memberId);
         $this->getJson('/api/v1/enterprise/members')->assertForbidden();
