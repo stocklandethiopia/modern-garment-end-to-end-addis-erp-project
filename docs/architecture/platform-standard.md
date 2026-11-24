@@ -160,3 +160,24 @@ Distribution, order management and channel commerce are first-class bounded cont
 - New legal instruments enter a draft review state; compare amendments, identify impacted transactions/modules, prepare tests and require competent local approval before activation.
 - Historical postings retain the original legal rule and calculation version. Do not silently recalculate posted payroll, tax, customs, stock or financial records after a law change.
 - Keep the public-procurement compliance pack optional and applicability-gated; internal procurement controls remain a distinct private-enterprise governance feature.
+
+
+## 13. Agent-native and future-adaptive integration architecture
+
+The platform must deliver relevant, production-ready modern capabilities now and remain open to future capability classes not anticipated today. Detailed rules are in [Agent-Native Technology Integration Standard](agent-native-technology-integration-standard.md).
+
+- Retain the modular monolith and Laravel transaction authority. Do not add a competing API, microservice fleet, broker, vector database or workflow product without a measured need and approved architecture decision.
+- Add an authenticated Agent Gateway and provider adapter. Keep provider-specific code behind an application-owned interface.
+- Publish typed, versioned capabilities through a permission-aware registry. Resolve user, tenant, legal entity, site/branch and workflow context on the server.
+- Operational agents call Laravel domain services; they do not access PostgreSQL directly, write cross-domain tables or execute arbitrary SQL.
+- Use outbox events, versioned webhooks, queues and idempotent consumers for asynchronous work. Persist task status outside model context.
+- Preserve original files in controlled storage; parse using bounded workers and stage extracted data before domain validation and commit.
+- Keep Python specialist compute isolated; forecasts and optimization return typed, explainable proposals, and Laravel validates any approved change.
+- Device and edge adapters must be independent of a single scanner, camera, reader, printer, sensor or vendor.
+- Extension types remain open-ended; do not create speculative placeholder modules for unknown future devices.
+- Conventional Angular/API operations remain usable when AI, queues, external providers or internet are unavailable.
+
+
+## 14. End-to-end application experience
+
+The full application and interaction design across the initiative-to-customer value stream is defined in [End-to-End ERP Technology and Intelligent Experience Blueprint](end-to-end-erp-technology-and-experience-blueprint.md). Read it with this platform standard before designing a domain UI, device adapter, document workflow, conversational interface or runtime agent. It assigns responsibilities to the existing Angular/Laravel/PostgreSQL/Redis/Python/Docker stack and does not approve an unreviewed parallel stack.

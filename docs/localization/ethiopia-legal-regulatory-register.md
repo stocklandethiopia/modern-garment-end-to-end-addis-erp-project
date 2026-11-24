@@ -178,3 +178,10 @@ Before any live statutory calculation or filing, local professionals must verify
 - textile/product labels, standards, certification, chemical controls, environmental permits and data-protection authority guidance.
 
 No production statutory rule may be activated from this research note alone.
+
+
+## AI-assisted legal-source research control
+
+AI may assist discovery, extraction, comparison, citation checking and impact mapping for official legal instruments. Generated summaries and extracted text are leads only; verify against the primary authority document.
+
+Exact instrument/clause, publication/effective date, applicability, interpretation, qualified reviewer, local approval, evidence and test vectors remain authoritative. AI must not turn missing sources into guessed rules, mark legal items verified without evidence, activate statutory calculations or silently rewrite historical records. Keep incomplete/conflicting matters BLOCKED / REVIEW REQUIRED.

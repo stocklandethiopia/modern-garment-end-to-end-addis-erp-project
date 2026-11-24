@@ -187,3 +187,20 @@ All dashboards must drill down to the source transaction and obey tenant, legal-
 8. Split shipments, partial receipts, shortages, damages, returns, refunds and credit notes remain traceable and auditable.
 9. Cross-legal-entity transfers produce the configured intercompany documents and postings.
 10. Tenant isolation, role/branch scope, audit, idempotency, concurrency and inventory/financial reconciliation tests pass.
+
+
+## 12. Conversational operations, POS intake and device integration
+
+The same governed distribution, inventory and POS application services must be callable through conventional screens, APIs and the Operational ERP Agent.
+
+- Branch staff may upload a POS workbook in agent chat. Preserve the original file; stage rows; map columns and variant-level SKUs; validate branch/date/tender/tax/duplicates; show exceptions and totals; obtain configured approval; then commit through the existing POS import service.
+- Reusable SKU mappings are learned only after authorized confirmation. Unknown or ambiguous variants are exceptions, never guessed.
+- Camera, barcode, QR, handheld and future device inputs are normalized by versioned adapters into validated scan events. Resolve style/variant, lot, bundle, carton, location or order as appropriate.
+- Offline capture reconciles idempotently after reconnection. A scan alone is not proof of a stock movement; the authorized workflow must commit a ledger transaction.
+- Sales, tender/payment, inventory and finance reconciliation remain owned by their respective domains. Agent success responses require a confirmed backend receipt.
+- New channel technology is evaluated through the open-ended integration standard; no single device/protocol/vendor is assumed to be the future standard.
+
+
+## 13. End-to-end application and customer experience
+
+The complete distribution, store, wholesale, POS, digital commerce, delivery, customer, returns and closed-loop experience is part of [End-to-End ERP Technology and Intelligent Experience Blueprint](../architecture/end-to-end-erp-technology-and-experience-blueprint.md). It defines the contextual assistant, POS workbook intake, device/scan adapters, notifications, customer-facing agent limits, proof of delivery and post-sale feedback requirements.

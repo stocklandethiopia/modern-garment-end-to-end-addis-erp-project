@@ -56,3 +56,19 @@ Define lawful purpose, retention period, correction process, export, deletion/an
 - Treat retrieved documents and model output as untrusted content.
 - Human approval is required for payroll, hiring/rejection, disciplinary action, performance rating, financial posting, stock adjustment and other consequential decisions.
 - Record model/service version, prompt/template version, source references, approver and resulting action where AI affects a business workflow.
+
+
+## 8. AI, agent and integration security
+
+Treat every model, agent, MCP server, plugin, external API, uploaded file, retrieved document, QR/barcode payload, device message and generated artifact as a distinct trust boundary.
+
+- **Identity:** derive user and tenant from authenticated server context. Enforce tenant, legal entity, site, branch, record and field permission on every tool call. Do not trust model-supplied identity or scope.
+- **Least privilege:** expose narrow typed capabilities. Deny arbitrary SQL, shell, unrestricted filesystem, generic HTTP fetch, credential retrieval and broad CRUD to operational agents.
+- **Prompt injection:** content is untrusted data. Separate instructions from data, allowlist tools, validate arguments and test direct/indirect injection.
+- **Files/devices:** quarantine uploads, check real type/size/signature, parse with resource/time limits, disable macros, validate webhook/device signatures and apply replay protection.
+- **Data protection:** minimize/redact personal, employee, financial and customer data sent to providers; enforce tenant-scoped retrieval, retention, encryption and contractual review.
+- **Execution:** re-check policy/workflow at execution time; use schema validation and idempotency; record actor, approver, capability/version, outcome and correlation ID. A model suggestion is not approval.
+- **Autonomy:** read/draft/reversible actions follow policy; stock, sales, procurement, prices, finance, HR and payroll retain domain controls; payment, posting, statutory activation, destructive changes and production release require explicit human approval.
+- **Observability:** retain sufficient traces to investigate behavior without logging secrets or unnecessary document contents.
+- **Provider isolation:** provider outage/account limit must not disable normal ERP workflows.
+- **Codex boundary:** custom agents inherit parent-session permissions. TOML prompts are not access controls; use trusted workspace, parent sandbox/approval, scoped GitHub access and human review.

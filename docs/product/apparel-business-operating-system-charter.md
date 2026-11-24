@@ -136,3 +136,21 @@ These references inform the process model; they do not establish one universal r
 - Ethiopia Ministry of Labour and Skills, *Produce Simple Garment in Garment Production* (August 2022): https://www.hptc.edu.et/sites/default/files/2023-02/Download_49.pdf
 - Ethiopia Federal TVET Agency, *Performing Garment Product Finishing* learning guide: https://dl.ojocv.gov.et/admin_/ttlm_/perform%20product%20finishing.pdf
 - Bangladesh SEIP / Finance Division, *Competency-Based Learning Material for Garments Washing Technology*: https://seip-fd.gov.bd/wp-content/uploads/2022/11/CBLM-for-Garments-Washing-Technology.pdf
+
+
+## 13. Embedded intelligence and agent-native garment operations
+
+The garment ERP is a modern operating platform, not a collection of forms with an external chatbot. Users should be able to initiate appropriate approved workflows through conversation, structured UI, voice, images, camera capture and file uploads where useful.
+
+- Product and design teams can ask the agent to prepare initiative, collection, product/variant, BOM, tech-pack, sample and fit-review drafts using approved master data and revision history.
+- Sourcing and production teams can use document understanding, shortage explanations, capacity scenarios, line-balance and schedule recommendations with assumptions and source data.
+- Quality teams can use image-assisted evidence capture and defect-triage suggestions; inspection criteria, quarantine and quality release remain controlled.
+- Supervisors can receive WIP, bottleneck, downtime, material-readiness and skill-coverage alerts with explainable recommended actions.
+- Management can ask natural-language questions over governed KPIs and permission-filtered business knowledge.
+- Every action uses domain services, approved SOPs, versioned workflows and traceable audit. AI does not replace approved SMV/SAM, method standards, human design/fit acceptance, quality gates or worker safeguards.
+- Future technology categories remain open through the extension standard; do not constrain the garment operating system to a predefined device/vendor list.
+
+
+## 14. Full application and user-experience blueprint
+
+The product-wide application shell and detailed technology applications from initiative through product design, materials, specialized production, quality, warehouse and customer endpoint are specified in [End-to-End ERP Technology and Intelligent Experience Blueprint](../architecture/end-to-end-erp-technology-and-experience-blueprint.md). This includes conversational, popover/popup, notification, voice, camera/scan and document-intake experiences, plus agent/human responsibilities at each stage.

@@ -178,3 +178,54 @@ Maintain a dated record in this document or a linked decision log for:
 - This document records that operating instruction. The agreement itself and its links are being added to the canonical repository and Notion project memory.
 - Current work-package position: **WP-00 — Governance and baseline control**. The agreement, root agent instructions and README entry have been committed; the **WP-00 handover is submitted and awaiting Product Owner acceptance**.
 - Next package: **WP-01 — Requirements and traceability**, held until the Product Owner expressly accepts the WP-00 handover.
+
+
+## Amendment A-01 — Modern technology integration and agent-native evolution
+
+**Recorded:** 25 November 2026  
+**Authority:** Product Owner request to incorporate modern-generation ERP capabilities and open-ended future adaptability into repository rules, Codex agents and Notion.  
+**Status:** Approved architecture/governance amendment. Implementation proceeds through existing WP-00–WP-16 sequencing and evidence gates.
+
+### Decision
+
+The ERP must meet both objectives simultaneously:
+
+1. **Modern-generation capability now:** implement the most relevant, production-ready technology capabilities that materially support the approved apparel business scope. Do not deliberately defer mature capabilities just to claim future readiness.
+2. **Open-ended adaptability:** provide stable extension mechanisms for technologies, devices, applications, agents, workflows and business practices that are not known today, without unnecessary reconstruction of the ERP core.
+
+This amendment does not add unrelated product domains, change the initiative-to-sell-through goal, or reorder the approved work packages.
+
+### Scope and implementation boundary
+
+- The approved garment business operating-system scope, current stack and work-package sequence remain authoritative.
+- Current capabilities may include conversational and multimodal interaction, authorized agent tool execution, permission-aware knowledge retrieval, document understanding, workflow orchestration, event-driven integration, analytics, forecasting/optimization where data supports it, device adapters, API/MCP integrations, evaluation, observability and AI-assisted software engineering.
+- Adopt mature and useful capabilities now; pilot emerging capabilities with bounded evidence; keep unknown future categories possible through generic extension contracts rather than speculative placeholder modules.
+- Operational ERP Agents act on business records through authorized Laravel application services. Codex Evolution Agents operate in developer workspaces on source code. They are separate planes and never share unrestricted permissions.
+- The capability registry describes installed/approved tools; it is not a list of guessed future products or technologies.
+
+### Mandatory integration record
+
+For every new agent, tool, model, application, device, SDK, data source, automation or workflow, document:
+1. Business outcome, domain owner, approved workflow and measurable acceptance result.
+2. Vendor/source/version, official documentation, licence, support lifecycle and security posture.
+3. Integration pattern and compatibility with the approved platform stack.
+4. Versioned API/event/tool schema, error semantics and compatibility.
+5. Tenant, legal entity, site/branch, user/role scope, data classification and retention.
+6. Transaction boundary, idempotency, duplicates, retries, timeout, rate limit and reconciliation.
+7. Risk tier, human approval, reversibility/compensation, audit and evidence.
+8. Tests, threat model, monitoring, cost/latency, outage fallback and disable/rollback.
+9. Enablement/feature flag, migrations, support owner and documentation.
+10. Explicit decision status and approval reference; proposals must not be described as approved.
+
+### Autonomy and safety
+
+Laravel domain services and PostgreSQL constraints remain authoritative for inventory, sales, orders, finance, payroll, HR and other business records. Agent-generated recommendations/drafts are not committed transactions. Model tools cannot approve themselves. High-impact or irreversible operations remain subject to existing human/professional controls. AI-generated source changes are developed in isolated branches, tested and reviewed; deployment follows the protected release process.
+
+### Codex Free-plan compatibility
+
+The development workflow must work locally with Codex CLI or a supported IDE workflow available to the user's account and current usage limits. Codex Cloud is optional, not a prerequisite. If multi-agent concurrency is unavailable or usage is limited, the coordinator executes the same roles sequentially. Agent TOML does not create an independent security boundary; parent-session sandbox/approval settings and repository permissions control access.
+
+### Change record
+
+- A-01 — 25 November 2026 — Product Owner requested the current-generation and future-adaptive technology direction be incorporated in strict project rules, repository documentation, Notion and Codex agents. The amendment preserves fixed product scope and WP sequence.
+- Canonical standards: `docs/architecture/agent-native-technology-integration-standard.md` and `docs/agent/codex-agent-operating-model.md`.

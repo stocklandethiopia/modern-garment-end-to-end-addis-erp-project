@@ -82,3 +82,10 @@ The register currently records the following discovered instruments as source ch
 
 The register must be reviewed and updated for each release and whenever an official authority publishes a change.
 
+
+
+## AI and legal-localization boundary
+
+AI-assisted research may discover official authority sources, compare instrument versions, summarize source text and prepare impact assessments. It is not legal authority and must not infer effective dates, rates, thresholds, exemptions, taxpayer classifications or obligations from incomplete sources.
+
+Every executable Ethiopian rule remains source-linked, effective-dated, versioned, tested and subject to qualified local review and the explicit activation gate in the Project Governance Agreement. Unverified/conflicting evidence remains BLOCKED / REVIEW REQUIRED. AI cannot activate rules or rewrite historical payroll, tax, customs, invoice or ledger records.
