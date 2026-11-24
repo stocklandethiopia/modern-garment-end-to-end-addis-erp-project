@@ -8,6 +8,7 @@ use App\Http\Controllers\Enterprise\LegalEntityController;
 use App\Http\Controllers\Enterprise\LicensingEvidenceController;
 use App\Http\Controllers\Enterprise\TenantController;
 use App\Http\Controllers\Enterprise\TenantMembershipController;
+use App\Http\Controllers\Enterprise\TenantInvitationController;
 use App\Http\Controllers\Merchandising\AssortmentAccountTermsController;
 use App\Http\Controllers\Merchandising\CommercialPricingController;
 use App\Http\Controllers\Merchandising\DemandPlanningController;
@@ -38,9 +39,13 @@ Route::prefix('v1')->group(function (): void {
     Route::post('/auth/tokens', [TokenController::class, 'store'])
         ->middleware('throttle:6,1');
 
+    Route::post('/invitations/register', [TenantInvitationController::class, 'register'])->middleware('throttle:5,1');
+
     Route::middleware('auth:sanctum')->group(function (): void {
         Route::middleware('token.ability:tenant:select')->get('/tenants', [TenantController::class, 'index']);
         Route::delete('/auth/tokens/current', [TokenController::class, 'destroy']);
+        Route::post('/invitations/accept', [TenantInvitationController::class, 'acceptForExistingUser'])
+            ->middleware(['token.ability:tenant:select', 'identity.context']);
     });
 
     Route::middleware(['auth:sanctum', 'token.ability:erp:access', 'tenant.context'])->group(function (): void {
@@ -62,6 +67,10 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/enterprise/members', [TenantMembershipController::class, 'store']);
         Route::patch('/enterprise/members/{userId}/role', [TenantMembershipController::class, 'updateRole']);
         Route::post('/enterprise/members/{userId}/revoke', [TenantMembershipController::class, 'revoke']);
+        Route::get('/enterprise/invitations', [TenantInvitationController::class, 'index']);
+        Route::post('/enterprise/invitations', [TenantInvitationController::class, 'store'])->middleware('throttle:10,1');
+        Route::post('/enterprise/invitations/{invitationId}/resend', [TenantInvitationController::class, 'resend'])->middleware('throttle:10,1');
+        Route::post('/enterprise/invitations/{invitationId}/revoke', [TenantInvitationController::class, 'revoke']);
 
         Route::get('/enterprise/legal-entities', [LegalEntityController::class, 'index']);
         Route::post('/enterprise/legal-entities', [LegalEntityController::class, 'store']);
