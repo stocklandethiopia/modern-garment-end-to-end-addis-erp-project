@@ -6,9 +6,14 @@
       <p>Manage access to this customer workspace. Global user identities are shared across tenants; a membership grants access only to this tenant.</p>
     </div>
     @if (canManage()) {
-      <button type="button" class="primary-button" (click)="showAddForm.set(!showAddForm())">
-        {{ showAddForm() ? 'Close form' : 'Add existing user' }}
-      </button>
+      <div class="heading-actions">
+        <button type="button" class="primary-button" (click)="showInviteForm.set(!showInviteForm())">
+          {{ showInviteForm() ? 'Close invite' : 'Invite person' }}
+        </button>
+        <button type="button" class="secondary-button" (click)="showAddForm.set(!showAddForm())">
+          {{ showAddForm() ? 'Close form' : 'Add existing account' }}
+        </button>
+      </div>
     }
   </header>
 
@@ -22,6 +27,35 @@
   @if (!canManage()) {
     <div class="permission-note">Only tenant owners and administrators may view the member directory. Your current membership can still be used to access permitted workspace features.</div>
   } @else {
+    @if (showInviteForm()) {
+      <form class="add-member-panel" [formGroup]="invitationForm" (ngSubmit)="invite()">
+        <h2>Invite a person by email</h2>
+        <p>Each invitation is single-use and expires after 72 hours. New users create a global account and verify email ownership; existing users sign in before accepting.</p>
+        <div class="form-grid">
+          <label>
+            <span>Invitee email</span>
+            <input type="email" formControlName="email" autocomplete="email" maxlength="254" required>
+          </label>
+          <label>
+            <span>Tenant role</span>
+            <select formControlName="membership_role">
+              <option value="MEMBER">Member</option>
+              @if (isOwner()) { <option value="ADMIN">Administrator</option> }
+            </select>
+          </label>
+          <label class="reason-field">
+            <span>Business reason</span>
+            <textarea formControlName="reason" rows="2" minlength="10" maxlength="2000" required></textarea>
+          </label>
+        </div>
+        <div class="form-actions">
+          <span class="hint">Owners may invite administrators. Administrators may invite members only. The database enforces this independently.</span>
+          <button class="primary-button" type="submit" [disabled]="invitationForm.invalid || saving()">
+            @if (saving()) { Sending… } @else { Send invitation }
+          </button>
+        </div>
+      </form>
+    }
     @if (showAddForm()) {
       <form class="add-member-panel" [formGroup]="form" (ngSubmit)="add()">
         <h2>Add an existing global user</h2>
@@ -53,6 +87,46 @@
         </div>
       </form>
     }
+
+    <section class="member-panel" aria-labelledby="invitation-list-title">
+      <div class="panel-heading">
+        <div>
+          <h2 id="invitation-list-title">Invitations</h2>
+          <p>Open and historical invitations are tenant-scoped. The one-time token is never shown here.</p>
+        </div>
+        <button type="button" class="secondary-button" (click)="refresh()" [disabled]="loading() || saving()">Refresh</button>
+      </div>
+      @if (invitations().length === 0) {
+        <div class="empty-state">No invitation records found for this tenant.</div>
+      } @else {
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Email</th><th>Role</th><th>Status</th><th>Expires</th><th>Attempts</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+              @for (invitation of invitations(); track invitation.id) {
+                <tr>
+                  <td><strong>{{ invitation.email_normalized }}</strong><small>{{ invitation.reason }}</small></td>
+                  <td><span class="role-pill">{{ invitation.membership_role }}</span></td>
+                  <td><span class="status-pill" [class.revoked]="invitation.status === 'REVOKED' || invitation.status === 'DELIVERY_FAILED' || invitation.status === 'EXPIRED'">{{ invitation.status }}</span></td>
+                  <td>{{ invitation.expires_at | date:'medium' }}</td>
+                  <td>{{ invitation.delivery_attempts }}</td>
+                  <td class="actions">
+                    @if (invitation.status === 'PENDING' || invitation.status === 'DELIVERY_FAILED') {
+                      <button type="button" class="text-button" (click)="resendInvitation(invitation)" [disabled]="saving()">Resend</button>
+                      <button type="button" class="danger-button" (click)="revokeInvitation(invitation)" [disabled]="saving()">Revoke</button>
+                    } @else {
+                      <span class="hint">Closed</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
 
     <section class="member-panel" aria-labelledby="member-list-title">
       <div class="panel-heading">

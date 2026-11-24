@@ -13,6 +13,20 @@ export interface TenantMember {
   revoked_at: string | null;
 }
 
+export interface TenantInvitation {
+  id: string;
+  email_normalized: string;
+  membership_role: 'ADMIN' | 'MEMBER';
+  status: 'PENDING' | 'DELIVERY_FAILED' | 'ACCEPTED' | 'REVOKED' | 'EXPIRED';
+  reason: string;
+  expires_at: string;
+  sent_at: string | null;
+  accepted_at: string | null;
+  revoked_at: string | null;
+  delivery_attempts: number;
+  last_delivery_error_code: string | null;
+}
+
 export interface TenantMembersPage {
   data: TenantMember[];
   current_page: number;
@@ -31,6 +45,30 @@ interface ResourceResponse<T> {
 @Injectable({ providedIn: 'root' })
 export class TenantMemberService {
   private readonly http = inject(HttpClient);
+
+  listInvitations(): Observable<{ data: { data: TenantInvitation[]; current_page: number; last_page: number; total: number } }> {
+    return this.http.get<{ data: { data: TenantInvitation[]; current_page: number; last_page: number; total: number } }>(
+      '/api/v1/enterprise/invitations',
+    );
+  }
+
+  invite(input: { email: string; membership_role: 'ADMIN' | 'MEMBER'; reason: string }): Observable<ResourceResponse<{ id: string; status: string }>> {
+    return this.http.post<ResourceResponse<{ id: string; status: string }>>('/api/v1/enterprise/invitations', input);
+  }
+
+  resendInvitation(id: string, reason: string): Observable<ResourceResponse<{ id: string; status: string }>> {
+    return this.http.post<ResourceResponse<{ id: string; status: string }>>(
+      '/api/v1/enterprise/invitations/' + encodeURIComponent(id) + '/resend',
+      { reason },
+    );
+  }
+
+  revokeInvitation(id: string, reason: string): Observable<ResourceResponse<{ id: string; status: string }>> {
+    return this.http.post<ResourceResponse<{ id: string; status: string }>>(
+      '/api/v1/enterprise/invitations/' + encodeURIComponent(id) + '/revoke',
+      { reason },
+    );
+  }
 
   list(): Observable<PageResponse> {
     return this.http.get<PageResponse>('/api/v1/enterprise/members');

@@ -4,7 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../core/auth/auth-session.service';
-import { TenantMember, TenantMemberService } from './tenant-member.service';
+import { TenantInvitation, TenantMember, TenantMemberService } from './tenant-member.service';
 
 @Component({
   selector: 'app-tenant-members',
@@ -19,13 +19,21 @@ export class TenantMembersComponent implements OnInit {
   readonly session = inject(AuthSessionService);
 
   readonly members = signal<TenantMember[]>([]);
+  readonly invitations = signal<TenantInvitation[]>([]);
   readonly loading = signal(false);
   readonly saving = signal(false);
   readonly error = signal('');
   readonly notice = signal('');
   readonly showAddForm = signal(false);
+  readonly showInviteForm = signal(false);
 
   readonly form = this.formBuilder.nonNullable.group({
+    email: ['', [Validators.required, Validators.email, Validators.maxLength(254)]],
+    membership_role: ['MEMBER' as 'ADMIN' | 'MEMBER', Validators.required],
+    reason: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(2000)]],
+  });
+
+  readonly invitationForm = this.formBuilder.nonNullable.group({
     email: ['', [Validators.required, Validators.email, Validators.maxLength(254)]],
     membership_role: ['MEMBER' as 'ADMIN' | 'MEMBER', Validators.required],
     reason: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(2000)]],
@@ -54,6 +62,82 @@ export class TenantMembersComponent implements OnInit {
       next: (response) => this.members.set(response.data.data),
       error: () => this.error.set('Unable to load tenant members. Check your access and connection, then retry.'),
     });
+    if (this.canManage()) {
+      this.service.listInvitations().subscribe({
+        next: (response) => this.invitations.set(response.data.data),
+        error: () => this.error.set('Unable to load tenant invitations. Check your access and connection, then retry.'),
+      });
+    }
+  }
+
+  invite(): void {
+    if (this.invitationForm.invalid || this.saving()) {
+      this.invitationForm.markAllAsTouched();
+      return;
+    }
+
+    const value = this.invitationForm.getRawValue();
+    this.saving.set(true);
+    this.error.set('');
+    this.notice.set('');
+
+    this.service.invite(value).pipe(finalize(() => this.saving.set(false))).subscribe({
+      next: () => {
+        this.invitationForm.reset({ email: '', membership_role: 'MEMBER', reason: '' });
+        this.showInviteForm.set(false);
+        this.notice.set('Invitation recorded. Email delivery is processed after the database transaction commits. Check the invitation status below.');
+        this.refresh();
+      },
+      error: (response: { error?: { message?: string; errors?: Record<string, string[]> } }) => {
+        this.error.set(response.error?.errors?.['email']?.[0] ?? response.error?.message ?? 'The invitation could not be created.');
+      },
+    });
+  }
+
+  resendInvitation(invitation: TenantInvitation): void {
+    if (!this.canManage() || !['PENDING', 'DELIVERY_FAILED'].includes(invitation.status) || this.saving()) {
+      return;
+    }
+
+    const reason = window.prompt('Enter a reason (at least 10 characters) for replacing and resending this single-use invitation:');
+    if (!reason || reason.trim().length < 10) {
+      return;
+    }
+
+    this.saving.set(true);
+    this.error.set('');
+    this.service.resendInvitation(invitation.id, reason.trim())
+      .pipe(finalize(() => this.saving.set(false)))
+      .subscribe({
+        next: () => {
+          this.notice.set('A replacement single-use invitation was issued. The previous token is invalid.');
+          this.refresh();
+        },
+        error: (response: { error?: { message?: string } }) => this.error.set(response.error?.message ?? 'The invitation could not be resent.'),
+      });
+  }
+
+  revokeInvitation(invitation: TenantInvitation): void {
+    if (!this.canManage() || !['PENDING', 'DELIVERY_FAILED'].includes(invitation.status) || this.saving()) {
+      return;
+    }
+
+    const reason = window.prompt('Enter a reason (at least 10 characters) for revoking this invitation:');
+    if (!reason || reason.trim().length < 10) {
+      return;
+    }
+
+    this.saving.set(true);
+    this.error.set('');
+    this.service.revokeInvitation(invitation.id, reason.trim())
+      .pipe(finalize(() => this.saving.set(false)))
+      .subscribe({
+        next: () => {
+          this.notice.set('Invitation revoked; its token can no longer be accepted.');
+          this.refresh();
+        },
+        error: (response: { error?: { message?: string } }) => this.error.set(response.error?.message ?? 'The invitation could not be revoked.'),
+      });
   }
 
   add(): void {
