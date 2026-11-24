@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
@@ -8,7 +9,7 @@ import { TenantMember, TenantMemberService } from './tenant-member.service';
 @Component({
   selector: 'app-tenant-members',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [DatePipe, ReactiveFormsModule],
   templateUrl: './tenant-members.component.html',
   styleUrl: './tenant-members.component.css',
 })
