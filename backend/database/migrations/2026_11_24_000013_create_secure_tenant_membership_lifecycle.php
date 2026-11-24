@@ -231,7 +231,7 @@ return new class extends Migration
                 WHERE tenant_id = v_tenant_id AND user_id = v_actor_id AND status = 'ACTIVE'
                 FOR SHARE;
 
-                IF v_actor_role NOT IN ('OWNER', 'ADMIN') THEN
+                IF v_actor_role IS NULL OR v_actor_role NOT IN ('OWNER', 'ADMIN') THEN
                     RAISE EXCEPTION USING ERRCODE = '42501', MESSAGE = 'Tenant owner or administrator permission is required.';
                 END IF;
 
