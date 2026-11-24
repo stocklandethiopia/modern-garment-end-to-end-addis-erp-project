@@ -1,0 +1,119 @@
+name: Verify Local Reference Runtime source archives
+on:
+  push:
+    branches:
+      - audit/corrective-action-plan-2026-11-24
+    paths:
+      - source-intake/stockland-garment-erp-local-v0.3.0/VERIFY_LOCAL_REFERENCE_RUNTIME_TRIGGER
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-reference-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout audit workflow and evidence
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: audit
+      - name: Checkout exact source-audit revision containing the reference archives
+        uses: actions/checkout@v4
+        with:
+          ref: 0730df72b382663c13022be6ed5e17bcab6a64a6
+          path: reference-source
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify both archives, seven SHA declarations and Python tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json,pathlib,zipfile,tempfile,subprocess,sys,os,re
+          source=pathlib.Path("reference-source/source-intake/stockland-garment-erp-local-v0.3.0/source/reference-sources")
+          names=["files.zip","stockland-local-erp-v0.1.zip"]
+          expected={
+            "README.md":"f4f5b4b19a270d0e2f47049e23dd0c2cc444a81a8e90750338cf1a1d18a9b75a",
+            "install.py":"b08b8e930f019dc72162992fcd335e7b3e43a5061453f29b3eaf7c56106323b1",
+            "stockland_local/__init__.py":"a813d51ae82dbe56a9885526c4e85955c6c35546d784fc860278f8c4bd393219",
+            "stockland_local/engine.py":"f7b3997f9fd87bb2e04841fa46c4a458cb6752fdeccf5e4422f2f0909201f379",
+            "stockland_local/scenario.py":"e30bed48a5a1a72483ff3dad1bd825cfa0c0dd78076bc2f2128a319d336a0c4a",
+            "tests/__init__.py":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "tests/test_engine.py":"550d6b3637a23ed6c2ff8bf58c1bb297c194ca7b6035bf998b22e301ceb776fc"
+          }
+          def digest(p):
+            h=hashlib.sha256()
+            with open(p,"rb") as f:
+              for b in iter(lambda:f.read(1024*1024),b""):h.update(b)
+            return h.hexdigest()
+          inventory=[];roots=[]
+          with tempfile.TemporaryDirectory(prefix="stockland-reference-") as td:
+            tmp=pathlib.Path(td)
+            for name in names:
+              zpath=source/name
+              if not zpath.is_file():raise SystemExit(f"Missing archive: {zpath}")
+              dest=tmp/name.removesuffix(".zip");dest.mkdir()
+              with zipfile.ZipFile(zpath) as z:
+                infos=[x for x in z.infolist() if not x.is_dir()]
+                bad=[]
+                for x in infos:
+                  rel=pathlib.PurePosixPath(x.filename);mode=(x.external_attr>>16)&0o170000
+                  if rel.is_absolute() or ".." in rel.parts or mode==0o120000:bad.append(x.filename)
+                if bad:raise SystemExit(f"Unsafe archive paths in {name}: {bad[:10]}")
+                z.extractall(dest)
+              inventory.append({"archive":name,"size_bytes":zpath.stat().st_size,"sha256":digest(zpath),"file_count":len(infos)})
+              for engine in dest.rglob("stockland_local/engine.py"):
+                r=engine.parent.parent
+                if (r/"README.md").is_file() and (r/"install.py").is_file() and (r/"tests/test_engine.py").is_file():roots.append((name,r))
+            checks_by_root=[]
+            valid=[]
+            for name,r in roots:
+              checks=[{"path":rel,"expected":want,"actual":digest(r/rel) if (r/rel).is_file() else None} for rel,want in expected.items()]
+              all_ok=all(x["actual"]==x["expected"] for x in checks)
+              checks_by_root.append({"archive":name,"root":str(r.relative_to(tmp)),"checks":checks,"all_hashes_match":all_ok})
+              if all_ok:valid.append((name,r))
+            if not valid:
+              pathlib.Path("reference-verification.json").write_text(json.dumps({"status":"FAILED_HASH_OR_ROOT","archives":inventory,"candidate_roots":checks_by_root,"expected":expected},indent=2))
+              raise SystemExit("No extracted root matches all seven declared source hashes.")
+            archive_name,root=valid[0]
+            env=os.environ.copy();env["PYTHONPATH"]=str(root)
+            cmd=[sys.executable,"-m","unittest","discover","-s","tests","-v"]
+            proc=subprocess.run(cmd,cwd=root,env=env,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+            output=proc.stdout
+            m=re.search(r"Ran (\d+) tests?",output);count=int(m.group(1)) if m else None
+            report={"status":"PASS" if proc.returncode==0 and count==16 else "TEST_COUNT_OR_EXECUTION_MISMATCH",
+              "source_archive":archive_name,"root":str(root.relative_to(tmp)),"archives":inventory,
+              "verified_files":7,"candidate_roots":checks_by_root,"command":cmd,
+              "test_return_code":proc.returncode,"tests_run":count,"python_version":sys.version,
+              "test_output":output,
+              "scope_note":"This verifies the Python/SQLite stand-in only. It does not prove Laravel, Angular, PostgreSQL RLS, concurrency, HTTP/UI/auth, costing/GL, full WMS, security, performance or recovery."}
+            pathlib.Path("reference-verification.json").write_text(json.dumps(report,indent=2))
+            pathlib.Path("reference-verification.log").write_text(output,encoding="utf-8")
+            print(json.dumps({k:v for k,v in report.items() if k not in ("test_output","candidate_roots")},indent=2))
+            print(output)
+            if report["status"]!="PASS":raise SystemExit("Python reference runtime verification failed.")
+          PY
+      - name: Publish source archives and verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stockland-local-reference-runtime-verification
+          path: |
+            reference-source/source-intake/stockland-garment-erp-local-v0.3.0/source/reference-sources/files.zip
+            reference-source/source-intake/stockland-garment-erp-local-v0.3.0/source/reference-sources/stockland-local-erp-v0.1.zip
+            reference-verification.json
+            reference-verification.log
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Add verification summary
+        if: always()
+        shell: bash
+        run: |
+          if [ -f reference-verification.json ]; then
+            python -m json.tool reference-verification.json >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Reference runtime verification produced no report." >> "$GITHUB_STEP_SUMMARY"
+          fi
