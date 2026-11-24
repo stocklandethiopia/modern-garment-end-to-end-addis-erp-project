@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -242,6 +243,29 @@ class TenantMembershipLifecycleTest extends TestCase
 
         $this->actAs($this->memberId);
         $this->getJson('/api/v1/enterprise/members')->assertForbidden();
+    }
+
+    public function test_membership_security_definer_rejects_non_member_even_if_transaction_context_is_set(): void
+    {
+        $runtime = DB::connection('pgsql');
+        $runtime->beginTransaction();
+
+        try {
+            $runtime->select("SELECT set_config('app.current_tenant_id', ?, true)", [$this->tenantId]);
+            $runtime->select("SELECT set_config('app.current_user_id', ?, true)", [(string) Str::uuid()]);
+
+            try {
+                $runtime->select(
+                    'SELECT public.revoke_tenant_member(?::uuid, ?)',
+                    [$this->memberId, 'Attempt an unauthorized member revocation.'],
+                );
+                $this->fail('A non-member actor must never invoke a membership transition.');
+            } catch (QueryException $exception) {
+                $this->assertSame('42501', $exception->errorInfo[0] ?? null);
+            }
+        } finally {
+            $runtime->rollBack();
+        }
     }
 
     public function test_app_runtime_has_no_direct_membership_write_but_can_execute_controlled_functions(): void
