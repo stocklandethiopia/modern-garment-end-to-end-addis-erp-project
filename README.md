@@ -48,3 +48,10 @@ A feature is not complete because a screen exists. It must include its business 
 ## Current status
 
 This initial repository foundation records the architecture and quality standard. It is not yet a runnable ERP application, production installer or deployable SaaS release. Application modules will be delivered incrementally as tested vertical slices.
+
+
+## Agent-native technology and Codex
+
+- [Agent-Native Technology Integration Standard](docs/architecture/agent-native-technology-integration-standard.md) — current-generation features, operational/evolution agent separation, extensibility, contracts and controls.
+- [Codex Agent Operating Model](docs/agent/codex-agent-operating-model.md) — local/Free-plan-compatible specialist roles, skills and sequential fallback.
+- Project Codex agents are in `.codex/agents/`; reusable skills are in `.agents/skills/`. These are development-time instructions, not production ERP permissions.
