@@ -57,6 +57,11 @@ Route::prefix('v1')->group(function (): void {
             ]);
         });
 
+        Route::get('/enterprise/members', [TenantMembershipController::class, 'index']);
+        Route::post('/enterprise/members', [TenantMembershipController::class, 'store']);
+        Route::patch('/enterprise/members/{userId}/role', [TenantMembershipController::class, 'updateRole']);
+        Route::post('/enterprise/members/{userId}/revoke', [TenantMembershipController::class, 'revoke']);
+
         Route::get('/enterprise/legal-entities', [LegalEntityController::class, 'index']);
         Route::post('/enterprise/legal-entities', [LegalEntityController::class, 'store']);
         Route::get('/enterprise/sites', [BusinessSiteController::class, 'index']);

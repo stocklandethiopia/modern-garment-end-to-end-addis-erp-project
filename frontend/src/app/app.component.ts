@@ -18,6 +18,7 @@ export class AppComponent {
   readonly navigation = [
     { label: 'Overview', path: '/', icon: '◫' },
     { label: 'Legal entities', path: '/enterprise/legal-entities', icon: '▦' },
+    { label: 'Members & access', path: '/enterprise/members', icon: '◎' },
     { label: 'Business sites & nodes', path: '/enterprise/sites', icon: '⌖' },
     { label: 'Initiatives & opportunities', path: '/product/initiatives', icon: '⌁' },
     { label: 'Market insight register', path: '/product/market-insights', icon: '◉' },

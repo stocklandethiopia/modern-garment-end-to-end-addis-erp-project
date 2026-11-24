@@ -1,0 +1,117 @@
+<section class="members-page">
+  <header class="page-heading">
+    <div>
+      <span class="eyebrow">ENTERPRISE · ACCESS CONTROL</span>
+      <h1>Tenant members</h1>
+      <p>Manage access to this customer workspace. Global user identities are shared across tenants; a membership grants access only to this tenant.</p>
+    </div>
+    @if (canManage()) {
+      <button type="button" class="primary-button" (click)="showAddForm.set(!showAddForm())">
+        {{ showAddForm() ? 'Close form' : 'Add existing user' }}
+      </button>
+    }
+  </header>
+
+  @if (error()) {
+    <div class="feedback error" role="alert">{{ error() }}</div>
+  }
+  @if (notice()) {
+    <div class="feedback success" role="status">{{ notice() }}</div>
+  }
+
+  @if (!canManage()) {
+    <div class="permission-note">Only tenant owners and administrators may view the member directory. Your current membership can still be used to access permitted workspace features.</div>
+  } @else {
+    @if (showAddForm()) {
+      <form class="add-member-panel" [formGroup]="form" (ngSubmit)="add()">
+        <h2>Add an existing global user</h2>
+        <p>The user must already have an active global account. This action does not create a new identity or change another tenant membership.</p>
+        <div class="form-grid">
+          <label>
+            <span>Account email</span>
+            <input type="email" formControlName="email" autocomplete="email" maxlength="254" required>
+          </label>
+          <label>
+            <span>Tenant role</span>
+            <select formControlName="membership_role">
+              <option value="MEMBER">Member</option>
+              @if (isOwner()) {
+                <option value="ADMIN">Administrator</option>
+              }
+            </select>
+          </label>
+          <label class="reason-field">
+            <span>Business reason</span>
+            <textarea formControlName="reason" rows="2" minlength="10" maxlength="2000" required></textarea>
+          </label>
+        </div>
+        <div class="form-actions">
+          <span class="hint">Owners may grant administrator access. Administrators may add members only. The server enforces these limits independently.</span>
+          <button class="primary-button" type="submit" [disabled]="form.invalid || saving()">
+            @if (saving()) { Saving… } @else { Add to this tenant }
+          </button>
+        </div>
+      </form>
+    }
+
+    <section class="member-panel" aria-labelledby="member-list-title">
+      <div class="panel-heading">
+        <div>
+          <h2 id="member-list-title">Workspace access</h2>
+          <p>{{ members().length }} members loaded · tenant-scoped results</p>
+        </div>
+        <button type="button" class="secondary-button" (click)="refresh()" [disabled]="loading() || saving()">Refresh</button>
+      </div>
+
+      @if (loading()) {
+        <div class="empty-state" role="status">Loading tenant memberships…</div>
+      } @else if (members().length === 0) {
+        <div class="empty-state">No tenant membership records found.</div>
+      } @else {
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Person</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Joined</th>
+                <th><span class="visually-hidden">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (member of members(); track member.id) {
+                <tr>
+                  <td>
+                    <strong>{{ member.name }}</strong>
+                    <small>{{ member.email }}</small>
+                    @if (isSelf(member)) { <span class="self-label">Your account</span> }
+                  </td>
+                  <td><span class="role-pill" [class.owner]="member.membership_role === 'OWNER'">{{ member.membership_role }}</span></td>
+                  <td><span class="status-pill" [class.revoked]="member.status === 'REVOKED'">{{ member.status }}</span></td>
+                  <td>{{ member.joined_at ? (member.joined_at | date:'mediumDate') : '—' }}</td>
+                  <td class="actions">
+                    @if (member.status === 'ACTIVE' && member.membership_role !== 'OWNER' && !isSelf(member)) {
+                      @if (isOwner()) {
+                        @if (member.membership_role === 'MEMBER') {
+                          <button type="button" class="text-button" (click)="changeRole(member, 'ADMIN')" [disabled]="saving()">Make admin</button>
+                        } @else {
+                          <button type="button" class="text-button" (click)="changeRole(member, 'MEMBER')" [disabled]="saving()">Make member</button>
+                        }
+                      }
+                      <button type="button" class="danger-button" (click)="revoke(member)" [disabled]="saving()">Revoke</button>
+                    } @else if (member.status === 'REVOKED' && member.membership_role !== 'OWNER') {
+                      <button type="button" class="text-button" (click)="reinstate(member)" [disabled]="saving()">Reinstate</button>
+                    } @else {
+                      <span class="hint">Protected</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  }
+</section>
