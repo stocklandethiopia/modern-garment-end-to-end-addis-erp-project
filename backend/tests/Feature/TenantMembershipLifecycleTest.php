@@ -14,10 +14,15 @@ use Tests\TestCase;
 class TenantMembershipLifecycleTest extends TestCase
 {
     private string $tenantId;
+
     private string $ownerId;
+
     private string $adminId;
+
     private string $memberId;
+
     private string $adminMemberId;
+
     private string $ownerTokenUserEmail;
 
     protected function setUp(): void
@@ -103,8 +108,8 @@ class TenantMembershipLifecycleTest extends TestCase
             'membership_role' => 'MEMBER',
             'reason' => 'Add an existing user to the garment workspace.',
         ])->assertCreated()
-          ->assertJsonPath('data.status', 'ACTIVE')
-          ->assertJsonPath('data.user_id', $this->memberId);
+            ->assertJsonPath('data.status', 'ACTIVE')
+            ->assertJsonPath('data.user_id', $this->memberId);
 
         $this->assertDatabaseHas('tenant_memberships', [
             'tenant_id' => $this->tenantId,
