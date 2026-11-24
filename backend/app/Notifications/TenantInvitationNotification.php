@@ -18,8 +18,7 @@ class TenantInvitationNotification extends Notification
         public readonly string $acceptanceUrl,
         public readonly string $expiresAt,
         public readonly string $assignedRole,
-    ) {
-    }
+    ) {}
 
     public function via(object $notifiable): array
     {
@@ -28,7 +27,7 @@ class TenantInvitationNotification extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage())
+        return (new MailMessage)
             ->subject('Invitation to join '.$this->tenantName)
             ->greeting('You have been invited to a garment ERP workspace')
             ->line($this->inviterName.' invited you to join '.$this->tenantName.'.')
