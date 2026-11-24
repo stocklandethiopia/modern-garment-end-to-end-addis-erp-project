@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\\Console\\Commands;
+namespace App\Console\Commands;
 
-use App\\Services\\TenantProvisioningService;
-use Illuminate\\Console\\Command;
+use App\Services\TenantProvisioningService;
+use Illuminate\Console\Command;
 use InvalidArgumentException;
 use RuntimeException;
 use Throwable;
