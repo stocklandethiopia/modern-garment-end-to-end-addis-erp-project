@@ -254,4 +254,41 @@ Initial design objectives to be baselined in WP-16, not claimed as measured SLOs
 
 **Implementation status distinction:** this document is the accepted WP-03 target architecture and data dictionary. It does not mean a Laravel migration has been executed or an RLS test has passed. Those require the source/runtime scaffold and CI execution in the following engineering work.
 
-**WP-03 decision:** internally accepted under delegated execution. Proceed to WP-04 initiative, market insight, brand, collection, range and merchandising.
+**WP-03 target-architecture decision:** internally accepted under delegated execution. This accepts the design and data dictionary only; it is not evidence of a complete runtime implementation or package handover. The implementation status and remaining acceptance gaps are recorded below and in the delivery handover register. The package must not be treated as complete until those gaps and its operational handover are closed.
+
+## 13. Implementation evidence snapshot — 24 November 2026
+
+This section records the current implementation evidence without changing the approved target architecture.
+
+### 13.1 Verified executable scope
+
+- **Tenant provisioning:** `platform:provision-tenant-owner` uses the controlled `pgsql_migrator` connection. A tenant may be provisioned after other tenants already exist. An existing active global identity can be linked as the owner of another tenant; an existing identity's name/password are not silently changed. New owner passwords are hashed and require at least 16 characters. Tenant code/email advisory transaction locks prevent concurrent duplicate provisioning. Provisioning writes the tenant, OWNER membership and an audit event atomically.
+- **Tenant selection/context:** authenticated users list only their own active tenant memberships, select a tenant, and enter a request-scoped PostgreSQL transaction. The middleware sets transaction-local user/tenant context, verifies an active membership and active tenant, and clears the application context on completion/error.
+- **Membership administration:** owner/admin API routes list memberships, add an existing active global identity, change eligible roles, and revoke memberships. The Angular workspace includes a tenant-member screen. Revoked records remain in history and can be reinstated through the controlled add path.
+- **Database write boundary:** `app_runtime` still has no direct INSERT/UPDATE/DELETE privilege on `tenant_memberships`. Three fixed-search-path PostgreSQL SECURITY DEFINER functions owned by the controlled migration role perform member add/reactivation, role change, and revocation. They require transaction-local tenant and actor context, re-check an active membership and role, apply OWNER/ADMIN restrictions, require a reason, and append a tenant audit event. PUBLIC execution is revoked and EXECUTE is granted only to `app_runtime`.
+- **Role rules currently implemented:** OWNER and ADMIN can add ordinary MEMBER accounts; only OWNER can grant/change ADMIN; ADMIN cannot change or revoke another ADMIN; ordinary membership actions cannot remove or demote an OWNER; a user cannot revoke their own membership through the ordinary admin route. A non-member cannot invoke a privileged function merely by setting tenant/user context values.
+- **Provisioning and member-management code is in the canonical Laravel/Angular/PostgreSQL execution branch, not copied from the Stockland Node/SQLite application.**
+
+### 13.2 Exact verification evidence
+
+- Commit: `5331468d335350ec68b99417b06989b3c3823581`.
+- GitHub Actions run [#659](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45406572060): **success**, all required jobs passed.
+- Backend: **62 PHPUnit tests / 705 assertions**, including PostgreSQL 18 migrations under restricted `erp_migrator`, tenant/RLS integration, multi-tenant owner provisioning and membership lifecycle/security-definer tests.
+- Frontend: **27 Angular tests across 7 files**, plus Angular production build passed.
+- PHP formatting/syntax checks, Composer/npm dependency audits and lockfile reconciliation passed.
+
+This is exact-SHA component/integration evidence for the implementation present in this commit. It is not a staging/UAT result, production deployment, or complete WP-03 package acceptance.
+
+### 13.3 Remaining WP-03 acceptance work
+
+The following are still open and must be completed before WP-03 handover:
+- Verified global identity registration, email ownership verification, tenant invitation issuance/delivery/expiry/acceptance/revocation, resend and duplicate-invitation rules. Current member addition links an already-existing active global account; it does not send or accept an invitation.
+- Full tenant onboarding/administration lifecycle and controlled tenant activation, suspension, closure, export/retention and recovery.
+- Owner transfer/succession, voluntary leave-tenant and last-owner safeguards; ordinary member routes intentionally cannot remove OWNER.
+- Complete effective-dated role-assignment model by tenant/entity/site/department/warehouse/channel and integration with every downstream domain. Existing scope-grant functionality is only a foundation, not proof of every package's authorization matrix.
+- MFA, enterprise OIDC/SSO, recovery, refresh-token rotation/reuse detection and production-grade session lifecycle. Current Sanctum bearer tokens have a 60-minute default expiry and an explicit current-token revoke route; this is not a completed MFA/SSO implementation.
+- Platform administration/entitlements and separation from tenant OWNER/ADMIN operations.
+- Installer/operator runbook, secret provisioning/rotation, tenant bootstrap recovery, migrations/rollback and non-production deployment drill.
+- Complete WP-03 acceptance matrix and cross-domain adversarial tests, followed by independent self-review and numbered handover.
+
+No later work package may be treated as a substitute for an unfinished WP-03 dependency. The next execution checkpoint remains WP-03.
