@@ -190,7 +190,7 @@ class TenantInvitationLifecycleTest extends TestCase
             'id' => $id,
             'status' => 'ACCEPTED',
             'accepted_by' => $user->id,
-            'token_hash' => str_repeat('0', 64),
+            'token_hash' => str_repeat('0', 32).str_replace('-', '', $id),
         ], 'pgsql_test_admin');
         $this->assertDatabaseHas('audit_events', [
             'tenant_id' => $this->tenantId,
@@ -219,6 +219,11 @@ class TenantInvitationLifecycleTest extends TestCase
         [$id] = $this->issueInvitation($email);
         $token = $this->sentToken();
 
+        $storedInvitation = DB::connection('pgsql_test_admin')->table('tenant_invitations')->where('id', $id)->first();
+        $this->assertSame('PENDING', $storedInvitation->status);
+        $this->assertSame($email, $storedInvitation->email_normalized);
+        $this->assertSame(hash('sha256', $token), trim($storedInvitation->token_hash));
+
         $this->postJson('/api/v1/invitations/register', $this->registrationPayload($token, $email))
             ->assertUnprocessable();
 
@@ -227,6 +232,7 @@ class TenantInvitationLifecycleTest extends TestCase
             'password' => 'ExistingLongPassword#2026',
             'device_name' => 'invitation-test',
         ])->assertOk();
+        $this->assertSame($existingUserId, $login->json('user.id'));
 
         $this->withToken($login->json('access_token'))
             ->postJson('/api/v1/invitations/accept', ['token' => $token])
