@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Tests\\Feature;
+namespace Tests\Feature;
 
-use App\\Services\\TenantProvisioningService;
-use Illuminate\\Support\\Facades\\DB;
-use Illuminate\\Support\\Facades\\Hash;
-use Illuminate\\Support\\Str;
+use App\Services\TenantProvisioningService;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use RuntimeException;
-use Tests\\TestCase;
+use Tests\TestCase;
 
 class TenantProvisioningServiceTest extends TestCase
 {
