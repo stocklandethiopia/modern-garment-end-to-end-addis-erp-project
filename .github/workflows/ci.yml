@@ -61,6 +61,8 @@ jobs:
       DB_PASSWORD: local-runtime-password
       TEST_DB_ADMIN_USERNAME: erp_test_admin
       TEST_DB_ADMIN_PASSWORD: local-test-admin-password
+      MIGRATION_DB_USERNAME: erp_migrator
+      MIGRATION_DB_PASSWORD: local-migrator-password
       CACHE_STORE: array
       QUEUE_CONNECTION: sync
       SESSION_DRIVER: array
