@@ -190,3 +190,6 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/product/promotions/{promotionId}/approve', [CommercialPricingController::class, 'approvePromotion']);
     });
 });
+
+
+require __DIR__.'/domain-api.php';
