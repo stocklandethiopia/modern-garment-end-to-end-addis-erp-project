@@ -164,7 +164,7 @@ Route registration is deliberately explicit: `bootstrap/app.php` loads `routes/a
 
 `backend/database/migrations/` contains the ordered PostgreSQL schema history. The inspected delivery tree has the initial user migration and the 27 numbered enterprise/domain migrations through:
 
-`2026_11_26_000027_create_tenant_domain_role_assignments.php`
+`2026_11_26_000027_create_tenant_domain_role_assignments.php` and the WP-03 lifecycle guard `2026_11_26_000028_revoke_domain_roles_on_membership_change.php`
 
 Migration ownership by sequence:
 
@@ -177,7 +177,7 @@ Migration ownership by sequence:
 | `2026_11_24_000013–000014` | Secure membership lifecycle and tenant invitations |
 | `2026_11_26_000015–000021` | Sourcing/material traceability, routes/MES, quality/CAPA, distribution, IE/workforce, finance/payroll draft controls, documents/integrations/agents |
 | `2026_11_26_000022–000026` | Receipt genealogy/immutability, finished-goods reservation, finance/agent uniqueness and customer-credit controls |
-| `2026_11_26_000027` | Tenant domain-role assignment foundation |
+| `2026_11_26_000027–000028` | Tenant domain-role assignment foundation and automatic role revocation on member revocation or promotion to tenant ADMIN/OWNER |
 
 **Migration rules:** every tenant-owned table must have tenant-leading keys/FKs, forced PostgreSQL RLS and minimum explicit runtime grants. Use `erp_migrator` for migrations and `app_runtime NOBYPASSRLS` for application requests. Append-only ledgers and audit events must not receive broad runtime UPDATE/DELETE privileges. Do not rename/reorder migrations already recorded in any environment without an explicit migration-history compatibility plan.
 
@@ -332,9 +332,9 @@ Backend and frontend domain boundaries must match. A new Laravel controller/serv
 | Tenant listing/selection | `Enterprise/TenantController.php`; `ResolveTenantContext.php`; `TenantContext.php` | `features/auth/tenant-picker.component.*` | Tenant/membership RLS; `TenantIsolationTest.php` |
 | Tenant provisioning | `Console/Commands/ProvisionTenantOwner.php`; `TenantProvisioningService.php` | Operator-driven bootstrap; no public owner-signup screen | Enterprise migration; `TenantProvisioningServiceTest.php` |
 | Tenant members/roles | `Enterprise/TenantMembershipController.php`; `TenantMembershipService.php`; `TenantMembership.php` | `features/enterprise/tenant-member.service.ts`; `tenant-members.component.*` | Membership lifecycle migration; `TenantMembershipLifecycleTest.php` |
-| Invitations | `Enterprise/TenantInvitationController.php`; `TenantInvitationService.php`; `Notifications/TenantInvitationNotification.php` | Invitation registration is API-backed; dedicated admin invitation UI remains open | Invitation migration; `TenantInvitationLifecycleTest.php` |
+| Invitations | `Enterprise/TenantInvitationController.php`; `TenantInvitationService.php`; `Notifications/TenantInvitationNotification.php` | Invitation registration is API-backed; dedicated admin invitation UI remains open | Invitation migration; `TenantInvitationLifecycleTest.php`, `TenantMembershipLifecycleTest.php` (membership-to-domain-role revocation, role promotion and effective-period overlap cases) |
 | Legal entities/sites/locations | `Enterprise/LegalEntityController.php`; `BusinessSiteController.php`; `InventoryLocationController.php` | `legal-entity.service.ts`, `legal-entities.component.*`, `business-site.service.ts`, `business-sites.component.*` | Enterprise foundation migration and related tests |
-| Scoped access/domain roles | `Enterprise/AccessScopeController.php`; `TenantDomainRoleAssignmentController.php`; `ScopedAccessService.php`; `Authorization/DomainCapabilityAuthorizer.php`; `TenantDomainRoleAssignmentService.php` | Scope/domain-role administration UI not yet complete | Scope and role-assignment migrations; complete entity/site/department/warehouse/channel enforcement is still open |
+| Scoped access/domain roles | `Enterprise/AccessScopeController.php`; `TenantDomainRoleAssignmentController.php`; `ScopedAccessService.php`; `Authorization/DomainCapabilityAuthorizer.php`; `TenantDomainRoleAssignmentService.php` | Tenant-level role register API: `GET/POST /api/v1/enterprise/domain-role-assignments`, plus approve/revoke actions; admin UI remains open | Migrations 000010/000027/000028; domain role periods prevent overlapping active/pending grants; membership revocation or promotion to tenant ADMIN automatically ends active/pending domain roles and writes audit evidence. Complete entity/site/department/warehouse/channel enforcement remains open |
 | Identity request context | `ResolveAuthenticatedIdentityContext.php`; `TenantContextResolver.php` | Auth session/interceptor | Context is request/transaction-local; verify reuse/concurrency and revocation paths |
 
 **WP-03 is not complete.** The existing code is a foundation. The accepted architecture still requires owner succession/leave and last-owner controls, complete tenant lifecycle/platform entitlements, effective-dated roles tied to actual organization/site/department/warehouse/channel data, downstream target-record scope checks, MFA/OIDC/SSO and session recovery/rotation, complete invitation/operator UIs, and installer/recovery/rollback/deployment handover.
