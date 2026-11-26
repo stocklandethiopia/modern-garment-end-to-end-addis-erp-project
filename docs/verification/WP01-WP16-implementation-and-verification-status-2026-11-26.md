@@ -91,3 +91,11 @@ The eventual combined candidate is published by `.github/workflows/wp01-16-compl
 `modern-garment-addis-erp-wp01-wp16-candidate`
 
 It is intentionally not a production deployment and must not be represented as such.
+
+## 26 November 2026 — Miret and Angular adoption clarification
+
+Two design/engineering standards have been added on the candidate branch:
+- docs/product/miret-system-operating-model.md: product identity, quality at source, monthly-to-hourly efficiency and role-specific technology/agent acceptance, traced to the existing WP-00–WP-16 sequence.
+- docs/architecture/angular-current-capabilities-and-adoption-standard.md: observed Angular main/roadmap snapshot, production-ready feature maturity, experimental-feature boundary and project adoption practices.
+
+These are requirement/design clarifications. They do not change the implementation acceptance status in the matrix above. No site-specific time-study calibration, customer AQL/inspection plan approval, certification, complete operational agent rollout or production release is claimed.
