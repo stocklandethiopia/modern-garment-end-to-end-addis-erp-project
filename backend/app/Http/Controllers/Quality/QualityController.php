@@ -62,7 +62,7 @@ class QualityController extends Controller
     {
         Gate::authorize('quality.review-inspection');
         $data = $request->validate([
-            'decision' => ['required','in:ACCEPT,REJECT,RETURN_FOR_REINSPECTION'],
+            'decision' => ['required','in:ACCEPT,REJECT'],
             'review_reason' => ['required','string','max:2000'],
         ]);
 
@@ -111,6 +111,50 @@ class QualityController extends Controller
 
         return response()->json(['data' => $this->quality->decideOperationRelease(
             $this->tenant->requireTenantId(), $this->tenant->requireActorId(), $operationId, $data
+        )]);
+    }
+
+    public function setNonconformanceDisposition(Request $request, string $nonconformanceId): JsonResponse
+    {
+        Gate::authorize('quality.set-disposition');
+        $data = $request->validate([
+            'disposition' => ['required','in:USE_AS_IS,REWORK,REPAIR,SORT,RETURN_TO_SUPPLIER,SCRAP,CUSTOMER_CONCESSION'],
+            'reason' => ['required','string','max:2000'],
+            'containment_status' => ['nullable','in:REQUIRED,IN_PROGRESS,CONTAINED,NOT_REQUIRED,RELEASED_BY_AUTHORITY'],
+            'containment_notes' => ['nullable','string','max:2000'],
+            'root_cause_category' => ['nullable','string','max:80'],
+            'root_cause_analysis' => ['nullable','string','max:4000'],
+        ]);
+
+        return response()->json(['data' => $this->quality->setNonconformanceDisposition(
+            $this->tenant->requireTenantId(), $this->tenant->requireActorId(), $nonconformanceId, $data
+        )]);
+    }
+
+    public function implementCorrectiveAction(Request $request, string $actionId): JsonResponse
+    {
+        Gate::authorize('quality.implement-capa');
+        $data = $request->validate([
+            'implementation_summary' => ['required','string','max:4000'],
+            'evidence' => ['required','array','min:1'],
+        ]);
+
+        return response()->json(['data' => $this->quality->implementCorrectiveAction(
+            $this->tenant->requireTenantId(), $this->tenant->requireActorId(), $actionId, $data
+        )]);
+    }
+
+    public function verifyCorrectiveAction(Request $request, string $actionId): JsonResponse
+    {
+        Gate::authorize('quality.verify-capa');
+        $data = $request->validate([
+            'effective' => ['required','boolean'],
+            'effectiveness_result' => ['required','string','max:2000'],
+            'evidence_reference' => ['required','string','max:180'],
+        ]);
+
+        return response()->json(['data' => $this->quality->verifyCorrectiveActionEffectiveness(
+            $this->tenant->requireTenantId(), $this->tenant->requireActorId(), $actionId, $data
         )]);
     }
 
