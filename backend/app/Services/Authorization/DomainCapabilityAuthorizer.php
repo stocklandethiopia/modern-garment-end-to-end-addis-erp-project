@@ -4,130 +4,143 @@ namespace App\Services\Authorization;
 
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class DomainCapabilityAuthorizer
 {
-    private const ROLE_FIELD_CANDIDATES = ['role_code', 'tenant_role', 'membership_role', 'role', 'access_level'];
-    private const STATUS_FIELD_CANDIDATES = ['status', 'membership_status', 'state'];
-
     private const ROLE_MATRIX = [
-        'sourcing.manage' => ['TENANT_OWNER','TENANT_ADMIN','PROCUREMENT_MANAGER','SOURCING_MANAGER'],
-        'sourcing.approve-supplier' => ['TENANT_OWNER','TENANT_ADMIN','PROCUREMENT_MANAGER','SUPPLIER_QUALITY_MANAGER'],
-        'sourcing.create-purchase-order' => ['TENANT_OWNER','TENANT_ADMIN','PROCUREMENT_MANAGER','SOURCING_MANAGER','PROCUREMENT_OFFICER'],
-        'sourcing.submit-purchase-order' => ['TENANT_OWNER','TENANT_ADMIN','PROCUREMENT_MANAGER','SOURCING_MANAGER','PROCUREMENT_OFFICER'],
-        'sourcing.approve-purchase-order' => ['TENANT_OWNER','TENANT_ADMIN','PROCUREMENT_APPROVER','PROCUREMENT_MANAGER','FINANCE_MANAGER'],
-        'sourcing.dispatch-purchase-order' => ['TENANT_OWNER','TENANT_ADMIN','PROCUREMENT_MANAGER','SOURCING_MANAGER'],
-        'inventory.receive-materials' => ['TENANT_OWNER','TENANT_ADMIN','WAREHOUSE_MANAGER','WAREHOUSE_RECEIVER','INVENTORY_MANAGER'],
-        'inventory.materialize-receipt' => ['TENANT_OWNER','TENANT_ADMIN','WAREHOUSE_MANAGER','MATERIAL_CONTROLLER','QUALITY_MANAGER'],
-        'quality.inspect' => ['TENANT_OWNER','TENANT_ADMIN','QUALITY_INSPECTOR','QUALITY_MANAGER','QUALITY_HEAD'],
-        'quality.record-inspection-result' => ['TENANT_OWNER','TENANT_ADMIN','QUALITY_INSPECTOR','QUALITY_MANAGER','QUALITY_HEAD'],
-        'quality.review-inspection' => ['TENANT_OWNER','TENANT_ADMIN','QUALITY_MANAGER','QUALITY_HEAD'],
-        'quality.manage-capa' => ['TENANT_OWNER','TENANT_ADMIN','QUALITY_MANAGER','QUALITY_HEAD','PROCESS_IMPROVEMENT_MANAGER'],
-        'quality.set-disposition' => ['TENANT_OWNER','TENANT_ADMIN','QUALITY_MANAGER','QUALITY_HEAD','PRODUCTION_MANAGER'],
-        'quality.implement-capa' => ['TENANT_OWNER','TENANT_ADMIN','QUALITY_MANAGER','PROCESS_IMPROVEMENT_MANAGER','ASSIGNED_ACTION_OWNER'],
-        'quality.verify-capa' => ['TENANT_OWNER','TENANT_ADMIN','QUALITY_HEAD','QUALITY_MANAGER','PROCESS_IMPROVEMENT_MANAGER'],
-        'quality.release-material' => ['TENANT_OWNER','TENANT_ADMIN','QUALITY_HEAD','QUALITY_MANAGER','INVENTORY_MANAGER'],
-        'manufacturing.manage-routes' => ['TENANT_OWNER','TENANT_ADMIN','INDUSTRIAL_ENGINEER','IE_MANAGER','PRODUCT_ENGINEERING_MANAGER'],
-        'manufacturing.submit-route' => ['TENANT_OWNER','TENANT_ADMIN','INDUSTRIAL_ENGINEER','IE_MANAGER','PRODUCT_ENGINEERING_MANAGER'],
-        'manufacturing.approve-route' => ['TENANT_OWNER','TENANT_ADMIN','IE_MANAGER','FACTORY_MANAGER','PRODUCT_ENGINEERING_MANAGER'],
-        'manufacturing.create-production-order' => ['TENANT_OWNER','TENANT_ADMIN','PRODUCTION_PLANNER','PRODUCTION_MANAGER','FACTORY_MANAGER'],
-        'manufacturing.release-production-order' => ['TENANT_OWNER','TENANT_ADMIN','PRODUCTION_MANAGER','FACTORY_MANAGER'],
-        'manufacturing.start-production-order' => ['TENANT_OWNER','TENANT_ADMIN','PRODUCTION_MANAGER','FACTORY_MANAGER','PRODUCTION_SUPERVISOR'],
-        'manufacturing.record-execution' => ['TENANT_OWNER','TENANT_ADMIN','PRODUCTION_MANAGER','FACTORY_MANAGER','PRODUCTION_SUPERVISOR','LINE_SUPERVISOR','FACTORY_OPERATOR'],
-        'planning.manage-capacity' => ['TENANT_OWNER','TENANT_ADMIN','IE_MANAGER','FACTORY_MANAGER','PRODUCTION_MANAGER','MAINTENANCE_MANAGER'],
-        'planning.manage-ie-standard' => ['TENANT_OWNER','TENANT_ADMIN','INDUSTRIAL_ENGINEER','IE_MANAGER'],
-        'planning.approve-ie-standard' => ['TENANT_OWNER','TENANT_ADMIN','IE_MANAGER','FACTORY_MANAGER'],
-        'planning.create-production-plan' => ['TENANT_OWNER','TENANT_ADMIN','PRODUCTION_PLANNER','PRODUCTION_MANAGER','IE_MANAGER'],
-        'planning.approve-production-plan' => ['TENANT_OWNER','TENANT_ADMIN','PRODUCTION_MANAGER','FACTORY_MANAGER'],
-        'workforce.assess-skills' => ['TENANT_OWNER','TENANT_ADMIN','SKILLS_ASSESSOR','TRAINING_MANAGER','HR_MANAGER','PRODUCTION_MANAGER'],
-        'workforce.assign-operations' => ['TENANT_OWNER','TENANT_ADMIN','PRODUCTION_SUPERVISOR','LINE_SUPERVISOR','PRODUCTION_MANAGER'],
-        'workforce.confirm-assignments' => ['TENANT_OWNER','TENANT_ADMIN','PRODUCTION_MANAGER','FACTORY_MANAGER','HR_MANAGER'],
-        'inventory.receive-finished-goods' => ['TENANT_OWNER','TENANT_ADMIN','WAREHOUSE_MANAGER','WAREHOUSE_RECEIVER','PRODUCTION_MANAGER'],
-        'quality.release-finished-goods' => ['TENANT_OWNER','TENANT_ADMIN','QUALITY_HEAD','QUALITY_MANAGER'],
-        'commerce.create-customer-order' => ['TENANT_OWNER','TENANT_ADMIN','SALES_MANAGER','WHOLESALE_MANAGER','RETAIL_MANAGER','STORE_MANAGER'],
-        'commerce.confirm-customer-order' => ['TENANT_OWNER','TENANT_ADMIN','SALES_MANAGER','CREDIT_CONTROLLER','FINANCE_MANAGER'],
-        'commerce.review-credit' => ['TENANT_OWNER','TENANT_ADMIN','CREDIT_CONTROLLER','FINANCE_MANAGER'],
-        'commerce.approve-credit-exception' => ['TENANT_OWNER','TENANT_ADMIN','CREDIT_MANAGER','FINANCE_DIRECTOR'],
-        'inventory.reserve-finished-goods' => ['TENANT_OWNER','TENANT_ADMIN','WAREHOUSE_MANAGER','ORDER_FULFILMENT_MANAGER','INVENTORY_MANAGER'],
-        'distribution.dispatch-shipment' => ['TENANT_OWNER','TENANT_ADMIN','DISTRIBUTION_MANAGER','WAREHOUSE_MANAGER','LOGISTICS_MANAGER'],
-        'finance.create-journal' => ['TENANT_OWNER','TENANT_ADMIN','FINANCE_MANAGER','ACCOUNTANT'],
-        'finance.submit-journal' => ['TENANT_OWNER','TENANT_ADMIN','FINANCE_MANAGER','ACCOUNTANT'],
-        'finance.approve-journal' => ['TENANT_OWNER','TENANT_ADMIN','FINANCE_MANAGER','FINANCIAL_CONTROLLER'],
-        'finance.post-journal' => ['TENANT_OWNER','TENANT_ADMIN','CHIEF_ACCOUNTANT','FINANCIAL_CONTROLLER'],
-        'payroll.prepare-draft' => ['TENANT_OWNER','TENANT_ADMIN','PAYROLL_MANAGER','HR_MANAGER'],
-        'payroll.submit-for-review' => ['TENANT_OWNER','TENANT_ADMIN','PAYROLL_MANAGER','HR_MANAGER'],
-        'payroll.professional-approval' => ['TENANT_OWNER','TENANT_ADMIN','PAYROLL_MANAGER','HR_DIRECTOR','FINANCE_DIRECTOR','LEGAL_COUNSEL'],
-        'documents.register' => ['TENANT_OWNER','TENANT_ADMIN','DOCUMENT_CONTROLLER','DEPARTMENT_MANAGER','BUSINESS_USER'],
-        'documents.extract' => ['TENANT_OWNER','TENANT_ADMIN','DOCUMENT_CONTROLLER','DEPARTMENT_MANAGER','BUSINESS_USER'],
-        'documents.stage-extraction' => ['TENANT_OWNER','TENANT_ADMIN','DOCUMENT_CONTROLLER','DEPARTMENT_MANAGER','BUSINESS_USER'],
-        'documents.approve-import' => ['TENANT_OWNER','TENANT_ADMIN','DOCUMENT_CONTROLLER','DOMAIN_APPROVER'],
-        'devices.record-scan' => ['TENANT_OWNER','TENANT_ADMIN','WAREHOUSE_RECEIVER','INVENTORY_OPERATOR','PRODUCTION_SUPERVISOR','FACTORY_OPERATOR','STORE_OPERATOR'],
-        'agent.propose-action' => ['TENANT_OWNER','TENANT_ADMIN','BUSINESS_USER','DOMAIN_MANAGER'],
-        'agent.approve-action' => ['TENANT_OWNER','TENANT_ADMIN','DOMAIN_APPROVER','PROCESS_OWNER'],
-        'agent.execute-approved-draft' => ['TENANT_OWNER','TENANT_ADMIN','DOMAIN_MANAGER','PROCESS_OWNER'],
+        'sourcing.manage' => ['PROCUREMENT_MANAGER','SOURCING_MANAGER'],
+        'sourcing.approve-supplier' => ['PROCUREMENT_MANAGER','SUPPLIER_QUALITY_MANAGER'],
+        'sourcing.create-purchase-order' => ['PROCUREMENT_MANAGER','SOURCING_MANAGER','PROCUREMENT_OFFICER'],
+        'sourcing.submit-purchase-order' => ['PROCUREMENT_MANAGER','SOURCING_MANAGER','PROCUREMENT_OFFICER'],
+        'sourcing.approve-purchase-order' => ['PROCUREMENT_APPROVER','PROCUREMENT_MANAGER'],
+        'sourcing.dispatch-purchase-order' => ['PROCUREMENT_MANAGER','SOURCING_MANAGER'],
+        'inventory.receive-materials' => ['WAREHOUSE_MANAGER','WAREHOUSE_RECEIVER','INVENTORY_MANAGER'],
+        'inventory.materialize-receipt' => ['WAREHOUSE_MANAGER','MATERIAL_CONTROLLER','QUALITY_MANAGER'],
+        'quality.inspect' => ['QUALITY_INSPECTOR','QUALITY_MANAGER','QUALITY_HEAD'],
+        'quality.record-inspection-result' => ['QUALITY_INSPECTOR','QUALITY_MANAGER','QUALITY_HEAD'],
+        'quality.review-inspection' => ['QUALITY_MANAGER','QUALITY_HEAD'],
+        'quality.manage-capa' => ['QUALITY_MANAGER','QUALITY_HEAD','PROCESS_IMPROVEMENT_MANAGER'],
+        'quality.set-disposition' => ['QUALITY_MANAGER','QUALITY_HEAD','PRODUCTION_MANAGER'],
+        'quality.implement-capa' => ['QUALITY_MANAGER','PROCESS_IMPROVEMENT_MANAGER','ASSIGNED_ACTION_OWNER'],
+        'quality.verify-capa' => ['QUALITY_HEAD','QUALITY_MANAGER','PROCESS_IMPROVEMENT_MANAGER'],
+        'quality.release-material' => ['QUALITY_HEAD','QUALITY_MANAGER'],
+        'quality.release-production-operation' => ['QUALITY_HEAD','QUALITY_MANAGER'],
+        'quality.release-finished-goods' => ['QUALITY_HEAD','QUALITY_MANAGER'],
+        'manufacturing.manage-routes' => ['INDUSTRIAL_ENGINEER','IE_MANAGER','PRODUCT_ENGINEERING_MANAGER'],
+        'manufacturing.submit-route' => ['INDUSTRIAL_ENGINEER','IE_MANAGER','PRODUCT_ENGINEERING_MANAGER'],
+        'manufacturing.approve-route' => ['IE_MANAGER','FACTORY_MANAGER','PRODUCT_ENGINEERING_MANAGER'],
+        'manufacturing.create-production-order' => ['PRODUCTION_PLANNER','PRODUCTION_MANAGER','FACTORY_MANAGER'],
+        'manufacturing.release-production-order' => ['PRODUCTION_MANAGER','FACTORY_MANAGER'],
+        'manufacturing.start-production-order' => ['PRODUCTION_MANAGER','FACTORY_MANAGER','PRODUCTION_SUPERVISOR'],
+        'manufacturing.record-execution' => ['PRODUCTION_MANAGER','FACTORY_MANAGER','PRODUCTION_SUPERVISOR','LINE_SUPERVISOR','FACTORY_OPERATOR'],
+        'planning.manage-capacity' => ['IE_MANAGER','FACTORY_MANAGER','PRODUCTION_MANAGER','MAINTENANCE_MANAGER'],
+        'planning.manage-ie-standard' => ['INDUSTRIAL_ENGINEER','IE_MANAGER'],
+        'planning.approve-ie-standard' => ['IE_MANAGER','FACTORY_MANAGER'],
+        'planning.create-production-plan' => ['PRODUCTION_PLANNER','PRODUCTION_MANAGER','IE_MANAGER'],
+        'planning.approve-production-plan' => ['PRODUCTION_MANAGER','FACTORY_MANAGER'],
+        'workforce.assess-skills' => ['SKILLS_ASSESSOR','TRAINING_MANAGER','HR_MANAGER','PRODUCTION_MANAGER'],
+        'workforce.assign-operations' => ['PRODUCTION_SUPERVISOR','LINE_SUPERVISOR','PRODUCTION_MANAGER'],
+        'workforce.confirm-assignments' => ['PRODUCTION_MANAGER','FACTORY_MANAGER','HR_MANAGER'],
+        'inventory.receive-finished-goods' => ['WAREHOUSE_MANAGER','WAREHOUSE_RECEIVER','PRODUCTION_MANAGER'],
+        'commerce.create-customer-order' => ['SALES_MANAGER','WHOLESALE_MANAGER','RETAIL_MANAGER','STORE_MANAGER'],
+        'commerce.confirm-customer-order' => ['SALES_MANAGER','CREDIT_CONTROLLER','FINANCE_MANAGER'],
+        'commerce.review-credit' => ['CREDIT_CONTROLLER','FINANCE_MANAGER'],
+        'commerce.approve-credit-exception' => ['CREDIT_MANAGER','FINANCE_DIRECTOR'],
+        'inventory.reserve-finished-goods' => ['WAREHOUSE_MANAGER','ORDER_FULFILMENT_MANAGER','INVENTORY_MANAGER'],
+        'distribution.dispatch-shipment' => ['DISTRIBUTION_MANAGER','WAREHOUSE_MANAGER','LOGISTICS_MANAGER'],
+        'finance.create-journal' => ['FINANCE_MANAGER','ACCOUNTANT'],
+        'finance.submit-journal' => ['FINANCE_MANAGER','ACCOUNTANT'],
+        'finance.approve-journal' => ['FINANCE_MANAGER','FINANCIAL_CONTROLLER'],
+        'finance.post-journal' => ['CHIEF_ACCOUNTANT','FINANCIAL_CONTROLLER'],
+        'payroll.prepare-draft' => ['PAYROLL_MANAGER','HR_MANAGER'],
+        'payroll.submit-for-review' => ['PAYROLL_MANAGER','HR_MANAGER'],
+        'payroll.professional-approval' => ['PAYROLL_MANAGER','HR_DIRECTOR','FINANCE_DIRECTOR','LEGAL_COUNSEL'],
+        'documents.register' => ['DOCUMENT_CONTROLLER','DEPARTMENT_MANAGER','BUSINESS_USER'],
+        'documents.extract' => ['DOCUMENT_CONTROLLER','DEPARTMENT_MANAGER','BUSINESS_USER'],
+        'documents.stage-extraction' => ['DOCUMENT_CONTROLLER','DEPARTMENT_MANAGER','BUSINESS_USER'],
+        'documents.approve-import' => ['DOCUMENT_CONTROLLER','DOMAIN_APPROVER'],
+        'devices.record-scan' => ['WAREHOUSE_RECEIVER','INVENTORY_OPERATOR','PRODUCTION_SUPERVISOR','FACTORY_OPERATOR','STORE_OPERATOR'],
+        'devices.resolve-scan' => ['WAREHOUSE_RECEIVER','INVENTORY_OPERATOR','PRODUCTION_SUPERVISOR','FACTORY_OPERATOR','WAREHOUSE_MANAGER'],
+        'agent.propose-action' => ['BUSINESS_USER','DOMAIN_MANAGER'],
+        'agent.approve-action' => ['DOMAIN_APPROVER','PROCESS_OWNER'],
+        'agent.execute-approved-draft' => ['DOMAIN_MANAGER','PROCESS_OWNER'],
+    ];
+
+    private const TENANT_ADMIN_ABILITIES = [
+        'tenant.assign-domain-roles',
+        'tenant.revoke-domain-roles',
+    ];
+
+    private const OWNER_ONLY_ABILITIES = [
+        'tenant.approve-domain-roles',
     ];
 
     public function allows(?Authenticatable $user, string $ability): bool
     {
-        if ($user === null || ! isset(self::ROLE_MATRIX[$ability])) {
+        if ($user === null) {
             return false;
         }
 
-        $tenantId = DB::selectOne("SELECT NULLIF(current_setting('app.current_tenant_id', true), '')::text AS tenant_id")?->tenant_id;
-        if (! is_string($tenantId) || $tenantId === '' || ! isset($user->id)) {
+        $tenantId = DB::selectOne(
+            "SELECT NULLIF(current_setting('app.current_tenant_id', true), '')::text AS tenant_id"
+        )?->tenant_id;
+
+        if (! is_string($tenantId) || $tenantId === '') {
             return false;
         }
 
-        foreach (['tenant_memberships', 'tenant_user_memberships', 'tenant_users', 'tenant_members'] as $table) {
-            if (! Schema::hasTable($table)) {
-                continue;
-            }
+        $userId = (string) $user->getAuthIdentifier();
+        $membership = DB::table('tenant_memberships')
+            ->where('tenant_id', $tenantId)
+            ->where('user_id', $userId)
+            ->where('status', 'ACTIVE')
+            ->first(['membership_role']);
 
-            $columns = Schema::getColumnListing($table);
-            $tenantColumn = in_array('tenant_id', $columns, true) ? 'tenant_id' : null;
-            $userColumn = collect(['user_id', 'member_user_id', 'account_user_id'])->first(fn (string $column): bool => in_array($column, $columns, true));
-
-            if ($tenantColumn === null || $userColumn === null) {
-                continue;
-            }
-
-            $membership = DB::table($table)
-                ->where($tenantColumn, $tenantId)
-                ->where($userColumn, (string) $user->id)
-                ->first();
-
-            if ($membership === null) {
-                continue;
-            }
-
-            foreach (self::STATUS_FIELD_CANDIDATES as $statusColumn) {
-                if (in_array($statusColumn, $columns, true)) {
-                    $status = strtoupper((string) ($membership->{$statusColumn} ?? ''));
-                    if (! in_array($status, ['ACTIVE','ACCEPTED','APPROVED','ENABLED'], true)) {
-                        return false;
-                    }
-                    break;
-                }
-            }
-
-            foreach (self::ROLE_FIELD_CANDIDATES as $roleColumn) {
-                if (! in_array($roleColumn, $columns, true)) {
-                    continue;
-                }
-
-                $rawRole = $membership->{$roleColumn} ?? null;
-                $roles = is_array($rawRole)
-                    ? $rawRole
-                    : (is_string($rawRole) && str_starts_with(trim($rawRole), '[')
-                        ? (json_decode($rawRole, true) ?: [])
-                        : [$rawRole]);
-
-                $normalised = array_map(static fn ($role): string => strtoupper(trim((string) $role)), $roles);
-                return count(array_intersect(self::ROLE_MATRIX[$ability], $normalised)) > 0;
-            }
+        if ($membership === null) {
+            return false;
         }
 
-        return false;
+        $membershipRole = strtoupper((string) $membership->membership_role);
+        if (in_array($ability, self::OWNER_ONLY_ABILITIES, true)) {
+            return $membershipRole === 'OWNER';
+        }
+
+        if (in_array($ability, self::TENANT_ADMIN_ABILITIES, true)) {
+            return in_array($membershipRole, ['OWNER','ADMIN'], true);
+        }
+
+        if (! isset(self::ROLE_MATRIX[$ability]) || $membershipRole === 'OWNER' || $membershipRole === 'ADMIN') {
+            return false;
+        }
+
+        if ($membershipRole !== 'MEMBER') {
+            return false;
+        }
+
+        // This initial role-assignment release is tenant-wide only. A member
+        // placed in SCOPED mode is denied by these gates until the endpoint
+        // also proves the exact site/brand/market scope for its target record.
+        $scopeMode = DB::table('tenant_access_scope_modes')
+            ->where('tenant_id', $tenantId)
+            ->where('user_id', $userId)
+            ->value('scope_mode') ?? 'TENANT_WIDE';
+
+        if ($scopeMode !== 'TENANT_WIDE') {
+            return false;
+        }
+
+        $roles = DB::table('tenant_domain_role_assignments')
+            ->where('tenant_id', $tenantId)
+            ->where('user_id', $userId)
+            ->where('status', 'ACTIVE')
+            ->whereDate('valid_from', '<=', now()->toDateString())
+            ->where(function ($query): void {
+                $query->whereNull('valid_to')->orWhereDate('valid_to', '>=', now()->toDateString());
+            })
+            ->whereIn('role_code', self::ROLE_MATRIX[$ability])
+            ->pluck('role_code')
+            ->all();
+
+        return $roles !== [];
     }
 }
