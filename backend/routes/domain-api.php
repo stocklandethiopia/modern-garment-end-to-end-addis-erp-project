@@ -56,6 +56,7 @@ Route::middleware(['auth:sanctum', ResolveTenantContext::class])->prefix('v1')->
     });
 
     Route::prefix('documents')->group(function (): void {
+        Route::post('/upload', [DocumentIntegrationController::class, 'uploadFile']);
         Route::post('/', [DocumentIntegrationController::class, 'registerDocument']);
         Route::post('/{documentId}/extraction-runs', [DocumentIntegrationController::class, 'beginExtraction']);
         Route::post('/extraction-runs/{runId}/result', [DocumentIntegrationController::class, 'stageExtractionResult']);
