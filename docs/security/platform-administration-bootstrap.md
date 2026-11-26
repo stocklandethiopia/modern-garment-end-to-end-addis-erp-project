@@ -1,7 +1,7 @@
 # Platform administration and tenant entitlement bootstrap
 
 **Work package:** WP-03 — Enterprise, tenant, organisation and identity  
-**Status:** IMPLEMENTATION CANDIDATE — exact-head CI and operational acceptance required  
+**Status:** PLATFORM LIFECYCLE/ENTITLEMENT FOUNDATION INTEGRATED — PR #9 exact-head CI verified; privileged tenant-register read-audit follow-on pending exact-head CI  
 **Code boundary:** Laravel platform API + PostgreSQL fixed-search-path SECURITY DEFINER functions  
 **Authority boundary:** Platform administration is separate from tenant OWNER/ADMIN authority.
 
@@ -78,6 +78,8 @@ The current tenant can read its own entitlement summary at `GET /api/v1/tenant/e
 - `PUT /api/v1/platform/tenants/{tenantId}/entitlements` — PLATFORM_ADMIN only.
 
 These routes require an authenticated identity context. The database functions independently validate the platform grant, so controller/middleware checks are not the only security boundary.
+
+The global tenant-register read is itself privileged metadata access. The follow-on audit control appends `PLATFORM_TENANT_REGISTER_VIEWED` to `platform_audit_events` for both PLATFORM_ADMIN and read-only PLATFORM_SUPPORT. The event records the actor and aggregate tenant count only; it does not copy tenant names, contacts, customer details or transaction contents. Runtime roles cannot modify or delete the event. The new assertions in `PlatformAdministrationTest.php` require a read event for both roles; final exact-head ERP/WP CI for this follow-on remains pending.
 
 ## 5. Database and audit controls
 
