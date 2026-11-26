@@ -57,3 +57,13 @@ A repository commit, design document, successful Composer audit or separate WP-0
 - Corrective finding: Pint identified a malformed DateTimeImmutable namespace in IndustrialEngineeringService and 31 formatting issues. The namespace was corrected in commit 55fd21eaec99f870c5206b04ea15038544bcbc73.
 - Candidate formatter workflow #45881390947 passed: Pint formatting applied, every PHP file under app/bootstrap/config/database/routes/tests passed php -l, and the follow-up Pint --test gate passed. Formatter output was committed as style-only commit 8a65cfd9263594474d2a38026cc72b6654603756.
 - The Laravel test suite and route registration did not run on the earlier failing SHA. They must run on the next owner-triggered exact candidate head. Artifact assembly remains blocked until all three required jobs pass on one SHA.
+
+
+## 26 November 2026 — Angular source-level audit and test configuration correction
+
+- Exact candidate lockfile: Angular core/CLI/build/forms 22.3.0; TypeScript 6.0.3; Vitest 4.1.12; Zone.js 0.16.3; Node.js engine minimum 26.13.1.
+- Source inspection confirms strict TypeScript/templates and Vitest are configured. The router still eagerly imports feature components, and Zone.js remains in the app polyfills; lazy routing and a measured zoneless migration are follow-up work, not completed features.
+- Latest exact-head run [#45881528839](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45881528839): Angular build/tests, Composer validation/audit, PHP syntax/style, PostgreSQL migrations and forced-RLS checks passed; Laravel tests had six failures because PHPUnit's test environment did not define the frontend invitation URL after the unsafe hardcoded application default was removed.
+- Corrective action: define a reserved, non-routable test-only `FRONTEND_URL=https://erp.example.test` in PHPUnit configuration. Do not restore a hardcoded application URL or add a production hostname. Re-run the complete exact-head test suite before acceptance.
+- WP-01 R3 source verification on the same candidate head [#45881528836](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45881528836) passed. This is not a combined ERP pass.
+- The Miret product goal, four-pillar model, WP-10 planning, WP-11 quality, WP-15 role-specific agents and Angular adoption are already recorded in the existing Notion pages; no duplicate page was created. The technology blueprint received the exact repository implementation audit and staged Angular improvement list.
