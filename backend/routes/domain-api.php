@@ -26,6 +26,15 @@ Route::middleware(['auth:sanctum', ResolveTenantContext::class])->prefix('v1')->
         Route::post('/material-lots/{lotId}/release', [QualityController::class, 'releaseMaterial']);
     });
 
+    Route::prefix('distribution')->group(function (): void {
+        Route::post('/finished-goods/production-receipts', [FinishedGoodsController::class, 'receiveProductionOutput']);
+        Route::post('/finished-goods/{lotId}/release', [FinishedGoodsController::class, 'releaseLot']);
+        Route::post('/customer-orders', [FinishedGoodsController::class, 'storeCustomerOrder']);
+        Route::post('/customer-orders/{orderId}/confirm', [FinishedGoodsController::class, 'confirmCustomerOrder']);
+        Route::post('/order-lines/{lineId}/reservations', [FinishedGoodsController::class, 'reserveOrderLine']);
+        Route::post('/reservations/{reservationId}/dispatch', [FinishedGoodsController::class, 'dispatchReservation']);
+    });
+
     Route::prefix('manufacturing')->group(function (): void {
         Route::post('/routes', [ManufacturingController::class, 'storeRoute']);
         Route::post('/routes/{routeId}/steps', [ManufacturingController::class, 'addRouteSteps']);
