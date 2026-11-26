@@ -1,0 +1,73 @@
+<section class="platform-page">
+  <header class="page-heading">
+    <div>
+      <span class="eyebrow">GLOBAL PLATFORM · TENANT OVERSIGHT</span>
+      <h1>Tenant register</h1>
+      <p>Read-only global view of tenant lifecycle and unassigned/review-required commercial entitlement state. Tenant details are not exposed beyond this authorized platform capability.</p>
+    </div>
+    <button type="button" class="secondary-button" (click)="refresh()" [disabled]="loading()">Refresh</button>
+  </header>
+
+  @if (isReadOnly()) {
+    <div class="read-only-note" role="note">Your PLATFORM_SUPPORT grant is read-only. Tenant lifecycle, entitlements and operator grants cannot be changed with this role.</div>
+  }
+  @if (error()) {
+    <div class="feedback error" role="alert">{{ error() }}</div>
+  }
+  @if (notice()) {
+    <div class="feedback success" role="status">{{ notice() }}</div>
+  }
+
+  <section class="register-panel" aria-labelledby="tenant-register-title">
+    <div class="panel-heading">
+      <div>
+        <h2 id="tenant-register-title">Global tenant register</h2>
+        <p>Every register read is recorded as a global platform audit event.</p>
+      </div>
+      <span class="record-count">{{ tenants().length }} records</span>
+    </div>
+    @if (loading()) {
+      <div class="empty-state" role="status">Loading tenant register…</div>
+    } @else if (tenants().length === 0) {
+      <div class="empty-state">No tenant records are available to this global operator.</div>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Tenant</th>
+              <th>Lifecycle</th>
+              <th>Plan</th>
+              <th>Entitlement</th>
+              <th>Valid from</th>
+              <th>Valid to</th>
+              <th>Version</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (tenant of tenants(); track tenant.tenant_id) {
+              <tr>
+                <td>
+                  <strong>{{ tenant.tenant_name }}</strong>
+                  <small>{{ tenant.tenant_code }}</small>
+                </td>
+                <td>
+                  <span class="status-pill"
+                    [class.suspended]="tenant.tenant_status === 'SUSPENDED'"
+                    [class.closed]="tenant.tenant_status === 'CLOSED'">
+                    {{ tenant.tenant_status }}
+                  </span>
+                </td>
+                <td>{{ tenant.plan_code }}</td>
+                <td>{{ tenant.entitlement_status }}</td>
+                <td>{{ tenant.valid_from ? (tenant.valid_from | date:'mediumDate') : '—' }}</td>
+                <td>{{ tenant.valid_to ? (tenant.valid_to | date:'mediumDate') : '—' }}</td>
+                <td>{{ tenant.lifecycle_version }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</section>
