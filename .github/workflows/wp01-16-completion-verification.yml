@@ -67,9 +67,14 @@ jobs:
       DB_DATABASE: erp_test
       DB_USERNAME: erp_migrator
       DB_PASSWORD: migrator-password
+      MIGRATION_DB_USERNAME: erp_migrator
+      MIGRATION_DB_PASSWORD: migrator-password
       TEST_DB_ADMIN_USERNAME: erp_test_admin
       TEST_DB_ADMIN_PASSWORD: test-admin-password
       CACHE_STORE: redis
+      REDIS_CLIENT: predis
+      REDIS_DB: '0'
+      REDIS_CACHE_DB: '1'
       REDIS_HOST: localhost
       REDIS_PORT: 6379
       QUEUE_CONNECTION: sync
