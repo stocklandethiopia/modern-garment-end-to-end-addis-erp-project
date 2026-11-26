@@ -70,6 +70,7 @@ The repository now contains Laravel backend foundations and candidate services/m
 - [Laravel backend](backend/)
 - [Angular frontend](frontend/)
 - [Application file/code map](docs/architecture/application-folder-code-map.md)
+- [WP-03 requirement-level acceptance matrix](docs/verification/WP03-implementation-acceptance-matrix.md)
 - [Local infrastructure](docker-compose.yml)
 - [CI workflow](.github/workflows/ci.yml)
 - [WP-00 to WP-16 handover register](docs/work-packages/handover-register.md)
