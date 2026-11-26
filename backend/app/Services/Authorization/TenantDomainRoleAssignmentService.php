@@ -8,6 +8,16 @@ use Illuminate\Validation\ValidationException;
 
 class TenantDomainRoleAssignmentService
 {
+    public function forTenant(string $tenantId, ?string $userId = null): object
+    {
+        return DB::table('tenant_domain_role_assignments')
+            ->where('tenant_id', $tenantId)
+            ->when($userId !== null, fn ($query) => $query->where('user_id', $userId))
+            ->orderByDesc('created_at')
+            ->orderBy('id')
+            ->paginate(100);
+    }
+
     public function create(string $tenantId, string $actorId, array $data): object
     {
         return DB::transaction(function () use ($tenantId, $actorId, $data): object {
@@ -29,15 +39,26 @@ class TenantDomainRoleAssignmentService
                 [$tenantId.':domain-role:'.$data['user_id'].':'.$data['role_code']],
             );
 
+            $validFrom = $data['valid_from'] ?? now()->toDateString();
+            $validTo = $data['valid_to'] ?? null;
+
+            // Only overlapping pending/active effective periods block a new grant.
+            // An expired assignment remains in the audit history but must not
+            // prevent a new, non-overlapping role period from being requested.
             $existing = DB::table('tenant_domain_role_assignments')
                 ->where('tenant_id', $tenantId)
                 ->where('user_id', $data['user_id'])
                 ->where('role_code', $data['role_code'])
                 ->whereIn('status', ['PENDING', 'ACTIVE'])
+                ->whereDate('valid_from', '<=', $validTo ?? '9999-12-31')
+                ->where(function ($query) use ($validFrom): void {
+                    $query->whereNull('valid_to')
+                        ->orWhereDate('valid_to', '>=', $validFrom);
+                })
                 ->exists();
 
             if ($existing) {
-                throw ValidationException::withMessages(['role_code' => 'An active or pending assignment already exists for this role.']);
+                throw ValidationException::withMessages(['role_code' => 'An overlapping pending or active assignment already exists for this role.']);
             }
 
             $id = (string) Str::uuid();
@@ -49,8 +70,8 @@ class TenantDomainRoleAssignmentService
                 'scope_type' => 'TENANT',
                 'scope_id' => null,
                 'status' => 'PENDING',
-                'valid_from' => $data['valid_from'] ?? now()->toDateString(),
-                'valid_to' => $data['valid_to'] ?? null,
+                'valid_from' => $validFrom,
+                'valid_to' => $validTo,
                 'grant_reason' => $data['grant_reason'],
                 'granted_by' => $actorId,
                 'created_at' => now(),
@@ -149,10 +170,13 @@ class TenantDomainRoleAssignmentService
     private function activeMembership(string $tenantId, string $userId): ?object
     {
         return DB::table('tenant_memberships')
-            ->where('tenant_id', $tenantId)
-            ->where('user_id', $userId)
-            ->where('status', 'ACTIVE')
-            ->first(['membership_role']);
+            ->join('users', 'users.id', '=', 'tenant_memberships.user_id')
+            ->where('tenant_memberships.tenant_id', $tenantId)
+            ->where('tenant_memberships.user_id', $userId)
+            ->where('tenant_memberships.status', 'ACTIVE')
+            ->where('users.status', 'ACTIVE')
+            ->lockForUpdate()
+            ->first(['tenant_memberships.membership_role']);
     }
 
     private function audit(string $tenantId, string $actorId, string $action, string $objectId, array $scope, string $reason): void
