@@ -47,6 +47,8 @@ class DomainCapabilityAuthorizer
         'quality.release-finished-goods' => ['TENANT_OWNER','TENANT_ADMIN','QUALITY_HEAD','QUALITY_MANAGER'],
         'commerce.create-customer-order' => ['TENANT_OWNER','TENANT_ADMIN','SALES_MANAGER','WHOLESALE_MANAGER','RETAIL_MANAGER','STORE_MANAGER'],
         'commerce.confirm-customer-order' => ['TENANT_OWNER','TENANT_ADMIN','SALES_MANAGER','CREDIT_CONTROLLER','FINANCE_MANAGER'],
+        'commerce.review-credit' => ['TENANT_OWNER','TENANT_ADMIN','CREDIT_CONTROLLER','FINANCE_MANAGER'],,
+        'commerce.approve-credit-exception' => ['TENANT_OWNER','TENANT_ADMIN','CREDIT_MANAGER','FINANCE_DIRECTOR'],
         'inventory.reserve-finished-goods' => ['TENANT_OWNER','TENANT_ADMIN','WAREHOUSE_MANAGER','ORDER_FULFILMENT_MANAGER','INVENTORY_MANAGER'],
         'distribution.dispatch-shipment' => ['TENANT_OWNER','TENANT_ADMIN','DISTRIBUTION_MANAGER','WAREHOUSE_MANAGER','LOGISTICS_MANAGER'],
         'finance.create-journal' => ['TENANT_OWNER','TENANT_ADMIN','FINANCE_MANAGER','ACCOUNTANT'],
