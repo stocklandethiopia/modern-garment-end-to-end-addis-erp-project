@@ -497,5 +497,4 @@ class PlatformAdministrationTest extends TestCase
             'object_id' => $expiredId,
         ], 'pgsql_test_admin');
     }
-
 }
