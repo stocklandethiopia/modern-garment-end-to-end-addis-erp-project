@@ -38,6 +38,21 @@ class DomainCapabilityAuthorizer
         'commerce.confirm-customer-order' => ['TENANT_OWNER','TENANT_ADMIN','SALES_MANAGER','CREDIT_CONTROLLER','FINANCE_MANAGER'],
         'inventory.reserve-finished-goods' => ['TENANT_OWNER','TENANT_ADMIN','WAREHOUSE_MANAGER','ORDER_FULFILMENT_MANAGER','INVENTORY_MANAGER'],
         'distribution.dispatch-shipment' => ['TENANT_OWNER','TENANT_ADMIN','DISTRIBUTION_MANAGER','WAREHOUSE_MANAGER','LOGISTICS_MANAGER'],
+        'finance.create-journal' => ['TENANT_OWNER','TENANT_ADMIN','FINANCE_MANAGER','ACCOUNTANT'],
+        'finance.submit-journal' => ['TENANT_OWNER','TENANT_ADMIN','FINANCE_MANAGER','ACCOUNTANT'],
+        'finance.approve-journal' => ['TENANT_OWNER','TENANT_ADMIN','FINANCE_MANAGER','FINANCIAL_CONTROLLER'],
+        'finance.post-journal' => ['TENANT_OWNER','TENANT_ADMIN','CHIEF_ACCOUNTANT','FINANCIAL_CONTROLLER'],
+        'payroll.prepare-draft' => ['TENANT_OWNER','TENANT_ADMIN','PAYROLL_MANAGER','HR_MANAGER'],
+        'payroll.submit-for-review' => ['TENANT_OWNER','TENANT_ADMIN','PAYROLL_MANAGER','HR_MANAGER'],
+        'payroll.professional-approval' => ['TENANT_OWNER','TENANT_ADMIN','PAYROLL_MANAGER','HR_DIRECTOR','FINANCE_DIRECTOR','LEGAL_COUNSEL'],
+        'documents.register' => ['TENANT_OWNER','TENANT_ADMIN','DOCUMENT_CONTROLLER','DEPARTMENT_MANAGER','BUSINESS_USER'],
+        'documents.extract' => ['TENANT_OWNER','TENANT_ADMIN','DOCUMENT_CONTROLLER','DEPARTMENT_MANAGER','BUSINESS_USER'],
+        'documents.stage-extraction' => ['TENANT_OWNER','TENANT_ADMIN','DOCUMENT_CONTROLLER','DEPARTMENT_MANAGER','BUSINESS_USER'],
+        'documents.approve-import' => ['TENANT_OWNER','TENANT_ADMIN','DOCUMENT_CONTROLLER','DOMAIN_APPROVER'],
+        'devices.record-scan' => ['TENANT_OWNER','TENANT_ADMIN','WAREHOUSE_RECEIVER','INVENTORY_OPERATOR','PRODUCTION_SUPERVISOR','FACTORY_OPERATOR','STORE_OPERATOR'],
+        'agent.propose-action' => ['TENANT_OWNER','TENANT_ADMIN','BUSINESS_USER','DOMAIN_MANAGER'],
+        'agent.approve-action' => ['TENANT_OWNER','TENANT_ADMIN','DOMAIN_APPROVER','PROCESS_OWNER'],
+        'agent.execute-approved-draft' => ['TENANT_OWNER','TENANT_ADMIN','DOMAIN_MANAGER','PROCESS_OWNER'],
     ];
 
     public function allows(?Authenticatable $user, string $ability): bool
