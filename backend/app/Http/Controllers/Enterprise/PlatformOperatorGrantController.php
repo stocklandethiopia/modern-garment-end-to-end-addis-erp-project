@@ -22,7 +22,7 @@ class PlatformOperatorGrantController extends Controller
             'user_email' => ['required', 'email:rfc', 'max:254'],
             'role_code' => ['required', 'string', 'in:PLATFORM_ADMIN,PLATFORM_SUPPORT'],
             'valid_from' => ['required', 'date_format:Y-m-d'],
-            'valid_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:valid_from'],
+            'valid_to' => ['required', 'date_format:Y-m-d', 'after_or_equal:valid_from'],
             'reason' => ['required', 'string', 'min:10', 'max:500'],
         ]);
 
@@ -31,7 +31,7 @@ class PlatformOperatorGrantController extends Controller
                 mb_strtolower(trim($data['user_email'])),
                 $data['role_code'],
                 $data['valid_from'],
-                $data['valid_to'] ?? null,
+                $data['valid_to'],
                 trim($data['reason']),
             ),
         ], 201);
