@@ -3,6 +3,7 @@
 use App\Http\Controllers\Agents\AgentGovernanceController;
 use App\Http\Controllers\Distribution\FinishedGoodsController;
 use App\Http\Controllers\Enterprise\TenantDomainRoleAssignmentController;
+use App\Http\Controllers\Enterprise\TenantOwnershipController;
 use App\Http\Controllers\Finance\FinanceControlController;
 use App\Http\Controllers\Integration\DocumentIntegrationController;
 use App\Http\Controllers\Manufacturing\ManufacturingController;
@@ -12,6 +13,11 @@ use App\Http\Controllers\Sourcing\SourcingController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'token.ability:erp:access', 'tenant.context'])->prefix('v1')->group(function (): void {
+    Route::prefix('enterprise/ownership')->group(function (): void {
+        Route::post('/transfer', [TenantOwnershipController::class, 'transfer']);
+    });
+    Route::post('/enterprise/membership/leave', [TenantOwnershipController::class, 'leave']);
+
     Route::prefix('enterprise/domain-role-assignments')->group(function (): void {
         Route::get('/', [TenantDomainRoleAssignmentController::class, 'index']);
         Route::post('/', [TenantDomainRoleAssignmentController::class, 'store']);
