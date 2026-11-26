@@ -2,6 +2,9 @@
 
 namespace App\Services\Integration;
 
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -38,6 +41,59 @@ class DocumentIntegrationService
         ]);
 
         return DB::table('document_assets')->where('tenant_id', $tenantId)->where('id', $id)->first();
+    }
+
+
+    public function storeUploadedFile(string $tenantId, string $actorId, UploadedFile $file, array $data): object
+    {
+        $allowedMimeTypes = [
+            'application/pdf',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-excel',
+            'text/csv',
+            'text/plain',
+            'image/jpeg',
+            'image/png',
+            'image/webp',
+        ];
+        $mimeType = (string) $file->getMimeType();
+        if (! in_array($mimeType, $allowedMimeTypes, true)) {
+            throw ValidationException::withMessages(['file' => 'This file type is not allowed for ERP document intake.']);
+        }
+
+        $sha256 = hash_file('sha256', $file->getRealPath());
+        if (! is_string($sha256) || strlen($sha256) !== 64) {
+            throw ValidationException::withMessages(['file' => 'The uploaded file could not be hashed.']);
+        }
+
+        $disk = (string) config('filesystems.private_documents_disk', 's3');
+        $folder = 'tenants/'.$tenantId.'/documents/'.now()->format('Y/m');
+        $safeName = Str::uuid().'.'.$file->getClientOriginalExtension();
+        $objectReference = Storage::disk($disk)->putFileAs($folder, $file, $safeName, [
+            'visibility' => 'private',
+            'metadata' => ['sha256' => $sha256, 'tenant_id' => $tenantId],
+        ]);
+
+        if (! is_string($objectReference) || $objectReference === '') {
+            throw new RuntimeException('Private document storage did not confirm the upload.');
+        }
+
+        return $this->registerDocument($tenantId, $actorId, [
+            'document_code' => $data['document_code'],
+            'document_type' => $data['document_type'],
+            'original_filename' => $file->getClientOriginalName(),
+            'media_type' => $mimeType,
+            'byte_size' => $file->getSize(),
+            'sha256' => $sha256,
+            'object_storage_reference' => $disk.':'.$objectReference,
+            'source_channel' => $data['source_channel'] ?? 'UPLOAD',
+            'source_record_type' => $data['source_record_type'] ?? null,
+            'source_record_id' => $data['source_record_id'] ?? null,
+            'access_classification' => $data['access_classification'] ?? 'BUSINESS',
+            'retention_until' => $data['retention_until'] ?? null,
+        ]);
     }
 
     public function beginExtraction(string $tenantId, string $actorId, string $documentId, array $data): object
