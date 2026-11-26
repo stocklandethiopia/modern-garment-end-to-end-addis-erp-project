@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Planning\IndustrialEngineeringController;
+use App\Http\Controllers\Enterprise\TenantDomainRoleAssignmentController;
 
 use App\Http\Controllers\Agents\AgentGovernanceController;
 
@@ -13,10 +14,14 @@ use App\Http\Controllers\Distribution\FinishedGoodsController;
 use App\Http\Controllers\Manufacturing\ManufacturingController;
 use App\Http\Controllers\Quality\QualityController;
 use App\Http\Controllers\Sourcing\SourcingController;
-use App\Http\Middleware\ResolveTenantContext;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum', ResolveTenantContext::class])->prefix('v1')->group(function (): void {
+Route::middleware(['auth:sanctum', 'token.ability:erp:access', 'tenant.context'])->prefix('v1')->group(function (): void {
+    Route::prefix('enterprise/domain-role-assignments')->group(function (): void {
+        Route::post('/', [TenantDomainRoleAssignmentController::class, 'store']);
+        Route::post('/{assignmentId}/approve', [TenantDomainRoleAssignmentController::class, 'approve']);
+        Route::post('/{assignmentId}/revoke', [TenantDomainRoleAssignmentController::class, 'revoke']);
+    });
     Route::prefix('sourcing')->group(function (): void {
         Route::post('/suppliers', [SourcingController::class, 'storeSupplier']);
         Route::post('/suppliers/{supplierId}/approve', [SourcingController::class, 'approveSupplier']);
