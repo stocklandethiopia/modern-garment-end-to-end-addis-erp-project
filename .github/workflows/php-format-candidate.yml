@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - work/wp01-16-completion-2026-11-26
+      - work/wp03-identity-platform-completion-2026-11-26
+      - agent/chatgpt-wp03-continuation-2026-11-27
     paths:
       - 'backend/app/**/*.php'
       - 'backend/database/**/*.php'
@@ -29,7 +31,7 @@ jobs:
       - name: Checkout candidate
         uses: actions/checkout@v4
         with:
-          ref: work/wp01-16-completion-2026-11-26
+          ref: ${{ github.ref_name }}
           persist-credentials: true
 
       - name: Set up PHP 8.5 and Composer 2
@@ -67,6 +69,6 @@ jobs:
             exit 0
           fi
           git commit -m "style(php): apply repository Pint rules"
-          git fetch origin work/wp01-16-completion-2026-11-26
-          git rebase origin/work/wp01-16-completion-2026-11-26
-          git push origin HEAD:refs/heads/work/wp01-16-completion-2026-11-26
+          git fetch origin "$GITHUB_REF_NAME"
+          git rebase "origin/$GITHUB_REF_NAME"
+          git push origin "HEAD:refs/heads/$GITHUB_REF_NAME"
