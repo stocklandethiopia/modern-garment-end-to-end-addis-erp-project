@@ -29,6 +29,17 @@ Before doing any work in this repository, read:
 - Preserve the fixed package order, complete each package's definition of done and record the numbered handover before advancing.
 - Stop only the affected action for a genuine baseline conflict, unresolved law, missing external permission/credential, or human-only irreversible/high-impact operational approval. Continue independent safe work.
 
+## Git workflow and clean-source rules
+
+- Use a dedicated `work/wpNN-...` branch created from the current `delivery/autonomous-wp-01-16` head for the active work package. The current branch is `work/wp03-identity-platform-completion-2026-11-26`.
+- Commit and push working edits only to the dedicated work branch. Do not create working commits directly on `delivery/autonomous-wp-01-16` or `main`.
+- Open the integration PR to `delivery/autonomous-wp-01-16` only after the change has a numbered scope, updated path map/task record, exact-head tests and security review appropriate to the change.
+- The 26 November standing owner amendment authorizes verified integration merges without another routine owner acceptance form or notification response. This does not waive technical gates, complete WP definitions of done, legal/professional review or production deployment approval.
+- Keep `delivery/autonomous-wp-01-16` as the canonical integration/release-candidate branch. Keep `main` unchanged until final WP-16 production promotion is justified by the exact release evidence and accountable approval.
+- Keep lockfiles, migration history, source-package manifests/checksums and runtime `.gitignore` markers. Never commit `.env`, credentials, classic tokens, local data, `vendor/`, `node_modules/`, `dist/`, coverage, caches or temporary bundles.
+- Remove only files/workflows proven obsolete by trigger/consumer inspection. Preserve accepted evidence, checksummed source inputs and historical branches until their disposition has been verified and recorded.
+- Keep `docs/architecture/application-folder-code-map.md` current whenever application files are added, moved or removed. Exact paths, route registration and tests must be updated in the same branch.
+
 ## Required handover format
 
 For each work package report:
