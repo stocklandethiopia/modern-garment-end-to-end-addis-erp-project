@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Distribution\FinishedGoodsController;
+
 use App\Http\Controllers\Manufacturing\ManufacturingController;
 use App\Http\Controllers\Quality\QualityController;
 use App\Http\Controllers\Sourcing\SourcingController;
