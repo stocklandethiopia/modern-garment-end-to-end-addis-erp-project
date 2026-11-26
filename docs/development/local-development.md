@@ -73,13 +73,13 @@ php artisan serve --host=0.0.0.0 --port=8000
 Health check:
 
 \`\`\`bash
-curl http://127.0.0.1:8000/api/v1/health
+curl http://localhost:8000/api/v1/health
 \`\`\`
 
 Issue a short-scope personal access token:
 
 \`\`\`bash
-curl -X POST http://127.0.0.1:8000/api/v1/auth/tokens \\
+curl -X POST http://localhost:8000/api/v1/auth/tokens \\
   -H "Content-Type: application/json" \\
   -d '{"email":"owner@example.test","password":"YOUR_LOCAL_PASSWORD","device_name":"local-browser"}'
 \`\`\`
@@ -87,7 +87,7 @@ curl -X POST http://127.0.0.1:8000/api/v1/auth/tokens \\
 Use the returned access token and the tenant UUID from provisioning:
 
 \`\`\`bash
-curl http://127.0.0.1:8000/api/v1/enterprise/legal-entities \\
+curl http://localhost:8000/api/v1/enterprise/legal-entities \\
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \\
   -H "X-Tenant-Id: YOUR_TENANT_UUID" \\
   -H "Accept: application/json"
@@ -105,7 +105,7 @@ npm install
 npm start
 \`\`\`
 
-Open \`http://localhost:4200\`. The development proxy forwards \`/api\` to Laravel at \`127.0.0.1:8000\`. The overview displays actual API health status and labels domain modules according to their implementation state; it does not fabricate customer operations, production KPIs or inventory.
+Open \`http://localhost:4200\`. The development proxy forwards \`/api\` to Laravel at \`localhost:8000\`. The overview displays actual API health status and labels domain modules according to their implementation state; it does not fabricate customer operations, production KPIs or inventory.
 
 ## 7. Run checks
 
