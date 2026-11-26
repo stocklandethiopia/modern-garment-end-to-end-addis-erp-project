@@ -206,3 +206,9 @@ A GitHub merge, tag or successful CI job is not itself permission for live produ
 **Human-only gates:** production deployment, real customer data load, statutory rule activation, real payroll/banking/payment/customs execution, destructive production migrations and acceptance of legal interpretation require accountable customer/operator/professional actions. Continue all safe source, code, CI and staging work without those live actions.
 
 **Decision:** WP-16 release design internally accepted. Specification work packages WP-00–WP-16 are complete as design artifacts. Runtime implementation and verification are the next engineering execution layer and must never be represented as complete until evidenced.
+
+## 15. Miret integrated acceptance (additional candidate requirement)
+
+The Miret contract in docs/product/miret-system-operating-model.md adds five exact-head acceptance journeys to the existing E2E suite: (1) initiative-to-product passport-to-sale/return identity and genealogy; (2) incoming and inline quality holds, rework and independent reinspection; (3) monthly capacity/MPS-to-daily-line-to-hourly-output reconciliation against effective SAM; (4) role/task-specific agent capability with permission, idempotency and human-approval tests; and (5) customer/branch/store feedback linked to product/CAPA/next initiative.
+
+These are required acceptance coverage, not a PASS assertion. WP-16 must link each journey to an automated test, owner/UAT evidence, source commit and exact workflow result. Factory calibration, customer-specific standards, local professional sign-off and production deployment remain separate gates.
