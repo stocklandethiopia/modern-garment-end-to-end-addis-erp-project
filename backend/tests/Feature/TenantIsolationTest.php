@@ -19,6 +19,8 @@ class TenantIsolationTest extends TestCase
 
     private string $tenantBOwnerId;
 
+    private string $memberId;
+
     private string $legalEntityA;
 
     private string $legalEntityB;
@@ -39,13 +41,17 @@ class TenantIsolationTest extends TestCase
         $this->tenantB = (string) Str::uuid();
         $this->userId = (string) Str::uuid();
         $this->tenantBOwnerId = (string) Str::uuid();
+        $this->memberId = (string) Str::uuid();
 
         $admin = DB::connection('pgsql_test_admin');
         $now = now();
 
-        foreach ([$this->tenantA, $this->tenantB] as $index => $tenantId) {
-            $admin->transaction(function () use ($admin, $now): void {
-    $admin->table('tenants')->insert([
+        // Tenant root + initial owner are committed atomically. Both ACTIVE
+        // tenants are fully provisioned; the current test user is only a
+        // member of tenant A, while tenant B belongs to a different identity.
+        $admin->transaction(function () use ($admin, $now): void {
+            foreach ([$this->tenantA, $this->tenantB] as $index => $tenantId) {
+                $admin->table('tenants')->insert([
                     'id' => $tenantId,
                     'code' => 'TEST-'.($index + 1).'-'.Str::upper(Str::random(6)),
                     'name' => 'Test tenant '.($index + 1),
@@ -76,10 +82,17 @@ class TenantIsolationTest extends TestCase
                     'created_at' => $now,
                     'updated_at' => $now,
                 ],
+                [
+                    'id' => $this->memberId,
+                    'name' => 'Tenant A Ordinary Member',
+                    'email' => 'tenant-a-member-'.Str::lower(Str::random(8)).'@example.test',
+                    'password' => Hash::make('member-long-test-password'),
+                    'status' => 'ACTIVE',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
             ]);
 
-            // Both fixtures represent fully provisioned ACTIVE tenants. Their
-            // owners are distinct so the requester is genuinely a non-member of B.
             $admin->table('tenant_memberships')->insert([
                 [
                     'id' => (string) Str::uuid(),
@@ -101,9 +114,19 @@ class TenantIsolationTest extends TestCase
                     'created_at' => $now,
                     'updated_at' => $now,
                 ],
+                [
+                    'id' => (string) Str::uuid(),
+                    'tenant_id' => $this->tenantA,
+                    'user_id' => $this->memberId,
+                    'membership_role' => 'MEMBER',
+                    'status' => 'ACTIVE',
+                    'joined_at' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
             ]);
-
         });
+
         foreach ([$this->tenantA => 'A Entity', $this->tenantB => 'B Entity'] as $tenantId => $name) {
             $entityId = (string) Str::uuid();
             if ($tenantId === $this->tenantA) {
@@ -260,10 +283,8 @@ class TenantIsolationTest extends TestCase
 
     public function test_member_without_tenant_admin_role_cannot_create_legal_entity(): void
     {
-        DB::connection('pgsql_test_admin')->table('tenant_memberships')
-            ->where('tenant_id', $this->tenantA)
-            ->where('user_id', $this->userId)
-            ->update(['membership_role' => 'MEMBER']);
+        // Use a real ordinary member; never demote the tenant's only OWNER.
+        Sanctum::actingAs(User::query()->findOrFail($this->memberId), ['tenant:select', 'erp:access']);
 
         $this->withHeader('X-Tenant-Id', $this->tenantA)
             ->postJson('/api/v1/enterprise/legal-entities', [
