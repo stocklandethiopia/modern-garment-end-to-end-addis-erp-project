@@ -17,6 +17,8 @@
     <php>
         <env name="APP_ENV" value="testing"/>
         <env name="FRONTEND_URL" value="https://erp.example.test"/>
+        <env name="APP_URL" value="https://api.example.test"/>
+        <env name="SANCTUM_STATEFUL_DOMAINS" value="erp.example.test"/>
         <env name="APP_DEBUG" value="true"/>
         <env name="DB_CONNECTION" value="pgsql"/>
         <env name="DB_HOST" value="localhost"/>
