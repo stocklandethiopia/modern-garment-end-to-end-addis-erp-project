@@ -17,8 +17,8 @@ class TenantDomainRoleAssignmentService
             }
 
             $target = $this->activeMembership($tenantId, $data['user_id']);
-            if ($target === null) {
-                throw ValidationException::withMessages(['user_id' => 'The target must be an active member of this tenant.']);
+            if ($target === null || $target->membership_role !== 'MEMBER') {
+                throw ValidationException::withMessages(['user_id' => 'A domain role may only be requested for an active ordinary tenant member.']);
             }
             if (trim($data['grant_reason']) === '') {
                 throw ValidationException::withMessages(['grant_reason' => 'A reason is required for domain-role assignment.']);
