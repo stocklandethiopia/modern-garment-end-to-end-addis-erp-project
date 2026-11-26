@@ -5,7 +5,8 @@
 **Canonical integration branch:** `delivery/autonomous-wp-01-16`  
 **Latest integrated merge commit:** `f7516de080c24ecd71ce599820e91f8f03ebab56` (PR #7 merged 26 November 2026; PRs #5 and #6 are earlier integrated increments).  
 **Verified candidate source SHA:** `dbd01b56510e87beebfac454ae49723bfbf5c633` (combined run #45891155076 passed all four jobs).  
-**Active WP-03 work branch:** `work/wp03-identity-platform-completion-2026-11-26`, fast-forwarded to the latest delivery head before the next increment.  
+**Parallel WP-03 implementation branch:** `work/wp03-identity-platform-completion-2026-11-26`.  
+**ChatGPT continuation branch:** `agent/chatgpt-wp03-continuation-2026-11-27` (PHP formatter checkpoint passed; full ERP/WP exact-head CI pending).  
 **Production status:** NOT RELEASED — full WP-16 production acceptance and the listed professional/operational gates remain outstanding.
 
 ## Executive disposition
@@ -166,9 +167,9 @@ The Product Owner's 26 November standing amendment removes routine owner accepta
 
 ## WP-03 tenant lifecycle and platform entitlement candidate — current branch, not yet integrated
 
-- Working branch: `work/wp03-identity-platform-completion-2026-11-26`.
+- Parallel implementation branch: `work/wp03-identity-platform-completion-2026-11-26`; isolated continuation branch: `agent/chatgpt-wp03-continuation-2026-11-27`.
 - New migration `2026_11_26_000032_add_platform_entitlements_and_tenant_lifecycle.php` establishes distinct platform operator grants, platform tenant entitlements, controlled tenant status transitions and append-only platform audit.
 - New Laravel files: `backend/app/Services/PlatformAdministrationService.php`, `backend/app/Http/Controllers/Enterprise/PlatformAdministrationController.php`, `TenantEntitlementController.php`; routes in `backend/routes/domain-api.php`; tests in `backend/tests/Feature/PlatformAdministrationTest.php`.
 - Bootstrap/security instructions: `docs/security/platform-administration-bootstrap.md`. No PLATFORM_ADMIN or PLATFORM_SUPPORT grant is seeded. The first grant is a separate DBA-controlled, two-person action and is not available to tenant OWNER/ADMIN.
 - Lifecycle policy: ACTIVE may suspend or close; SUSPENDED may reactivate or close; CLOSED is terminal in this initial version. Data is retained; no deletion or automatic legal-retention decision is executed. Entitlements start `UNASSIGNED / REVIEW_REQUIRED`; no plan or feature is guessed.
-- **Current status: candidate implementation / CI pending / not merged.** Do not treat the endpoints as accepted, do not seed a platform operator, and do not claim entitlement-based module enforcement. The exact-head CI and independent acceptance evidence must be recorded before integration.
+- **Current status: candidate implementation / PHP formatting checkpoint passed / full ERP and combined WP exact-head CI pending / not merged.** Do not treat the endpoints as accepted, do not seed a platform operator, and do not claim entitlement-based module enforcement. The final PR-head CI and independent acceptance evidence must be recorded before integration.
