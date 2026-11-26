@@ -101,7 +101,7 @@ jobs:
         run: |
           set -euo pipefail
           PGPASSWORD=postgres psql -h localhost -U postgres -d erp_test -v ON_ERROR_STOP=1 <<'SQL'
-          CREATE ROLE erp_migrator LOGIN CREATEROLE CREATEDB PASSWORD 'migrator-password';
+          CREATE ROLE erp_migrator LOGIN CREATEROLE CREATEDB BYPASSRLS PASSWORD 'migrator-password';
           CREATE ROLE app_runtime LOGIN NOBYPASSRLS PASSWORD 'runtime-password';
           CREATE ROLE erp_test_admin LOGIN BYPASSRLS PASSWORD 'test-admin-password';
           ALTER DATABASE erp_test OWNER TO erp_migrator;
