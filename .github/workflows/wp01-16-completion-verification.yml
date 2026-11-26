@@ -65,8 +65,8 @@ jobs:
       DB_HOST: localhost
       DB_PORT: 5432
       DB_DATABASE: erp_test
-      DB_USERNAME: erp_migrator
-      DB_PASSWORD: migrator-password
+      DB_USERNAME: app_runtime
+      DB_PASSWORD: runtime-password
       MIGRATION_DB_USERNAME: erp_migrator
       MIGRATION_DB_PASSWORD: migrator-password
       TEST_DB_ADMIN_USERNAME: erp_test_admin
@@ -130,8 +130,8 @@ jobs:
           cp .env.example .env
           php artisan key:generate --force
 
-      - name: Run ordered database migrations
-        run: php artisan migrate --force
+      - name: Run ordered database migrations as the controlled migration role
+        run: DB_CONNECTION=pgsql_migrator php artisan migrate --force
 
       - name: Verify forced RLS on new tenant tables
         run: |
