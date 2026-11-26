@@ -202,6 +202,11 @@ jobs:
       - name: Checkout exact commit
         uses: actions/checkout@v4
 
+      - name: Set up Node.js 26 for WP-01 package verification
+        uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+
       - name: Reassemble and verify WP-01 r3 source
         shell: bash
         run: |
