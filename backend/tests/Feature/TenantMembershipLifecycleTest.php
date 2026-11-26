@@ -39,50 +39,52 @@ class TenantMembershipLifecycleTest extends TestCase
         $this->ownerTokenUserEmail = 'membership-owner-'.Str::lower(Str::random(8)).'@example.test';
         $now = now();
 
-        $admin->table('tenants')->insert([
-            'id' => $this->tenantId,
-            'code' => 'MEMBERS-'.Str::upper(Str::random(8)),
-            'name' => 'Membership lifecycle tenant',
-            'status' => 'ACTIVE',
-            'locale' => 'en',
-            'timezone' => 'Africa/Addis_Ababa',
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
-
-        foreach ([
-            [$this->ownerId, $this->ownerTokenUserEmail, 'Membership Owner'],
-            [$this->adminId, 'membership-admin-'.Str::lower(Str::random(8)).'@example.test', 'Membership Admin'],
-            [$this->memberId, 'membership-member-'.Str::lower(Str::random(8)).'@example.test', 'Membership Member'],
-            [$this->adminMemberId, 'membership-admin-target-'.Str::lower(Str::random(8)).'@example.test', 'Target Admin'],
-        ] as [$id, $email, $name]) {
-            $admin->table('users')->insert([
-                'id' => $id,
-                'name' => $name,
-                'email' => $email,
-                'password' => Hash::make('long-test-account-password'),
+        $admin->transaction(function () use ($admin, $now): void {
+    $admin->table('tenants')->insert([
+                'id' => $this->tenantId,
+                'code' => 'MEMBERS-'.Str::upper(Str::random(8)),
+                'name' => 'Membership lifecycle tenant',
                 'status' => 'ACTIVE',
+                'locale' => 'en',
+                'timezone' => 'Africa/Addis_Ababa',
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
-        }
 
-        foreach ([
-            [$this->ownerId, 'OWNER'],
-            [$this->adminId, 'ADMIN'],
-            [$this->adminMemberId, 'ADMIN'],
-        ] as [$userId, $role]) {
-            $admin->table('tenant_memberships')->insert([
-                'id' => (string) Str::uuid(),
-                'tenant_id' => $this->tenantId,
-                'user_id' => $userId,
-                'membership_role' => $role,
-                'status' => 'ACTIVE',
-                'joined_at' => $now,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]);
-        }
+            foreach ([
+                [$this->ownerId, $this->ownerTokenUserEmail, 'Membership Owner'],
+                [$this->adminId, 'membership-admin-'.Str::lower(Str::random(8)).'@example.test', 'Membership Admin'],
+                [$this->memberId, 'membership-member-'.Str::lower(Str::random(8)).'@example.test', 'Membership Member'],
+                [$this->adminMemberId, 'membership-admin-target-'.Str::lower(Str::random(8)).'@example.test', 'Target Admin'],
+            ] as [$id, $email, $name]) {
+                $admin->table('users')->insert([
+                    'id' => $id,
+                    'name' => $name,
+                    'email' => $email,
+                    'password' => Hash::make('long-test-account-password'),
+                    'status' => 'ACTIVE',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+
+            foreach ([
+                [$this->ownerId, 'OWNER'],
+                [$this->adminId, 'ADMIN'],
+                [$this->adminMemberId, 'ADMIN'],
+            ] as [$userId, $role]) {
+                $admin->table('tenant_memberships')->insert([
+                    'id' => (string) Str::uuid(),
+                    'tenant_id' => $this->tenantId,
+                    'user_id' => $userId,
+                    'membership_role' => $role,
+                    'status' => 'ACTIVE',
+                    'joined_at' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+        });
     }
 
     private function actAs(string $userId): void
