@@ -34,9 +34,12 @@ class InitiativeWorkflowTest extends TestCase
         $this->approverId = (string) Str::uuid();
         $this->otherTenantOwnerId = (string) Str::uuid();
 
-        foreach ([$this->tenantId => 'MERCH-TEST-1', $this->otherTenantId => 'MERCH-TEST-2'] as $tenantId => $code) {
-            $admin->transaction(function () use ($admin, $now): void {
-    $admin->table('tenants')->insert([
+        // Both ACTIVE customer tenants and their initial owner identities are
+        // provisioned in one transaction so the deferred owner invariant is
+        // checked only after the full initial membership set exists.
+        $admin->transaction(function () use ($admin, $now): void {
+            foreach ([$this->tenantId => 'MERCH-TEST-1', $this->otherTenantId => 'MERCH-TEST-2'] as $tenantId => $code) {
+                $admin->table('tenants')->insert([
                     'id' => $tenantId,
                     'code' => $code.'-'.Str::upper(Str::random(6)),
                     'name' => $code,
@@ -49,16 +52,15 @@ class InitiativeWorkflowTest extends TestCase
             }
 
             $admin->table('users')->insert([
-                'id' => $this->userId,
-                'name' => 'Merchandising Test Owner',
-                'email' => 'merch-'.Str::lower(Str::random(10)).'@example.test',
-                'password' => Hash::make('a-long-test-password'),
-                'status' => 'ACTIVE',
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]);
-
-            $admin->table('users')->insert([
+                [
+                    'id' => $this->userId,
+                    'name' => 'Merchandising Test Owner',
+                    'email' => 'merch-'.Str::lower(Str::random(10)).'@example.test',
+                    'password' => Hash::make('a-long-test-password'),
+                    'status' => 'ACTIVE',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
                 [
                     'id' => $this->approverId,
                     'name' => 'Independent Merchandising Approver',
@@ -79,8 +81,6 @@ class InitiativeWorkflowTest extends TestCase
                 ],
             ]);
 
-            // Both ACTIVE tenant fixtures must be fully provisioned. The other
-            // tenant has a separate owner so this test identity remains a non-member.
             $admin->table('tenant_memberships')->insert([
                 [
                     'id' => (string) Str::uuid(),
@@ -113,8 +113,8 @@ class InitiativeWorkflowTest extends TestCase
                     'updated_at' => $now,
                 ],
             ]);
-
         });
+
         Sanctum::actingAs(User::query()->findOrFail($this->userId), ['tenant:select', 'erp:access']);
     }
 
