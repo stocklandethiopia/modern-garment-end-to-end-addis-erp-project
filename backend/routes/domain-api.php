@@ -17,7 +17,12 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth:sanctum', 'token.ability:erp:access', 'identity.context'])
     ->prefix('v1/platform')
     ->group(function (): void {
+        Route::get('/context', [PlatformAdministrationController::class, 'context']);
         Route::get('/tenants', [PlatformAdministrationController::class, 'index']);
+        Route::get('/operators/grants', [PlatformOperatorGrantController::class, 'index']);
+        Route::post('/operators/grants', [PlatformOperatorGrantController::class, 'store'])->middleware('throttle:10,1');
+        Route::post('/operators/grants/{grantId}/approve', [PlatformOperatorGrantController::class, 'approve']);
+        Route::post('/operators/grants/{grantId}/revoke', [PlatformOperatorGrantController::class, 'revoke']);
         Route::patch('/tenants/{tenantId}/lifecycle', [PlatformAdministrationController::class, 'changeLifecycle']);
         Route::put('/tenants/{tenantId}/entitlements', [PlatformAdministrationController::class, 'updateEntitlements']);
     });
