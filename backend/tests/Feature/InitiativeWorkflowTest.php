@@ -20,6 +20,8 @@ class InitiativeWorkflowTest extends TestCase
 
     private string $approverId;
 
+    private string $otherTenantOwnerId;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -30,6 +32,7 @@ class InitiativeWorkflowTest extends TestCase
         $this->otherTenantId = (string) Str::uuid();
         $this->userId = (string) Str::uuid();
         $this->approverId = (string) Str::uuid();
+        $this->otherTenantOwnerId = (string) Str::uuid();
 
         foreach ([$this->tenantId => 'MERCH-TEST-1', $this->otherTenantId => 'MERCH-TEST-2'] as $tenantId => $code) {
             $admin->table('tenants')->insert([
@@ -55,15 +58,28 @@ class InitiativeWorkflowTest extends TestCase
         ]);
 
         $admin->table('users')->insert([
-            'id' => $this->approverId,
-            'name' => 'Independent Merchandising Approver',
-            'email' => 'approver-'.Str::lower(Str::random(10)).'@example.test',
-            'password' => Hash::make('a-long-test-password'),
-            'status' => 'ACTIVE',
-            'created_at' => $now,
-            'updated_at' => $now,
+            [
+                'id' => $this->approverId,
+                'name' => 'Independent Merchandising Approver',
+                'email' => 'approver-'.Str::lower(Str::random(10)).'@example.test',
+                'password' => Hash::make('a-long-test-password'),
+                'status' => 'ACTIVE',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'id' => $this->otherTenantOwnerId,
+                'name' => 'Other Tenant Owner',
+                'email' => 'other-tenant-owner-'.Str::lower(Str::random(10)).'@example.test',
+                'password' => Hash::make('another-long-test-password'),
+                'status' => 'ACTIVE',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
         ]);
 
+        // Both ACTIVE tenant fixtures must be fully provisioned. The other
+        // tenant has a separate owner so this test identity remains a non-member.
         $admin->table('tenant_memberships')->insert([
             [
                 'id' => (string) Str::uuid(),
@@ -80,6 +96,16 @@ class InitiativeWorkflowTest extends TestCase
                 'tenant_id' => $this->tenantId,
                 'user_id' => $this->approverId,
                 'membership_role' => 'ADMIN',
+                'status' => 'ACTIVE',
+                'joined_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'id' => (string) Str::uuid(),
+                'tenant_id' => $this->otherTenantId,
+                'user_id' => $this->otherTenantOwnerId,
+                'membership_role' => 'OWNER',
                 'status' => 'ACTIVE',
                 'joined_at' => $now,
                 'created_at' => $now,
