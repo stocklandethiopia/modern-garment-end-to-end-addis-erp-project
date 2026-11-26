@@ -11,6 +11,8 @@ The business may own factories, outsource some or all processing, purchase finis
 
 Every module we design or implement must remain consistent with this charter.
 
+**Miret integration requirement:** Product identity, quality at source, industrial/business efficiency and modern technology/optimization are four connected tests for every module. Product identity must survive every revision and handoff; quality evidence/holds must govern route progression; planning must reconcile monthly capacity to daily line and hourly accepted output; and technology/agents must help the actual role without taking away human approval boundaries. See [Miret — Four-Pillar Garment Operating Model](miret-system-operating-model.md) for the shared data, event and acceptance contract.
+
 ## 2. Start at the beginning: strategy, initiative, design and idea
 
 The first business questions are: who is the product for, which problem or opportunity does it address, which brand/category/collection does it belong to, where will it be sold, when should it launch, what is the target price and margin, what quantity/assortment is plausible, and can the business develop and supply it?
