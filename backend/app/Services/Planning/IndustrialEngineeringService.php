@@ -2,6 +2,8 @@
 
 namespace App\Services\Planning;
 
+use App\Services\Support\DecimalQuantity;
+
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -146,19 +148,59 @@ class IndustrialEngineeringService
 
             $operation = DB::table('production_order_operations')->where('tenant_id', $tenantId)
                 ->where('id', $data['operation_id'])->where('production_order_id', $data['production_order_id'])->first();
-            if ($operation === null) {
-                throw ValidationException::withMessages(['operation_id' => 'The production operation does not belong to the selected order.']);
+            $productionOrder = DB::table('production_orders')->where('tenant_id', $tenantId)
+                ->where('id', $data['production_order_id'])->first();
+            if ($operation === null || $productionOrder === null ||
+                ! in_array($operation->status, ['QUEUED','READY'], true)) {
+                throw ValidationException::withMessages(['operation_id' => 'A queued operation belonging to the selected production order is required.']);
+            }
+
+            $routeStep = DB::table('process_route_steps')->where('tenant_id', $tenantId)
+                ->where('route_version_id', $operation->route_version_id)->where('id', $operation->route_step_id)->first();
+            if ($routeStep === null) {
+                throw ValidationException::withMessages(['operation_id' => 'The route step for this production operation is missing.']);
             }
 
             $standard = DB::table('operation_standard_versions')->where('tenant_id', $tenantId)
-                ->where('style_id', $operation->style_id ?? $data['style_id'] ?? null)
-                ->where('status', 'APPROVED')->orderByDesc('version_no')->first();
-            if ($standard !== null && (float) $data['planned_minutes'] + (float) $slot->reserved_minutes >
-                (float) $slot->available_minutes - (float) $slot->planned_maintenance_minutes) {
-                throw ValidationException::withMessages(['planned_minutes' => 'The plan would exceed net available capacity for this slot.']);
+                ->where('style_id', $productionOrder->style_id)
+                ->where('style_revision_no', $productionOrder->style_revision_no)
+                ->where('route_version_id', $operation->route_version_id)
+                ->where('route_step_id', $operation->route_step_id)
+                ->where('status', 'APPROVED')
+                ->where(function ($query) use ($plan): void {
+                    $query->whereNull('effective_from')->orWhereDate('effective_from', '<=', $plan->horizon_start);
+                })
+                ->orderByDesc('version_no')->first();
+
+            if ($standard !== null) {
+                $expectedMinutesUnits = intdiv(
+                    DecimalQuantity::units((string) $standard->standard_minutes)
+                        * DecimalQuantity::units((string) $data['planned_quantity']),
+                    1_000_000
+                );
+                $actualMinutesUnits = DecimalQuantity::units((string) $data['planned_minutes']);
+                if ($actualMinutesUnits < $expectedMinutesUnits) {
+                    throw ValidationException::withMessages(['planned_minutes' => 'Planned minutes cannot be lower than the approved SMV multiplied by planned quantity.']);
+                }
             }
-            $netCapacity = (int) $slot->available_minutes - (int) $slot->planned_maintenance_minutes;
-            if ((int) $slot->reserved_minutes + (int) ceil((float) $data['planned_minutes']) > $netCapacity) {
+
+            $shift = DB::table('work_shift_definitions')->where('tenant_id', $tenantId)->where('id', $slot->shift_id)->first();
+            $start = new \\DateTimeImmutable($data['planned_start_at']);
+            $end = new \\DateTimeImmutable($data['planned_end_at']);
+            $shiftStart = new \\DateTimeImmutable($slot->work_date.' '.$shift->starts_at);
+            $shiftEndDate = $slot->ends_at < $shift->starts_at
+                ? (new \\DateTimeImmutable($slot->work_date))->modify('+1 day')->format('Y-m-d')
+                : $slot->work_date;
+            $shiftEnd = new \\DateTimeImmutable($shiftEndDate.' '.$shift->ends_at);
+            if ($start < $shiftStart || $end > $shiftEnd || $end <= $start ||
+                $start->format('Y-m-d') !== $slot->work_date) {
+                throw ValidationException::withMessages(['planned_start_at' => 'The scheduled interval must fit inside the selected work-centre shift slot.']);
+            }
+
+            $netCapacityUnits = ($slot->available_minutes - $slot->planned_maintenance_minutes) * 1_000_000;
+            $reservedUnits = (int) $slot->reserved_minutes * 1_000_000;
+            $plannedUnits = DecimalQuantity::units((string) $data['planned_minutes']);
+            if ($plannedUnits <= 0 || $reservedUnits + $plannedUnits > $netCapacityUnits) {
                 throw ValidationException::withMessages(['planned_minutes' => 'The plan would exceed net available capacity for this slot.']);
             }
 
@@ -176,7 +218,7 @@ class IndustrialEngineeringService
             ]);
 
             DB::table('capacity_calendar_slots')->where('tenant_id', $tenantId)->where('id', $slot->id)->update([
-                'reserved_minutes' => (int) $slot->reserved_minutes + (int) ceil((float) $data['planned_minutes']),
+                'reserved_minutes' => (int) $slot->reserved_minutes + (int) ceil(DecimalQuantity::units((string) $data['planned_minutes']) / 1_000_000),
                 'updated_at' => now(),
             ]);
 
@@ -241,6 +283,24 @@ class IndustrialEngineeringService
                 ->where('route_version_id', $operation->route_version_id)->where('id', $operation->route_step_id)->first();
             if ($routeStep?->required_skill_code !== null && $routeStep->required_skill_code !== $skill->skill_code) {
                 throw ValidationException::withMessages(['skill_record_id' => 'The worker does not hold the exact skill required by this operation.']);
+            }
+
+            // Serialize assignments for a tenant worker, independent of which skill row is used.
+            DB::selectOne('SELECT pg_advisory_xact_lock(hashtextextended(?, 0))', [$tenantId.':'.$data['worker_reference']]);
+
+            $centre = DB::table('work_centres')->where('tenant_id', $tenantId)
+                ->where('id', $data['work_centre_id'])->where('status', 'ACTIVE')->first();
+            $shift = DB::table('work_shift_definitions')->where('tenant_id', $tenantId)
+                ->where('id', $data['shift_id'])->where('active', true)->first();
+            if ($centre === null || $shift === null || $centre->site_id !== $shift->site_id) {
+                throw ValidationException::withMessages(['work_centre_id' => 'An active work centre and a shift at the same site are required.']);
+            }
+            $shiftDuration = $shift->ends_at < $shift->starts_at
+                ? 1440 - (strtotime($shift->starts_at) / 60) + (strtotime($shift->ends_at) / 60)
+                : (strtotime($shift->ends_at) - strtotime($shift->starts_at)) / 60;
+            if (DecimalQuantity::units((string) $data['planned_minutes']) >
+                DecimalQuantity::units((string) max(0, $shiftDuration - (int) $shift->unpaid_break_minutes))) {
+                throw ValidationException::withMessages(['planned_minutes' => 'Worker assignment exceeds net shift minutes.']);
             }
 
             $overlap = DB::table('workforce_assignments')->where('tenant_id', $tenantId)
