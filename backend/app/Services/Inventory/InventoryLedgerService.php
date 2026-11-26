@@ -69,6 +69,39 @@ class InventoryLedgerService
                 }
             }
 
+            if ($type === 'QUALITY_RELEASE') {
+                $releaseDecision = DB::table('quality_release_decisions')
+                    ->where('tenant_id', $tenantId)
+                    ->where('id', $data['source_document_id'])
+                    ->where('subject_type', 'MATERIAL_LOT')
+                    ->where('subject_id', $lot->id)
+                    ->whereIn('decision', ['RELEASE', 'RELEASE_WITH_DEVIATION'])
+                    ->first();
+                $inspection = $releaseDecision === null ? null : DB::table('quality_inspections')
+                    ->where('tenant_id', $tenantId)
+                    ->where('id', $releaseDecision->linked_inspection_id)
+                    ->where('subject_type', 'MATERIAL_LOT')
+                    ->where('subject_id', $lot->id)
+                    ->whereIn('result_status', ['PASS', 'PASS_WITH_DEVIATION'])
+                    ->whereNotNull('reviewed_by')
+                    ->whereNotNull('reviewed_at')
+                    ->first();
+
+                if ($lot->status !== 'QUARANTINE' || $from === null || $to === null || $inspection === null) {
+                    throw ValidationException::withMessages(['quality_release' => 'Quality release requires quarantined stock, a reviewed passing inspection and an approved release decision.']);
+                }
+                $sourceLocation = DB::table('inventory_locations')->where('tenant_id', $tenantId)->where('id', $from)->first();
+                $targetLocation = DB::table('inventory_locations')->where('tenant_id', $tenantId)->where('id', $to)->first();
+                if ($sourceLocation === null || strtoupper((string) $sourceLocation->location_type) !== 'QUARANTINE' ||
+                    $targetLocation === null || strtoupper((string) $targetLocation->location_type) === 'QUARANTINE') {
+                    throw ValidationException::withMessages(['location' => 'Quality release must move stock from a quarantine location into a non-quarantine location.']);
+                }
+                $balance = $this->balanceAt($tenantId, $lot->id, $rollId, $trimId, $from);
+                if ($this->decimalUnits($balance) < $this->decimalUnits((string) $data['quantity'])) {
+                    throw ValidationException::withMessages(['quantity' => 'Quality release quantity exceeds quarantine balance.']);
+                }
+            }
+
             $outboundTypes = ['TRANSFER', 'ISSUE', 'SCRAP', 'CONSUMPTION', 'DISPATCH'];
             if (in_array($type, $outboundTypes, true)) {
                 if ($lot->status !== 'AVAILABLE' && $type !== 'SCRAP') {
@@ -168,6 +201,7 @@ class InventoryLedgerService
             'TRANSFER' => $from !== null && $to !== null && $from !== $to,
             'ISSUE', 'SCRAP', 'CONSUMPTION', 'DISPATCH' => $from !== null && $to === null,
             'ADJUSTMENT' => ($from === null) xor ($to === null),
+            'QUALITY_RELEASE' => $from !== null && $to !== null && $from !== $to,
             default => false,
         };
 
