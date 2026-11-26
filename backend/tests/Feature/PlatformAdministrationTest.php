@@ -336,7 +336,6 @@ class PlatformAdministrationTest extends TestCase
         $this->assertFalse((bool) $runtime->scalar("SELECT has_table_privilege('app_runtime', 'platform_audit_events', 'DELETE')"));
     }
 
-
     public function test_platform_context_is_global_and_tenant_users_have_no_platform_roles(): void
     {
         $this->actAs($this->platformAdminId);
