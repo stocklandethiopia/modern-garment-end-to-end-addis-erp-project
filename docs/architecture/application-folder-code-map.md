@@ -164,7 +164,7 @@ Route registration is deliberately explicit: `bootstrap/app.php` loads `routes/a
 
 `backend/database/migrations/` contains the ordered PostgreSQL schema history. The inspected delivery tree has the initial user migration and the 27 numbered enterprise/domain migrations through:
 
-`2026_11_26_000027_create_tenant_domain_role_assignments.php` and the WP-03 lifecycle guard `2026_11_26_000028_revoke_domain_roles_on_membership_change.php`
+`2026_11_26_000027_create_tenant_domain_role_assignments.php` and the WP-03 lifecycle/overlap guards `2026_11_26_000028_revoke_domain_roles_on_membership_change.php` and `2026_11_26_000029_enforce_non_overlapping_domain_role_periods.php`
 
 Migration ownership by sequence:
 
@@ -177,7 +177,7 @@ Migration ownership by sequence:
 | `2026_11_24_000013–000014` | Secure membership lifecycle and tenant invitations |
 | `2026_11_26_000015–000021` | Sourcing/material traceability, routes/MES, quality/CAPA, distribution, IE/workforce, finance/payroll draft controls, documents/integrations/agents |
 | `2026_11_26_000022–000026` | Receipt genealogy/immutability, finished-goods reservation, finance/agent uniqueness and customer-credit controls |
-| `2026_11_26_000027–000028` | Tenant domain-role assignment foundation and automatic role revocation on member revocation or promotion to tenant ADMIN/OWNER |
+| `2026_11_26_000027–000029` | Tenant domain-role assignment foundation, automatic role revocation on member revocation/promotion, and database-enforced non-overlapping effective periods |
 
 **Migration rules:** every tenant-owned table must have tenant-leading keys/FKs, forced PostgreSQL RLS and minimum explicit runtime grants. Use `erp_migrator` for migrations and `app_runtime NOBYPASSRLS` for application requests. Append-only ledgers and audit events must not receive broad runtime UPDATE/DELETE privileges. Do not rename/reorder migrations already recorded in any environment without an explicit migration-history compatibility plan.
 
