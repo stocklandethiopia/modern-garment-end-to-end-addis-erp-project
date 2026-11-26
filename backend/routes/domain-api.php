@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Agents\AgentGovernanceController;
+
 use App\Http\Controllers\Integration\DocumentIntegrationController;
 
 use App\Http\Controllers\Finance\FinanceControlController;
@@ -61,6 +63,14 @@ Route::middleware(['auth:sanctum', ResolveTenantContext::class])->prefix('v1')->
 
     Route::prefix('devices')->group(function (): void {
         Route::post('/scan-events', [DocumentIntegrationController::class, 'recordScan']);
+    });
+
+    Route::prefix('agents')->group(function (): void {
+        Route::post('/runs', [AgentGovernanceController::class, 'startRun']);
+        Route::post('/runs/{runId}/finish', [AgentGovernanceController::class, 'finishRun']);
+        Route::post('/action-proposals', [AgentGovernanceController::class, 'proposeAction']);
+        Route::post('/action-proposals/{proposalId}/decision', [AgentGovernanceController::class, 'decideAction']);
+        Route::post('/action-proposals/{proposalId}/execute', [AgentGovernanceController::class, 'executeApprovedDraft']);
     });
 
     Route::prefix('manufacturing')->group(function (): void {
