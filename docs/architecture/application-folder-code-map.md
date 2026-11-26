@@ -1,8 +1,10 @@
 # Application folder and code-location map
 
 **Repository:** `stocklandethiopia/modern-garment-end-to-end-addis-erp-project`  
-**Baseline inspected:** delivery commit `6bd8990d434d3cbc9f51e58489cc76fb240a83b6`  
-**Working branch:** `work/wp03-identity-platform-completion-2026-11-26`  
+**Baseline inspected:** delivery commit `f7516de080c24ecd71ce599820e91f8f03ebab56`  
+**Working branch:** `agent/chatgpt-wp03-continuation-2026-11-27` (created from the pushed WP-03 candidate branch).  
+**Isolated continuation branch:** `agent/chatgpt-wp03-continuation-2026-11-27`; it includes the latest platform service/test fixes from the parallel WP-03 candidate and the project path-map/config cleanup.  
+**PHP formatting checkpoint:** [run #45898385234](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45898385234) passed; full exact-PR-head ERP/WP verification remains pending.  
 **Purpose:** authoritative path map for the Laravel API, Angular application, migrations, tests, route registration and governed project documentation.
 
 This map records the tracked code paths that existed at the inspected delivery head. It is a location index, not a claim that every listed domain is complete. A file being present only proves that source exists; the work-package handover register and exact-SHA test evidence determine implementation/acceptance status.
@@ -23,7 +25,8 @@ repository-root/
 └── work-packages/               # versioned source-package evidence and checksums
 ```
 
-**Inspected inventory:** 286 tracked files across 385 tree entries. The primary application code is under `backend/app/` and `frontend/src/app/`. No additional product/runtime application exists at the repository root.
+**Delivery baseline inventory (`f7516de`):** 286 tracked files across 385 tree entries.  
+**Current WP-03 candidate inventory:** 299 tracked files across 398 tree entries, including 73 files under `backend/app/`, 34 migrations, 13 backend test files and 68 files under `frontend/src/app/`. The primary application code is under `backend/app/` and `frontend/src/app/`; no additional product/runtime application exists at the repository root.
 
 ## 2. Backend — Laravel API
 
@@ -164,7 +167,7 @@ Route registration is deliberately explicit: `bootstrap/app.php` loads `routes/a
 
 `backend/database/migrations/` contains the ordered PostgreSQL schema history. The inspected delivery tree has the initial user migration and the 27 numbered enterprise/domain migrations through:
 
-`2026_11_26_000027_create_tenant_domain_role_assignments.php` and WP-03 lifecycle/ownership guards `2026_11_26_000028_revoke_domain_roles_on_membership_change.php`, `2026_11_26_000029_enforce_non_overlapping_domain_role_periods.php`, `2026_11_26_000030_add_locked_tenant_membership_reader.php` and `2026_11_26_000031_add_tenant_owner_succession_and_exit.php`
+`2026_11_26_000027_create_tenant_domain_role_assignments.php` and WP-03 lifecycle/ownership guards `2026_11_26_000028_revoke_domain_roles_on_membership_change.php`, `2026_11_26_000029_enforce_non_overlapping_domain_role_periods.php`, `2026_11_26_000030_add_locked_tenant_membership_reader.php`, `2026_11_26_000031_add_tenant_owner_succession_and_exit.php` and candidate `2026_11_26_000032_add_platform_entitlements_and_tenant_lifecycle.php`.
 
 Migration ownership by sequence:
 
@@ -336,9 +339,10 @@ Backend and frontend domain boundaries must match. A new Laravel controller/serv
 | Legal entities/sites/locations | `Enterprise/LegalEntityController.php`; `BusinessSiteController.php`; `InventoryLocationController.php` | `legal-entity.service.ts`, `legal-entities.component.*`, `business-site.service.ts`, `business-sites.component.*` | Enterprise foundation migration and related tests |
 | Scoped access/domain roles | `Enterprise/AccessScopeController.php`; `TenantDomainRoleAssignmentController.php`; `ScopedAccessService.php`; `Authorization/DomainCapabilityAuthorizer.php`; `TenantDomainRoleAssignmentService.php` | Tenant-level role register API: `GET/POST /api/v1/enterprise/domain-role-assignments`, plus approve/revoke actions; admin UI remains open | Migrations 000010 and 000027–000030; domain-role periods prevent overlapping active/pending grants; membership locks are executed by a narrowly granted SECURITY DEFINER function so app_runtime does not need direct UPDATE privilege on tenant_memberships. membership revocation or promotion to tenant ADMIN automatically ends active/pending domain roles and writes audit evidence. Complete entity/site/department/warehouse/channel enforcement remains open |
 | Owner succession and voluntary leave | `Enterprise/TenantOwnershipController.php`; `TenantOwnershipService.php`; `public.transfer_tenant_ownership(uuid,text)`; `public.leave_tenant(text)` | `POST /api/v1/enterprise/ownership/transfer`; `POST /api/v1/enterprise/membership/leave` | Migration 000031 enforces one active OWNER per tenant, serialized handover, deferred owner-count guard, reasoned audit, and blocks an OWNER from leaving before transfer |
+| Platform administration and entitlement foundation | `Enterprise/PlatformAdministrationController.php`; `Enterprise/TenantEntitlementController.php`; `PlatformAdministrationService.php`; `ResolveAuthenticatedIdentityContext.php` | Platform admin UI is not yet implemented; APIs expose platform tenant listing, lifecycle and entitlement actions; tenant entitlement is read-only | Migration 000032 adds `platform_operator_grants`, `platform_tenant_entitlements`, `platform_audit_events`, forced RLS, fixed-search-path SECURITY DEFINER functions and restricted `app_runtime` grants; `PlatformAdministrationTest.php`; routes under `/api/v1/platform` use global identity context, not tenant membership |
 | Identity request context | `ResolveAuthenticatedIdentityContext.php`; `TenantContextResolver.php` | Auth session/interceptor | Context is request/transaction-local; verify reuse/concurrency and revocation paths |
 
-**WP-03 is not complete.** The existing code is a foundation. The accepted architecture still requires owner succession/leave and last-owner controls, complete tenant lifecycle/platform entitlements, effective-dated roles tied to actual organization/site/department/warehouse/channel data, downstream target-record scope checks, MFA/OIDC/SSO and session recovery/rotation, complete invitation/operator UIs, and installer/recovery/rollback/deployment handover.
+**WP-03 is not complete.** Tenant provisioning, membership/invitation services, domain-role lifecycle, owner succession/leave and the single-active-owner database invariant are implementation foundations; owner-succession source SHA `7d8d3cc` passed its exact-head CI. Platform administration/entitlement and tenant lifecycle candidate code adds migration 000032, restricted platform services/controllers/routes and six focused feature tests; JSON responses are normalized by the latest service fix. This candidate has **not yet passed CI on its exact head**. It seeds no real platform operators and has no dedicated Angular administration UI. Remaining acceptance includes export/retention/legal hold/controlled recovery; effective-dated roles tied to actual organization/site/department/warehouse/channel data; downstream target-record scope checks; MFA/OIDC/SSO and session recovery/rotation; complete invitation/operator UIs; and installer/recovery/rollback/deployment handover.
 
 ## 5. Continuous change and clean repository rules
 
@@ -362,3 +366,26 @@ Backend and frontend domain boundaries must match. A new Laravel controller/serv
 - No unneeded compiled application bundle or binary installer was found in the inspected delivery tree.
 
 **Maintenance rule:** this document must be kept synchronized with the real tree. The directory listing above reflects the inspected baseline; later WP-specific additions must be appended in the same branch/PR that adds the code.
+
+
+## WP-03 platform administration and entitlement extension
+
+| Concern | Exact source file | Route / database contract | Security and status |
+|---|---|---|---|
+| Platform tenant register/lifecycle | `backend/app/Http/Controllers/Enterprise/PlatformAdministrationController.php`; `backend/app/Services/PlatformAdministrationService.php` | `GET /api/v1/platform/tenants`; `PATCH /api/v1/platform/tenants/{tenantId}/lifecycle` | Runs with authenticated global identity context, not tenant OWNER/ADMIN authority. Database function requires a valid PLATFORM_ADMIN or PLATFORM_SUPPORT grant (read-only for support). |
+| Platform entitlements | `PlatformAdministrationController.php`; `PlatformAdministrationService.php`; `TenantEntitlementController.php` | `PUT /api/v1/platform/tenants/{tenantId}/entitlements`; `GET /api/v1/tenant/entitlements` | Platform change requires PLATFORM_ADMIN; tenant user can read only the current tenant's entitlement through tenant-context RLS/function. |
+| Platform bootstrap / role source | `docs/security/platform-administration-bootstrap.md` | `platform_operator_grants` | No application INSERT/UPDATE/DELETE privilege; no operator is seeded. Initial operator grants require controlled DBA provisioning, distinct grantor/approver identities and a documented approval. |
+| Platform schema and lifecycle functions | `backend/database/migrations/2026_11_26_000032_add_platform_entitlements_and_tenant_lifecycle.php` | `platform_operator_grants`, `platform_tenant_entitlements`, `platform_audit_events`; `platform_list_tenants()`, `platform_change_tenant_status()`, `platform_set_tenant_entitlements()`, `platform_get_current_entitlement()` | Fixed-search-path SECURITY DEFINER functions; platform audit is append-only; app_runtime has read-only RLS-scoped entitlement and self-grant reads, and no direct writes to platform tables. |
+| Platform acceptance tests | `backend/tests/Feature/PlatformAdministrationTest.php` | Test list, support read-only, entitlement change/read, lifecycle suspend/reactivate/close, and runtime privilege assertions. | New exact-head PostgreSQL CI required; this change is not yet accepted until all tests pass. |
+
+
+### Platform administration and entitlements (WP-03 candidate)
+
+- `backend/app/Http/Controllers/Enterprise/PlatformAdministrationController.php`: global platform tenant list, lifecycle change, entitlement update.
+- `backend/app/Http/Controllers/Enterprise/TenantEntitlementController.php`: read-only current tenant entitlement summary.
+- `backend/app/Services/PlatformAdministrationService.php`: calls narrowly granted platform functions and maps database authorization/validation errors.
+- `backend/database/migrations/2026_11_26_000032_add_platform_entitlements_and_tenant_lifecycle.php`: global operator grants, tenant entitlements, platform audit, default entitlement trigger, forced RLS, platform role functions and lifecycle state machine.
+- `backend/tests/Feature/PlatformAdministrationTest.php`: platform-admin/support separation, entitlement read/write, tenant lifecycle and runtime privilege assertions.
+- `docs/security/platform-administration-bootstrap.md`: controlled two-person operator-grant provisioning and lifecycle/entitlement security boundary.
+- Route registration: `backend/routes/domain-api.php`; `/api/v1/platform/*` uses global identity context, while `/api/v1/tenant/entitlements` uses tenant context.
+- Current status: candidate implementation only; exact-head CI, controlled platform operator appointment, full feature-gate enforcement, retention/legal hold and platform UI remain open.

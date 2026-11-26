@@ -48,7 +48,7 @@ Exact supported patch versions are recorded in the platform standard and must be
 ## Application foundation and verified integration delivery
 
 **Canonical integration branch:** `delivery/autonomous-wp-01-16`  
-**Latest integrated commit:** `6bd8990d434d3cbc9f51e58489cc76fb240a83b6`  
+**Latest integrated commit:** `f7516de080c24ecd71ce599820e91f8f03ebab56`  
 **Merged pull request:** [#5 — WP-01–WP-16 verified implementation increment](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/pull/5)  
 **Default branch:** `main` remains unchanged.
 
@@ -62,7 +62,7 @@ Combined candidate artifact: `modern-garment-addis-erp-wp01-wp16-candidate`, ID 
 
 The repository now contains Laravel backend foundations and candidate services/migrations for enterprise identity, merchandising, PLM, IE, sourcing/material genealogy, route/MES execution, quality/CAPA, distribution, finance/payroll review, documents/integrations and governed agents. Angular executable user journeys are currently concentrated in authentication, enterprise setup, merchandising and initial product development. See the [application folder/code map](docs/architecture/application-folder-code-map.md) for exact file paths.
 
-**Current execution checkpoint:** WP-03 remains the active package because tenant lifecycle, owner succession/leave, effective-dated scoped roles, downstream scope enforcement, MFA/OIDC/SSO, platform entitlements, full operator bootstrap/recovery and full WP-03 acceptance evidence remain open. The dedicated working branch is `work/wp03-identity-platform-completion-2026-11-26`; verified increments target the delivery branch through PRs.
+**Current execution checkpoint:** WP-03 remains the active package because tenant lifecycle and platform entitlements are now implemented as a candidate API/database foundation on the WP-03 working branch; exact-head CI is pending. Remaining WP-03 work includes scoped roles and target checks, MFA/OIDC/SSO, invitation/domain-role/ownership administration UI, operator bootstrap/recovery and full acceptance evidence. Owner succession, one-active-owner protection and safe voluntary leave are merged and CI-verified. The dedicated working branch is `work/wp03-identity-platform-completion-2026-11-26`; verified increments target the delivery branch through PRs.
 
 **Release wording:** successful CI is technical evidence for the exact checks and SHA only. It does not mean WP-01–WP-16 are all complete. Full factory/store/customer E2E, independent security review, production concurrency/load/soak, backup/restore/DR/rollback, external integration UAT, professional/statutory sign-offs, staging/UAT and accountable production deployment remain WP-16 gates. No production release is claimed.
 
@@ -71,6 +71,7 @@ The repository now contains Laravel backend foundations and candidate services/m
 - [Angular frontend](frontend/)
 - [Application file/code map](docs/architecture/application-folder-code-map.md)
 - [WP-03 requirement-level acceptance matrix](docs/verification/WP03-implementation-acceptance-matrix.md)
+- [Platform administration and tenant entitlement bootstrap](docs/security/platform-administration-bootstrap.md)
 - [Local infrastructure](docker-compose.yml)
 - [CI workflow](.github/workflows/ci.yml)
 - [WP-00 to WP-16 handover register](docs/work-packages/handover-register.md)
@@ -104,4 +105,4 @@ A feature is not complete because a screen exists. It must include its business 
 
 ## Current status
 
-The current source is integrated on `delivery/autonomous-wp-01-16` at `6bd8990d434d3cbc9f51e58489cc76fb240a83b6`. The work branch for the next package is `work/wp03-identity-platform-completion-2026-11-26`. Continue the fixed WP-00–WP-16 sequence without routine owner-acceptance pauses, while retaining exact-SHA quality gates and the human/professional boundaries in the governance agreement. WP-03 is not yet complete; all domain candidate code and all remaining production/release gates must be reported accurately. This repository is **not** a finished end-to-end ERP, signed production installer, UAT-approved system or production deployment.
+The current source is integrated on `delivery/autonomous-wp-01-16` at `f7516de080c24ecd71ce599820e91f8f03ebab56`. The active WP-03 continuation branch is `agent/chatgpt-wp03-continuation-2026-11-27`, maintained independently from the parallel WP-03 branch. The PHP formatting/syntax workflow passed; full ERP CI and combined WP-01–WP-16 verification must pass on the final PR head before integration. Continue the fixed WP-00–WP-16 sequence without routine owner-acceptance pauses, while retaining exact-SHA quality gates and the human/professional boundaries in the governance agreement. WP-03 is not yet complete; all domain candidate code and all remaining production/release gates must be reported accurately. This repository is **not** a finished end-to-end ERP, signed production installer, UAT-approved system or production deployment.

@@ -1,7 +1,8 @@
 # WP-03 — Requirement-level implementation and acceptance ledger
 
-**Working branch:** work/wp03-identity-platform-completion-2026-11-26  
-**Integration base:** delivery/autonomous-wp-01-16  
+**Parallel implementation branch:** `work/wp03-identity-platform-completion-2026-11-26`  
+**Isolated continuation branch:** `agent/chatgpt-wp03-continuation-2026-11-27`  
+**Integration base:** `delivery/autonomous-wp-01-16`  
 **Governed scope:** WP-03 only, within the fixed WP-00–WP-16 sequence  
 **Status:** PARTIAL FOUNDATION — exact-SHA CI evidence exists; WP-03 handover is open.
 
@@ -57,29 +58,43 @@ This ledger reconciles the requirements assigned to WP-03 in docs/requirements/r
 
 | Acceptance scenario | Implementation/evidence | Status | Remaining verification |
 |---|---|---|---|
-| AT-ENT-OWNER-001 ownership transfer | `POST /api/v1/enterprise/ownership/transfer`; only active OWNER may transfer to another active MEMBER/ADMIN. A SECURITY DEFINER function serializes tenant succession, locks both identities in stable order, demotes the current owner and promotes the successor in one transaction, and writes `TENANT_OWNERSHIP_TRANSFERRED`. | IMPLEMENTED — exact-head CI pending | Prove no two active owners, former-owner permissions update immediately, only new owner can transfer next, and failure rolls back both role changes. |
-| AT-ENT-OWNER-002 safe voluntary exit | `POST /api/v1/enterprise/membership/leave`; current member leaves their own tenant membership. OWNER is denied until ownership is transferred. Membership revocation trigger revokes all pending/active domain roles. | IMPLEMENTED — exact-head CI pending | Prove all roles revoked, self-leave is audited, and ownerless tenant is impossible. |
-| AT-ENT-OWNER-003 single-owner integrity | Migration 000031 creates a unique partial index for one active owner maximum plus a deferred constraint trigger for exactly one active OWNER per existing tenant, including tenant creation. | IMPLEMENTED — exact-head CI pending | Prove migration preflight detects existing ownerless/multi-owner tenants; prove deferred constraint rejects owner removal and accepts owner transfer at transaction commit. |
+| AT-ENT-OWNER-001 ownership transfer | `POST /api/v1/enterprise/ownership/transfer`; only active OWNER may transfer to another active MEMBER/ADMIN. A SECURITY DEFINER function serializes tenant succession, locks both identities in stable order, demotes the current owner and promotes the successor in one transaction, and writes `TENANT_OWNERSHIP_TRANSFERRED`. | PASS — exact-head CI verified on source SHA `7d8d3cc8d94c7cb3e763a7b1174030315bd11382` | Prove no two active owners, former-owner permissions update immediately, only new owner can transfer next, and failure rolls back both role changes. |
+| AT-ENT-OWNER-002 safe voluntary exit | `POST /api/v1/enterprise/membership/leave`; current member leaves their own tenant membership. OWNER is denied until ownership is transferred. Membership revocation trigger revokes all pending/active domain roles. | PASS — exact-head CI verified on source SHA `7d8d3cc8d94c7cb3e763a7b1174030315bd11382` | Prove all roles revoked, self-leave is audited, and ownerless tenant is impossible. |
+| AT-ENT-OWNER-003 single-owner integrity | Migration 000031 creates a unique partial index for one active owner maximum plus a deferred constraint trigger for exactly one active OWNER per existing tenant, including tenant creation. | PASS — exact-head CI verified on source SHA `7d8d3cc8d94c7cb3e763a7b1174030315bd11382` | Prove migration preflight detects existing ownerless/multi-owner tenants; prove deferred constraint rejects owner removal and accepts owner transfer at transaction commit. |
 
 ## Exact verification evidence
 
-Previous integrated candidate SHA dbd01b56510e87beebfac454ae49723bfbf5c633 passed:
-- Combined WP-01–WP-16 workflow #45891155076: all four jobs passed; backend 78 tests / 967 assertions; Angular 27 tests / 7 files and production build; RLS/migrations; WP-01 source validation; artifact assembly.
-- Destination delivery CI on merge commit 6bd8990d434d3cbc9f51e58489cc76fb240a83b6: #45891439094 and #45891445136.
+- PR #6 exact source SHA `19e9084fbd5f4bd124bf8d2a1d50db3ce1b2569c` passed combined WP verification [#45893865867](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45893865867): 81 backend tests / 1,001 assertions, Angular 27 tests/7 files, migration/RLS and artifact assembly.
+- PR #7 exact source SHA `7d8d3cc8d94c7cb3e763a7b1174030315bd11382` passed general ERP CI [#45896122644](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45896122644) and combined WP verification [#45896122613](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45896122613).
+- Combined verification recorded PostgreSQL 18 migrations and forced RLS, PHP Pint/syntax across 132 files, **86 backend tests / 1,026 assertions**, Angular **27 tests / 7 files** plus production build, WP-01 R3 integrity and artifact assembly.
+- Artifact `modern-garment-addis-erp-wp01-wp16-candidate`, ID `15154530114`, 726,099 bytes, expires 24 February 2027.
+- PR #7 merged at `f7516de080c24ecd71ce599820e91f8f03ebab56`; destination CI [#45896477349](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45896477349) passed on the exact merge commit.
+- Earlier failed attempts on intermediate heads were corrected (Pint style, atomic fixture setup and owner-invariant fixture alignment) and superseded; only the exact-head PASS above is acceptance evidence for the merged increment.
 
-These runs predate the new WP-03 code in this branch and therefore do **not** verify migrations 000028–000031 or the new role/ownership lifecycle tests. PR #6 exact-head CI is the required verification for this increment.
+## Tenant lifecycle and platform entitlement foundation — current branch increment
+
+**Candidate state:** IMPLEMENTED FOUNDATION — EXACT-HEAD CI PENDING. This source is on the isolated WP-03 work branch and must not be merged until the PostgreSQL migration, Laravel tests, RLS checks and Angular CI for the exact head pass.
+
+| Acceptance scenario | Implementation/evidence | Current status | Remaining acceptance |
+|---|---|---|---|
+| AT-ENT-PLATFORM-001 platform authority is separate from tenant roles | Global `platform_operator_grants` with PLATFORM_ADMIN and PLATFORM_SUPPORT roles. No grant is auto-seeded. Application has no DML grants on the table; initial grants require controlled two-person DBA bootstrap. | IMPLEMENTED — exact-head CI pending | Verify grant expiry/revocation, support read-only behavior, platform admin-only write access, and no tenant owner/member escalation. |
+| AT-ENT-LIFECYCLE-001 suspend/reactivate tenant | `PATCH /api/v1/platform/tenants/{tenantId}/lifecycle` and `public.platform_change_tenant_status`; ACTIVE↔SUSPENDED, plus closure. Suspension disables normal tenant context and stores entitlement status for a reasoned reactivation. | IMPLEMENTED — exact-head CI pending | Verify every tenant-protected API denies suspended/closed tenants, concurrent lifecycle transitions serialize, and recovery has an approved operator route. |
+| AT-ENT-LIFECYCLE-002 terminal closure | CLOSED is terminal in this initial policy. Tenant data is retained; no delete or automatic purge is performed. | IMPLEMENTED — exact-head CI pending | Define retention period, legal hold, export, closure approval, and separately approved recovery/exception process. |
+| AT-ENT-ENTITLEMENT-001 tenant entitlement state | `platform_tenant_entitlements` defaults every tenant to `UNASSIGNED / REVIEW_REQUIRED`. Platform admin can set plans, boolean feature flags, non-negative integer limits and effective dates. Tenant can read only its own entitlement. | IMPLEMENTED — exact-head CI pending | Define signed-off commercial plan catalogue, feature gate enforcement for each module, tenant quota enforcement, billing/renewal process and expiry behavior. |
+| AT-ENT-AUDIT-PLATFORM-001 global platform audit | `platform_audit_events` records operator, tenant, before/after, reason and correlation ID; UPDATE/DELETE blocked and direct app_runtime table access revoked. | IMPLEMENTED — exact-head CI pending | Add independent audit integrity review, export/retention policy and adversarial tamper attempts. |
+
+**New code paths:** migration `backend/database/migrations/2026_11_26_000032_add_platform_entitlements_and_tenant_lifecycle.php`; service `backend/app/Services/PlatformAdministrationService.php`; controllers `backend/app/Http/Controllers/Enterprise/PlatformAdministrationController.php` and `TenantEntitlementController.php`; routes in `backend/routes/domain-api.php`; tests in `backend/tests/Feature/PlatformAdministrationTest.php`; operator bootstrap and boundary in `docs/security/platform-administration-bootstrap.md`.
+
+**Bootstrap restriction:** the migration intentionally creates no PLATFORM_ADMIN or PLATFORM_SUPPORT identities. A named operator must be appointed and granted out of band by the controlled database authority process documented in `docs/security/platform-administration-bootstrap.md`. No tenant OWNER/ADMIN route can grant platform access.
 
 ## Next implementation sequence
 
-1. Verify tenant membership ↔ domain-role lifecycle (revoke, role promotion, reactivation, overlap/effective-date, race/concurrency and audit). Migration 000029 enforces database-level overlap; 000030 provides the narrowly granted locked-membership reader.
-2. Complete and verify owner succession/voluntary leave (migration 000031), exactly-one-active-owner constraint, transfer concurrency/rollback and post-transfer authority.
-3. Complete tenant activation/suspension/closure/export/retention/recovery and platform entitlement separation.
-2. Complete a domain-role administration API/UI and a full list of role codes, status/effective dates, conflict/approval history and revoke reasons.
-3. Design and implement owner transfer/succession/leave plus last-owner protection, using an explicit owner-only state machine and concurrency locks.
-4. Complete tenant activation/suspension/closure/export/retention/recovery and platform entitlement separation.
-5. Implement the entity/site/department/warehouse/channel scope model and target-specific policy checks; do not enable scoped access until every target resource is tenant- and scope-verified.
-6. Add MFA/OIDC/SSO/session refresh/reuse detection and recovery.
-7. Complete enterprise/operator Angular journeys and provisioning/recovery runbooks.
-8. Run full GAR-ENT-001..010 and GAR-PLT-001/003/004/005 acceptance suite, plus independent review, then update the handover register.
+1. Complete exact-head ERP CI and combined WP-01–WP-16 verification for the isolated continuation PR. Fix PHP formatting, migration/RLS, API, test, and any Angular failures before promotion.
+2. Finish tenant lifecycle acceptance beyond ACTIVE/SUSPENDED/CLOSED: export/archive, retention schedule, legal hold, deletion prohibition and independently approved recovery. Keep suspended/closed access fail-closed.
+3. Complete two-person platform grant lifecycle, including appointment, approval, expiry/revocation and independent audit, plus platform administration/entitlement Angular workflows. Do not seed real PLATFORM_ADMIN or PLATFORM_SUPPORT identities without the approved appointment record.
+4. Enforce entitlements at each module boundary; define the commercial plan catalogue and entitlement policy before activating real plans or quotas.
+5. Implement effective-dated legal-entity/site/department/warehouse/channel role scopes against real organization records and prove target-record authorization. Keep SCOPED access denied until each scope is checked.
+6. Implement MFA, enterprise OIDC/SSO, session recovery and refresh-token rotation/reuse detection; complete invitation/domain-role/ownership UI and tenant bootstrap/operator tooling.
+7. Complete secret provisioning/rotation, recovery, migration rollback and non-production deployment drills. Execute full GAR-ENT-001..010 and GAR-PLT-001/003/004/005 positive, negative, retry, expiry, concurrency, audit and tenant-crossing acceptance. Reconcile WP-01 R3's 128 records to the 120 visible GAR rows and document the exact eight-record delta.
 
 **WP-03 remains open.** No later work package can be treated as accepted to bypass it. Routine owner acceptance is not required between safe engineering steps; exact technical evidence is.
