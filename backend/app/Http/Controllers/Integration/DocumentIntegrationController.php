@@ -17,6 +17,30 @@ class DocumentIntegrationController extends Controller
     ) {
     }
 
+
+    public function uploadFile(Request $request): JsonResponse
+    {
+        Gate::authorize('documents.register');
+        $data = $request->validate([
+            'file' => ['required','file','max:102400'],
+            'document_code' => ['required','string','max:100'],
+            'document_type' => ['required','string','max:60'],
+            'source_record_type' => ['nullable','string','max:80'],
+            'source_record_id' => ['nullable','uuid'],
+            'access_classification' => ['nullable','in:PUBLIC,BUSINESS,CONFIDENTIAL,RESTRICTED'],
+            'retention_until' => ['nullable','date'],
+        ]);
+
+        return response()->json([
+            'data' => $this->documents->storeUploadedFile(
+                $this->tenant->requireTenantId(),
+                $this->tenant->requireActorId(),
+                $data['file'],
+                $data
+            ),
+        ], 201);
+    }
+
     public function registerDocument(Request $request): JsonResponse
     {
         Gate::authorize('documents.register');
