@@ -3,9 +3,9 @@
 **Snapshot date:** 2026-11-26  
 **Last candidate source branch:** `work/wp01-16-completion-2026-11-26`  
 **Canonical integration branch:** `delivery/autonomous-wp-01-16`  
-**Integrated merge commit:** `6bd8990d434d3cbc9f51e58489cc76fb240a83b6` (PR #5 merged 26 November 2026).  
+**Latest integrated merge commit:** `f7516de080c24ecd71ce599820e91f8f03ebab56` (PR #7 merged 26 November 2026; PRs #5 and #6 are earlier integrated increments).  
 **Verified candidate source SHA:** `dbd01b56510e87beebfac454ae49723bfbf5c633` (combined run #45891155076 passed all four jobs).  
-**Active next-package branch:** `work/wp03-identity-platform-completion-2026-11-26`.  
+**Active WP-03 work branch:** `work/wp03-identity-platform-completion-2026-11-26`, fast-forwarded to the latest delivery head before the next increment.  
 **Production status:** NOT RELEASED — full WP-16 production acceptance and the listed professional/operational gates remain outstanding.
 
 ## Executive disposition
@@ -19,7 +19,7 @@ This branch adds a candidate implementation slice and a combined CI workflow. Th
 | WP-00 | Existing governance baseline and fixed WP sequence are preserved. | Existing approved baseline; not changed here |
 | WP-01 | R3 requirements/traceability source, import manifest, checksums, validator, 20 tests and audit build are preserved on the branch. GitHub Actions run #45805045720 succeeded for this package. | Source package verified; requirements are still planning records, not delivered application functions |
 | WP-02 | Existing platform/tenant foundation is retained; new migrations consistently use tenant IDs, composite foreign keys and forced RLS. | Combined migration/RLS CI pending |
-| WP-03 | Existing tenant membership/invitation foundation is retained. Domain capability adapter is added for new endpoints. | Existing foundation not re-accepted by this branch; role adapter must be verified against exact tenant membership schema |
+| WP-03 | Tenant membership/invitation foundation, domain-role lifecycle and owner-succession foundation are implemented; package acceptance remains OPEN. | Migrations 000028–000031 implement role revocation on membership status/promotion, non-overlapping effective role periods, RLS-safe locked membership checks, exactly-one-active-owner invariant, owner transfer and safe self-leave. Exact source SHA `7d8d3cc8d94c7cb3e763a7b1174030315bd11382` passed [#45896122613](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45896122613): **86 backend tests / 1,026 assertions**, Angular 27 tests/7 files/build, 132-file Pint/syntax, WP-01 R3 integrity and combined artifact. PR #7 merged at `f7516de080c24ecd71ce599820e91f8f03ebab56`; destination CI [#45896477349](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45896477349) passed. Still open: full tenant lifecycle, platform entitlements, scoped roles and target-resource checks, MFA/OIDC/SSO, invitation/role/ownership UI, operator recovery and full acceptance mapping. `SCOPED` domain access remains fail-closed. |
 | WP-04 | Existing baseline code is retained. | Not separately revalidated in this snapshot |
 | WP-05 | Existing product development/PLM foundation is retained; new production-order creation references approved tech-pack revision. | Not separately revalidated in this snapshot |
 | WP-06 | Effective-dated IE standards, work-centres, shifts, capacity slots, production plan versions and worker skill/assignment services are added. | Candidate implementation; PostgreSQL migration, API tests and capacity/overlap tests pending |
@@ -115,7 +115,7 @@ All required jobs passed on the same SHA:
 
 Artifact: `modern-garment-addis-erp-wp01-wp16-candidate`, GitHub Actions artifact ID `15148571903`, 701,359 bytes, expires 24 February 2027. It contains the combined repository source archive, checksum manifest and build-verification record, keyed to the SHA above.
 
-This changes the **combined candidate CI status** to PASS for source SHA `14f9420b29b062fe15f9b863f5a23a6d6218dbaf` only. It does not change individual WP implementation acceptance statuses or certify end-to-end factory/customer operation. That earlier snapshot was subsequently superseded by exact-head CI on `dbd01b56510e87beebfac454ae49723bfbf5c633`; PR #5 was merged into `delivery/autonomous-wp-01-16` at `6bd8990d434d3cbc9f51e58489cc76fb240a83b6` on 26 November 2026. Production installer, Codespaces devcontainer, release container images, production rollout, load/soak/concurrency, recovery, external integration UAT, independent security review and legal/customer/factory sign-offs remain separate work.
+This changes the **combined candidate CI status** to PASS for source SHA `14f9420b29b062fe15f9b863f5a23a6d6218dbaf` only. It does not change individual WP implementation acceptance statuses or certify end-to-end factory/customer operation. That earlier snapshot was subsequently superseded by exact-head CI on `dbd01b56510e87beebfac454ae49723bfbf5c633`; PR #5 merged at `6bd8990d434d3cbc9f51e58489cc76fb240a83b6`, then PRs #6 and #7 advanced the canonical delivery branch to `f7516de080c24ecd71ce599820e91f8f03ebab56`. Production installer, Codespaces devcontainer, release container images, production rollout, load/soak/concurrency, recovery, external integration UAT, independent security review and legal/customer/factory sign-offs remain separate work.
 
 
 ## Owner standing delivery amendment — 26 November 2026
@@ -128,7 +128,7 @@ This candidate still has the package-level limitations recorded above. The remai
 ## Latest integrated delivery checkpoint — 26 November 2026
 
 - PR [#5](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/pull/5) is **CLOSED / MERGED**, not draft or pending owner acceptance.
-- Destination: `delivery/autonomous-wp-01-16`; merge commit: `6bd8990d434d3cbc9f51e58489cc76fb240a83b6`.
+- Destination: `delivery/autonomous-wp-01-16`; latest merge commit: `f7516de080c24ecd71ce599820e91f8f03ebab56`.
 - Exact source SHA before merge: `dbd01b56510e87beebfac454ae49723bfbf5c633`.
 - Combined run [#45891155076](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45891155076) passed Laravel/PostgreSQL 18/Redis 8.2, forced RLS, Angular 22/Node 26, WP-01 R3 source integrity and final artifact assembly. Backend: **78 tests / 967 assertions**. Angular: **27 tests / 7 files** plus production build.
 - General CI [#45891155255](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45891155255) passed; WP-01 R3 [#45891155246](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45891155246) passed.
@@ -153,3 +153,12 @@ Known WP-03 implementation gaps to close and test include:
 - Reconcile WP-03 requirements GAR-ENT-001..010 and the WP-03-assigned platform requirements to executable API/UI/database acceptance evidence.
 
 The Product Owner's 26 November standing amendment removes routine owner acceptance waits; it does not close these tasks. Continue independent safe implementation and keep final production release gated by WP-16.
+
+
+## Latest WP-03 owner-succession integration — 26 November 2026
+
+- PR [#7](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/pull/7) merged into the canonical delivery branch at `f7516de080c24ecd71ce599820e91f8f03ebab56`.
+- Exact candidate source SHA `7d8d3cc8d94c7cb3e763a7b1174030315bd11382` passed ERP CI [#45896122644](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45896122644) and combined WP verification [#45896122613](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45896122613). Backend **86 tests / 1,026 assertions**; Angular **27 tests / 7 files** plus production build; Pint/syntax across 132 files; PostgreSQL 18 migrations/forced RLS; WP-01 R3 integrity and artifact assembly.
+- Artifact: `modern-garment-addis-erp-wp01-wp16-candidate`, ID `15154530114`, 726,099 bytes.
+- Post-merge destination ERP CI [#45896477349](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45896477349) passed on merge SHA `f7516de...`.
+- Owner succession, member self-leave and exact-one-active-owner DB constraints are implemented foundations, not full WP-03 acceptance. Tenant lifecycle, platform entitlements, scoped target-resource authorization, MFA/SSO, operator UI/recovery and full WP-03 acceptance remain open.
