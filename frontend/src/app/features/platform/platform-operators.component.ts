@@ -28,7 +28,7 @@ export class PlatformOperatorsComponent implements OnInit {
     user_email: ['', [Validators.required, Validators.email, Validators.maxLength(254)]],
     role_code: ['PLATFORM_SUPPORT' as PlatformRoleCode, Validators.required],
     valid_from: [new Date().toISOString().slice(0, 10), Validators.required],
-    valid_to: [''],
+    valid_to: ['', Validators.required],
     reason: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(500)]],
   });
 
@@ -92,7 +92,7 @@ export class PlatformOperatorsComponent implements OnInit {
       user_email: value.user_email.trim().toLowerCase(),
       role_code: value.role_code,
       valid_from: value.valid_from,
-      valid_to: value.valid_to || null,
+      valid_to: value.valid_to,
       reason: value.reason.trim(),
     }).pipe(finalize(() => this.saving.set(false))).subscribe({
       next: () => {
