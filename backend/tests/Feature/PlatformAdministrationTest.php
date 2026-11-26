@@ -144,6 +144,12 @@ class PlatformAdministrationTest extends TestCase
             ->assertJsonFragment(['tenant_id' => $this->tenantId])
             ->assertJsonFragment(['plan_code' => 'UNASSIGNED']);
 
+        $this->assertDatabaseHas('platform_audit_events', [
+            'actor_user_id' => $this->platformAdminId,
+            'action' => 'PLATFORM_TENANT_REGISTER_VIEWED',
+            'object_type' => 'PLATFORM_TENANT_REGISTER',
+        ], 'pgsql_test_admin');
+
         $this->actAs($this->tenantOwnerId);
         $this->getJson('/api/v1/platform/tenants')->assertForbidden();
     }
@@ -152,6 +158,12 @@ class PlatformAdministrationTest extends TestCase
     {
         $this->actAs($this->platformSupportId);
         $this->getJson('/api/v1/platform/tenants')->assertOk();
+
+        $this->assertDatabaseHas('platform_audit_events', [
+            'actor_user_id' => $this->platformSupportId,
+            'action' => 'PLATFORM_TENANT_REGISTER_VIEWED',
+            'object_type' => 'PLATFORM_TENANT_REGISTER',
+        ], 'pgsql_test_admin');
 
         $this->patchJson('/api/v1/platform/tenants/'.$this->tenantId.'/lifecycle', [
             'status' => 'SUSPENDED',
