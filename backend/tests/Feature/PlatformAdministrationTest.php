@@ -304,6 +304,12 @@ class PlatformAdministrationTest extends TestCase
         $this->assertFalse((bool) $runtime->scalar("SELECT has_table_privilege('app_runtime', 'platform_audit_events', 'SELECT')"));
         $this->assertTrue((bool) $runtime->scalar("SELECT has_function_privilege('app_runtime', 'public.platform_change_tenant_status(uuid,text,text)', 'EXECUTE')"));
         $this->assertTrue((bool) $runtime->scalar("SELECT has_function_privilege('app_runtime', 'public.platform_set_tenant_entitlements(uuid,text,text,jsonb,jsonb,date,date,text)', 'EXECUTE')"));
+        $this->assertTrue((bool) $runtime->scalar("SELECT has_function_privilege('app_runtime', 'public.platform_current_operator_roles()', 'EXECUTE')"));
+        $this->assertTrue((bool) $runtime->scalar("SELECT has_function_privilege('app_runtime', 'public.platform_list_operator_grants()', 'EXECUTE')"));
+        $this->assertTrue((bool) $runtime->scalar("SELECT has_function_privilege('app_runtime', 'public.platform_request_operator_grant(text,text,date,date,text)', 'EXECUTE')"));
+        $this->assertTrue((bool) $runtime->scalar("SELECT has_function_privilege('app_runtime', 'public.platform_approve_operator_grant(uuid,text)', 'EXECUTE')"));
+        $this->assertTrue((bool) $runtime->scalar("SELECT has_function_privilege('app_runtime', 'public.platform_revoke_operator_grant(uuid,text)', 'EXECUTE')"));
+        $this->assertFalse((bool) $runtime->scalar("SELECT has_function_privilege('app_runtime', 'public.platform_expire_operator_grants(uuid)', 'EXECUTE')"));
     }
 
     public function test_platform_tables_have_forced_rls_and_audit_is_not_runtime_readable(): void
@@ -411,6 +417,29 @@ class PlatformAdministrationTest extends TestCase
         }
     }
 
+    public function test_operator_grant_requires_expiry_within_365_days(): void
+    {
+        $admin = DB::connection('pgsql_test_admin');
+        $targetEmail = (string) $admin->table('users')->where('id', $this->securityApproverId)->value('email');
+
+        $this->actAs($this->platformAdminId);
+
+        $this->postJson('/api/v1/platform/operators/grants', [
+            'user_email' => $targetEmail,
+            'role_code' => 'PLATFORM_SUPPORT',
+            'valid_from' => now()->toDateString(),
+            'valid_to' => now()->addDays(366)->toDateString(),
+            'reason' => 'Temporary access must never exceed one year.',
+        ])->assertUnprocessable();
+
+        $this->postJson('/api/v1/platform/operators/grants', [
+            'user_email' => $targetEmail,
+            'role_code' => 'PLATFORM_SUPPORT',
+            'valid_from' => now()->toDateString(),
+            'reason' => 'A non-expiring application grant must be rejected.',
+        ])->assertUnprocessable();
+    }
+
     public function test_platform_operator_grant_cannot_revoke_the_current_admin_identity(): void
     {
         $grantId = (string) DB::connection('pgsql_test_admin')->table('platform_operator_grants')
@@ -449,6 +478,13 @@ class PlatformAdministrationTest extends TestCase
             'updated_at' => now()->subDays(29),
         ]);
 
+        // Date-effective authorization is denied immediately, before an admin runs the expiry sweep.
+        $this->actAs($this->securityApproverId);
+        $this->getJson('/api/v1/platform/context')
+            ->assertOk()
+            ->assertJsonPath('data.roles', []);
+
+        // The next authorized administrator register read persists EXPIRED and its audit event.
         $this->actAs($this->platformAdminId);
         $this->getJson('/api/v1/platform/operators/grants')->assertOk();
 
