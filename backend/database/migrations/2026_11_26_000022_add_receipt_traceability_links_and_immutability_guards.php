@@ -27,6 +27,8 @@ CREATE TABLE receipt_line_material_lots (
 CREATE INDEX receipt_line_material_lots_idx ON receipt_line_material_lots (tenant_id, goods_receipt_line_id);
 
 ALTER TABLE statutory_rule_versions ALTER COLUMN effective_from SET NOT NULL;
+ALTER TABLE supplier_accounts ADD COLUMN due_diligence_reference varchar(180);
+ALTER TABLE supplier_accounts ADD COLUMN quality_approval_reference varchar(180);
 
 CREATE OR REPLACE FUNCTION guard_finance_journal_line_mutation() RETURNS trigger
 LANGUAGE plpgsql
@@ -46,7 +48,7 @@ BEGIN
         RAISE EXCEPTION 'Journal lines can only be changed while the parent journal is DRAFT.'
             USING ERRCODE = '55000';
     END IF;
-    RETURN COALESCE(NEW, OLD);
+    IF TG_OP = 'DELETE' THEN RETURN OLD; ELSE RETURN NEW; END IF;
 END;
 $$;
 CREATE TRIGGER finance_journal_lines_draft_only
