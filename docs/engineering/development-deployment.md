@@ -91,3 +91,13 @@ Every release record must include:
 - Rollback/recovery instructions.
 
 A repository commit is not a production deployment. A successful container build is not proof of a successful business workflow.
+
+## 9. Provider-neutral application binding
+
+- Angular must call the API through same-origin relative paths such as /api/v1/health; production builds must not embed a customer, Cloudflare, vendor or environment-specific API hostname.
+- The deployment ingress or reverse proxy maps /api to the Laravel application. The public origin is selected by the operator's environment and DNS configuration, not compiled into frontend source.
+- Laravel APP_URL, FRONTEND_URL, database, cache, queue and storage settings are environment configuration. They must not be replaced with a hard-coded production host or vendor account.
+- frontend/proxy.conf.json is a developer-only Angular CLI proxy for local work. Its localhost:8000 target is not a production API dependency; production requests remain same-origin.
+- Local loopback addresses and ports in Compose, CI, PHPUnit and local-development instructions are test/developer endpoints, not public service bindings.
+- Private document storage defaults to Laravel's local private disk. A deployment may select another configured Laravel disk through PRIVATE_DOCUMENTS_DISK; no Cloudflare-specific runtime is required.
+- CDN, DNS, WAF, tunnel and edge providers are optional infrastructure choices. The ERP application and its core API must remain functional without a Cloudflare account or Cloudflare-specific SDK/configuration.
