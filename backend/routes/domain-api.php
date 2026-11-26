@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Planning\IndustrialEngineeringController;
+
 use App\Http\Controllers\Agents\AgentGovernanceController;
 
 use App\Http\Controllers\Integration\DocumentIntegrationController;
@@ -76,6 +78,23 @@ Route::middleware(['auth:sanctum', ResolveTenantContext::class])->prefix('v1')->
         Route::post('/action-proposals', [AgentGovernanceController::class, 'proposeAction']);
         Route::post('/action-proposals/{proposalId}/decision', [AgentGovernanceController::class, 'decideAction']);
         Route::post('/action-proposals/{proposalId}/execute', [AgentGovernanceController::class, 'executeApprovedDraft']);
+    });
+
+    Route::prefix('planning')->group(function (): void {
+        Route::post('/work-centres', [IndustrialEngineeringController::class, 'storeWorkCentre']);
+        Route::post('/shifts', [IndustrialEngineeringController::class, 'storeShift']);
+        Route::post('/capacity-slots', [IndustrialEngineeringController::class, 'storeCapacitySlot']);
+        Route::post('/operation-standards', [IndustrialEngineeringController::class, 'storeOperationStandard']);
+        Route::post('/operation-standards/{standardId}/approve', [IndustrialEngineeringController::class, 'approveOperationStandard']);
+        Route::post('/production-plans', [IndustrialEngineeringController::class, 'storePlan']);
+        Route::post('/production-plans/{planId}/lines', [IndustrialEngineeringController::class, 'addPlanLine']);
+        Route::post('/production-plans/{planId}/approve', [IndustrialEngineeringController::class, 'approvePlan']);
+    });
+
+    Route::prefix('workforce')->group(function (): void {
+        Route::post('/skills', [IndustrialEngineeringController::class, 'recordWorkerSkill']);
+        Route::post('/operation-assignments', [IndustrialEngineeringController::class, 'assignWorker']);
+        Route::post('/operation-assignments/{assignmentId}/confirm', [IndustrialEngineeringController::class, 'confirmAssignment']);
     });
 
     Route::prefix('manufacturing')->group(function (): void {
