@@ -462,6 +462,7 @@ class PlatformAdministrationTest extends TestCase
     {
         $admin = DB::connection('pgsql_test_admin');
         $expiredId = (string) Str::uuid();
+        $pendingExpiredId = (string) Str::uuid();
         $admin->table('platform_operator_grants')->insert([
             'id' => $expiredId,
             'user_id' => $this->securityApproverId,
@@ -475,6 +476,18 @@ class PlatformAdministrationTest extends TestCase
             'approved_at' => now()->subDays(29),
             'created_at' => now()->subDays(30),
             'updated_at' => now()->subDays(29),
+        ]);
+        $admin->table('platform_operator_grants')->insert([
+            'id' => $pendingExpiredId,
+            'user_id' => $this->tenantOwnerId,
+            'role_code' => 'PLATFORM_SUPPORT',
+            'status' => 'PENDING',
+            'valid_from' => now()->subDays(30)->toDateString(),
+            'valid_to' => now()->subDay()->toDateString(),
+            'grant_reason' => 'Test fixture request that elapsed before independent approval.',
+            'granted_by' => $this->platformAdminId,
+            'created_at' => now()->subDays(30),
+            'updated_at' => now()->subDays(30),
         ]);
 
         // Date-effective authorization is denied immediately, before an admin runs the expiry sweep.
@@ -491,10 +504,31 @@ class PlatformAdministrationTest extends TestCase
             'id' => $expiredId,
             'status' => 'EXPIRED',
         ], 'pgsql_test_admin');
+        $this->assertDatabaseHas('platform_operator_grants', [
+            'id' => $pendingExpiredId,
+            'status' => 'EXPIRED',
+        ], 'pgsql_test_admin');
         $this->assertDatabaseHas('platform_audit_events', [
             'actor_user_id' => $this->platformAdminId,
             'action' => 'PLATFORM_OPERATOR_GRANT_EXPIRED',
             'object_id' => $expiredId,
         ], 'pgsql_test_admin');
+        $this->assertDatabaseHas('platform_audit_events', [
+            'actor_user_id' => $this->platformAdminId,
+            'action' => 'PLATFORM_OPERATOR_GRANT_EXPIRED',
+            'object_id' => $pendingExpiredId,
+            'reason' => 'Pending platform operator request expired without approval.',
+        ], 'pgsql_test_admin');
+        $this->assertSame(
+            'Approved platform operator grant reached its approved end date.',
+            (string) $admin->table('platform_audit_events')->where('object_id', $expiredId)->value('reason'),
+        );
+        $this->assertSame(
+            'PENDING',
+            (string) $admin->scalar(
+                "SELECT before_state ->> 'status' FROM public.platform_audit_events WHERE object_id = ?::uuid",
+                [$pendingExpiredId],
+            ),
+        );
     }
 }
