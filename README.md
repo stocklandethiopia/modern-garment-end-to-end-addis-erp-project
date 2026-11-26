@@ -48,7 +48,7 @@ Exact supported patch versions are recorded in the platform standard and must be
 ## Application foundation and verified integration delivery
 
 **Canonical integration branch:** `delivery/autonomous-wp-01-16`  
-**Latest integrated commit:** `6bd8990d434d3cbc9f51e58489cc76fb240a83b6`  
+**Latest integrated commit:** `f7516de080c24ecd71ce599820e91f8f03ebab56`  
 **Merged pull request:** [#5 — WP-01–WP-16 verified implementation increment](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/pull/5)  
 **Default branch:** `main` remains unchanged.
 
@@ -62,7 +62,7 @@ Combined candidate artifact: `modern-garment-addis-erp-wp01-wp16-candidate`, ID 
 
 The repository now contains Laravel backend foundations and candidate services/migrations for enterprise identity, merchandising, PLM, IE, sourcing/material genealogy, route/MES execution, quality/CAPA, distribution, finance/payroll review, documents/integrations and governed agents. Angular executable user journeys are currently concentrated in authentication, enterprise setup, merchandising and initial product development. See the [application folder/code map](docs/architecture/application-folder-code-map.md) for exact file paths.
 
-**Current execution checkpoint:** WP-03 remains the active package because tenant lifecycle, owner succession/leave, effective-dated scoped roles, downstream scope enforcement, MFA/OIDC/SSO, platform entitlements, full operator bootstrap/recovery and full WP-03 acceptance evidence remain open. The dedicated working branch is `work/wp03-identity-platform-completion-2026-11-26`; verified increments target the delivery branch through PRs.
+**Current execution checkpoint:** WP-03 remains the active package because tenant lifecycle (activation/suspension/closure/export/retention/recovery), effective-dated scoped roles and downstream target checks, MFA/OIDC/SSO, platform entitlements, invitation/domain-role/ownership administration UI, full operator bootstrap/recovery and full WP-03 acceptance evidence remain open. Owner succession, one-active-owner protection and safe voluntary leave are now implemented and CI-verified foundations. The dedicated working branch is `work/wp03-identity-platform-completion-2026-11-26`; verified increments target the delivery branch through PRs.
 
 **Release wording:** successful CI is technical evidence for the exact checks and SHA only. It does not mean WP-01–WP-16 are all complete. Full factory/store/customer E2E, independent security review, production concurrency/load/soak, backup/restore/DR/rollback, external integration UAT, professional/statutory sign-offs, staging/UAT and accountable production deployment remain WP-16 gates. No production release is claimed.
 
