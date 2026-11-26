@@ -2,8 +2,8 @@
 
 **Project:** Modern Garment End-to-End Addis ERP  
 **Canonical integration branch:** `delivery/autonomous-wp-01-16`  
-**Parallel WP-03 implementation branch:** `work/wp03-identity-platform-completion-2026-11-26`  
-**ChatGPT continuation branch:** `agent/chatgpt-wp03-continuation-2026-11-27`  
+**Active WP-03 implementation branch:** `work/wp03-completion-2026-11-27` (created from delivery head `f948bb85de4194ae18dc8ee8c974c3ad0986623c`)  
+**Prior WP-03 evidence branches:** `work/wp03-identity-platform-completion-2026-11-26` and `agent/chatgpt-wp03-continuation-2026-11-27` (historical only)  
 **Execution authority:** Product Owner accepted WP-00 and expressly delegated autonomous sequential delivery and routine in-scope package decisions on 22 November 2026.  
 **Rule:** This ledger records actual evidence, not planned completion. A package is internally accepted only where its specified output exists and its definition of done has been assessed. A documented design is not an implemented or tested application.
 
@@ -123,3 +123,17 @@ Next work must close and evidence: (1) tenant activation/suspension/closure/expo
 - Exact source SHA `f0688d04c9d9f28722a783086c7efd15500798a2` passed ERP CI [#45899259026](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45899259026) (**93 backend tests / 1,079 assertions; 27 Angular tests / 7 files**), combined WP verification [#45899259071](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45899259071) (all four jobs passed) and artifact assembly (ID `15154948146`). Delivery post-merge CI #45899593787 and #45899601895 also passed on `bd41c83`.
 - **Follow-on candidate:** the current isolated branch adds immutable `PLATFORM_TENANT_REGISTER_VIEWED` events to global tenant-directory reads for both PLATFORM_ADMIN and read-only PLATFORM_SUPPORT; matching assertions are added to `PlatformAdministrationTest.php`. Candidate head is `e466ecc15de889c59c6b5280686114372ad1b79b`; its PHP formatter passed on intermediate source commits, but full exact-head ERP/WP CI remains pending.
 - **Status:** platform lifecycle/entitlement foundation is integrated and technically verified; WP-03 remains PARTIAL. Export/archive, retention/legal hold/recovery, operator grant expiry/revocation, module entitlement enforcement, target-record scopes, MFA/SSO, admin/operator UI and full WP-03 acceptance remain open.
+
+
+## Active WP-03 platform operator continuation — 27 November 2026
+
+- Active branch: `work/wp03-completion-2026-11-27`, created from the canonical delivery head `f948bb85de4194ae18dc8ee8c974c3ad0986623c`. The stale earlier WP-03 branch was not merged or reused.
+- This is a **candidate increment only**. It has not yet passed the new exact-head CI and combined WP verification, is not merged into delivery and does not close WP-03.
+- New migration `2026_11_27_000033_create_platform_operator_grant_lifecycle.php` adds PostgreSQL SECURITY DEFINER functions for global role resolution, grant register, grant request, independent approval, revocation and expiry/audit sweep. It does not grant app_runtime direct DML on platform grant/audit tables.
+- New API/controller/service routes support `GET /api/v1/platform/context`, `GET/POST /api/v1/platform/operators/grants` and independent `approve` / `revoke` actions. The requester and recipient cannot approve; another active PLATFORM_ADMIN is required. PLATFORM_SUPPORT is read-only. First administrator appointment remains the documented two-person DBA bootstrap.
+- Angular adds a global platform shell that does not require tenant membership; a read-only global tenant register; an admin-only platform operator grant workbench; and service/session tests. Tenant OWNER/ADMIN roles do not imply global platform access.
+- Added PostgreSQL feature tests cover global role resolution, ordinary tenant role separation, requester/approver separation, revoke audit history, self-revocation denial and expiry status/audit on grant-register access. Angular service tests cover global role sign-in and same-origin grant/tenant API contracts.
+- Expiry is enforced immediately by date-effective role lookup. The stored status and expiry audit event are swept on the next authorized global grant-register or mutation operation. A scheduled expiry worker and non-forgeable system audit actor remain outstanding and are not claimed as complete.
+- The code map is updated at `docs/architecture/application-folder-code-map.md`; the requirement-level matrix is updated at `docs/verification/WP03-implementation-acceptance-matrix.md`; the bootstrap boundary is updated at `docs/security/platform-administration-bootstrap.md`.
+- Next gate: run PR-triggered ERP CI and combined WP verification against this exact branch head; fix all failures; only then open/integrate a PR to `delivery/autonomous-wp-01-16`. Do not merge to `main`, publish a production release, seed a real platform operator or activate an entitlement as part of this candidate increment.
+- Remaining WP-03 requirements remain open: target-resource legal-entity/site/department/warehouse/channel scope enforcement; MFA/OIDC/SSO and session rotation/recovery; tenant retention/export/legal hold/closure recovery; scheduled grant expiry sweep; complete invitation/domain-role/owner UI and operational runbooks; full GAR-ENT-001..010 and platform acceptance.
