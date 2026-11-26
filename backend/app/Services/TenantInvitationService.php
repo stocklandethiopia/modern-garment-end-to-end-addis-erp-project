@@ -35,6 +35,7 @@ class TenantInvitationService
         string $inviterName,
         string $actorId,
     ): array {
+        $this->bindTenantActorContext($tenantId, $actorId);
         $token = bin2hex(random_bytes(32));
         $expiresAt = now()->addHours(72);
         $id = $this->callScalar(
@@ -57,6 +58,7 @@ class TenantInvitationService
         string $actorId,
         string $reason,
     ): array {
+        $this->bindTenantActorContext($tenantId, $actorId);
         $token = bin2hex(random_bytes(32));
         $expiresAt = now()->addHours(72);
         $this->callScalar(
@@ -165,10 +167,25 @@ class TenantInvitationService
         });
     }
 
+    private function bindTenantActorContext(string $tenantId, string $actorId): void
+    {
+        $connection = DB::connection('pgsql');
+
+        if ($connection->transactionLevel() < 1) {
+            throw new RuntimeException('Invitation changes require an authenticated tenant transaction.');
+        }
+
+        // Reassert server-derived request context on the exact connection used by
+        // the SECURITY DEFINER function. The function still independently checks
+        // the current actor's active tenant membership and allowed membership role.
+        $connection->select("select set_config('app.current_tenant_id', ?, true)", [$tenantId]);
+        $connection->select("select set_config('app.current_user_id', ?, true)", [$actorId]);
+    }
+
     private function callScalar(string $sql, array $bindings): string
     {
         try {
-            return (string) DB::selectOne($sql, $bindings)->invitation_id;
+            return (string) DB::connection('pgsql')->selectOne($sql, $bindings)->invitation_id;
         } catch (QueryException $exception) {
             $this->translate($exception);
         }
