@@ -8,7 +8,7 @@ return new class extends Migration
     public function up(): void
     {
         if (DB::connection()->getDriverName() !== 'pgsql') {
-            throw new RuntimeException('Domain-role lifecycle enforcement requires PostgreSQL.'); 
+            throw new RuntimeException('Domain-role lifecycle enforcement requires PostgreSQL.');
         }
 
         DB::unprepared(<<<'SQL'
