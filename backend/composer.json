@@ -28,7 +28,11 @@
     "ext-hash": "*",
     "ext-session": "*",
     "ext-tokenizer": "*",
-    "ext-xml": "*"
+    "ext-xml": "*",
+    "symfony/http-foundation": "^8.1.12",
+    "symfony/http-kernel": "^8.1.12",
+    "symfony/mailer": "^8.1.12",
+    "symfony/routing": "^8.1.12"
   },
   "require-dev": {
     "fakerphp/faker": "^1.24",
