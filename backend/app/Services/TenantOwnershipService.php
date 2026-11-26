@@ -14,6 +14,8 @@ class TenantOwnershipService
     public function transfer(string $tenantId, string $actorId, string $targetUserId, string $reason): string
     {
         return DB::transaction(function () use ($tenantId, $actorId, $targetUserId, $reason): string {
+            DB::selectOne("SELECT set_config('app.current_tenant_id', ?, true)", [$tenantId]);
+            DB::selectOne("SELECT set_config('app.current_user_id', ?, true)", [$actorId]);
             DB::selectOne("SELECT set_config('app.current_action_reason', ?, true)", [$reason]);
 
             return $this->call(
@@ -23,9 +25,11 @@ class TenantOwnershipService
         }, 3);
     }
 
-    public function leave(string $reason): string
+    public function leave(string $tenantId, string $actorId, string $reason): string
     {
-        return DB::transaction(function () use ($reason): string {
+        return DB::transaction(function () use ($tenantId, $actorId, $reason): string {
+            DB::selectOne("SELECT set_config('app.current_tenant_id', ?, true)", [$tenantId]);
+            DB::selectOne("SELECT set_config('app.current_user_id', ?, true)", [$actorId]);
             DB::selectOne("SELECT set_config('app.current_action_reason', ?, true)", [$reason]);
 
             return $this->call(
