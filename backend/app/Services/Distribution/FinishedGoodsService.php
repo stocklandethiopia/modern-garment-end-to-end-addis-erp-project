@@ -37,7 +37,7 @@ class FinishedGoodsService
             }
 
             $finalGood = DB::table('production_order_operations')->where('tenant_id', $tenantId)
-                ->where('production_order_id', $order->id)->orderByDesc('step_no')->value('good_quantity');
+                ->where('production_order_id', $order->id)->where('status', 'COMPLETED')->orderByDesc('step_no')->value('good_quantity');
 
             $quantity = (string) $data['finished_quantity'];
             if (DecimalQuantity::units($quantity) <= 0 || DecimalQuantity::exceeds($quantity, (string) $finalGood)) {
@@ -256,7 +256,8 @@ class FinishedGoodsService
 
             $quantity = (string) $data['quantity'];
             $reservedElsewhere = (string) DB::table('finished_goods_reservations')->where('tenant_id', $tenantId)
-                ->where('finished_goods_lot_id', $lot->id)->where('status', 'ACTIVE')->sum('quantity');
+                ->where('finished_goods_lot_id', $lot->id)->where('source_location_id', $data['location_id'])
+                ->where('status', 'ACTIVE')->sum('quantity');
             $lotBalance = $this->balanceAt($tenantId, $lot->id, $data['location_id']);
             $available = DecimalQuantity::subtract($lotBalance, $reservedElsewhere);
 
@@ -275,6 +276,7 @@ class FinishedGoodsService
                 'tenant_id' => $tenantId,
                 'customer_order_line_id' => $line->id,
                 'finished_goods_lot_id' => $lot->id,
+                'source_location_id' => $data['location_id'],
                 'reservation_key' => $data['reservation_key'],
                 'quantity' => $quantity,
                 'unit_code' => $lot->unit_code,
