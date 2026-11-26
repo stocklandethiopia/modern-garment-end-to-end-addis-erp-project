@@ -2,6 +2,8 @@
 
 namespace App\Services\Quality;
 
+use App\Services\Support\DecimalQuantity;
+
 use App\Services\Inventory\InventoryLedgerService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -60,8 +62,11 @@ class QualityControlService
             $accepted = (float) $data['accepted_quantity'];
             $rejected = (float) $data['rejected_quantity'];
             $sample = (float) $inspection->sample_quantity;
-            if ($accepted < 0 || $rejected < 0 || $accepted + $rejected > $sample) {
-                throw ValidationException::withMessages(['quantities' => 'Accepted and rejected quantities cannot exceed the inspection sample quantity.']);
+            if ($accepted < 0 || $rejected < 0 || ! DecimalQuantity::equal(
+                DecimalQuantity::add((string) $accepted, (string) $rejected),
+                (string) $inspection->sample_quantity
+            )) {
+                throw ValidationException::withMessages(['quantities' => 'Every sampled unit must be accounted for as accepted or rejected before the inspection result can be submitted.']);
             }
 
             $defects = $data['defects'] ?? [];
@@ -287,6 +292,121 @@ class QualityControlService
         }, 3);
     }
 
+
+
+    public function setNonconformanceDisposition(string $tenantId, string $actorId, string $nonconformanceId, array $data): object
+    {
+        return DB::transaction(function () use ($tenantId, $actorId, $nonconformanceId, $data): object {
+            $record = DB::table('quality_nonconformances')->where('tenant_id', $tenantId)
+                ->where('id', $nonconformanceId)->lockForUpdate()->first();
+            if ($record === null || ! in_array($record->status, ['OPEN','UNDER_REVIEW','CAPA_REQUIRED'], true)) {
+                throw ValidationException::withMessages(['nonconformance' => 'The nonconformance is not available for disposition.']);
+            }
+            if (! in_array($data['disposition'], ['USE_AS_IS','REWORK','REPAIR','SORT','RETURN_TO_SUPPLIER','SCRAP','CUSTOMER_CONCESSION'], true)) {
+                throw ValidationException::withMessages(['disposition' => 'Unsupported nonconformance disposition.']);
+            }
+            if (trim((string) ($data['reason'] ?? '')) === '') {
+                throw ValidationException::withMessages(['reason' => 'A disposition reason is required.']);
+            }
+
+            DB::table('quality_nonconformances')->where('tenant_id', $tenantId)->where('id', $nonconformanceId)->update([
+                'disposition' => $data['disposition'],
+                'containment_status' => $data['containment_status'] ?? $record->containment_status,
+                'containment_notes' => $data['containment_notes'] ?? $record->containment_notes,
+                'root_cause_category' => $data['root_cause_category'] ?? $record->root_cause_category,
+                'root_cause_analysis' => $data['root_cause_analysis'] ?? $record->root_cause_analysis,
+                'status' => 'UNDER_REVIEW',
+                'updated_at' => now(),
+            ]);
+
+            return DB::table('quality_nonconformances')->where('tenant_id', $tenantId)->where('id', $nonconformanceId)->first();
+        }, 3);
+    }
+
+    public function implementCorrectiveAction(string $tenantId, string $actorId, string $actionId, array $data): object
+    {
+        return DB::transaction(function () use ($tenantId, $actorId, $actionId, $data): object {
+            $action = DB::table('quality_corrective_actions')->where('tenant_id', $tenantId)
+                ->where('id', $actionId)->lockForUpdate()->first();
+            if ($action === null || ! in_array($action->status, ['OPEN','IN_PROGRESS'], true)) {
+                throw ValidationException::withMessages(['action' => 'Only an open corrective action can be implemented.']);
+            }
+            if ($action->assigned_to_user_id !== null && $action->assigned_to_user_id !== $actorId) {
+                throw ValidationException::withMessages(['assignee' => 'Only the assigned owner can submit implementation evidence.']);
+            }
+            if (trim((string) ($data['implementation_summary'] ?? '')) === '' || empty($data['evidence'])) {
+                throw ValidationException::withMessages(['evidence' => 'Implementation summary and evidence are required.']);
+            }
+
+            $previous = json_decode($action->implementation_evidence, true, 512, JSON_THROW_ON_ERROR);
+            $previous[] = [
+                'summary' => $data['implementation_summary'],
+                'evidence' => $data['evidence'],
+                'submitted_by' => $actorId,
+                'submitted_at' => now()->toISOString(),
+            ];
+
+            DB::table('quality_corrective_actions')->where('tenant_id', $tenantId)->where('id', $actionId)->update([
+                'status' => 'EFFECTIVENESS_REVIEW',
+                'implementation_evidence' => json_encode($previous, JSON_THROW_ON_ERROR),
+                'implemented_by' => $actorId,
+                'implemented_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            return DB::table('quality_corrective_actions')->where('tenant_id', $tenantId)->where('id', $actionId)->first();
+        }, 3);
+    }
+
+    public function verifyCorrectiveActionEffectiveness(string $tenantId, string $verifierId, string $actionId, array $data): object
+    {
+        return DB::transaction(function () use ($tenantId, $verifierId, $actionId, $data): object {
+            $action = DB::table('quality_corrective_actions')->where('tenant_id', $tenantId)
+                ->where('id', $actionId)->lockForUpdate()->first();
+            if ($action === null || $action->status !== 'EFFECTIVENESS_REVIEW') {
+                throw ValidationException::withMessages(['action' => 'Only an implemented action awaiting effectiveness review can be verified.']);
+            }
+            if ($action->implemented_by === $verifierId || $action->created_by === $verifierId) {
+                throw ValidationException::withMessages(['verifier' => 'The action creator or implementer cannot verify its effectiveness.']);
+            }
+            if (trim((string) ($data['effectiveness_result'] ?? '')) === '' ||
+                trim((string) ($data['evidence_reference'] ?? '')) === '') {
+                throw ValidationException::withMessages(['effectiveness_result' => 'Effectiveness result and independent evidence reference are required.']);
+            }
+
+            $effective = (bool) $data['effective'];
+            DB::table('quality_corrective_actions')->where('tenant_id', $tenantId)->where('id', $actionId)->update([
+                'status' => $effective ? 'EFFECTIVE' : 'INEFFECTIVE',
+                'effectiveness_result' => $data['effectiveness_result'].' | evidence: '.$data['evidence_reference'],
+                'verified_by' => $verifierId,
+                'verified_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $otherOpen = DB::table('quality_corrective_actions')->where('tenant_id', $tenantId)
+                ->where('nonconformance_id', $action->nonconformance_id)
+                ->where('id', '<>', $actionId)
+                ->whereNotIn('status', ['EFFECTIVE','CANCELLED'])->exists();
+
+            if ($effective && ! $otherOpen) {
+                DB::table('quality_nonconformances')->where('tenant_id', $tenantId)->where('id', $action->nonconformance_id)->update([
+                    'status' => 'RESOLVED',
+                    'resolved_by' => $verifierId,
+                    'resolved_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } elseif (! $effective) {
+                DB::table('quality_nonconformances')->where('tenant_id', $tenantId)->where('id', $action->nonconformance_id)->update([
+                    'status' => 'OPEN',
+                    'resolved_by' => null,
+                    'resolved_at' => null,
+                    'updated_at' => now(),
+                ]);
+            }
+
+            return DB::table('quality_corrective_actions')->where('tenant_id', $tenantId)->where('id', $actionId)->first();
+        }, 3);
+    }
 
     public function decideOperationRelease(string $tenantId, string $actorId, string $operationId, array $data): object
     {
