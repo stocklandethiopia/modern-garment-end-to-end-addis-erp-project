@@ -342,10 +342,12 @@ class InitiativeWorkflowTest extends TestCase
             ->postJson('/api/v1/product/initiatives/'.$initiativeId.'/submit', [])
             ->assertOk();
 
+        // Downgrade the separate ADMIN fixture, preserving the tenant's only OWNER.
         DB::connection('pgsql_test_admin')->table('tenant_memberships')
             ->where('tenant_id', $this->tenantId)
-            ->where('user_id', $this->userId)
+            ->where('user_id', $this->approverId)
             ->update(['membership_role' => 'MEMBER']);
+        Sanctum::actingAs(User::query()->findOrFail($this->approverId), ['tenant:select', 'erp:access']);
 
         $this->withHeader('X-Tenant-Id', $this->tenantId)
             ->postJson('/api/v1/product/initiatives/'.$initiativeId.'/decisions', [
