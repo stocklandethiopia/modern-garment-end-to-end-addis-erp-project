@@ -34,44 +34,46 @@ class TenantInvitationLifecycleTest extends TestCase
         $this->adminEmail = 'invitation-admin-'.Str::lower(Str::random(8)).'@example.test';
         $now = now();
 
-        $db->table('tenants')->insert([
-            'id' => $this->tenantId,
-            'code' => 'INVITE-'.Str::upper(Str::random(8)),
-            'name' => 'Invitation Lifecycle Tenant',
-            'status' => 'ACTIVE',
-            'locale' => 'en',
-            'timezone' => 'Africa/Addis_Ababa',
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
-
-        foreach ([
-            [$this->ownerId, 'invitation-owner-'.Str::lower(Str::random(8)).'@example.test', 'Invitation Owner'],
-            [$this->adminId, $this->adminEmail, 'Invitation Admin'],
-        ] as [$userId, $email, $name]) {
-            $db->table('users')->insert([
-                'id' => $userId,
-                'name' => $name,
-                'email' => $email,
-                'password' => Hash::make('LongTestPassword#2026'),
+        $db->transaction(function () use ($db, $now): void {
+    $db->table('tenants')->insert([
+                'id' => $this->tenantId,
+                'code' => 'INVITE-'.Str::upper(Str::random(8)),
+                'name' => 'Invitation Lifecycle Tenant',
                 'status' => 'ACTIVE',
+                'locale' => 'en',
+                'timezone' => 'Africa/Addis_Ababa',
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
-        }
 
-        foreach ([[$this->ownerId, 'OWNER'], [$this->adminId, 'ADMIN']] as [$userId, $role]) {
-            $db->table('tenant_memberships')->insert([
-                'id' => (string) Str::uuid(),
-                'tenant_id' => $this->tenantId,
-                'user_id' => $userId,
-                'membership_role' => $role,
-                'status' => 'ACTIVE',
-                'joined_at' => $now,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]);
-        }
+            foreach ([
+                [$this->ownerId, 'invitation-owner-'.Str::lower(Str::random(8)).'@example.test', 'Invitation Owner'],
+                [$this->adminId, $this->adminEmail, 'Invitation Admin'],
+            ] as [$userId, $email, $name]) {
+                $db->table('users')->insert([
+                    'id' => $userId,
+                    'name' => $name,
+                    'email' => $email,
+                    'password' => Hash::make('LongTestPassword#2026'),
+                    'status' => 'ACTIVE',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+
+            foreach ([[$this->ownerId, 'OWNER'], [$this->adminId, 'ADMIN']] as [$userId, $role]) {
+                $db->table('tenant_memberships')->insert([
+                    'id' => (string) Str::uuid(),
+                    'tenant_id' => $this->tenantId,
+                    'user_id' => $userId,
+                    'membership_role' => $role,
+                    'status' => 'ACTIVE',
+                    'joined_at' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+        });
     }
 
     private function actAs(string $userId): void
