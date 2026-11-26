@@ -74,10 +74,27 @@ class PlatformAdministrationService
 
     public function currentEntitlement(string $tenantId): ?object
     {
-        return DB::selectOne(
+        $entitlement = DB::selectOne(
             'SELECT * FROM public.platform_get_current_entitlement(?::uuid)',
             [$tenantId],
         );
+
+        if ($entitlement === null) {
+            return null;
+        }
+
+        foreach (['feature_flags', 'limits'] as $jsonField) {
+            if (is_string($entitlement->{$jsonField} ?? null)) {
+                $entitlement->{$jsonField} = json_decode(
+                    $entitlement->{$jsonField},
+                    true,
+                    512,
+                    JSON_THROW_ON_ERROR,
+                );
+            }
+        }
+
+        return $entitlement;
     }
 
     private function call(string $sql, array $bindings): object
