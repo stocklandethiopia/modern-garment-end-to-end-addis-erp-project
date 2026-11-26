@@ -162,3 +162,13 @@ The Product Owner's 26 November standing amendment removes routine owner accepta
 - Artifact: `modern-garment-addis-erp-wp01-wp16-candidate`, ID `15154530114`, 726,099 bytes.
 - Post-merge destination ERP CI [#45896477349](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45896477349) passed on merge SHA `f7516de...`.
 - Owner succession, member self-leave and exact-one-active-owner DB constraints are implemented foundations, not full WP-03 acceptance. Tenant lifecycle, platform entitlements, scoped target-resource authorization, MFA/SSO, operator UI/recovery and full WP-03 acceptance remain open.
+
+
+## WP-03 tenant lifecycle and platform entitlement candidate — current branch, not yet integrated
+
+- Working branch: `work/wp03-identity-platform-completion-2026-11-26`.
+- New migration `2026_11_26_000032_add_platform_entitlements_and_tenant_lifecycle.php` establishes distinct platform operator grants, platform tenant entitlements, controlled tenant status transitions and append-only platform audit.
+- New Laravel files: `backend/app/Services/PlatformAdministrationService.php`, `backend/app/Http/Controllers/Enterprise/PlatformAdministrationController.php`, `TenantEntitlementController.php`; routes in `backend/routes/domain-api.php`; tests in `backend/tests/Feature/PlatformAdministrationTest.php`.
+- Bootstrap/security instructions: `docs/security/platform-administration-bootstrap.md`. No PLATFORM_ADMIN or PLATFORM_SUPPORT grant is seeded. The first grant is a separate DBA-controlled, two-person action and is not available to tenant OWNER/ADMIN.
+- Lifecycle policy: ACTIVE may suspend or close; SUSPENDED may reactivate or close; CLOSED is terminal in this initial version. Data is retained; no deletion or automatic legal-retention decision is executed. Entitlements start `UNASSIGNED / REVIEW_REQUIRED`; no plan or feature is guessed.
+- **Current status: candidate implementation / CI pending / not merged.** Do not treat the endpoints as accepted, do not seed a platform operator, and do not claim entitlement-based module enforcement. The exact-head CI and independent acceptance evidence must be recorded before integration.
