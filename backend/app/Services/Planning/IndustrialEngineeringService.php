@@ -188,7 +188,8 @@ class IndustrialEngineeringService
             $start = new \\DateTimeImmutable($data['planned_start_at']);
             $end = new \\DateTimeImmutable($data['planned_end_at']);
             $shiftStart = new \\DateTimeImmutable($slot->work_date.' '.$shift->starts_at);
-            $shiftEndDate = $slot->ends_at < $shift->starts_at
+            $shiftEndsNextDay = $shift->ends_at < $shift->starts_at;
+            $shiftEndDate = $shiftEndsNextDay
                 ? (new \\DateTimeImmutable($slot->work_date))->modify('+1 day')->format('Y-m-d')
                 : $slot->work_date;
             $shiftEnd = new \\DateTimeImmutable($shiftEndDate.' '.$shift->ends_at);
@@ -295,9 +296,12 @@ class IndustrialEngineeringService
             if ($centre === null || $shift === null || $centre->site_id !== $shift->site_id) {
                 throw ValidationException::withMessages(['work_centre_id' => 'An active work centre and a shift at the same site are required.']);
             }
-            $shiftDuration = $shift->ends_at < $shift->starts_at
-                ? 1440 - (strtotime($shift->starts_at) / 60) + (strtotime($shift->ends_at) / 60)
-                : (strtotime($shift->ends_at) - strtotime($shift->starts_at)) / 60;
+            $shiftStartClock = new \\DateTimeImmutable('1970-01-01 '.$shift->starts_at);
+            $shiftEndClock = new \\DateTimeImmutable('1970-01-01 '.$shift->ends_at);
+            if ($shiftEndClock <= $shiftStartClock) {
+                $shiftEndClock = $shiftEndClock->modify('+1 day');
+            }
+            $shiftDuration = (int) (($shiftEndClock->getTimestamp() - $shiftStartClock->getTimestamp()) / 60);
             if (DecimalQuantity::units((string) $data['planned_minutes']) >
                 DecimalQuantity::units((string) max(0, $shiftDuration - (int) $shift->unpaid_break_minutes))) {
                 throw ValidationException::withMessages(['planned_minutes' => 'Worker assignment exceeds net shift minutes.']);
