@@ -228,9 +228,8 @@ class FinishedGoodsService
             if ($order->created_by === $actorId) {
                 throw ValidationException::withMessages(['reviewer' => 'The order creator cannot perform the independent customer credit review.']);
             }
-            if ($data['decision'] === 'APPROVED_EXCEPTION' &&
-                (empty($data['exception_approval_reference']) || trim((string) $data['exception_approval_reference']) === '')) {
-                throw ValidationException::withMessages(['exception_approval_reference' => 'A separately authorized credit exception reference is required.']);
+            if (! in_array($data['decision'], ['CLEAR','HELD'], true)) {
+                throw ValidationException::withMessages(['decision' => 'A credit review can record CLEAR or HELD. Exceptions require a separate approval action.']);
             }
 
             $id = (string) Str::uuid();
@@ -243,13 +242,40 @@ class FinishedGoodsService
                 'reason' => $data['reason'],
                 'reviewed_by' => $actorId,
                 'reviewed_at' => now(),
-                'exception_approved_by' => $data['decision'] === 'APPROVED_EXCEPTION' ? $data['exception_approved_by'] : null,
-                'exception_approved_at' => $data['decision'] === 'APPROVED_EXCEPTION' ? ($data['exception_approved_at'] ?? now()) : null,
-                'exception_approval_reference' => $data['decision'] === 'APPROVED_EXCEPTION' ? $data['exception_approval_reference'] : null,
+                'exception_approved_by' => null,
+                'exception_approved_at' => null,
+                'exception_approval_reference' => null,
                 'created_at' => now(),
             ]);
 
             return DB::table('customer_credit_decisions')->where('tenant_id', $tenantId)->where('id', $id)->first();
+        }, 3);
+    }
+
+
+    public function approveCustomerCreditException(string $tenantId, string $actorId, string $decisionId, string $approvalReference): object
+    {
+        return DB::transaction(function () use ($tenantId, $actorId, $decisionId, $approvalReference): object {
+            $decision = DB::table('customer_credit_decisions')->where('tenant_id', $tenantId)
+                ->where('id', $decisionId)->lockForUpdate()->first();
+            if ($decision === null || $decision->decision !== 'HELD') {
+                throw ValidationException::withMessages(['credit_decision' => 'Only a HELD credit decision can be approved as an exception.']);
+            }
+            if ($decision->reviewed_by === $actorId) {
+                throw ValidationException::withMessages(['approver' => 'The original credit reviewer cannot approve the exception.']);
+            }
+            if (trim($approvalReference) === '') {
+                throw ValidationException::withMessages(['approval_reference' => 'A separate credit exception approval reference is required.']);
+            }
+
+            DB::table('customer_credit_decisions')->where('tenant_id', $tenantId)->where('id', $decisionId)->update([
+                'decision' => 'APPROVED_EXCEPTION',
+                'exception_approved_by' => $actorId,
+                'exception_approved_at' => now(),
+                'exception_approval_reference' => $approvalReference,
+            ]);
+
+            return DB::table('customer_credit_decisions')->where('tenant_id', $tenantId)->where('id', $decisionId)->first();
         }, 3);
     }
 
@@ -265,8 +291,8 @@ class FinishedGoodsService
             if ($decision === null || ! in_array($decision->decision, ['CLEAR','APPROVED_EXCEPTION'], true)) {
                 throw ValidationException::withMessages(['credit_control_decision_id' => 'An independent, linked credit decision of CLEAR or APPROVED_EXCEPTION is required.']);
             }
-            if ($decision->reviewed_by === $actorId) {
-                throw ValidationException::withMessages(['conflict_of_duties' => 'The credit reviewer cannot also confirm the customer order.']);
+            if ($decision->reviewed_by === $actorId || $decision->exception_approved_by === $actorId) {
+                throw ValidationException::withMessages(['conflict_of_duties' => 'A credit reviewer or exception approver cannot also confirm the customer order.']);
             }
             if ($decision->decision === 'APPROVED_EXCEPTION' &&
                 ($decision->exception_approved_by === null ||
