@@ -2,7 +2,7 @@
   "$schema": "https://getcomposer.org/schema.json",
   "name": "modern-garment-erp/backend",
   "type": "project",
-  "description": "Multi-tenant apparel business operating system API",
+  "description": "Multi-tenant apparel business operating system API with security-audited dependencies",
   "keywords": [
     "laravel",
     "apparel",
