@@ -31,6 +31,7 @@ Route::middleware(['auth:sanctum', ResolveTenantContext::class])->prefix('v1')->
         Route::post('/inspections/{inspectionId}/results', [QualityController::class, 'submitInspectionResult']);
         Route::post('/inspections/{inspectionId}/review', [QualityController::class, 'reviewInspection']);
         Route::post('/nonconformances/{nonconformanceId}/corrective-actions', [QualityController::class, 'createCorrectiveAction']);
+        Route::post('/production-operations/{operationId}/release', [QualityController::class, 'releaseProductionOperation']);
         Route::post('/material-lots/{lotId}/release', [QualityController::class, 'releaseMaterial']);
     });
 
