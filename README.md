@@ -62,7 +62,7 @@ Combined candidate artifact: `modern-garment-addis-erp-wp01-wp16-candidate`, ID 
 
 The repository now contains Laravel backend foundations and candidate services/migrations for enterprise identity, merchandising, PLM, IE, sourcing/material genealogy, route/MES execution, quality/CAPA, distribution, finance/payroll review, documents/integrations and governed agents. Angular executable user journeys are currently concentrated in authentication, enterprise setup, merchandising and initial product development. See the [application folder/code map](docs/architecture/application-folder-code-map.md) for exact file paths.
 
-**Current execution checkpoint:** WP-03 remains the active package because tenant lifecycle (activation/suspension/closure/export/retention/recovery), effective-dated scoped roles and downstream target checks, MFA/OIDC/SSO, platform entitlements, invitation/domain-role/ownership administration UI, full operator bootstrap/recovery and full WP-03 acceptance evidence remain open. Owner succession, one-active-owner protection and safe voluntary leave are now implemented and CI-verified foundations. The dedicated working branch is `work/wp03-identity-platform-completion-2026-11-26`; verified increments target the delivery branch through PRs.
+**Current execution checkpoint:** WP-03 remains the active package because tenant lifecycle and platform entitlements are now implemented as a candidate API/database foundation on the WP-03 working branch; exact-head CI is pending. Remaining WP-03 work includes scoped roles and target checks, MFA/OIDC/SSO, invitation/domain-role/ownership administration UI, operator bootstrap/recovery and full acceptance evidence. Owner succession, one-active-owner protection and safe voluntary leave are merged and CI-verified. The dedicated working branch is `work/wp03-identity-platform-completion-2026-11-26`; verified increments target the delivery branch through PRs.
 
 **Release wording:** successful CI is technical evidence for the exact checks and SHA only. It does not mean WP-01–WP-16 are all complete. Full factory/store/customer E2E, independent security review, production concurrency/load/soak, backup/restore/DR/rollback, external integration UAT, professional/statutory sign-offs, staging/UAT and accountable production deployment remain WP-16 gates. No production release is claimed.
 
@@ -71,6 +71,7 @@ The repository now contains Laravel backend foundations and candidate services/m
 - [Angular frontend](frontend/)
 - [Application file/code map](docs/architecture/application-folder-code-map.md)
 - [WP-03 requirement-level acceptance matrix](docs/verification/WP03-implementation-acceptance-matrix.md)
+- [Platform administration and tenant entitlement bootstrap](docs/security/platform-administration-bootstrap.md)
 - [Local infrastructure](docker-compose.yml)
 - [CI workflow](.github/workflows/ci.yml)
 - [WP-00 to WP-16 handover register](docs/work-packages/handover-register.md)
