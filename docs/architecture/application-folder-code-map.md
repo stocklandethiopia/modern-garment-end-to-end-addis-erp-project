@@ -373,3 +373,15 @@ Backend and frontend domain boundaries must match. A new Laravel controller/serv
 | Platform bootstrap / role source | `docs/security/platform-administration-bootstrap.md` | `platform_operator_grants` | No application INSERT/UPDATE/DELETE privilege; no operator is seeded. Initial operator grants require controlled DBA provisioning, distinct grantor/approver identities and a documented approval. |
 | Platform schema and lifecycle functions | `backend/database/migrations/2026_11_26_000032_add_platform_entitlements_and_tenant_lifecycle.php` | `platform_operator_grants`, `platform_tenant_entitlements`, `platform_audit_events`; `platform_list_tenants()`, `platform_change_tenant_status()`, `platform_set_tenant_entitlements()`, `platform_get_current_entitlement()` | Fixed-search-path SECURITY DEFINER functions; platform audit is append-only; app_runtime has read-only RLS-scoped entitlement and self-grant reads, and no direct writes to platform tables. |
 | Platform acceptance tests | `backend/tests/Feature/PlatformAdministrationTest.php` | Test list, support read-only, entitlement change/read, lifecycle suspend/reactivate/close, and runtime privilege assertions. | New exact-head PostgreSQL CI required; this change is not yet accepted until all tests pass. |
+
+
+### Platform administration and entitlements (WP-03 candidate)
+
+- `backend/app/Http/Controllers/Enterprise/PlatformAdministrationController.php`: global platform tenant list, lifecycle change, entitlement update.
+- `backend/app/Http/Controllers/Enterprise/TenantEntitlementController.php`: read-only current tenant entitlement summary.
+- `backend/app/Services/PlatformAdministrationService.php`: calls narrowly granted platform functions and maps database authorization/validation errors.
+- `backend/database/migrations/2026_11_26_000032_add_platform_entitlements_and_tenant_lifecycle.php`: global operator grants, tenant entitlements, platform audit, default entitlement trigger, forced RLS, platform role functions and lifecycle state machine.
+- `backend/tests/Feature/PlatformAdministrationTest.php`: platform-admin/support separation, entitlement read/write, tenant lifecycle and runtime privilege assertions.
+- `docs/security/platform-administration-bootstrap.md`: controlled two-person operator-grant provisioning and lifecycle/entitlement security boundary.
+- Route registration: `backend/routes/domain-api.php`; `/api/v1/platform/*` uses global identity context, while `/api/v1/tenant/entitlements` uses tenant context.
+- Current status: candidate implementation only; exact-head CI, controlled platform operator appointment, full feature-gate enforcement, retention/legal hold and platform UI remain open.
