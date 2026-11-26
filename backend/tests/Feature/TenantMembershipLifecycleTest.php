@@ -450,5 +450,4 @@ class TenantMembershipLifecycleTest extends TestCase
             'object_id' => $assignmentId,
         ], 'pgsql_test_admin');
     }
-
 }
