@@ -72,6 +72,7 @@ Route::middleware(['auth:sanctum', ResolveTenantContext::class])->prefix('v1')->
 
     Route::prefix('devices')->group(function (): void {
         Route::post('/scan-events', [DocumentIntegrationController::class, 'recordScan']);
+        Route::post('/scan-events/{scanEventId}/resolve', [DocumentIntegrationController::class, 'resolveScan']);
     });
 
     Route::prefix('agents')->group(function (): void {
