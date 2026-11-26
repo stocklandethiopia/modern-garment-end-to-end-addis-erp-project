@@ -31,73 +31,75 @@ class DemandOtbPricingWorkflowTest extends TestCase
         $this->approverId = (string) Str::uuid();
         $this->legalEntityId = (string) Str::uuid();
 
-        $admin->table('tenants')->insert([
-            'id' => $this->tenantId,
-            'code' => 'PLAN-'.Str::upper(Str::random(8)),
-            'name' => 'Planning workflow tenant',
-            'status' => 'ACTIVE',
-            'locale' => 'en',
-            'timezone' => 'Africa/Addis_Ababa',
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
-
-        $admin->table('users')->insert([
-            [
-                'id' => $this->ownerId,
-                'name' => 'Merchandising Planner',
-                'email' => 'planner-'.Str::lower(Str::random(8)).'@example.test',
-                'password' => Hash::make('a-long-test-password'),
+        $admin->transaction(function () use ($admin, $now): void {
+    $admin->table('tenants')->insert([
+                'id' => $this->tenantId,
+                'code' => 'PLAN-'.Str::upper(Str::random(8)),
+                'name' => 'Planning workflow tenant',
                 'status' => 'ACTIVE',
+                'locale' => 'en',
+                'timezone' => 'Africa/Addis_Ababa',
                 'created_at' => $now,
                 'updated_at' => $now,
-            ],
-            [
-                'id' => $this->approverId,
-                'name' => 'Commercial Finance Approver',
-                'email' => 'commercial-approver-'.Str::lower(Str::random(8)).'@example.test',
-                'password' => Hash::make('a-long-test-password'),
-                'status' => 'ACTIVE',
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-        ]);
+            ]);
 
-        $admin->table('tenant_memberships')->insert([
-            [
-                'id' => (string) Str::uuid(),
+            $admin->table('users')->insert([
+                [
+                    'id' => $this->ownerId,
+                    'name' => 'Merchandising Planner',
+                    'email' => 'planner-'.Str::lower(Str::random(8)).'@example.test',
+                    'password' => Hash::make('a-long-test-password'),
+                    'status' => 'ACTIVE',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+                [
+                    'id' => $this->approverId,
+                    'name' => 'Commercial Finance Approver',
+                    'email' => 'commercial-approver-'.Str::lower(Str::random(8)).'@example.test',
+                    'password' => Hash::make('a-long-test-password'),
+                    'status' => 'ACTIVE',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+            ]);
+
+            $admin->table('tenant_memberships')->insert([
+                [
+                    'id' => (string) Str::uuid(),
+                    'tenant_id' => $this->tenantId,
+                    'user_id' => $this->ownerId,
+                    'membership_role' => 'OWNER',
+                    'status' => 'ACTIVE',
+                    'joined_at' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+                [
+                    'id' => (string) Str::uuid(),
+                    'tenant_id' => $this->tenantId,
+                    'user_id' => $this->approverId,
+                    'membership_role' => 'ADMIN',
+                    'status' => 'ACTIVE',
+                    'joined_at' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+            ]);
+
+            $admin->table('legal_entities')->insert([
+                'id' => $this->legalEntityId,
                 'tenant_id' => $this->tenantId,
-                'user_id' => $this->ownerId,
-                'membership_role' => 'OWNER',
+                'registration_number' => 'REG-'.$this->tenantId,
+                'legal_name' => 'Planning Test Apparel PLC',
+                'country_code' => 'ET',
+                'base_currency' => 'ETB',
                 'status' => 'ACTIVE',
-                'joined_at' => $now,
                 'created_at' => $now,
                 'updated_at' => $now,
-            ],
-            [
-                'id' => (string) Str::uuid(),
-                'tenant_id' => $this->tenantId,
-                'user_id' => $this->approverId,
-                'membership_role' => 'ADMIN',
-                'status' => 'ACTIVE',
-                'joined_at' => $now,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-        ]);
+            ]);
 
-        $admin->table('legal_entities')->insert([
-            'id' => $this->legalEntityId,
-            'tenant_id' => $this->tenantId,
-            'registration_number' => 'REG-'.$this->tenantId,
-            'legal_name' => 'Planning Test Apparel PLC',
-            'country_code' => 'ET',
-            'base_currency' => 'ETB',
-            'status' => 'ACTIVE',
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
-
+        });
         $this->actAsOwner();
     }
 
