@@ -362,3 +362,14 @@ Backend and frontend domain boundaries must match. A new Laravel controller/serv
 - No unneeded compiled application bundle or binary installer was found in the inspected delivery tree.
 
 **Maintenance rule:** this document must be kept synchronized with the real tree. The directory listing above reflects the inspected baseline; later WP-specific additions must be appended in the same branch/PR that adds the code.
+
+
+## WP-03 platform administration and entitlement extension
+
+| Concern | Exact source file | Route / database contract | Security and status |
+|---|---|---|---|
+| Platform tenant register/lifecycle | `backend/app/Http/Controllers/Enterprise/PlatformAdministrationController.php`; `backend/app/Services/PlatformAdministrationService.php` | `GET /api/v1/platform/tenants`; `PATCH /api/v1/platform/tenants/{tenantId}/lifecycle` | Runs with authenticated global identity context, not tenant OWNER/ADMIN authority. Database function requires a valid PLATFORM_ADMIN or PLATFORM_SUPPORT grant (read-only for support). |
+| Platform entitlements | `PlatformAdministrationController.php`; `PlatformAdministrationService.php`; `TenantEntitlementController.php` | `PUT /api/v1/platform/tenants/{tenantId}/entitlements`; `GET /api/v1/tenant/entitlements` | Platform change requires PLATFORM_ADMIN; tenant user can read only the current tenant's entitlement through tenant-context RLS/function. |
+| Platform bootstrap / role source | `docs/security/platform-administration-bootstrap.md` | `platform_operator_grants` | No application INSERT/UPDATE/DELETE privilege; no operator is seeded. Initial operator grants require controlled DBA provisioning, distinct grantor/approver identities and a documented approval. |
+| Platform schema and lifecycle functions | `backend/database/migrations/2026_11_26_000032_add_platform_entitlements_and_tenant_lifecycle.php` | `platform_operator_grants`, `platform_tenant_entitlements`, `platform_audit_events`; `platform_list_tenants()`, `platform_change_tenant_status()`, `platform_set_tenant_entitlements()`, `platform_get_current_entitlement()` | Fixed-search-path SECURITY DEFINER functions; platform audit is append-only; app_runtime has read-only RLS-scoped entitlement and self-grant reads, and no direct writes to platform tables. |
+| Platform acceptance tests | `backend/tests/Feature/PlatformAdministrationTest.php` | Test list, support read-only, entitlement change/read, lifecycle suspend/reactivate/close, and runtime privilege assertions. | New exact-head PostgreSQL CI required; this change is not yet accepted until all tests pass. |
