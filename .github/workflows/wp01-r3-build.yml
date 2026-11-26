@@ -38,8 +38,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cd /tmp/wp01-r3/wp01-r2-release
-          sha256sum --check CHECKSUMS.sha256
+          cd /tmp/wp01-r3
+          sha256sum --check wp01-r2-release/CHECKSUMS.sha256
 
       - name: Set up supported WP-01 Node runtime
         uses: actions/setup-node@v4
