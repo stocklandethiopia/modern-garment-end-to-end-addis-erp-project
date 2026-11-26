@@ -2,6 +2,8 @@
 
 namespace App\Services\Manufacturing;
 
+use App\Services\Support\DecimalQuantity;
+
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -295,18 +297,24 @@ class ManufacturingExecutionService
                 if ($workerReference === null || trim($workerReference) === '') {
                     throw ValidationException::withMessages(['operator_reference' => 'A confirmed skilled-worker assignment is required to start a production operation.']);
                 }
-                $assignment = DB::table('workforce_assignments as wa')
+                $assignmentQuery = DB::table('workforce_assignments as wa')
                     ->join('workforce_skill_records as ws', function ($join): void {
                         $join->on('ws.tenant_id', '=', 'wa.tenant_id')->on('ws.id', '=', 'wa.skill_record_id');
                     })
                     ->where('wa.tenant_id', $tenantId)->where('wa.operation_id', $operationId)
                     ->where('wa.worker_reference', $workerReference)
                     ->where('wa.assignment_status', 'CONFIRMED')
+                    ->where('wa.planned_start_at', '<=', now())
+                    ->where('wa.planned_end_at', '>=', now())
                     ->where('ws.status', 'ACTIVE')->where('ws.assessment_result', 'COMPETENT')
                     ->whereDate('ws.valid_from', '<=', now()->toDateString())
                     ->where(function ($q): void {
                         $q->whereNull('ws.valid_until')->orWhereDate('ws.valid_until', '>=', now()->toDateString());
-                    })->exists();
+                    });
+                if ($routeStep->required_skill_code !== null) {
+                    $assignmentQuery->where('ws.skill_code', $routeStep->required_skill_code);
+                }
+                $assignment = $assignmentQuery->exists();
                 if (! $assignment) {
                     throw ValidationException::withMessages(['operator_reference' => 'The worker requires a current competent skill record and a confirmed assignment for this operation.']);
                 }
@@ -318,17 +326,22 @@ class ManufacturingExecutionService
                     throw ValidationException::withMessages(['operation' => 'Output, defect and downtime events require an IN_PROGRESS operation.']);
                 }
                 if (in_array($eventType, ['OUTPUT','DEFECT'], true)) {
-                    $quantity = (float) ($data['quantity'] ?? 0);
-                    if ($quantity <= 0) {
+                    $quantity = (string) ($data['quantity'] ?? '0');
+                    $quantityUnits = DecimalQuantity::units($quantity);
+                    if ($quantityUnits <= 0) {
                         throw ValidationException::withMessages(['quantity' => 'Production quantity must be greater than zero.']);
                     }
-                    $good = (float) $operation->good_quantity + ($eventType === 'OUTPUT' ? $quantity : 0);
-                    $defective = (float) $operation->defective_quantity + ($eventType === 'DEFECT' ? $quantity : 0);
-                    if ($good + $defective > (float) $operation->planned_quantity) {
+                    $goodUnits = DecimalQuantity::units((string) $operation->good_quantity)
+                        + ($eventType === 'OUTPUT' ? $quantityUnits : 0);
+                    $defectiveUnits = DecimalQuantity::units((string) $operation->defective_quantity)
+                        + ($eventType === 'DEFECT' ? $quantityUnits : 0);
+                    if ($goodUnits + $defectiveUnits > DecimalQuantity::units((string) $operation->planned_quantity)) {
                         throw ValidationException::withMessages(['quantity' => 'Recorded output cannot exceed planned operation quantity.']);
                     }
                     DB::table('production_order_operations')->where('tenant_id', $tenantId)->where('id', $operationId)->update([
-                        'good_quantity' => $good, 'defective_quantity' => $defective, 'updated_at' => now(),
+                        'good_quantity' => DecimalQuantity::format($goodUnits),
+                        'defective_quantity' => DecimalQuantity::format($defectiveUnits),
+                        'updated_at' => now(),
                     ]);
                 }
             } elseif ($eventType === 'BLOCK') {
@@ -340,7 +353,8 @@ class ManufacturingExecutionService
                 DB::table('production_order_operations')->where('tenant_id', $tenantId)->where('id', $operationId)->update(['status' => 'IN_PROGRESS', 'updated_at' => now()]);
             } elseif ($eventType === 'COMPLETE') {
                 if ($operation->status !== 'IN_PROGRESS' ||
-                    (float) $operation->good_quantity + (float) $operation->defective_quantity !== (float) $operation->planned_quantity) {
+                    DecimalQuantity::units((string) $operation->good_quantity) + DecimalQuantity::units((string) $operation->defective_quantity)
+                        !== DecimalQuantity::units((string) $operation->planned_quantity)) {
                     throw ValidationException::withMessages(['operation' => 'An operation can complete only when good plus defective output equals its planned quantity.']);
                 }
                 DB::table('production_order_operations')->where('tenant_id', $tenantId)->where('id', $operationId)->update([
@@ -362,8 +376,8 @@ class ManufacturingExecutionService
             DB::table('production_execution_events')->insert([
                 'id' => $eventId, 'tenant_id' => $tenantId, 'production_order_id' => $orderId,
                 'operation_id' => $operationId, 'event_type' => $eventType, 'event_key' => $data['event_key'],
-                'good_quantity' => $eventType === 'OUTPUT' ? $data['quantity'] : 0,
-                'defective_quantity' => $eventType === 'DEFECT' ? $data['quantity'] : 0,
+                'good_quantity' => $eventType === 'OUTPUT' ? DecimalQuantity::format(DecimalQuantity::units((string) $data['quantity'])) : '0',
+                'defective_quantity' => $eventType === 'DEFECT' ? DecimalQuantity::format(DecimalQuantity::units((string) $data['quantity'])) : '0',
                 'downtime_minutes' => $eventType === 'DOWNTIME' ? ($data['downtime_minutes'] ?? 0) : 0,
                 'reason_code' => $data['reason_code'] ?? null, 'reason_detail' => $data['reason_detail'] ?? null,
                 'operator_reference' => $data['operator_reference'] ?? null,
