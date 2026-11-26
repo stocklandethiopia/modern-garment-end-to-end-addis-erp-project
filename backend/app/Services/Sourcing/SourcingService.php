@@ -45,6 +45,9 @@ class SourcingService
             if ($supplier === null) {
                 throw ValidationException::withMessages(['supplier' => 'Supplier was not found in this tenant.']);
             }
+            if ((string) $supplier->created_by === $actorId) {
+                throw ValidationException::withMessages(['approver' => 'The supplier creator cannot approve the supplier onboarding record.']);
+            }
             if (trim((string) ($evidence['due_diligence_reference'] ?? '')) === '' ||
                 trim((string) ($evidence['quality_approval_reference'] ?? '')) === '') {
                 throw ValidationException::withMessages(['evidence' => 'Due-diligence and quality approval evidence references are required.']);
@@ -211,6 +214,10 @@ class SourcingService
                 'updated_at' => now(),
             ]);
 
+            DB::table('purchase_orders')->where('tenant_id', $tenantId)->where('id', $order->id)->update([
+                'status' => 'PART_RECEIVED', 'updated_at' => now(),
+            ]);
+
             foreach ($data['lines'] as $index => $line) {
                 $poLine = DB::table('purchase_order_lines')
                     ->where('tenant_id', $tenantId)
@@ -372,6 +379,20 @@ class SourcingService
             DB::table('purchase_order_lines')->where('tenant_id', $tenantId)->where('id', $poLine->id)->update([
                 'accepted_quantity' => $acceptedOnLine, 'updated_at' => now(),
             ]);
+
+            $allLines = DB::table('purchase_order_lines')->where('tenant_id', $tenantId)->where('purchase_order_id', $order->id)->get(['ordered_quantity','accepted_quantity']);
+            $allAccepted = $allLines->isNotEmpty();
+            foreach ($allLines as $lineState) {
+                if (DecimalQuantity::units((string) $lineState->accepted_quantity) < DecimalQuantity::units((string) $lineState->ordered_quantity)) {
+                    $allAccepted = false;
+                    break;
+                }
+            }
+            if ($allAccepted) {
+                DB::table('purchase_orders')->where('tenant_id', $tenantId)->where('id', $order->id)->update([
+                    'status' => 'RECEIVED', 'updated_at' => now(),
+                ]);
+            }
 
             return DB::table('material_lots')->where('tenant_id', $tenantId)->where('id', $lotId)->first();
         }, 3);
