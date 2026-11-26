@@ -66,5 +66,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('agent.propose-action', fn ($user): bool => $domainAuthorizer->allows($user, 'agent.propose-action'));
         Gate::define('agent.approve-action', fn ($user): bool => $domainAuthorizer->allows($user, 'agent.approve-action'));
         Gate::define('agent.execute-approved-draft', fn ($user): bool => $domainAuthorizer->allows($user, 'agent.execute-approved-draft'));
+
+        $domainAuthorizer = app(DomainCapabilityAuthorizer::class);
+        Gate::define('quality.release-production-operation', fn ($user): bool => $domainAuthorizer->allows($user, 'quality.release-production-operation'));
 }
 }
