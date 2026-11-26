@@ -135,8 +135,14 @@ class QualityControlService
             if ($inspection->inspected_by === $reviewerId) {
                 throw ValidationException::withMessages(['reviewer' => 'The inspector cannot review their own inspection.']);
             }
+            if ($inspection->reviewed_by !== null || $inspection->reviewed_at !== null) {
+                throw ValidationException::withMessages(['inspection' => 'A quality inspection can only receive one final independent review. Reinspection requires a new inspection record.']);
+            }
             if (! in_array($data['decision'], ['ACCEPT', 'REJECT', 'RETURN_FOR_REINSPECTION'], true)) {
                 throw ValidationException::withMessages(['decision' => 'Unsupported inspection review decision.']);
+            }
+            if ($data['decision'] === 'ACCEPT' && ! in_array($inspection->result_status, ['PASS', 'PASS_WITH_DEVIATION'], true)) {
+                throw ValidationException::withMessages(['decision' => 'A failed or contained inspection cannot be accepted; resolve the nonconformance and create a new inspection.']);
             }
             if (trim((string) ($data['review_reason'] ?? '')) === '') {
                 throw ValidationException::withMessages(['review_reason' => 'A review decision reason is required.']);
