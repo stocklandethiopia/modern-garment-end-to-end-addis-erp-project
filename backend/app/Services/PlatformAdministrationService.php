@@ -11,9 +11,17 @@ use Illuminate\Validation\ValidationException;
 
 class PlatformAdministrationService
 {
-    public function tenants(): object
+    public function tenants(): array
     {
-        return DB::select('SELECT * FROM public.platform_list_tenants() ORDER BY tenant_code');
+        try {
+            return DB::select('SELECT * FROM public.platform_list_tenants() ORDER BY tenant_code');
+        } catch (QueryException $exception) {
+            if (($exception->errorInfo[0] ?? null) === '42501') {
+                throw new AuthorizationException('The authenticated identity does not have the required platform authority.');
+            }
+
+            throw $exception;
+        }
     }
 
     public function changeTenantStatus(string $tenantId, string $status, string $reason): object
