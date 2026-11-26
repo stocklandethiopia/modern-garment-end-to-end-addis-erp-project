@@ -14,10 +14,15 @@ use Tests\TestCase;
 class PlatformAdministrationTest extends TestCase
 {
     private string $tenantId;
+
     private string $tenantOwnerId;
+
     private string $platformAdminId;
+
     private string $platformSupportId;
+
     private string $grantOfficerId;
+
     private string $securityApproverId;
 
     protected function setUp(): void
@@ -298,5 +303,4 @@ class PlatformAdministrationTest extends TestCase
         $this->assertFalse((bool) $runtime->scalar("SELECT has_table_privilege('app_runtime', 'platform_audit_events', 'UPDATE')"));
         $this->assertFalse((bool) $runtime->scalar("SELECT has_table_privilege('app_runtime', 'platform_audit_events', 'DELETE')"));
     }
-
 }

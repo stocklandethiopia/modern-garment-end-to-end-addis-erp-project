@@ -2,8 +2,8 @@
 
 use App\Http\Controllers\Agents\AgentGovernanceController;
 use App\Http\Controllers\Distribution\FinishedGoodsController;
-use App\Http\Controllers\Enterprise\TenantDomainRoleAssignmentController;
 use App\Http\Controllers\Enterprise\PlatformAdministrationController;
+use App\Http\Controllers\Enterprise\TenantDomainRoleAssignmentController;
 use App\Http\Controllers\Enterprise\TenantEntitlementController;
 use App\Http\Controllers\Enterprise\TenantOwnershipController;
 use App\Http\Controllers\Finance\FinanceControlController;
