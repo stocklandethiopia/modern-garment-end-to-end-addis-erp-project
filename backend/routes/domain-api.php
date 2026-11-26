@@ -3,6 +3,8 @@
 use App\Http\Controllers\Agents\AgentGovernanceController;
 use App\Http\Controllers\Distribution\FinishedGoodsController;
 use App\Http\Controllers\Enterprise\TenantDomainRoleAssignmentController;
+use App\Http\Controllers\Enterprise\PlatformAdministrationController;
+use App\Http\Controllers\Enterprise\TenantEntitlementController;
 use App\Http\Controllers\Enterprise\TenantOwnershipController;
 use App\Http\Controllers\Finance\FinanceControlController;
 use App\Http\Controllers\Integration\DocumentIntegrationController;
@@ -12,11 +14,21 @@ use App\Http\Controllers\Quality\QualityController;
 use App\Http\Controllers\Sourcing\SourcingController;
 use Illuminate\Support\Facades\Route;
 
+Route::middleware(['auth:sanctum', 'token.ability:erp:access', 'identity.context'])
+    ->prefix('v1/platform')
+    ->group(function (): void {
+        Route::get('/tenants', [PlatformAdministrationController::class, 'index']);
+        Route::patch('/tenants/{tenantId}/lifecycle', [PlatformAdministrationController::class, 'changeLifecycle']);
+        Route::put('/tenants/{tenantId}/entitlements', [PlatformAdministrationController::class, 'updateEntitlements']);
+    });
+
 Route::middleware(['auth:sanctum', 'token.ability:erp:access', 'tenant.context'])->prefix('v1')->group(function (): void {
     Route::prefix('enterprise/ownership')->group(function (): void {
         Route::post('/transfer', [TenantOwnershipController::class, 'transfer']);
     });
     Route::post('/enterprise/membership/leave', [TenantOwnershipController::class, 'leave']);
+
+    Route::get('/tenant/entitlements', [TenantEntitlementController::class, 'show']);
 
     Route::prefix('enterprise/domain-role-assignments')->group(function (): void {
         Route::get('/', [TenantDomainRoleAssignmentController::class, 'index']);
