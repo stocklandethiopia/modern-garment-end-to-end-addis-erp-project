@@ -394,6 +394,41 @@ class TenantMembershipLifecycleTest extends TestCase
             'grant_reason' => 'Attempt to overlap an existing current role period.',
         ])->assertUnprocessable();
 
+        // Verify the database guard independently of the service-level overlap check.
+        $runtime = DB::connection('pgsql');
+        $runtime->beginTransaction();
+        try {
+            $runtime->select("SELECT set_config('app.current_tenant_id', ?, true)", [$this->tenantId]);
+            $now = now();
+            try {
+                $runtime->table('tenant_domain_role_assignments')->insert([
+                    'id' => (string) Str::uuid(),
+                    'tenant_id' => $this->tenantId,
+                    'user_id' => $this->memberId,
+                    'role_code' => 'STORE_MANAGER',
+                    'scope_type' => 'TENANT',
+                    'scope_id' => null,
+                    'status' => 'PENDING',
+                    'valid_from' => now()->subDay()->toDateString(),
+                    'valid_to' => null,
+                    'grant_reason' => 'Attempt direct database insert for overlapping role period.',
+                    'granted_by' => $this->adminId,
+                    'approved_by' => null,
+                    'approved_at' => null,
+                    'revoked_by' => null,
+                    'revoked_at' => null,
+                    'revocation_reason' => null,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+                $this->fail('The database must reject overlapping pending/active domain-role periods.');
+            } catch (QueryException $exception) {
+                $this->assertSame('23P01', $exception->errorInfo[0] ?? null);
+            }
+        } finally {
+            $runtime->rollBack();
+        }
+
         $this->actAs($this->ownerId);
         $this->getJson('/api/v1/enterprise/domain-role-assignments?user_id='.$this->memberId)
             ->assertOk()
