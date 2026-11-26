@@ -49,9 +49,17 @@ This ledger reconciles the requirements assigned to WP-03 in docs/requirements/r
 | Invitations and identity verification | backend/app/Http/Controllers/Enterprise/TenantInvitationController.php; backend/app/Services/TenantInvitationService.php; backend/app/Notifications/TenantInvitationNotification.php; backend/database/migrations/2026_11_24_000014_create_secure_tenant_invitations.php |
 | Tenant/site/entity/location | Enterprise LegalEntityController, BusinessSiteController, InventoryLocationController and LicensingEvidenceController; migration 000001 |
 | Scope grants | AccessScopeController; ScopedAccessService; migration 000009 |
-| Domain roles | TenantDomainRoleAssignmentController; TenantDomainRoleAssignmentService; DomainCapabilityAuthorizer; migrations 000027–000030 |
+| Domain roles | TenantDomainRoleAssignmentController; TenantDomainRoleAssignmentService; DomainCapabilityAuthorizer; migrations 000027–000031 |
 | Request actor context | ResolveAuthenticatedIdentityContext; TenantContextResolver |
 | Tests | TenantProvisioningServiceTest, TenantIsolationTest, TenantMembershipLifecycleTest, TenantInvitationLifecycleTest and DomainRlsSecurityTest |
+
+## Owner succession and voluntary leave — new implementation slice
+
+| Acceptance scenario | Implementation/evidence | Status | Remaining verification |
+|---|---|---|---|
+| AT-ENT-OWNER-001 ownership transfer | `POST /api/v1/enterprise/ownership/transfer`; only active OWNER may transfer to another active MEMBER/ADMIN. A SECURITY DEFINER function serializes tenant succession, locks both identities in stable order, demotes the current owner and promotes the successor in one transaction, and writes `TENANT_OWNERSHIP_TRANSFERRED`. | IMPLEMENTED — exact-head CI pending | Prove no two active owners, former-owner permissions update immediately, only new owner can transfer next, and failure rolls back both role changes. |
+| AT-ENT-OWNER-002 safe voluntary exit | `POST /api/v1/enterprise/membership/leave`; current member leaves their own tenant membership. OWNER is denied until ownership is transferred. Membership revocation trigger revokes all pending/active domain roles. | IMPLEMENTED — exact-head CI pending | Prove all roles revoked, self-leave is audited, and ownerless tenant is impossible. |
+| AT-ENT-OWNER-003 single-owner integrity | Migration 000031 creates a unique partial index for one active owner maximum plus a deferred constraint trigger for exactly one active OWNER per existing tenant, including tenant creation. | IMPLEMENTED — exact-head CI pending | Prove migration preflight detects existing ownerless/multi-owner tenants; prove deferred constraint rejects owner removal and accepts owner transfer at transaction commit. |
 
 ## Exact verification evidence
 
@@ -59,11 +67,13 @@ Previous integrated candidate SHA dbd01b56510e87beebfac454ae49723bfbf5c633 passe
 - Combined WP-01–WP-16 workflow #45891155076: all four jobs passed; backend 78 tests / 967 assertions; Angular 27 tests / 7 files and production build; RLS/migrations; WP-01 source validation; artifact assembly.
 - Destination delivery CI on merge commit 6bd8990d434d3cbc9f51e58489cc76fb240a83b6: #45891439094 and #45891445136.
 
-These runs predate the new WP-03 code in this branch and therefore do **not** verify migrations 000028–000030 or the new role lifecycle tests. PR #6 exact-head CI is the required verification for this increment.
+These runs predate the new WP-03 code in this branch and therefore do **not** verify migrations 000028–000031 or the new role/ownership lifecycle tests. PR #6 exact-head CI is the required verification for this increment.
 
 ## Next implementation sequence
 
-1. Finish tenant membership ↔ domain-role lifecycle (revoke, role promotion, reactivation, overlap/effective-date, race/concurrency and audit). Migration 000029 replaces the overly restrictive partial unique index with a transaction-advisory-lock overlap trigger. Migration 000030 provides a narrowly granted SECURITY DEFINER reader that locks active membership rows without granting app_runtime direct table UPDATE privileges. Prove both on exact-head PostgreSQL CI in PR #6.
+1. Verify tenant membership ↔ domain-role lifecycle (revoke, role promotion, reactivation, overlap/effective-date, race/concurrency and audit). Migration 000029 enforces database-level overlap; 000030 provides the narrowly granted locked-membership reader.
+2. Complete and verify owner succession/voluntary leave (migration 000031), exactly-one-active-owner constraint, transfer concurrency/rollback and post-transfer authority.
+3. Complete tenant activation/suspension/closure/export/retention/recovery and platform entitlement separation.
 2. Complete a domain-role administration API/UI and a full list of role codes, status/effective dates, conflict/approval history and revoke reasons.
 3. Design and implement owner transfer/succession/leave plus last-owner protection, using an explicit owner-only state machine and concurrency locks.
 4. Complete tenant activation/suspension/closure/export/retention/recovery and platform entitlement separation.
