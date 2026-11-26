@@ -107,3 +107,24 @@ An experimental framework feature does not change the approved architecture: Ang
 For each new Angular feature or major/minor upgrade: inspect official documentation and changelog; record production-ready/preview/experimental maturity; confirm compatibility with the currently pinned Angular/TypeScript/Node/toolchain; prototype in a feature branch; test accessibility, security, bundle size, performance and critical ERP journeys; update lockfiles; review the exact diff; merge only after required CI succeeds. Keep an explicit revert or feature-disable path.
 
 This document is a technology adoption standard, not a declaration that all listed features have already been implemented in the ERP.
+
+
+## 7. Exact candidate implementation audit — 26 November 2026
+
+The candidate branch lockfile resolves the frontend toolchain to Angular core/CLI/build/forms **22.3.0**, TypeScript **6.0.3**, Vitest **4.1.12** and Zone.js **0.16.3**; package metadata requires Node.js **26.13.1 or later**. The committed lockfile, not a moving upstream branch, is the reproducible dependency authority.
+
+Verified implementation already present:
+- Strict TypeScript and strict Angular template checks.
+- Angular CLI application builder, Vitest unit-test builder, production output hashing and configured bundle/style budgets.
+- Typed HTTP client and authentication interceptor.
+- Enterprise, merchandising and product-development route surfaces.
+
+Source-level gaps to track as bounded implementation work:
+- `frontend/src/app/app.routes.ts` currently imports feature components eagerly. Convert larger feature areas to `loadComponent` or `loadChildren` in bounded changes, preserving route guards, deep links, keyboard behavior and test coverage; compare production bundle size before/after.
+- `zone.js` remains in the production polyfill list and lockfile. Although zoneless is production-ready in Angular 22, the app is not yet verified as zoneless. Run a controlled compatibility spike covering Reactive Forms, external observables, timers, notifications, dialogs, live production boards and error propagation before removing Zone.js.
+- Use Signals/computed/linkedSignal and stable Signal Forms for new or bounded UI state where they reduce complexity; keep existing forms stable absent a tested migration case. Use Resource/httpResource for reads, never as a hidden transaction mechanism.
+- Introduce `@defer` for genuinely heavy analytics, document preview and visualization panels only after measuring bundle and interaction benefits. SSR/incremental hydration is optional and must not expose personalized tenant, payroll, finance or customer content via shared caches.
+- Angular Aria is stable in v22 but is not in the current lockfile; add it only where a concrete accessible headless interaction need exists.
+- Web MCP remains experimental. Any pilot must use synthetic/non-sensitive data, a capability allowlist, WP-15 authorization and prompt-injection tests, human confirmation for material actions, observability and a kill switch.
+
+**Decision:** retain Angular 22.3.0 and the locked toolchain. Do not install Angular GitHub `main`, canary or placeholder packages. Prioritize route-level lazy loading and a measured zoneless compatibility spike as separate, exact-head-tested changes. This section records source-level findings and priorities; it does not claim those migrations are implemented.
