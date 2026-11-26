@@ -49,5 +49,22 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('commerce.confirm-customer-order', fn ($user): bool => $domainAuthorizer->allows($user, 'commerce.confirm-customer-order'));
         Gate::define('inventory.reserve-finished-goods', fn ($user): bool => $domainAuthorizer->allows($user, 'inventory.reserve-finished-goods'));
         Gate::define('distribution.dispatch-shipment', fn ($user): bool => $domainAuthorizer->allows($user, 'distribution.dispatch-shipment'));
+
+        $domainAuthorizer = app(DomainCapabilityAuthorizer::class);
+        Gate::define('finance.create-journal', fn ($user): bool => $domainAuthorizer->allows($user, 'finance.create-journal'));
+        Gate::define('finance.submit-journal', fn ($user): bool => $domainAuthorizer->allows($user, 'finance.submit-journal'));
+        Gate::define('finance.approve-journal', fn ($user): bool => $domainAuthorizer->allows($user, 'finance.approve-journal'));
+        Gate::define('finance.post-journal', fn ($user): bool => $domainAuthorizer->allows($user, 'finance.post-journal'));
+        Gate::define('payroll.prepare-draft', fn ($user): bool => $domainAuthorizer->allows($user, 'payroll.prepare-draft'));
+        Gate::define('payroll.submit-for-review', fn ($user): bool => $domainAuthorizer->allows($user, 'payroll.submit-for-review'));
+        Gate::define('payroll.professional-approval', fn ($user): bool => $domainAuthorizer->allows($user, 'payroll.professional-approval'));
+        Gate::define('documents.register', fn ($user): bool => $domainAuthorizer->allows($user, 'documents.register'));
+        Gate::define('documents.extract', fn ($user): bool => $domainAuthorizer->allows($user, 'documents.extract'));
+        Gate::define('documents.stage-extraction', fn ($user): bool => $domainAuthorizer->allows($user, 'documents.stage-extraction'));
+        Gate::define('documents.approve-import', fn ($user): bool => $domainAuthorizer->allows($user, 'documents.approve-import'));
+        Gate::define('devices.record-scan', fn ($user): bool => $domainAuthorizer->allows($user, 'devices.record-scan'));
+        Gate::define('agent.propose-action', fn ($user): bool => $domainAuthorizer->allows($user, 'agent.propose-action'));
+        Gate::define('agent.approve-action', fn ($user): bool => $domainAuthorizer->allows($user, 'agent.approve-action'));
+        Gate::define('agent.execute-approved-draft', fn ($user): bool => $domainAuthorizer->allows($user, 'agent.execute-approved-draft'));
 }
 }
