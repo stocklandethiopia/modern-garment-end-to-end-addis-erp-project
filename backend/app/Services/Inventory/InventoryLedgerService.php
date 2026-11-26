@@ -34,6 +34,16 @@ class InventoryLedgerService
                 throw ValidationException::withMessages(['material_lot_id' => 'The material lot is not available in this tenant.']);
             }
 
+            // Recheck after the material-lot lock so concurrent requests with the same
+            // idempotency key return the original movement instead of racing the unique index.
+            $existing = DB::table('inventory_transactions')
+                ->where('tenant_id', $tenantId)
+                ->where('idempotency_key', $data['idempotency_key'])
+                ->first();
+            if ($existing !== null) {
+                return $existing;
+            }
+
             $rollId = $data['fabric_roll_id'] ?? null;
             $trimId = $data['trim_lot_id'] ?? null;
             if ($rollId !== null && $trimId !== null) {
@@ -66,6 +76,29 @@ class InventoryLedgerService
                 $destination = DB::table('inventory_locations')->where('tenant_id', $tenantId)->where('id', $to)->first();
                 if ($destination === null || strtoupper($destination->location_type) !== 'QUARANTINE') {
                     throw ValidationException::withMessages(['to_location_id' => 'Receipt stock must first be placed into a QUARANTINE location.']);
+                }
+            }
+
+            if (in_array($type, ['RETURN','CUSTOMER_RETURN'], true)) {
+                $destination = DB::table('inventory_locations')->where('tenant_id', $tenantId)->where('id', $to)->first();
+                if ($destination === null || strtoupper((string) $destination->location_type) !== 'QUARANTINE') {
+                    throw ValidationException::withMessages(['to_location_id' => 'Returned material must enter quarantine pending inspection.']);
+                }
+            }
+
+            if ($type === 'ADJUSTMENT') {
+                throw ValidationException::withMessages(['movement_type' => 'Manual adjustments are disabled until the stocktake approval workflow is used.']);
+            }
+
+            if ($type === 'SCRAP') {
+                $nonconformance = $data['source_document_type'] === 'QUALITY_DISPOSITION'
+                    ? DB::table('quality_nonconformances')->where('tenant_id', $tenantId)
+                        ->where('id', $data['source_document_id'])
+                        ->where('disposition', 'SCRAP')
+                        ->whereIn('status', ['RESOLVED','CLOSED'])->first()
+                    : null;
+                if ($nonconformance === null || trim((string) ($data['reason'] ?? '')) === '') {
+                    throw ValidationException::withMessages(['scrap' => 'Scrap requires a resolved quality nonconformance with SCRAP disposition and a recorded reason.']);
                 }
             }
 
