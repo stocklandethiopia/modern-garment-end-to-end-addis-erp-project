@@ -76,7 +76,7 @@ jobs:
           $minimum = "8.1.12";
           $names = ["symfony/http-foundation", "symfony/http-kernel", "symfony/mailer", "symfony/routing"];
           foreach ($names as $name) {
-              $installed = Composer\\InstalledVersions::getPrettyVersion($name);
+              $installed = Composer\InstalledVersions::getPrettyVersion($name);
               if (!is_string($installed) || version_compare(ltrim($installed, "v"), $minimum, "<")) {
                   fwrite(STDERR, "$name must be at least ".$minimum." but found ".$installed.PHP_EOL);
                   exit(1);
