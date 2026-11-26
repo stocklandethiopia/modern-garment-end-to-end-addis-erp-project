@@ -111,3 +111,14 @@ Next work must close and evidence: (1) tenant activation/suspension/closure/expo
 - Artifact `modern-garment-addis-erp-wp01-wp16-candidate`, ID `15154530114`, 726,099 bytes, expires 24 February 2027.
 - The new database invariant requires exactly one active OWNER per tenant at transaction commit and tenant provisioning. Ownership transfer is serialized and audited; voluntary leave refuses OWNER until transfer. These are implemented foundation scenarios; full tenant lifecycle and enterprise identity acceptance remain open.
 - Delivery-branch post-merge CI [#45896477349](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45896477349) completed **SUCCESS** on `f7516de080c24ecd9f51e58489cc76fb240a83b6`.
+
+
+## Current WP-03 platform-lifecycle candidate — 26 November 2026
+
+- Active work branch: `work/wp03-identity-platform-completion-2026-11-26`; candidate PR review is being prepared against `delivery/autonomous-wp-01-16`.
+- Candidate migration: `2026_11_26_000032_add_platform_entitlements_and_tenant_lifecycle.php`.
+- Adds separate PLATFORM_ADMIN / PLATFORM_SUPPORT grant records, global platform tenant register, controlled ACTIVE/SUSPENDED/CLOSED lifecycle, tenant entitlement plans/feature flags/limits, tenant-scoped entitlement reads and append-only platform audit.
+- No platform operator is seeded. Initial grants require two-person DBA bootstrap documented in `docs/security/platform-administration-bootstrap.md`; tenant OWNER/ADMIN cannot self-elevate.
+- Candidate endpoints: `GET /api/v1/platform/tenants`; `PATCH /api/v1/platform/tenants/{tenantId}/lifecycle`; `PUT /api/v1/platform/tenants/{tenantId}/entitlements`; tenant read `GET /api/v1/tenant/entitlements`.
+- Tests: `backend/tests/Feature/PlatformAdministrationTest.php` covers role separation, support read-only, entitlement change/read, lifecycle transitions, terminal closure and app_runtime table-privilege boundaries.
+- **Status: IMPLEMENTED CANDIDATE — NOT YET CI VERIFIED / NOT MERGED.** No operator has been provisioned and no commercial entitlement is activated. Feature-gate enforcement, plan catalogue approval, retention/legal hold, export/recovery and platform Angular UI remain open.
