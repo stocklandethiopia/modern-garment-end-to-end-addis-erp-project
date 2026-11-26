@@ -32,6 +32,12 @@ class DomainCapabilityAuthorizer
         'manufacturing.release-production-order' => ['TENANT_OWNER','TENANT_ADMIN','PRODUCTION_MANAGER','FACTORY_MANAGER'],
         'manufacturing.start-production-order' => ['TENANT_OWNER','TENANT_ADMIN','PRODUCTION_MANAGER','FACTORY_MANAGER','PRODUCTION_SUPERVISOR'],
         'manufacturing.record-execution' => ['TENANT_OWNER','TENANT_ADMIN','PRODUCTION_MANAGER','FACTORY_MANAGER','PRODUCTION_SUPERVISOR','LINE_SUPERVISOR','FACTORY_OPERATOR'],
+        'inventory.receive-finished-goods' => ['TENANT_OWNER','TENANT_ADMIN','WAREHOUSE_MANAGER','WAREHOUSE_RECEIVER','PRODUCTION_MANAGER'],
+        'quality.release-finished-goods' => ['TENANT_OWNER','TENANT_ADMIN','QUALITY_HEAD','QUALITY_MANAGER'],
+        'commerce.create-customer-order' => ['TENANT_OWNER','TENANT_ADMIN','SALES_MANAGER','WHOLESALE_MANAGER','RETAIL_MANAGER','STORE_MANAGER'],
+        'commerce.confirm-customer-order' => ['TENANT_OWNER','TENANT_ADMIN','SALES_MANAGER','CREDIT_CONTROLLER','FINANCE_MANAGER'],
+        'inventory.reserve-finished-goods' => ['TENANT_OWNER','TENANT_ADMIN','WAREHOUSE_MANAGER','ORDER_FULFILMENT_MANAGER','INVENTORY_MANAGER'],
+        'distribution.dispatch-shipment' => ['TENANT_OWNER','TENANT_ADMIN','DISTRIBUTION_MANAGER','WAREHOUSE_MANAGER','LOGISTICS_MANAGER'],
     ];
 
     public function allows(?Authenticatable $user, string $ability): bool
