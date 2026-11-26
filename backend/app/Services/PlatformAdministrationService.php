@@ -87,7 +87,7 @@ class PlatformAdministrationService
             if (is_string($entitlement->{$jsonField} ?? null)) {
                 $entitlement->{$jsonField} = json_decode(
                     $entitlement->{$jsonField},
-                    true,
+                    false,
                     512,
                     JSON_THROW_ON_ERROR,
                 );
@@ -102,7 +102,7 @@ class PlatformAdministrationService
         try {
             $result = DB::selectOne($sql, $bindings);
             if ($result === null) {
-                throw new ValidationException(['platform' => 'The platform operation returned no result.']);
+                throw ValidationException::withMessages(['platform' => 'The platform operation returned no result.']);
             }
 
             return $result;
