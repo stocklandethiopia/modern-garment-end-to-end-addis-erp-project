@@ -55,7 +55,7 @@ Once at least one active PLATFORM_ADMIN exists, subsequent platform operator gra
 
 - `GET /api/v1/platform/context` resolves the signed-in identity's currently active, date-effective platform roles. It requires authenticated global identity context and does not require tenant membership.
 - `GET /api/v1/platform/operators/grants` lists the grant register for PLATFORM_ADMIN only. PLATFORM_SUPPORT receives 403.
-- `POST /api/v1/platform/operators/grants` creates a PENDING grant for an existing ACTIVE global identity. The request specifies role, validity start/end and a 10–500 character justification. No new user, tenant or login credential is created by this endpoint.
+- `POST /api/v1/platform/operators/grants` creates a PENDING grant for an existing ACTIVE global identity. The request specifies role, validity start/end and a 10–500 character justification. No new user, tenant or login credential is created by this endpoint. **The end date is mandatory for application requests and cannot be later than 365 days after the start date.** The initial first-admin DBA bootstrap is separately reviewed and is the only approved exception to that application limit.
 - `POST /api/v1/platform/operators/grants/{grantId}/approve` activates a PENDING grant only when a different active PLATFORM_ADMIN approves it with an independent reason. The requester and grant recipient are both barred from approving it.
 - `POST /api/v1/platform/operators/grants/{grantId}/revoke` revokes a PENDING or ACTIVE grant, requires a reason and prevents an operator from revoking their own grant.
 
