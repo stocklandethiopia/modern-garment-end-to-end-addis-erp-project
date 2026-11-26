@@ -5,7 +5,6 @@ namespace App\Services\Inventory;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use RuntimeException;
 
 class InventoryLedgerService
 {
@@ -76,7 +75,7 @@ class InventoryLedgerService
                     throw ValidationException::withMessages(['material_lot_id' => 'Only AVAILABLE material can be issued, consumed, transferred or dispatched.']);
                 }
                 $balance = $this->balanceAt($tenantId, $lot->id, $rollId, $trimId, $from);
-                if (bccomp((string) $balance, (string) $data['quantity'], 6) < 0) {
+                if ($this->decimalUnits($balance) < $this->decimalUnits((string) $data['quantity'])) {
                     throw ValidationException::withMessages(['quantity' => 'The movement exceeds available quantity at the source location.']);
                 }
             }
@@ -132,14 +131,34 @@ class InventoryLedgerService
         $balance = '0.000000';
         foreach ($rows as $row) {
             if ($row->to_location_id === $locationId) {
-                $balance = bcadd($balance, (string) $row->quantity, 6);
+                $balance = $this->unitsDecimal($this->decimalUnits($balance) + $this->decimalUnits((string) $row->quantity));
             }
             if ($row->from_location_id === $locationId) {
-                $balance = bcsub($balance, (string) $row->quantity, 6);
+                $balance = $this->unitsDecimal($this->decimalUnits($balance) - $this->decimalUnits((string) $row->quantity));
             }
         }
 
         return $balance;
+    }
+
+    private function decimalUnits(string $value): int
+    {
+        $value = trim($value);
+        if (! preg_match('/^(\d+)(?:\.(\d{1,6}))?$/', $value, $matches)) {
+            throw new RuntimeException('Quantity must be a non-negative decimal with at most six fractional digits.');
+        }
+
+        $whole = (int) $matches[1];
+        $fraction = (int) str_pad($matches[2] ?? '', 6, '0');
+        return ($whole * 1_000_000) + $fraction;
+    }
+
+    private function unitsDecimal(int $units): string
+    {
+        $negative = $units < 0;
+        $absolute = abs($units);
+        $value = intdiv($absolute, 1_000_000).'.'.str_pad((string) ($absolute % 1_000_000), 6, '0', STR_PAD_LEFT);
+        return $negative ? '-'.$value : $value;
     }
 
     private function validateMovementShape(string $type, ?string $from, ?string $to): void
