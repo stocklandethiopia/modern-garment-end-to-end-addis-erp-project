@@ -207,6 +207,18 @@ BEGIN
         v_actor_id := public.require_platform_operator('PLATFORM_SUPPORT');
     END;
 
+    -- Opening the global tenant directory is privileged metadata access.
+    -- Retain an immutable read event for both administrator and read-only support.
+    INSERT INTO public.platform_audit_events (
+        actor_user_id, tenant_id, action, object_type, object_id,
+        before_state, after_state, reason
+    ) VALUES (
+        v_actor_id, NULL, 'PLATFORM_TENANT_REGISTER_VIEWED',
+        'PLATFORM_TENANT_REGISTER', NULL, '{}'::jsonb,
+        jsonb_build_object('tenant_count', (SELECT COUNT(*) FROM public.tenants)),
+        'Platform tenant register read through the authorized platform API.'
+    );
+
     RETURN QUERY
     SELECT tenant.id, tenant.code, tenant.name, tenant.status,
            entitlement.plan_code, entitlement.entitlement_status,
