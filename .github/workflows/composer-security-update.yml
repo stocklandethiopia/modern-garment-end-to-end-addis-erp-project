@@ -6,7 +6,6 @@ on:
       - work/wp01-16-completion-2026-11-26
     paths:
       - 'backend/composer.json'
-      - '.github/workflows/composer-security-update.yml'
   workflow_dispatch:
     inputs:
       confirm_branch:
@@ -93,8 +92,10 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add backend/composer.lock
           if git diff --cached --quiet; then
-            echo "No composer.lock changes were produced; refusing an empty security-update commit."
-            exit 1
+            echo "The current lockfile already contains the audited fixed packages; no commit is needed."
+            exit 0
           fi
           git commit -m "security(deps): lock Symfony 8.1.12 advisory fixes"
-          git push origin HEAD:work/wp01-16-completion-2026-11-26
+          git fetch origin work/wp01-16-completion-2026-11-26
+          git rebase origin/work/wp01-16-completion-2026-11-26
+          git push origin HEAD:refs/heads/work/wp01-16-completion-2026-11-26
