@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'token.ability:erp:access', 'tenant.context'])->prefix('v1')->group(function (): void {
     Route::prefix('enterprise/domain-role-assignments')->group(function (): void {
+        Route::get('/', [TenantDomainRoleAssignmentController::class, 'index']);
         Route::post('/', [TenantDomainRoleAssignmentController::class, 'store']);
         Route::post('/{assignmentId}/approve', [TenantDomainRoleAssignmentController::class, 'approve']);
         Route::post('/{assignmentId}/revoke', [TenantDomainRoleAssignmentController::class, 'revoke']);
