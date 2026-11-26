@@ -43,7 +43,9 @@ jobs:
           CONFIRM_BRANCH: ${{ inputs.confirm_branch }}
         run: |
           set -euo pipefail
-          test "$CONFIRM_BRANCH" = "work/wp01-16-completion-2026-11-26"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            test "$CONFIRM_BRANCH" = "work/wp01-16-completion-2026-11-26"
+          fi
           test "$GITHUB_REF" = "refs/heads/work/wp01-16-completion-2026-11-26"
 
       - name: Set up PHP 8.5 and Composer 2
