@@ -67,3 +67,31 @@ A repository commit, design document, successful Composer audit or separate WP-0
 - Corrective action: define a reserved, non-routable test-only `FRONTEND_URL=https://erp.example.test` in PHPUnit configuration. Do not restore a hardcoded application URL or add a production hostname. Re-run the complete exact-head test suite before acceptance.
 - WP-01 R3 source verification on the same candidate head [#45881528836](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45881528836) passed. This is not a combined ERP pass.
 - The Miret product goal, four-pillar model, WP-10 planning, WP-11 quality, WP-15 role-specific agents and Angular adoption are already recorded in the existing Notion pages; no duplicate page was created. The technology blueprint received the exact repository implementation audit and staged Angular improvement list.
+
+## Superseding exact-head verification — 26 November 2026
+
+The following result supersedes the earlier pending/failing workflow notes above.
+
+**PASS — combined WP-01–WP-16 candidate CI**, workflow run [#45883478022](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45883478022), exact source commit:
+
+`14f9420b29b062fe15f9b863f5a23a6d6218dbaf`
+
+All four jobs completed successfully on this one commit:
+
+- **Laravel 13 / PHP 8.5 / PostgreSQL 18 / Redis 8.2:** Composer install, strict Composer metadata validation, Composer audit with no advisories, Laravel environment preparation, ordered migrations via `pgsql_migrator`, forced-RLS table verification, Pint formatting, PHP unit/integration tests, and API route registration all passed.
+- **PHP tests:** 78 passed, 967 assertions.
+- **Angular 22 / Node 26:** dependency security audit, Angular unit tests and production build passed.
+- **WP-01 R3:** archive checksum, package validator, tests and strict quality audit passed.
+- **Combined artifact assembly:** passed after all three required jobs succeeded.
+
+GitHub Actions published artifact:
+- Name: `modern-garment-addis-erp-wp01-wp16-candidate`
+- Artifact ID: `15148571903`
+- Size: 701,359 bytes
+- Created: 26 November 2026
+- Expires: 24 February 2027
+- Source SHA: `14f9420b29b062fe15f9b863f5a23a6d6218dbaf`
+
+The artifact is a combined repository source archive with SHA-256 manifest and build-verification metadata. It is a **review candidate**, not an installer, production container image, CodeSpace-ready devcontainer or production deployment.
+
+The candidate PR remains #5, DRAFT, OPEN and UNMERGED, targeting `delivery/autonomous-wp-01-16`. This technical CI pass does not close the product-level gaps: full Miret journeys still require implementation traceability and business acceptance; factory/site capacity and SAM require approved calibration; buyer-specific inspection plans/AQL require approval; role-specific agent effectiveness requires end-to-end evaluation; production load/concurrency/soak, backup/restore/DR/rollback, independent security testing, legal/statutory reviews, external integrations and customer/factory UAT remain separate gates. No production release is claimed.
