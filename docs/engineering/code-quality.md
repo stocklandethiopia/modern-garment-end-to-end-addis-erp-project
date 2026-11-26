@@ -14,16 +14,20 @@
 
 ## 2. Angular and TypeScript
 
-- Angular 22 with Angular CLI and TypeScript 6.0.x is the frontend standard.
-- Use standalone components for new features; keep components focused on presentation and interaction.
-- Use strict TypeScript and strict template checking. Avoid any; use unknown at untrusted boundaries and narrow it safely.
+- Angular 22 with Angular CLI 22 and TypeScript 6.0.x is the frontend baseline; Node.js 26.13.1 LTS is the build/tooling runtime.
+- Use standalone components (standalone is the default); do not add redundant standalone: true.
+- Use strict TypeScript and strict template checking. Avoid any; use unknown at untrusted boundaries and narrow safely.
 - Organize by business feature/domain. Shared UI must not become a dumping ground for business logic.
-- Use typed Reactive Forms or the stable Angular form approach supported by the installed version.
-- Use Signals for local and derived UI state where appropriate; do not create a second global state framework without need.
-- Put API access behind typed services. Use interceptors for correlation, authentication/session handling and consistent error mapping.
-- Use Angular CLI builders declared in angular.json; do not replace standard build/test/serve targets with custom builders without a demonstrated need.
-- Follow Angular accessibility guidance: semantic HTML, labels, keyboard operation, visible focus, contrast, reduced motion and useful error messages.
+- Angular v22 uses OnPush-style change detection by default. Do not repeat an explicit OnPush setting unless a compatibility reason is documented.
+- Use signals for local reactive state, computed() for derived state and linkedSignal() where a selection must remain valid as upstream options change. Do not use effect() as a substitute for derived state or as a hidden transaction runner.
+- Prefer stable Signal Forms (@angular/forms/signals) for new signal-native forms where schema validation and typed field access are useful. Existing Reactive Forms remain valid; do not mass-migrate working screens without a bounded benefit and tests.
+- Use Resource/httpResource for reactive asynchronous reads. All business mutations (receive, issue, release, approve, reserve, dispatch, post, pay) go through typed API services and Laravel commands with server authorization and idempotency.
+- Use lazy feature routes and @defer for non-critical heavy views, with accessible placeholder/loading/error states. Use SSR/hydration only when justified by a measured requirement; protect personalized tenant, payroll, customer and finance data from shared caching.
+- For zoneless-compatible code, use signals and supported notification mechanisms. Test Reactive Forms and external observable bridges before removing ZoneJS from an existing feature.
+- Use the Angular CLI builders and the project's locked Vitest toolchain; do not use an unreleased Angular main/canary package or invent a custom builder without evidence.
+- Use Angular Aria, CDK or Material patterns appropriately. Meet WCAG 2.2 AA, visible focus, keyboard access, screen-reader labels/announcements and automated axe checks.
 - Do not trust frontend route guards as authorization; enforce every permission in the API.
+- The maturity/source links and feature-by-feature ERP application rules are in [Angular Current Capabilities and Adoption Standard](../architecture/angular-current-capabilities-and-adoption-standard.md). The official repository main branch is a development feed, not a production dependency.
 
 ## 3. PHP and Laravel
 
