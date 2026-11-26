@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 
 import { AuthSessionService } from '../../core/auth/auth-session.service';
+import { toLocalDateInputValue } from '../../core/date-input';
 import { PlatformOperatorGrant, PlatformOperatorsService, PlatformRoleCode } from './platform-operators.service';
 
 @Component({
@@ -27,7 +28,7 @@ export class PlatformOperatorsComponent implements OnInit {
   readonly form = this.formBuilder.nonNullable.group({
     user_email: ['', [Validators.required, Validators.email, Validators.maxLength(254)]],
     role_code: ['PLATFORM_SUPPORT' as PlatformRoleCode, Validators.required],
-    valid_from: [new Date().toISOString().slice(0, 10), Validators.required],
+    valid_from: [toLocalDateInputValue(), Validators.required],
     valid_to: ['', Validators.required],
     reason: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(500)]],
   });
@@ -99,7 +100,7 @@ export class PlatformOperatorsComponent implements OnInit {
         this.form.reset({
           user_email: '',
           role_code: 'PLATFORM_SUPPORT',
-          valid_from: new Date().toISOString().slice(0, 10),
+          valid_from: toLocalDateInputValue(),
           valid_to: '',
           reason: '',
         });
