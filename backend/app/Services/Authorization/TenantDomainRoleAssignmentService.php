@@ -12,7 +12,7 @@ class TenantDomainRoleAssignmentService
     {
         return DB::transaction(function () use ($tenantId, $actorId, $data): object {
             $actor = $this->activeMembership($tenantId, $actorId);
-            if (! in_array($actor->membership_role, ['OWNER','ADMIN'], true)) {
+            if (! in_array($actor->membership_role, ['OWNER', 'ADMIN'], true)) {
                 throw ValidationException::withMessages(['actor' => 'Tenant owner or administrator permission is required.']);
             }
 
@@ -33,7 +33,7 @@ class TenantDomainRoleAssignmentService
                 ->where('tenant_id', $tenantId)
                 ->where('user_id', $data['user_id'])
                 ->where('role_code', $data['role_code'])
-                ->whereIn('status', ['PENDING','ACTIVE'])
+                ->whereIn('status', ['PENDING', 'ACTIVE'])
                 ->exists();
 
             if ($existing) {
@@ -116,7 +116,7 @@ class TenantDomainRoleAssignmentService
     {
         return DB::transaction(function () use ($tenantId, $actorId, $assignmentId, $reason): object {
             $actor = $this->activeMembership($tenantId, $actorId);
-            if ($actor === null || ! in_array($actor->membership_role, ['OWNER','ADMIN'], true)) {
+            if ($actor === null || ! in_array($actor->membership_role, ['OWNER', 'ADMIN'], true)) {
                 throw ValidationException::withMessages(['actor' => 'Tenant owner or administrator permission is required.']);
             }
             if (trim($reason) === '') {
@@ -125,7 +125,7 @@ class TenantDomainRoleAssignmentService
 
             $assignment = DB::table('tenant_domain_role_assignments')->where('tenant_id', $tenantId)
                 ->where('id', $assignmentId)->lockForUpdate()->first();
-            if ($assignment === null || ! in_array($assignment->status, ['PENDING','ACTIVE'], true)) {
+            if ($assignment === null || ! in_array($assignment->status, ['PENDING', 'ACTIVE'], true)) {
                 throw ValidationException::withMessages(['assignment' => 'Only a pending or active assignment can be revoked.']);
             }
 

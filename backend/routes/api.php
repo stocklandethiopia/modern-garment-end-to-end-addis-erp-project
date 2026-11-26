@@ -191,5 +191,4 @@ Route::prefix('v1')->group(function (): void {
     });
 });
 
-
 require __DIR__.'/domain-api.php';

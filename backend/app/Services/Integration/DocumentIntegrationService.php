@@ -3,9 +3,8 @@
 namespace App\Services\Integration;
 
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
-
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -42,7 +41,6 @@ class DocumentIntegrationService
 
         return DB::table('document_assets')->where('tenant_id', $tenantId)->where('id', $id)->first();
     }
-
 
     public function storeUploadedFile(string $tenantId, string $actorId, UploadedFile $file, array $data): object
     {
@@ -131,7 +129,7 @@ class DocumentIntegrationService
     {
         return DB::transaction(function () use ($tenantId, $runId, $data): object {
             $run = DB::table('document_extraction_runs')->where('tenant_id', $tenantId)->where('id', $runId)->lockForUpdate()->first();
-            if ($run === null || ! in_array($run->status, ['QUEUED','PROCESSING'], true)) {
+            if ($run === null || ! in_array($run->status, ['QUEUED', 'PROCESSING'], true)) {
                 throw ValidationException::withMessages(['run' => 'Only a queued or processing extraction can receive extracted values.']);
             }
             $issues = $data['validation_issues'] ?? [];
@@ -154,10 +152,10 @@ class DocumentIntegrationService
     {
         return DB::transaction(function () use ($tenantId, $reviewerId, $runId, $data): object {
             $run = DB::table('document_extraction_runs')->where('tenant_id', $tenantId)->where('id', $runId)->lockForUpdate()->first();
-            if ($run === null || ! in_array($run->status, ['EXTRACTED','REVIEW_REQUIRED'], true)) {
+            if ($run === null || ! in_array($run->status, ['EXTRACTED', 'REVIEW_REQUIRED'], true)) {
                 throw ValidationException::withMessages(['run' => 'Only an extracted document can enter human review.']);
             }
-            if (! in_array($data['decision'], ['APPROVE_FOR_IMPORT','REJECT'], true)) {
+            if (! in_array($data['decision'], ['APPROVE_FOR_IMPORT', 'REJECT'], true)) {
                 throw ValidationException::withMessages(['decision' => 'Unsupported document review decision.']);
             }
             if (trim((string) ($data['reason'] ?? '')) === '') {

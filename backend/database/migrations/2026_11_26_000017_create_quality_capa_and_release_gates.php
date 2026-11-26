@@ -6,8 +6,8 @@ use Illuminate\Support\Facades\DB;
 return new class extends Migration
 {
     private array $tables = [
-        'quality_release_decisions','quality_corrective_actions','quality_nonconformances',
-        'quality_inspections','quality_defect_catalog',
+        'quality_release_decisions', 'quality_corrective_actions', 'quality_nonconformances',
+        'quality_inspections', 'quality_defect_catalog',
     ];
 
     public function up(): void

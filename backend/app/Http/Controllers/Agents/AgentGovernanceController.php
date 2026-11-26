@@ -17,24 +17,23 @@ class AgentGovernanceController extends Controller
     public function __construct(
         private readonly AgentGovernanceService $agents,
         private readonly TenantContextResolver $tenant
-    ) {
-    }
+    ) {}
 
     public function startRun(Request $request): JsonResponse
     {
         Gate::authorize('agent.propose-action');
         $data = $request->validate([
-            'run_key' => ['required','string','max:180'],
-            'agent_code' => ['required','string','max:100'],
-            'workflow_code' => ['required','string','max:120'],
-            'provider_code' => ['required','string','max:60'],
-            'model_code' => ['nullable','string','max:120'],
-            'model_version' => ['nullable','string','max:100'],
-            'execution_mode' => ['required','in:READ_ONLY,DRAFT,TOOL_ASSISTED,APPROVAL_GATED'],
-            'risk_tier' => ['required','in:A0,A1,A2,A3,A4'],
-            'input_sha256' => ['required','string','size:64'],
-            'context_references' => ['nullable','array'],
-            'policy_snapshot' => ['nullable','array'],
+            'run_key' => ['required', 'string', 'max:180'],
+            'agent_code' => ['required', 'string', 'max:100'],
+            'workflow_code' => ['required', 'string', 'max:120'],
+            'provider_code' => ['required', 'string', 'max:60'],
+            'model_code' => ['nullable', 'string', 'max:120'],
+            'model_version' => ['nullable', 'string', 'max:100'],
+            'execution_mode' => ['required', 'in:READ_ONLY,DRAFT,TOOL_ASSISTED,APPROVAL_GATED'],
+            'risk_tier' => ['required', 'in:A0,A1,A2,A3,A4'],
+            'input_sha256' => ['required', 'string', 'size:64'],
+            'context_references' => ['nullable', 'array'],
+            'policy_snapshot' => ['nullable', 'array'],
         ]);
 
         return response()->json(['data' => $this->agents->startRun(
@@ -46,10 +45,10 @@ class AgentGovernanceController extends Controller
     {
         Gate::authorize('agent.propose-action');
         $data = $request->validate([
-            'status' => ['required','in:SUCCEEDED,FAILED,CANCELLED,DENIED'],
-            'output_sha256' => ['required','string','size:64'],
-            'usage' => ['nullable','array'],
-            'tool_trace' => ['nullable','array'],
+            'status' => ['required', 'in:SUCCEEDED,FAILED,CANCELLED,DENIED'],
+            'output_sha256' => ['required', 'string', 'size:64'],
+            'usage' => ['nullable', 'array'],
+            'tool_trace' => ['nullable', 'array'],
         ]);
 
         return response()->json(['data' => $this->agents->finishRun(
@@ -62,17 +61,17 @@ class AgentGovernanceController extends Controller
     {
         Gate::authorize('agent.propose-action');
         $data = $request->validate([
-            'agent_run_id' => ['required','uuid'],
-            'proposal_key' => ['required','string','max:180'],
-            'capability_code' => ['required','in:create_purchase_order_draft,create_customer_order_draft,create_quality_inspection_draft'],
-            'target_record_type' => ['required','string','max:100'],
-            'target_record_id' => ['nullable','uuid'],
-            'action_type' => ['required','string','max:80'],
-            'risk_tier' => ['required','in:A0,A1,A2,A3,A4'],
-            'proposed_payload' => ['required','array'],
-            'expected_preconditions' => ['nullable','array'],
-            'reason' => ['required','string','max:2000'],
-            'expires_at' => ['nullable','date','after:now'],
+            'agent_run_id' => ['required', 'uuid'],
+            'proposal_key' => ['required', 'string', 'max:180'],
+            'capability_code' => ['required', 'in:create_purchase_order_draft,create_customer_order_draft,create_quality_inspection_draft'],
+            'target_record_type' => ['required', 'string', 'max:100'],
+            'target_record_id' => ['nullable', 'uuid'],
+            'action_type' => ['required', 'string', 'max:80'],
+            'risk_tier' => ['required', 'in:A0,A1,A2,A3,A4'],
+            'proposed_payload' => ['required', 'array'],
+            'expected_preconditions' => ['nullable', 'array'],
+            'reason' => ['required', 'string', 'max:2000'],
+            'expires_at' => ['nullable', 'date', 'after:now'],
         ]);
 
         return response()->json(['data' => $this->agents->proposeAction(
@@ -84,9 +83,9 @@ class AgentGovernanceController extends Controller
     {
         Gate::authorize('agent.approve-action');
         $data = $request->validate([
-            'decision' => ['required','in:APPROVE,REJECT,REQUEST_CHANGES'],
-            'reason' => ['required','string','max:2000'],
-            'approved_payload' => ['nullable','array'],
+            'decision' => ['required', 'in:APPROVE,REJECT,REQUEST_CHANGES'],
+            'reason' => ['required', 'string', 'max:2000'],
+            'approved_payload' => ['nullable', 'array'],
         ]);
 
         return response()->json(['data' => $this->agents->decideAction(

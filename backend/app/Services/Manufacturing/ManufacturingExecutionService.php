@@ -3,7 +3,6 @@
 namespace App\Services\Manufacturing;
 
 use App\Services\Support\DecimalQuantity;
-
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -218,7 +217,7 @@ class ManufacturingExecutionService
             }
             $route = DB::table('process_route_versions')->where('tenant_id', $tenantId)->where('id', $order->route_version_id)->first();
             $techPack = DB::table('tech_pack_versions')->where('tenant_id', $tenantId)->where('id', $order->tech_pack_version_id)->first();
-            if ($route === null || $route->status !== 'APPROVED' || $techPack === null || ! in_array($techPack->status, ['APPROVED','RELEASED'], true)) {
+            if ($route === null || $route->status !== 'APPROVED' || $techPack === null || ! in_array($techPack->status, ['APPROVED', 'RELEASED'], true)) {
                 throw ValidationException::withMessages(['readiness' => 'Approved route and technical pack versions are required for production release.']);
             }
             $operationCount = DB::table('production_order_operations')->where('tenant_id', $tenantId)->where('production_order_id', $orderId)->count();
@@ -247,6 +246,7 @@ class ManufacturingExecutionService
             DB::table('production_orders')->where('tenant_id', $tenantId)->where('id', $orderId)->update([
                 'status' => 'IN_PROGRESS', 'started_at' => now(), 'updated_at' => now(),
             ]);
+
             return DB::table('production_orders')->where('tenant_id', $tenantId)->where('id', $orderId)->first();
         }, 3);
     }
@@ -272,13 +272,13 @@ class ManufacturingExecutionService
 
             $eventType = $data['event_type'];
             if ($eventType === 'START') {
-                if (! in_array($operation->status, ['QUEUED','READY'], true)) {
+                if (! in_array($operation->status, ['QUEUED', 'READY'], true)) {
                     throw ValidationException::withMessages(['operation' => 'Only a queued or ready operation can start.']);
                 }
                 if ($routeStep->predecessor_step_no !== null) {
                     $predecessor = DB::table('production_order_operations')->where('tenant_id', $tenantId)
                         ->where('production_order_id', $orderId)->where('step_no', $routeStep->predecessor_step_no)->first();
-                    if ($predecessor === null || ! in_array($predecessor->status, ['COMPLETED','SKIPPED'], true)) {
+                    if ($predecessor === null || ! in_array($predecessor->status, ['COMPLETED', 'SKIPPED'], true)) {
                         throw ValidationException::withMessages(['predecessor' => 'The predecessor operation must be completed or validly skipped before this operation starts.']);
                     }
                     $predecessorStep = DB::table('process_route_steps')->where('tenant_id', $tenantId)
@@ -286,7 +286,7 @@ class ManufacturingExecutionService
                     if ($predecessorStep?->quality_gate) {
                         $released = DB::table('quality_release_decisions')->where('tenant_id', $tenantId)
                             ->where('subject_type', 'PRODUCTION_ORDER_OPERATION')->where('subject_id', $predecessor->id)
-                            ->whereIn('decision', ['RELEASE','RELEASE_WITH_DEVIATION'])->exists();
+                            ->whereIn('decision', ['RELEASE', 'RELEASE_WITH_DEVIATION'])->exists();
                         if (! $released) {
                             throw ValidationException::withMessages(['quality_gate' => 'A predecessor quality gate has not been released.']);
                         }
@@ -321,11 +321,11 @@ class ManufacturingExecutionService
 
                 DB::table('production_order_operations')->where('tenant_id', $tenantId)->where('id', $operationId)
                     ->update(['status' => 'IN_PROGRESS', 'started_at' => now(), 'updated_at' => now()]);
-            } elseif (in_array($eventType, ['OUTPUT','DEFECT','DOWNTIME'], true)) {
+            } elseif (in_array($eventType, ['OUTPUT', 'DEFECT', 'DOWNTIME'], true)) {
                 if ($operation->status !== 'IN_PROGRESS') {
                     throw ValidationException::withMessages(['operation' => 'Output, defect and downtime events require an IN_PROGRESS operation.']);
                 }
-                if (in_array($eventType, ['OUTPUT','DEFECT'], true)) {
+                if (in_array($eventType, ['OUTPUT', 'DEFECT'], true)) {
                     $quantity = (string) ($data['quantity'] ?? '0');
                     $quantityUnits = DecimalQuantity::units($quantity);
                     if ($quantityUnits <= 0) {
@@ -361,7 +361,7 @@ class ManufacturingExecutionService
                     'status' => 'COMPLETED', 'completed_at' => now(), 'updated_at' => now(),
                 ]);
             } elseif ($eventType === 'SKIP') {
-                if (! $routeStep->is_optional || ! in_array($operation->status, ['QUEUED','READY'], true)) {
+                if (! $routeStep->is_optional || ! in_array($operation->status, ['QUEUED', 'READY'], true)) {
                     throw ValidationException::withMessages(['operation' => 'Only an optional queued operation can be skipped.']);
                 }
                 if (trim((string) ($data['reason_code'] ?? '')) === '') {
@@ -387,7 +387,7 @@ class ManufacturingExecutionService
             ]);
 
             $remaining = DB::table('production_order_operations')->where('tenant_id', $tenantId)
-                ->where('production_order_id', $orderId)->whereNotIn('status', ['COMPLETED','SKIPPED'])->exists();
+                ->where('production_order_id', $orderId)->whereNotIn('status', ['COMPLETED', 'SKIPPED'])->exists();
             if (! $remaining) {
                 DB::table('production_orders')->where('tenant_id', $tenantId)->where('id', $orderId)
                     ->update(['status' => 'COMPLETED', 'completed_at' => now(), 'updated_at' => now()]);

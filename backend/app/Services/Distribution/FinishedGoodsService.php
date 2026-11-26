@@ -25,13 +25,13 @@ class FinishedGoodsService
                 ->where('subject_id', $order->id)
                 ->first();
 
-            if ($inspection === null || ! in_array($inspection->result_status, ['PASS','PASS_WITH_DEVIATION'], true) ||
+            if ($inspection === null || ! in_array($inspection->result_status, ['PASS', 'PASS_WITH_DEVIATION'], true) ||
                 $inspection->reviewed_by === null || $inspection->reviewed_at === null) {
                 throw ValidationException::withMessages(['final_quality_inspection_id' => 'A reviewed passing final inspection for this production order is required.']);
             }
 
             $openNonconformances = DB::table('quality_nonconformances')->where('tenant_id', $tenantId)
-                ->where('inspection_id', $inspection->id)->whereNotIn('status', ['RESOLVED','CLOSED'])->exists();
+                ->where('inspection_id', $inspection->id)->whereNotIn('status', ['RESOLVED', 'CLOSED'])->exists();
             if ($openNonconformances) {
                 throw ValidationException::withMessages(['quality' => 'Open final nonconformances block finished-goods receipt.']);
             }
@@ -107,11 +107,11 @@ class FinishedGoodsService
             $inspection = DB::table('quality_inspections')->where('tenant_id', $tenantId)
                 ->where('id', $data['inspection_id'])->where('subject_type', 'PRODUCTION_ORDER')
                 ->where('subject_id', $lot->production_order_id)
-                ->whereIn('result_status', ['PASS','PASS_WITH_DEVIATION'])
+                ->whereIn('result_status', ['PASS', 'PASS_WITH_DEVIATION'])
                 ->whereNotNull('reviewed_by')->whereNotNull('reviewed_at')->first();
 
             if ($inspection === null || DB::table('quality_nonconformances')->where('tenant_id', $tenantId)
-                ->where('inspection_id', $inspection->id)->whereNotIn('status', ['RESOLVED','CLOSED'])->exists()) {
+                ->where('inspection_id', $inspection->id)->whereNotIn('status', ['RESOLVED', 'CLOSED'])->exists()) {
                 throw ValidationException::withMessages(['inspection_id' => 'A reviewed passing final inspection with no open nonconformance is required.']);
             }
 
@@ -228,7 +228,7 @@ class FinishedGoodsService
             if ($order->created_by === $actorId) {
                 throw ValidationException::withMessages(['reviewer' => 'The order creator cannot perform the independent customer credit review.']);
             }
-            if (! in_array($data['decision'], ['CLEAR','HELD'], true)) {
+            if (! in_array($data['decision'], ['CLEAR', 'HELD'], true)) {
                 throw ValidationException::withMessages(['decision' => 'A credit review can record CLEAR or HELD. Exceptions require a separate approval action.']);
             }
 
@@ -251,7 +251,6 @@ class FinishedGoodsService
             return DB::table('customer_credit_decisions')->where('tenant_id', $tenantId)->where('id', $id)->first();
         }, 3);
     }
-
 
     public function approveCustomerCreditException(string $tenantId, string $actorId, string $decisionId, string $approvalReference): object
     {
@@ -288,7 +287,7 @@ class FinishedGoodsService
             }
             $decision = DB::table('customer_credit_decisions')->where('tenant_id', $tenantId)
                 ->where('id', $creditDecisionId)->where('customer_order_id', $orderId)->first();
-            if ($decision === null || ! in_array($decision->decision, ['CLEAR','APPROVED_EXCEPTION'], true)) {
+            if ($decision === null || ! in_array($decision->decision, ['CLEAR', 'APPROVED_EXCEPTION'], true)) {
                 throw ValidationException::withMessages(['credit_control_decision_id' => 'An independent, linked credit decision of CLEAR or APPROVED_EXCEPTION is required.']);
             }
             if ($decision->reviewed_by === $actorId || $decision->exception_approved_by === $actorId) {
@@ -322,7 +321,7 @@ class FinishedGoodsService
         return DB::transaction(function () use ($tenantId, $actorId, $orderLineId, $data): object {
             $line = DB::table('customer_order_lines')->where('tenant_id', $tenantId)->where('id', $orderLineId)->lockForUpdate()->first();
             $order = $line ? DB::table('customer_orders')->where('tenant_id', $tenantId)->where('id', $line->customer_order_id)->lockForUpdate()->first() : null;
-            if ($line === null || $order === null || ! in_array($order->status, ['CONFIRMED','ALLOCATED','PART_FULFILLED'], true)) {
+            if ($line === null || $order === null || ! in_array($order->status, ['CONFIRMED', 'ALLOCATED', 'PART_FULFILLED'], true)) {
                 throw ValidationException::withMessages(['order_line' => 'Reservations require a confirmed customer order line.']);
             }
 
@@ -491,7 +490,7 @@ class FinishedGoodsService
             ->where('finished_goods_lot_id', $lotId)
             ->where(function ($query) use ($locationId): void {
                 $query->where('from_location_id', $locationId)->orWhere('to_location_id', $locationId);
-            })->get(['from_location_id','to_location_id','quantity']);
+            })->get(['from_location_id', 'to_location_id', 'quantity']);
 
         $units = 0;
         foreach ($rows as $row) {

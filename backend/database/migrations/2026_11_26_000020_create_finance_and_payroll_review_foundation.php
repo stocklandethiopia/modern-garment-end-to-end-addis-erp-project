@@ -6,8 +6,8 @@ use Illuminate\Support\Facades\DB;
 return new class extends Migration
 {
     private array $tables = [
-        'payroll_run_lines','payroll_run_drafts','statutory_rule_versions',
-        'finance_journal_lines','finance_journals','finance_accounts','finance_periods',
+        'payroll_run_lines', 'payroll_run_drafts', 'statutory_rule_versions',
+        'finance_journal_lines', 'finance_journals', 'finance_accounts', 'finance_periods',
     ];
 
     public function up(): void

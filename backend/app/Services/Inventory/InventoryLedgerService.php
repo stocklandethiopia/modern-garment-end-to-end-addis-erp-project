@@ -79,7 +79,7 @@ class InventoryLedgerService
                 }
             }
 
-            if (in_array($type, ['RETURN','CUSTOMER_RETURN'], true)) {
+            if (in_array($type, ['RETURN', 'CUSTOMER_RETURN'], true)) {
                 $destination = DB::table('inventory_locations')->where('tenant_id', $tenantId)->where('id', $to)->first();
                 if ($destination === null || strtoupper((string) $destination->location_type) !== 'QUARANTINE') {
                     throw ValidationException::withMessages(['to_location_id' => 'Returned material must enter quarantine pending inspection.']);
@@ -95,7 +95,7 @@ class InventoryLedgerService
                     ? DB::table('quality_nonconformances')->where('tenant_id', $tenantId)
                         ->where('id', $data['source_document_id'])
                         ->where('disposition', 'SCRAP')
-                        ->whereIn('status', ['RESOLVED','CLOSED'])->first()
+                        ->whereIn('status', ['RESOLVED', 'CLOSED'])->first()
                     : null;
                 if ($nonconformance === null || trim((string) ($data['reason'] ?? '')) === '') {
                     throw ValidationException::withMessages(['scrap' => 'Scrap requires a resolved quality nonconformance with SCRAP disposition and a recorded reason.']);
@@ -216,6 +216,7 @@ class InventoryLedgerService
 
         $whole = (int) $matches[1];
         $fraction = (int) str_pad($matches[2] ?? '', 6, '0');
+
         return ($whole * 1_000_000) + $fraction;
     }
 
@@ -224,6 +225,7 @@ class InventoryLedgerService
         $negative = $units < 0;
         $absolute = abs($units);
         $value = intdiv($absolute, 1_000_000).'.'.str_pad((string) ($absolute % 1_000_000), 6, '0', STR_PAD_LEFT);
+
         return $negative ? '-'.$value : $value;
     }
 

@@ -6,9 +6,9 @@ use Illuminate\Support\Facades\DB;
 return new class extends Migration
 {
     private array $tables = [
-        'incentive_calculation_drafts','incentive_policy_versions','workforce_assignments',
-        'workforce_skill_records','production_plan_lines','production_plan_versions',
-        'capacity_calendar_slots','work_shift_definitions','work_centres','operation_standard_versions',
+        'incentive_calculation_drafts', 'incentive_policy_versions', 'workforce_assignments',
+        'workforce_skill_records', 'production_plan_lines', 'production_plan_versions',
+        'capacity_calendar_slots', 'work_shift_definitions', 'work_centres', 'operation_standard_versions',
     ];
 
     public function up(): void

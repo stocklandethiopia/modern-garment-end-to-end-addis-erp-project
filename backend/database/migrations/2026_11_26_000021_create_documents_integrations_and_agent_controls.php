@@ -6,9 +6,9 @@ use Illuminate\Support\Facades\DB;
 return new class extends Migration
 {
     private array $tables = [
-        'device_scan_events','agent_action_events','agent_approval_decisions',
-        'agent_action_proposals','agent_run_audits','integration_outbox_events',
-        'integration_endpoint_registry','document_extraction_runs','document_assets',
+        'device_scan_events', 'agent_action_events', 'agent_approval_decisions',
+        'agent_action_proposals', 'agent_run_audits', 'integration_outbox_events',
+        'integration_endpoint_registry', 'document_extraction_runs', 'document_assets',
     ];
 
     public function up(): void

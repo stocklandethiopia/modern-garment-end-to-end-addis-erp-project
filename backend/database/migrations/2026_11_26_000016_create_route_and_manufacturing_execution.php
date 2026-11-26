@@ -6,8 +6,8 @@ use Illuminate\Support\Facades\DB;
 return new class extends Migration
 {
     private array $tables = [
-        'bundle_operation_events','cutting_bundles','production_execution_events',
-        'production_order_operations','production_orders','process_route_steps','process_route_versions',
+        'bundle_operation_events', 'cutting_bundles', 'production_execution_events',
+        'production_order_operations', 'production_orders', 'process_route_steps', 'process_route_versions',
     ];
 
     public function up(): void

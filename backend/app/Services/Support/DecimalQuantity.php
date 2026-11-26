@@ -22,6 +22,7 @@ final class DecimalQuantity
         $negative = $units < 0;
         $absolute = abs($units);
         $formatted = intdiv($absolute, 1_000_000).'.'.str_pad((string) ($absolute % 1_000_000), 6, '0', STR_PAD_LEFT);
+
         return $negative ? '-'.$formatted : $formatted;
     }
 

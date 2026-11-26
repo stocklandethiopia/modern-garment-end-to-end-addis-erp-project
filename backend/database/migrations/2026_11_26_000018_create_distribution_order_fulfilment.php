@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
-    private array $tables = ['shipment_lines','shipments','customer_order_lines','customer_orders'];
+    private array $tables = ['shipment_lines', 'shipments', 'customer_order_lines', 'customer_orders'];
 
     public function up(): void
     {

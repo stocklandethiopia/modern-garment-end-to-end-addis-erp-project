@@ -38,7 +38,7 @@ class AgentGovernanceService
 
     public function finishRun(string $tenantId, string $runId, string $status, string $outputSha256, array $usage, array $toolTrace = []): object
     {
-        if (! in_array($status, ['SUCCEEDED','FAILED','CANCELLED','DENIED'], true)) {
+        if (! in_array($status, ['SUCCEEDED', 'FAILED', 'CANCELLED', 'DENIED'], true)) {
             throw ValidationException::withMessages(['status' => 'Unsupported agent run terminal status.']);
         }
         if (! preg_match('/^[0-9a-f]{64}$/i', $outputSha256)) {
@@ -57,6 +57,7 @@ class AgentGovernanceService
                 'tool_trace' => json_encode($toolTrace, JSON_THROW_ON_ERROR),
                 'completed_at' => now(),
             ]);
+
             return DB::table('agent_run_audits')->where('tenant_id', $tenantId)->where('id', $runId)->first();
         }, 3);
     }
@@ -69,7 +70,7 @@ class AgentGovernanceService
         }
 
         $risk = strtoupper($data['risk_tier']);
-        if (! in_array($risk, ['A0','A1','A2','A3','A4'], true)) {
+        if (! in_array($risk, ['A0', 'A1', 'A2', 'A3', 'A4'], true)) {
             throw ValidationException::withMessages(['risk_tier' => 'Unsupported action risk tier.']);
         }
         if ($risk === 'A4') {
@@ -90,7 +91,7 @@ class AgentGovernanceService
             'proposed_payload' => json_encode($data['proposed_payload'], JSON_THROW_ON_ERROR),
             'expected_preconditions' => json_encode($data['expected_preconditions'] ?? [], JSON_THROW_ON_ERROR),
             'reason' => $data['reason'],
-            'status' => in_array($risk, ['A2','A3'], true) ? 'AWAITING_APPROVAL' : 'PROPOSED',
+            'status' => in_array($risk, ['A2', 'A3'], true) ? 'AWAITING_APPROVAL' : 'PROPOSED',
             'expires_at' => $data['expires_at'] ?? now()->addHours(24),
             'created_at' => now(),
         ]);
@@ -105,14 +106,14 @@ class AgentGovernanceService
             if ($proposal === null || $proposal->status !== 'AWAITING_APPROVAL') {
                 throw ValidationException::withMessages(['proposal' => 'Only an action awaiting approval can receive a decision.']);
             }
-            if (in_array($proposal->risk_tier, ['A0','A1'], true)) {
+            if (in_array($proposal->risk_tier, ['A0', 'A1'], true)) {
                 throw ValidationException::withMessages(['risk_tier' => 'Read/draft actions do not enter the material-action approval path.']);
             }
             $run = DB::table('agent_run_audits')->where('tenant_id', $tenantId)->where('id', $proposal->agent_run_id)->first();
             if ($run === null || (string) $run->started_by === $actorId) {
                 throw ValidationException::withMessages(['approver' => 'The proposer or initiating user cannot approve their own agent action.']);
             }
-            if (! in_array($decision, ['APPROVE','REJECT','REQUEST_CHANGES'], true) || trim($reason) === '') {
+            if (! in_array($decision, ['APPROVE', 'REJECT', 'REQUEST_CHANGES'], true) || trim($reason) === '') {
                 throw ValidationException::withMessages(['decision' => 'An explicit approval, rejection or change request with a reason is required.']);
             }
 

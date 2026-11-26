@@ -3,7 +3,6 @@
 namespace App\Services\Planning;
 
 use App\Services\Support\DecimalQuantity;
-
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -151,7 +150,7 @@ class IndustrialEngineeringService
             $productionOrder = DB::table('production_orders')->where('tenant_id', $tenantId)
                 ->where('id', $data['production_order_id'])->first();
             if ($operation === null || $productionOrder === null ||
-                ! in_array($operation->status, ['QUEUED','READY'], true)) {
+                ! in_array($operation->status, ['QUEUED', 'READY'], true)) {
                 throw ValidationException::withMessages(['operation_id' => 'A queued operation belonging to the selected production order is required.']);
             }
 
@@ -231,7 +230,7 @@ class IndustrialEngineeringService
     {
         return DB::transaction(function () use ($tenantId, $approverId, $planId): object {
             $plan = DB::table('production_plan_versions')->where('tenant_id', $tenantId)->where('id', $planId)->lockForUpdate()->first();
-            if ($plan === null || ! in_array($plan->status, ['DRAFT','SIMULATED'], true) || $plan->created_by === $approverId) {
+            if ($plan === null || ! in_array($plan->status, ['DRAFT', 'SIMULATED'], true) || $plan->created_by === $approverId) {
                 throw ValidationException::withMessages(['plan' => 'A draft or simulated plan requires independent approval.']);
             }
             if (! DB::table('production_plan_lines')->where('tenant_id', $tenantId)->where('plan_version_id', $planId)->exists()) {
@@ -309,7 +308,7 @@ class IndustrialEngineeringService
 
             $overlap = DB::table('workforce_assignments')->where('tenant_id', $tenantId)
                 ->where('worker_reference', $data['worker_reference'])
-                ->whereIn('assignment_status', ['CONFIRMED','STARTED'])
+                ->whereIn('assignment_status', ['CONFIRMED', 'STARTED'])
                 ->where('planned_start_at', '<', $data['planned_end_at'])
                 ->where('planned_end_at', '>', $data['planned_start_at'])
                 ->exists();
@@ -343,6 +342,7 @@ class IndustrialEngineeringService
             DB::table('workforce_assignments')->where('tenant_id', $tenantId)->where('id', $assignmentId)->update([
                 'assignment_status' => 'CONFIRMED', 'approved_by' => $actorId, 'updated_at' => now(),
             ]);
+
             return DB::table('workforce_assignments')->where('tenant_id', $tenantId)->where('id', $assignmentId)->first();
         }, 3);
     }

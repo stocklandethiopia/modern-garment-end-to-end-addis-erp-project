@@ -10,9 +10,7 @@ use Illuminate\Validation\ValidationException;
 
 class SourcingService
 {
-    public function __construct(private readonly InventoryLedgerService $inventoryLedger)
-    {
-    }
+    public function __construct(private readonly InventoryLedgerService $inventoryLedger) {}
 
     public function createSupplier(string $tenantId, string $actorId, array $data): object
     {
@@ -180,6 +178,7 @@ class SourcingService
                 throw ValidationException::withMessages(['purchase_order' => 'Only an approved purchase order can be marked as sent.']);
             }
             DB::table('purchase_orders')->where('tenant_id', $tenantId)->where('id', $orderId)->update(['status' => 'SENT', 'updated_at' => now()]);
+
             return DB::table('purchase_orders')->where('tenant_id', $tenantId)->where('id', $orderId)->first();
         }, 3);
     }
@@ -297,7 +296,7 @@ class SourcingService
             $poLine = DB::table('purchase_order_lines')->where('tenant_id', $tenantId)->where('id', $line->purchase_order_line_id)->first();
             $order = DB::table('purchase_orders')->where('tenant_id', $tenantId)->where('id', $receipt->purchase_order_id)->first();
 
-            if (! in_array($poLine->material_type, ['FABRIC','TRIM','PACKAGING','CHEMICAL'], true)) {
+            if (! in_array($poLine->material_type, ['FABRIC', 'TRIM', 'PACKAGING', 'CHEMICAL'], true)) {
                 throw ValidationException::withMessages(['material_type' => 'Service and subcontract-process receipt lines are not inventory material lots.']);
             }
 
@@ -380,7 +379,7 @@ class SourcingService
                 'accepted_quantity' => $acceptedOnLine, 'updated_at' => now(),
             ]);
 
-            $allLines = DB::table('purchase_order_lines')->where('tenant_id', $tenantId)->where('purchase_order_id', $order->id)->get(['ordered_quantity','accepted_quantity']);
+            $allLines = DB::table('purchase_order_lines')->where('tenant_id', $tenantId)->where('purchase_order_id', $order->id)->get(['ordered_quantity', 'accepted_quantity']);
             $allAccepted = $allLines->isNotEmpty();
             foreach ($allLines as $lineState) {
                 if (DecimalQuantity::units((string) $lineState->accepted_quantity) < DecimalQuantity::units((string) $lineState->ordered_quantity)) {

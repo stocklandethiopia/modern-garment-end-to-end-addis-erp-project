@@ -1,17 +1,12 @@
 <?php
 
-use App\Http\Controllers\Planning\IndustrialEngineeringController;
-use App\Http\Controllers\Enterprise\TenantDomainRoleAssignmentController;
-
 use App\Http\Controllers\Agents\AgentGovernanceController;
-
-use App\Http\Controllers\Integration\DocumentIntegrationController;
-
-use App\Http\Controllers\Finance\FinanceControlController;
-
 use App\Http\Controllers\Distribution\FinishedGoodsController;
-
+use App\Http\Controllers\Enterprise\TenantDomainRoleAssignmentController;
+use App\Http\Controllers\Finance\FinanceControlController;
+use App\Http\Controllers\Integration\DocumentIntegrationController;
 use App\Http\Controllers\Manufacturing\ManufacturingController;
+use App\Http\Controllers\Planning\IndustrialEngineeringController;
 use App\Http\Controllers\Quality\QualityController;
 use App\Http\Controllers\Sourcing\SourcingController;
 use Illuminate\Support\Facades\Route;

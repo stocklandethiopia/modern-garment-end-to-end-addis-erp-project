@@ -2,18 +2,15 @@
 
 namespace App\Services\Quality;
 
-use App\Services\Support\DecimalQuantity;
-
 use App\Services\Inventory\InventoryLedgerService;
+use App\Services\Support\DecimalQuantity;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class QualityControlService
 {
-    public function __construct(private readonly InventoryLedgerService $inventoryLedger)
-    {
-    }
+    public function __construct(private readonly InventoryLedgerService $inventoryLedger) {}
 
     public function createInspection(string $tenantId, string $actorId, array $data): object
     {
@@ -216,7 +213,7 @@ class QualityControlService
                 ->where('subject_id', $lotId)
                 ->first();
 
-            if ($inspection === null || ! in_array($inspection->result_status, ['PASS','PASS_WITH_DEVIATION'], true) ||
+            if ($inspection === null || ! in_array($inspection->result_status, ['PASS', 'PASS_WITH_DEVIATION'], true) ||
                 $inspection->reviewed_by === null || $inspection->reviewed_at === null) {
                 throw ValidationException::withMessages(['inspection_id' => 'A reviewed passing inspection linked to the exact material lot is required for release.']);
             }
@@ -225,7 +222,7 @@ class QualityControlService
             }
 
             $openIssues = DB::table('quality_nonconformances')->where('tenant_id', $tenantId)
-                ->where('inspection_id', $inspection->id)->whereNotIn('status', ['RESOLVED','CLOSED'])->exists();
+                ->where('inspection_id', $inspection->id)->whereNotIn('status', ['RESOLVED', 'CLOSED'])->exists();
             if ($openIssues) {
                 throw ValidationException::withMessages(['nonconformances' => 'Open nonconformances must be resolved before material release.']);
             }
@@ -291,17 +288,15 @@ class QualityControlService
         }, 3);
     }
 
-
-
     public function setNonconformanceDisposition(string $tenantId, string $actorId, string $nonconformanceId, array $data): object
     {
-        return DB::transaction(function () use ($tenantId, $actorId, $nonconformanceId, $data): object {
+        return DB::transaction(function () use ($tenantId, $nonconformanceId, $data): object {
             $record = DB::table('quality_nonconformances')->where('tenant_id', $tenantId)
                 ->where('id', $nonconformanceId)->lockForUpdate()->first();
-            if ($record === null || ! in_array($record->status, ['OPEN','UNDER_REVIEW','CAPA_REQUIRED'], true)) {
+            if ($record === null || ! in_array($record->status, ['OPEN', 'UNDER_REVIEW', 'CAPA_REQUIRED'], true)) {
                 throw ValidationException::withMessages(['nonconformance' => 'The nonconformance is not available for disposition.']);
             }
-            if (! in_array($data['disposition'], ['USE_AS_IS','REWORK','REPAIR','SORT','RETURN_TO_SUPPLIER','SCRAP','CUSTOMER_CONCESSION'], true)) {
+            if (! in_array($data['disposition'], ['USE_AS_IS', 'REWORK', 'REPAIR', 'SORT', 'RETURN_TO_SUPPLIER', 'SCRAP', 'CUSTOMER_CONCESSION'], true)) {
                 throw ValidationException::withMessages(['disposition' => 'Unsupported nonconformance disposition.']);
             }
             if (trim((string) ($data['reason'] ?? '')) === '') {
@@ -327,7 +322,7 @@ class QualityControlService
         return DB::transaction(function () use ($tenantId, $actorId, $actionId, $data): object {
             $action = DB::table('quality_corrective_actions')->where('tenant_id', $tenantId)
                 ->where('id', $actionId)->lockForUpdate()->first();
-            if ($action === null || ! in_array($action->status, ['OPEN','IN_PROGRESS'], true)) {
+            if ($action === null || ! in_array($action->status, ['OPEN', 'IN_PROGRESS'], true)) {
                 throw ValidationException::withMessages(['action' => 'Only an open corrective action can be implemented.']);
             }
             if ($action->assigned_to_user_id !== null && $action->assigned_to_user_id !== $actorId) {
@@ -385,7 +380,7 @@ class QualityControlService
             $otherOpen = DB::table('quality_corrective_actions')->where('tenant_id', $tenantId)
                 ->where('nonconformance_id', $action->nonconformance_id)
                 ->where('id', '<>', $actionId)
-                ->whereNotIn('status', ['EFFECTIVE','CANCELLED'])->exists();
+                ->whereNotIn('status', ['EFFECTIVE', 'CANCELLED'])->exists();
 
             if ($effective && ! $otherOpen) {
                 DB::table('quality_nonconformances')->where('tenant_id', $tenantId)->where('id', $action->nonconformance_id)->update([
@@ -412,7 +407,7 @@ class QualityControlService
         return DB::transaction(function () use ($tenantId, $actorId, $operationId, $data): object {
             $operation = DB::table('production_order_operations')->where('tenant_id', $tenantId)
                 ->where('id', $operationId)->lockForUpdate()->first();
-            if ($operation === null || ! in_array($operation->status, ['IN_PROGRESS','COMPLETED'], true)) {
+            if ($operation === null || ! in_array($operation->status, ['IN_PROGRESS', 'COMPLETED'], true)) {
                 throw ValidationException::withMessages(['operation' => 'A quality release decision requires an active or completed production operation.']);
             }
 
@@ -420,7 +415,7 @@ class QualityControlService
                 ->where('id', $data['inspection_id'])
                 ->where('subject_type', 'PRODUCTION_ORDER_OPERATION')
                 ->where('subject_id', $operationId)
-                ->whereIn('result_status', ['PASS','PASS_WITH_DEVIATION'])
+                ->whereIn('result_status', ['PASS', 'PASS_WITH_DEVIATION'])
                 ->whereNotNull('reviewed_by')->whereNotNull('reviewed_at')->first();
             if ($inspection === null) {
                 throw ValidationException::withMessages(['inspection_id' => 'A reviewed passing inspection linked to the exact operation is required.']);
@@ -429,7 +424,7 @@ class QualityControlService
                 throw ValidationException::withMessages(['approver' => 'The inspector and reviewer cannot release their own inspection.']);
             }
             if (DB::table('quality_nonconformances')->where('tenant_id', $tenantId)
-                ->where('inspection_id', $inspection->id)->whereNotIn('status', ['RESOLVED','CLOSED'])->exists()) {
+                ->where('inspection_id', $inspection->id)->whereNotIn('status', ['RESOLVED', 'CLOSED'])->exists()) {
                 throw ValidationException::withMessages(['nonconformances' => 'Open nonconformances block operation release.']);
             }
 
@@ -475,6 +470,7 @@ class QualityControlService
         if (! preg_match('/^(\d+)(?:\.(\d{1,6}))?$/', $value, $matches)) {
             throw ValidationException::withMessages(['quantity' => 'Quantity must be a non-negative decimal with at most six fractional digits.']);
         }
+
         return ((int) $matches[1] * 1_000_000) + (int) str_pad($matches[2] ?? '', 6, '0');
     }
 }

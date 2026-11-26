@@ -14,7 +14,7 @@ class IntegrationOutboxService
         return DB::transaction(function () use ($tenantId, $limit): array {
             $events = DB::table('integration_outbox_events')
                 ->where('tenant_id', $tenantId)
-                ->whereIn('status', ['PENDING','RETRY'])
+                ->whereIn('status', ['PENDING', 'RETRY'])
                 ->where('available_at', '<=', now())
                 ->orderBy('created_at')
                 ->limit($limit)
@@ -53,6 +53,7 @@ class IntegrationOutboxService
                 'last_error_summary' => null,
                 'updated_at' => now(),
             ]);
+
             return DB::table('integration_outbox_events')->where('tenant_id', $tenantId)->where('id', $eventId)->first();
         }, 3);
     }
