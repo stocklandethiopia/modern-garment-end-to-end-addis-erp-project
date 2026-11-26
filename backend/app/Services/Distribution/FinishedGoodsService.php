@@ -38,6 +38,9 @@ class FinishedGoodsService
 
             $finalGood = DB::table('production_order_operations')->where('tenant_id', $tenantId)
                 ->where('production_order_id', $order->id)->where('status', 'COMPLETED')->orderByDesc('step_no')->value('good_quantity');
+            if ($finalGood === null) {
+                throw ValidationException::withMessages(['production_order_id' => 'The completed order has no completed operation output to receive as finished goods.']);
+            }
 
             $quantity = (string) $data['finished_quantity'];
             if (DecimalQuantity::units($quantity) <= 0 || DecimalQuantity::exceeds($quantity, (string) $finalGood)) {
@@ -313,8 +316,9 @@ class FinishedGoodsService
             }
 
             $source = DB::table('inventory_locations')->where('tenant_id', $tenantId)->where('id', $data['source_location_id'])->first();
-            if ($source === null || strtoupper((string) $source->location_type) === 'QUARANTINE' || ! $source->allow_stock) {
-                throw ValidationException::withMessages(['source_location_id' => 'Dispatch must originate from a stock-enabled, non-quarantine location.']);
+            if ($source === null || strtoupper((string) $source->location_type) === 'QUARANTINE' || ! $source->allow_stock ||
+                $reservation->source_location_id !== $source->id) {
+                throw ValidationException::withMessages(['source_location_id' => 'Dispatch must originate from the exact stock-enabled location held by this reservation.']);
             }
             $quantity = (string) $reservation->quantity;
             if (DecimalQuantity::exceeds($quantity, $this->balanceAt($tenantId, $lot->id, $source->id))) {
