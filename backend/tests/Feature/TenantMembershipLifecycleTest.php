@@ -649,5 +649,4 @@ class TenantMembershipLifecycleTest extends TestCase
             }
         }
     }
-
 }
