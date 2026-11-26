@@ -38,6 +38,19 @@
             <strong>Platform</strong>
             <small>Global control plane</small>
           </span>
+          @if (session.memberships().length > 0) {
+            <select
+              class="tenant-switch"
+              aria-label="Choose customer workspace"
+              [value]="session.activeTenant()?.id ?? ''"
+              (change)="changeTenant($any($event.target).value)"
+            >
+              <option value="" disabled>Choose workspace</option>
+              @for (membership of session.memberships(); track membership.id) {
+                <option [value]="membership.id">{{ membership.name }}</option>
+              }
+            </select>
+          }
         </div>
       }
 
