@@ -274,4 +274,29 @@ class PlatformAdministrationTest extends TestCase
         $this->assertTrue((bool) $runtime->scalar("SELECT has_function_privilege('app_runtime', 'public.platform_change_tenant_status(uuid,text,text)', 'EXECUTE')"));
         $this->assertTrue((bool) $runtime->scalar("SELECT has_function_privilege('app_runtime', 'public.platform_set_tenant_entitlements(uuid,text,text,jsonb,jsonb,date,date,text)', 'EXECUTE')"));
     }
+
+    public function test_platform_tables_have_forced_rls_and_audit_is_not_runtime_readable(): void
+    {
+        $admin = DB::connection('pgsql_test_admin');
+
+        foreach (['platform_operator_grants', 'platform_tenant_entitlements', 'platform_audit_events'] as $table) {
+            $policy = $admin->selectOne(
+                'SELECT c.relrowsecurity, c.relforcerowsecurity
+                   FROM pg_class c
+                   JOIN pg_namespace n ON n.oid = c.relnamespace
+                  WHERE n.nspname = ? AND c.relname = ?',
+                ['public', $table],
+            );
+
+            $this->assertNotNull($policy, $table.' must exist.');
+            $this->assertTrue((bool) $policy->relrowsecurity, $table.' must enable RLS.');
+            $this->assertTrue((bool) $policy->relforcerowsecurity, $table.' must force RLS.');
+        }
+
+        $runtime = DB::connection('pgsql');
+        $this->assertFalse((bool) $runtime->scalar("SELECT has_table_privilege('app_runtime', 'platform_audit_events', 'SELECT')"));
+        $this->assertFalse((bool) $runtime->scalar("SELECT has_table_privilege('app_runtime', 'platform_audit_events', 'UPDATE')"));
+        $this->assertFalse((bool) $runtime->scalar("SELECT has_table_privilege('app_runtime', 'platform_audit_events', 'DELETE')"));
+    }
+
 }
