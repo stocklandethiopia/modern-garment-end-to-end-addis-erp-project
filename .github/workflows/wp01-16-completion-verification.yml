@@ -144,7 +144,7 @@ jobs:
               'integration_outbox_events','agent_run_audits','agent_action_proposals',
               'agent_approval_decisions','agent_action_events','device_scan_events',
               'receipt_line_material_lots','finished_goods_lots','finished_goods_transactions',
-              'finished_goods_reservations','finance_journal_postings','finance_journal_reversals'
+              'finished_goods_reservations','finance_journal_postings','finance_journal_reversals','customer_credit_decisions','tenant_domain_role_assignments'
             ] LOOP
               IF NOT EXISTS (
                 SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
@@ -206,7 +206,7 @@ jobs:
       - name: Set up Node.js 26 for WP-01 package verification
         uses: actions/setup-node@v4
         with:
-          node-version: '26'
+          node-version: '22.23.5'
 
       - name: Reassemble and verify WP-01 r3 source
         shell: bash
@@ -221,7 +221,7 @@ jobs:
           cd wp01-r2-release/package
           node scripts/validate-work-package.mjs
           node --test
-          node scripts/audit-quality.mjs
+          node scripts/audit-quality.mjs --strict --markdown docs/WP01_AUDIT_RESULT_CI.md
 
   combined-release-candidate:
     name: Assemble combined ERP repository candidate
