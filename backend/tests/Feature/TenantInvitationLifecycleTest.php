@@ -35,7 +35,7 @@ class TenantInvitationLifecycleTest extends TestCase
         $now = now();
 
         $db->transaction(function () use ($db, $now): void {
-    $db->table('tenants')->insert([
+            $db->table('tenants')->insert([
                 'id' => $this->tenantId,
                 'code' => 'INVITE-'.Str::upper(Str::random(8)),
                 'name' => 'Invitation Lifecycle Tenant',
