@@ -5,7 +5,7 @@
 } @else {
   <div class="app-shell">
     <aside class="sidebar" aria-label="Main navigation">
-      <a class="brand" routerLink="/" aria-label="Modern Garment ERP home">
+      <a class="brand" [routerLink]="session.activeTenant() ? '/' : '/platform/tenants'" aria-label="Modern Garment ERP home">
         <span class="brand-mark">M</span>
         <span class="brand-copy">
           <strong>MODERN GARMENT</strong>
@@ -107,7 +107,7 @@
         <div class="breadcrumbs">
           <span>{{ session.activeTenant()?.name ?? 'Platform administration' }}</span>
           <span class="crumb-divider">/</span>
-          <strong>Workspace</strong>
+          <strong>{{ session.activeTenant() ? 'Workspace' : 'Global platform' }}</strong>
         </div>
         <div class="topbar-actions">
           <span class="environment-label">DEVELOPMENT FOUNDATION</span>
