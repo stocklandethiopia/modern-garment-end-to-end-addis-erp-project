@@ -162,7 +162,7 @@ jobs:
           if [ -x vendor/bin/pint ]; then vendor/bin/pint --test; fi
 
       - name: Run Laravel unit and integration tests
-        run: php artisan test --no-interaction
+        run: php artisan test
 
       - name: Verify route registration
         run: php artisan route:list --json > /tmp/erp-routes.json
