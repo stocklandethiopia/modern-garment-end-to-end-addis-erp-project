@@ -1,7 +1,8 @@
 # WP-03 — Requirement-level implementation and acceptance ledger
 
-**Working branch:** work/wp03-identity-platform-completion-2026-11-26  
-**Integration base:** delivery/autonomous-wp-01-16  
+**Parallel implementation branch:** `work/wp03-identity-platform-completion-2026-11-26`  
+**Isolated continuation branch:** `agent/chatgpt-wp03-continuation-2026-11-27`  
+**Integration base:** `delivery/autonomous-wp-01-16`  
 **Governed scope:** WP-03 only, within the fixed WP-00–WP-16 sequence  
 **Status:** PARTIAL FOUNDATION — exact-SHA CI evidence exists; WP-03 handover is open.
 
@@ -88,12 +89,12 @@ This ledger reconciles the requirements assigned to WP-03 in docs/requirements/r
 
 ## Next implementation sequence
 
-1. Implement tenant lifecycle: activation, suspension, closure, archive/export, retention, legal hold and controlled recovery. Keep suspended/closed tenant access fail-closed.
-2. Separate platform administration/entitlements from tenant OWNER/ADMIN roles; model plan/feature limits, tenant status and platform support access with strict audit and approval boundaries.
-3. Implement effective-dated legal-entity/site/department/warehouse/channel role scope backed by real organization records and checked on target resources. Keep SCOPED domain access denied until each resource scope is proven.
-4. Implement MFA, enterprise OIDC/SSO, session recovery and refresh-token rotation/reuse detection.
-5. Complete identity registration/email verification and invitation/domain-role/ownership Angular journeys.
-6. Complete tenant bootstrap/operator tooling, secret provisioning/rotation, recovery, migration rollback and non-production deployment drills.
-7. Execute full GAR-ENT-001..010 and GAR-PLT-001/003/004/005 positive, negative, retry, expiry, concurrency, audit and tenant-crossing acceptance; update the handover only when every item has direct evidence.
+1. Complete exact-head ERP CI and combined WP-01–WP-16 verification for the isolated continuation PR. Fix PHP formatting, migration/RLS, API, test, and any Angular failures before promotion.
+2. Finish tenant lifecycle acceptance beyond ACTIVE/SUSPENDED/CLOSED: export/archive, retention schedule, legal hold, deletion prohibition and independently approved recovery. Keep suspended/closed access fail-closed.
+3. Complete two-person platform grant lifecycle, including appointment, approval, expiry/revocation and independent audit, plus platform administration/entitlement Angular workflows. Do not seed real PLATFORM_ADMIN or PLATFORM_SUPPORT identities without the approved appointment record.
+4. Enforce entitlements at each module boundary; define the commercial plan catalogue and entitlement policy before activating real plans or quotas.
+5. Implement effective-dated legal-entity/site/department/warehouse/channel role scopes against real organization records and prove target-record authorization. Keep SCOPED access denied until each scope is checked.
+6. Implement MFA, enterprise OIDC/SSO, session recovery and refresh-token rotation/reuse detection; complete invitation/domain-role/ownership UI and tenant bootstrap/operator tooling.
+7. Complete secret provisioning/rotation, recovery, migration rollback and non-production deployment drills. Execute full GAR-ENT-001..010 and GAR-PLT-001/003/004/005 positive, negative, retry, expiry, concurrency, audit and tenant-crossing acceptance. Reconcile WP-01 R3's 128 records to the 120 visible GAR rows and document the exact eight-record delta.
 
 **WP-03 remains open.** No later work package can be treated as accepted to bypass it. Routine owner acceptance is not required between safe engineering steps; exact technical evidence is.
