@@ -59,11 +59,10 @@ class QualityControlService
                 throw ValidationException::withMessages(['inspected_by' => 'Only the assigned inspector can submit this inspection result.']);
             }
 
-            $accepted = (float) $data['accepted_quantity'];
-            $rejected = (float) $data['rejected_quantity'];
-            $sample = (float) $inspection->sample_quantity;
-            if ($accepted < 0 || $rejected < 0 || ! DecimalQuantity::equal(
-                DecimalQuantity::add((string) $accepted, (string) $rejected),
+            $accepted = (string) $data['accepted_quantity'];
+            $rejected = (string) $data['rejected_quantity'];
+            if (! DecimalQuantity::equal(
+                DecimalQuantity::add($accepted, $rejected),
                 (string) $inspection->sample_quantity
             )) {
                 throw ValidationException::withMessages(['quantities' => 'Every sampled unit must be accounted for as accepted or rejected before the inspection result can be submitted.']);
