@@ -99,3 +99,17 @@ Two design/engineering standards have been added on the candidate branch:
 - docs/architecture/angular-current-capabilities-and-adoption-standard.md: observed Angular main/roadmap snapshot, production-ready feature maturity, experimental-feature boundary and project adoption practices.
 
 These are requirement/design clarifications. They do not change the implementation acceptance status in the matrix above. No site-specific time-study calibration, customer AQL/inspection plan approval, certification, complete operational agent rollout or production release is claimed.
+
+## Superseding combined exact-head CI result — 26 November 2026
+
+**PASS:** [Unified WP-01–WP-16 candidate verification run #45883478022](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45883478022), source SHA `14f9420b29b062fe15f9b863f5a23a6d6218dbaf`.
+
+All required jobs passed on the same SHA:
+- Laravel / PHP 8.5 / PostgreSQL 18 / Redis 8.2: migrations, forced RLS, Pint, route registration, Composer metadata and security audit, and **78 tests / 967 assertions**.
+- Angular 22 / Node 26: dependency audit, unit tests and production build.
+- WP-01 R3 source package: archive checksum, validator, package tests and strict quality audit.
+- Combined artifact assembly: succeeded.
+
+Artifact: `modern-garment-addis-erp-wp01-wp16-candidate`, GitHub Actions artifact ID `15148571903`, 701,359 bytes, expires 24 February 2027. It contains the combined repository source archive, checksum manifest and build-verification record, keyed to the SHA above.
+
+This changes the **combined candidate CI status** to PASS. It does not change individual WP implementation acceptance statuses or certify end-to-end factory/customer operation. PR #5 remains draft/open/unmerged. Production installer, Codespaces devcontainer, release container images, production rollout, load/soak/concurrency, recovery, external integration UAT, independent security review and legal/customer/factory sign-offs remain separate work.
