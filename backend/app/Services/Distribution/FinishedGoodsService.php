@@ -215,15 +215,64 @@ class FinishedGoodsService
         return DB::table('customer_orders')->where('tenant_id', $tenantId)->where('id', $id)->first();
     }
 
-    public function confirmCustomerOrder(string $tenantId, string $actorId, string $orderId, string $creditStatus): object
+    public function recordCustomerCreditDecision(string $tenantId, string $actorId, string $orderId, array $data): object
     {
-        return DB::transaction(function () use ($tenantId, $actorId, $orderId, $creditStatus): object {
+        return DB::transaction(function () use ($tenantId, $actorId, $orderId, $data): object {
+            $order = DB::table('customer_orders')->where('tenant_id', $tenantId)->where('id', $orderId)->lockForUpdate()->first();
+            if ($order === null || $order->status !== 'DRAFT') {
+                throw ValidationException::withMessages(['order' => 'Credit decisions can only be recorded for a draft customer order.']);
+            }
+            if (trim((string) $data['decision_reference']) === '' || trim((string) $data['reason']) === '') {
+                throw ValidationException::withMessages(['decision_reference' => 'A credit decision reference and reason are required.']);
+            }
+            if ($order->created_by === $actorId) {
+                throw ValidationException::withMessages(['reviewer' => 'The order creator cannot perform the independent customer credit review.']);
+            }
+            if ($data['decision'] === 'APPROVED_EXCEPTION' &&
+                (empty($data['exception_approval_reference']) || trim((string) $data['exception_approval_reference']) === '')) {
+                throw ValidationException::withMessages(['exception_approval_reference' => 'A separately authorized credit exception reference is required.']);
+            }
+
+            $id = (string) Str::uuid();
+            DB::table('customer_credit_decisions')->insert([
+                'id' => $id,
+                'tenant_id' => $tenantId,
+                'customer_order_id' => $orderId,
+                'decision' => $data['decision'],
+                'decision_reference' => $data['decision_reference'],
+                'reason' => $data['reason'],
+                'reviewed_by' => $actorId,
+                'reviewed_at' => now(),
+                'exception_approved_by' => $data['decision'] === 'APPROVED_EXCEPTION' ? $data['exception_approved_by'] : null,
+                'exception_approved_at' => $data['decision'] === 'APPROVED_EXCEPTION' ? ($data['exception_approved_at'] ?? now()) : null,
+                'exception_approval_reference' => $data['decision'] === 'APPROVED_EXCEPTION' ? $data['exception_approval_reference'] : null,
+                'created_at' => now(),
+            ]);
+
+            return DB::table('customer_credit_decisions')->where('tenant_id', $tenantId)->where('id', $id)->first();
+        }, 3);
+    }
+
+    public function confirmCustomerOrder(string $tenantId, string $actorId, string $orderId, string $creditDecisionId): object
+    {
+        return DB::transaction(function () use ($tenantId, $actorId, $orderId, $creditDecisionId): object {
             $order = DB::table('customer_orders')->where('tenant_id', $tenantId)->where('id', $orderId)->lockForUpdate()->first();
             if ($order === null || $order->status !== 'DRAFT') {
                 throw ValidationException::withMessages(['order' => 'Only a draft customer order can be confirmed.']);
             }
-            if (! in_array($creditStatus, ['CLEAR','APPROVED_EXCEPTION'], true)) {
-                throw ValidationException::withMessages(['credit_control_status' => 'Customer credit control must be cleared or have an approved exception before confirmation.']);
+            $decision = DB::table('customer_credit_decisions')->where('tenant_id', $tenantId)
+                ->where('id', $creditDecisionId)->where('customer_order_id', $orderId)->first();
+            if ($decision === null || ! in_array($decision->decision, ['CLEAR','APPROVED_EXCEPTION'], true)) {
+                throw ValidationException::withMessages(['credit_control_decision_id' => 'An independent, linked credit decision of CLEAR or APPROVED_EXCEPTION is required.']);
+            }
+            if ($decision->reviewed_by === $actorId) {
+                throw ValidationException::withMessages(['conflict_of_duties' => 'The credit reviewer cannot also confirm the customer order.']);
+            }
+            if ($decision->decision === 'APPROVED_EXCEPTION' &&
+                ($decision->exception_approved_by === null ||
+                 $decision->exception_approved_by === $decision->reviewed_by ||
+                 $decision->exception_approval_reference === null)) {
+                throw ValidationException::withMessages(['credit_control_decision_id' => 'The credit exception approval evidence is incomplete.']);
             }
             if (! DB::table('customer_order_lines')->where('tenant_id', $tenantId)->where('customer_order_id', $orderId)->exists()) {
                 throw ValidationException::withMessages(['lines' => 'A customer order must have at least one line.']);
@@ -231,7 +280,8 @@ class FinishedGoodsService
 
             DB::table('customer_orders')->where('tenant_id', $tenantId)->where('id', $orderId)->update([
                 'status' => 'CONFIRMED',
-                'credit_control_status' => $creditStatus,
+                'credit_control_status' => $decision->decision,
+                'credit_control_decision_id' => $decision->id,
                 'confirmed_by' => $actorId,
                 'confirmed_at' => now(),
                 'updated_at' => now(),
