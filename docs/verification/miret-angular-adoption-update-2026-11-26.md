@@ -50,3 +50,10 @@ The controlled Composer security workflow passed on candidate run [#45880844205]
 WP-01 R3 package verification has passed on prior candidate commits, including [run #45880744744](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45880744744). That is not a pass for the combined ERP candidate. PR-triggered workflows on the bot-generated lockfile commit returned action_required before starting jobs. The next owner-triggered exact-head run must verify Angular, PostgreSQL/Laravel migrations, RLS, tests, formatting, route registration and combined artifact publication.
 
 A repository commit, design document, successful Composer audit or separate WP-01 run is not the combined ERP release. Do not merge PR #5, publish a release artifact as production-ready, deploy or claim complete Miret runtime coverage until the required exact-head checks and independent business/security/professional gates pass.
+
+## 26 November 2026 — PHP correction and formatting evidence
+
+- Exact-head run #45881080663: WP-01 R3 source checks passed; Angular audit, unit tests and production build passed; PostgreSQL 18 migrations and forced-RLS verification passed; backend stopped at Pint before Laravel tests.
+- Corrective finding: Pint identified a malformed DateTimeImmutable namespace in IndustrialEngineeringService and 31 formatting issues. The namespace was corrected in commit 55fd21eaec99f870c5206b04ea15038544bcbc73.
+- Candidate formatter workflow #45881390947 passed: Pint formatting applied, every PHP file under app/bootstrap/config/database/routes/tests passed php -l, and the follow-up Pint --test gate passed. Formatter output was committed as style-only commit 8a65cfd9263594474d2a38026cc72b6654603756.
+- The Laravel test suite and route registration did not run on the earlier failing SHA. They must run on the next owner-triggered exact candidate head. Artifact assembly remains blocked until all three required jobs pass on one SHA.
