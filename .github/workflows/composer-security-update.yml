@@ -1,0 +1,91 @@
+name: Controlled Composer security update
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_branch:
+        description: Type the candidate branch name to confirm the update target
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: composer-security-update-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  update-and-verify:
+    name: Update Symfony security fixes and commit lockfile
+    if: github.ref == 'refs/heads/work/wp01-16-completion-2026-11-26'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Verify requested target
+        shell: bash
+        env:
+          CONFIRM_BRANCH: ${{ inputs.confirm_branch }}
+        run: |
+          set -euo pipefail
+          test "$CONFIRM_BRANCH" = "work/wp01-16-completion-2026-11-26"
+          test "$GITHUB_REF" = "refs/heads/work/wp01-16-completion-2026-11-26"
+
+      - name: Checkout candidate source
+        uses: actions/checkout@v4
+        with:
+          ref: work/wp01-16-completion-2026-11-26
+          persist-credentials: true
+
+      - name: Set up PHP 8.5 and Composer 2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: ctype, curl, dom, fileinfo, filter, hash, mbstring, openssl, pdo, pdo_pgsql, session, tokenizer, xml, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Update only the vulnerable Symfony component family
+        run: |
+          set -euo pipefail
+          composer update symfony/http-foundation symfony/http-kernel symfony/mailer symfony/routing --with-all-dependencies --no-interaction --prefer-dist --no-progress
+
+      - name: Verify manifest, vulnerabilities and framework boot
+        run: |
+          set -euo pipefail
+          composer validate --strict
+          composer audit --no-interaction
+          php artisan package:discover --ansi
+
+      - name: Verify fixed component versions
+        run: |
+          set -euo pipefail
+          php -r '
+          require "vendor/autoload.php";
+          $expected = ["8.1.12", "8.1.12", "8.1.12", "8.1.12"];
+          $names = ["symfony/http-foundation", "symfony/http-kernel", "symfony/mailer", "symfony/routing"];
+          foreach ($names as $i => $name) {
+              $installed = Composer\\InstalledVersions::getPrettyVersion($name);
+              if (ltrim((string) $installed, "v") !== $expected[$i]) {
+                  fwrite(STDERR, "$name expected ".$expected[$i]." but found ".$installed.PHP_EOL);
+                  exit(1);
+              }
+              echo "$name ".$installed.PHP_EOL;
+          }'
+
+      - name: Commit generated lockfile to candidate branch
+        shell: bash
+        working-directory: .
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/composer.lock
+          if git diff --cached --quiet; then
+            echo "No composer.lock changes were produced; refusing an empty security-update commit."
+            exit 1
+          fi
+          git commit -m "security(deps): lock Symfony 8.1.12 advisory fixes"
+          git push origin HEAD:work/wp01-16-completion-2026-11-26
