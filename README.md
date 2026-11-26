@@ -29,39 +29,48 @@ Exact supported patch versions are recorded in the platform standard and must be
 
 ## Start here
 
-1. Platform architecture and technology standard: docs/architecture/platform-standard.md
-2. Miret four-pillar operating model: docs/product/miret-system-operating-model.md
-3. Angular current capabilities and adoption standard: docs/architecture/angular-current-capabilities-and-adoption-standard.md
-2. End-to-end business domain map: docs/product/domain-map.md
-3. Apparel business operating system charter and manufacturing excellence: docs/product/apparel-business-operating-system-charter.md
-4. Distribution network, order management and channel commerce: docs/product/distribution-and-channel-commerce.md
-5. Engineering, syntax and code quality rules: docs/engineering/code-quality.md
-6. Development, container and deployment standard: docs/engineering/development-deployment.md
-7. Security and SaaS tenancy standard: docs/security/saas-security.md
-8. Ethiopia localization and statutory controls: docs/localization/ethiopia.md
-9. Ethiopia legal and regulatory source register: docs/localization/ethiopia-legal-regulatory-register.md
-10. Payroll and differentiated variable-compensation schemes: docs/hr/payroll-and-variable-compensation.md
-11. Approved reference repository review: docs/references/reference-repositories.md
+1. Project governance: docs/agent/project-governance-agreement.md
+2. Platform architecture and technology standard: docs/architecture/platform-standard.md
+3. Exact application folders and file responsibilities: docs/architecture/application-folder-code-map.md
+4. Miret four-pillar operating model: docs/product/miret-system-operating-model.md
+5. Angular current capabilities and adoption standard: docs/architecture/angular-current-capabilities-and-adoption-standard.md
+6. End-to-end business domain map: docs/product/domain-map.md
+7. Apparel business operating system charter and manufacturing excellence: docs/product/apparel-business-operating-system-charter.md
+8. Distribution network, order management and channel commerce: docs/product/distribution-and-channel-commerce.md
+9. Engineering, syntax and code quality rules: docs/engineering/code-quality.md
+10. Development, container and deployment standard: docs/engineering/development-deployment.md
+11. Security and SaaS tenancy standard: docs/security/saas-security.md
+12. Ethiopia localization and statutory controls: docs/localization/ethiopia.md
+13. Ethiopia legal and regulatory source register: docs/localization/ethiopia-legal-regulatory-register.md
+14. Payroll and differentiated variable-compensation schemes: docs/hr/payroll-and-variable-compensation.md
+15. Approved reference repository review: docs/references/reference-repositories.md
 
-## Application foundation and executable domain slices — CI verified
+## Application foundation and verified integration delivery
 
-The execution branch contains a runnable development foundation and CI-verified executable slices across WP-03, WP-04 and the first controlled WP-05 product-development handoff. Pull request [#1](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/pull/1) remains **DRAFT, OPEN and UNMERGED**; the default `main` branch is unchanged.
+**Canonical integration branch:** `delivery/autonomous-wp-01-16`  
+**Latest integrated commit:** `6bd8990d434d3cbc9f51e58489cc76fb240a83b6`  
+**Merged pull request:** [#5 — WP-01–WP-16 verified implementation increment](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/pull/5)  
+**Default branch:** `main` remains unchanged.
 
-**Latest verified checkpoint:** commit `0c2c0801c761fa889f7f20b8b4e7f9b5337e33fb`; [GitHub Actions run 45030693607](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45030693607).
+Exact-head verification passed before merge on source SHA `dbd01b56510e87beebfac454ae49723bfbf5c633`:
+- [Combined WP-01–WP-16 verification #45891155076](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45891155076): PostgreSQL 18 migrations and forced RLS, Laravel 13/PHP 8.5 tests, Angular 22/Node 26 tests/build, WP-01 R3 integrity and combined artifact assembly all passed.
+- Backend: **78 tests / 967 assertions**.
+- Frontend: **27 tests across 7 files** and production build passed.
+- [Delivery-branch CI #45891439094](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45891439094) and [#45891445136](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45891445136) also passed on merge commit `6bd8990d434d3cbc9f51e58489cc76fb240a83b6`.
 
-- **WP-03 — enterprise foundation:** Laravel 13 API, Sanctum authentication, tenant selection/context, legal entities/sites/nodes/licence evidence and inventory-location onboarding; Angular login, tenant picker, overview and enterprise setup.
-- **WP-04 — merchandising vertical slices:** initiatives and market-insight evidence, brand strategy versions and approvals, season calendars, collection/version approvals, range plans/lines/freeze, channel assortment, and demand/OTB/commercial planning workflows. Angular includes initiative, market-insight, planning-workbench and brand/range screens.
-- **WP-05 — first product-development slice:** product briefs linked to frozen WP-04 range lines; independent brief acceptance; immutable brief decisions and versions; styles pinned to the exact accepted brief revision; append-only design revision history. Angular product-development studio is available at `/product/product-development`.
-- **PostgreSQL 18:** tenant-composite foreign keys, forced row-level security, restricted runtime/migration roles, append-only revision/decision history, audit events and domain constraints.
-- **Local infrastructure:** PostgreSQL/Redis Compose, first-owner provisioning, PHP/Node lockfiles and local development guide.
+Combined candidate artifact: `modern-garment-addis-erp-wp01-wp16-candidate`, ID `15151632103`, 704,980 bytes, expiry 24 February 2027. It is a verified source/review artifact, not a signed production installer or deployment image.
 
-**Latest branch quality evidence:** Composer validation/audit, Pint (**53 files**), PHP syntax, PostgreSQL migrations as restricted `erp_migrator`, **42 backend tests / 363 assertions**, npm dependency audit, **17 Angular tests across 5 files**, and Angular production build all passed on the current commit.
+The repository now contains Laravel backend foundations and candidate services/migrations for enterprise identity, merchandising, PLM, IE, sourcing/material genealogy, route/MES execution, quality/CAPA, distribution, finance/payroll review, documents/integrations and governed agents. Angular executable user journeys are currently concentrated in authentication, enterprise setup, merchandising and initial product development. See the [application folder/code map](docs/architecture/application-folder-code-map.md) for exact file paths.
 
-**Still in progress:** completion of the remaining WP-04 commercial and initiative-to-sale acceptance coverage; remaining WP-05 design/technical development (2D/3D and controlled asset storage, patterns/grading, measurement, samples/fit, technical packs, BOM, costing and release gates); WP-06–WP-15 executable domain workflows; and WP-16 full E2E-001–E2E-008, security/performance hardening, backup/restore rehearsal, staging/UAT and production readiness. The passing branch CI is not proof of a complete ERP or production release. No live deployment, real payroll/remittance, tax activation, bank/payment execution or external production integration has occurred.
+**Current execution checkpoint:** WP-03 remains the active package because tenant lifecycle, owner succession/leave, effective-dated scoped roles, downstream scope enforcement, MFA/OIDC/SSO, platform entitlements, full operator bootstrap/recovery and full WP-03 acceptance evidence remain open. The dedicated working branch is `work/wp03-identity-platform-completion-2026-11-26`; verified increments target the delivery branch through PRs.
+
+**Release wording:** successful CI is technical evidence for the exact checks and SHA only. It does not mean WP-01–WP-16 are all complete. Full factory/store/customer E2E, independent security review, production concurrency/load/soak, backup/restore/DR/rollback, external integration UAT, professional/statutory sign-offs, staging/UAT and accountable production deployment remain WP-16 gates. No production release is claimed.
 
 - [Local development guide](docs/development/local-development.md)
 - [Laravel backend](backend/)
 - [Angular frontend](frontend/)
+- [Application file/code map](docs/architecture/application-folder-code-map.md)
+- [WP-03 requirement-level acceptance matrix](docs/verification/WP03-implementation-acceptance-matrix.md)
 - [Local infrastructure](docker-compose.yml)
 - [CI workflow](.github/workflows/ci.yml)
 - [WP-00 to WP-16 handover register](docs/work-packages/handover-register.md)
@@ -95,4 +104,4 @@ A feature is not complete because a screen exists. It must include its business 
 
 ## Current status
 
-The repository now contains a runnable **development foundation** and CI-verified executable slices for WP-03, WP-04 and the first WP-05 product-development handoff. It is **not** a finished end-to-end ERP, production installer, UAT-approved system or deployable SaaS release. Continue the fixed WP-04 onward sequence as tested vertical slices; never describe a design document or a passing foundation build as proof of full business-process completion.
+The current source is integrated on `delivery/autonomous-wp-01-16` at `6bd8990d434d3cbc9f51e58489cc76fb240a83b6`. The work branch for the next package is `work/wp03-identity-platform-completion-2026-11-26`. Continue the fixed WP-00–WP-16 sequence without routine owner-acceptance pauses, while retaining exact-SHA quality gates and the human/professional boundaries in the governance agreement. WP-03 is not yet complete; all domain candidate code and all remaining production/release gates must be reported accurately. This repository is **not** a finished end-to-end ERP, signed production installer, UAT-approved system or production deployment.

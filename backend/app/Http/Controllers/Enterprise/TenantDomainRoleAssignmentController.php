@@ -16,6 +16,16 @@ class TenantDomainRoleAssignmentController extends Controller
         private readonly TenantContextResolver $tenant
     ) {}
 
+    public function index(Request $request): JsonResponse
+    {
+        Gate::authorize('tenant.assign-domain-roles');
+        $data = $request->validate(['user_id' => ['nullable', 'uuid']]);
+
+        return response()->json(['data' => $this->assignments->forTenant(
+            $this->tenant->requireTenantId(), $data['user_id'] ?? null
+        )]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         Gate::authorize('tenant.assign-domain-roles');

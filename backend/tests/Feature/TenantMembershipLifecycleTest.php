@@ -276,4 +276,212 @@ class TenantMembershipLifecycleTest extends TestCase
         $this->assertTrue((bool) $runtime->scalar("SELECT has_function_privilege('app_runtime', 'public.add_tenant_member(uuid,text,text)', 'EXECUTE')"));
         $this->assertTrue((bool) $runtime->scalar("SELECT has_function_privilege('app_runtime', 'public.revoke_tenant_member(uuid,text)', 'EXECUTE')"));
     }
+
+    public function test_membership_revocation_revokes_domain_roles_and_reactivation_does_not_restore_them(): void
+    {
+        $this->actAs($this->ownerId);
+        $email = DB::connection('pgsql_test_admin')->table('users')->where('id', $this->memberId)->value('email');
+
+        $this->postJson('/api/v1/enterprise/members', [
+            'email' => $email,
+            'membership_role' => 'MEMBER',
+            'reason' => 'Add a member before assigning a domain role.',
+        ])->assertCreated();
+
+        $this->actAs($this->adminId);
+        $assignment = $this->postJson('/api/v1/enterprise/domain-role-assignments', [
+            'user_id' => $this->memberId,
+            'role_code' => 'STORE_MANAGER',
+            'grant_reason' => 'Assign store operations responsibility for the member.',
+        ])->assertCreated();
+
+        $assignmentId = $assignment->json('data.id');
+        $this->assertIsString($assignmentId);
+
+        $this->actAs($this->ownerId);
+        $this->postJson('/api/v1/enterprise/domain-role-assignments/'.$assignmentId.'/approve', [
+            'reason' => 'Approve the independently requested store role.',
+        ])->assertOk();
+
+        $this->postJson('/api/v1/enterprise/members/'.$this->memberId.'/revoke', [
+            'reason' => 'Member access is no longer required.',
+        ])->assertOk()->assertJsonPath('data.status', 'REVOKED');
+
+        $revoked = DB::connection('pgsql_test_admin')
+            ->table('tenant_domain_role_assignments')
+            ->where('tenant_id', $this->tenantId)
+            ->where('id', $assignmentId)
+            ->first();
+
+        $this->assertNotNull($revoked);
+        $this->assertSame('REVOKED', $revoked->status);
+        $this->assertSame($this->ownerId, $revoked->revoked_by);
+        $this->assertStringContainsString('Member access is no longer required.', $revoked->revocation_reason);
+        $this->assertDatabaseHas('audit_events', [
+            'tenant_id' => $this->tenantId,
+            'action' => 'TENANT_DOMAIN_ROLE_REVOKED',
+            'object_id' => $assignmentId,
+        ], 'pgsql_test_admin');
+
+        // Reactivating a tenant membership must not reactivate old domain grants.
+        $this->postJson('/api/v1/enterprise/members', [
+            'email' => $email,
+            'membership_role' => 'MEMBER',
+            'reason' => 'Restore ordinary tenant membership only.',
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('tenant_memberships', [
+            'tenant_id' => $this->tenantId,
+            'user_id' => $this->memberId,
+            'status' => 'ACTIVE',
+            'membership_role' => 'MEMBER',
+        ], 'pgsql_test_admin');
+        $this->assertDatabaseHas('tenant_domain_role_assignments', [
+            'tenant_id' => $this->tenantId,
+            'id' => $assignmentId,
+            'status' => 'REVOKED',
+        ], 'pgsql_test_admin');
+    }
+
+    public function test_expired_domain_role_period_does_not_block_a_new_non_overlapping_grant(): void
+    {
+        $this->actAs($this->ownerId);
+        $email = DB::connection('pgsql_test_admin')->table('users')->where('id', $this->memberId)->value('email');
+
+        $this->postJson('/api/v1/enterprise/members', [
+            'email' => $email,
+            'membership_role' => 'MEMBER',
+            'reason' => 'Add a member for effective-dated access testing.',
+        ])->assertCreated();
+
+        $this->actAs($this->adminId);
+        $pastStart = now()->subDays(30)->toDateString();
+        $pastEnd = now()->subDay()->toDateString();
+
+        $expired = $this->postJson('/api/v1/enterprise/domain-role-assignments', [
+            'user_id' => $this->memberId,
+            'role_code' => 'STORE_MANAGER',
+            'valid_from' => $pastStart,
+            'valid_to' => $pastEnd,
+            'grant_reason' => 'Record the previous store-manager assignment period.',
+        ])->assertCreated();
+
+        $expiredId = $expired->json('data.id');
+        $this->assertIsString($expiredId);
+
+        $this->actAs($this->ownerId);
+        $this->postJson('/api/v1/enterprise/domain-role-assignments/'.$expiredId.'/approve', [
+            'reason' => 'Approve the historical role-period record.',
+        ])->assertOk();
+
+        $this->actAs($this->adminId);
+        $current = $this->postJson('/api/v1/enterprise/domain-role-assignments', [
+            'user_id' => $this->memberId,
+            'role_code' => 'STORE_MANAGER',
+            'valid_from' => now()->toDateString(),
+            'grant_reason' => 'Request a new role period after the previous one expired.',
+        ])->assertCreated();
+
+        $currentId = $current->json('data.id');
+        $this->assertIsString($currentId);
+        $this->assertNotSame($expiredId, $currentId);
+
+        // A second grant for an overlapping period remains blocked.
+        $this->postJson('/api/v1/enterprise/domain-role-assignments', [
+            'user_id' => $this->memberId,
+            'role_code' => 'STORE_MANAGER',
+            'valid_from' => now()->toDateString(),
+            'grant_reason' => 'Attempt to overlap an existing current role period.',
+        ])->assertUnprocessable();
+
+        // Verify the database guard independently of the service-level overlap check.
+        $runtime = DB::connection('pgsql');
+        $runtime->beginTransaction();
+        try {
+            $runtime->select("SELECT set_config('app.current_tenant_id', ?, true)", [$this->tenantId]);
+            $now = now();
+            try {
+                $runtime->table('tenant_domain_role_assignments')->insert([
+                    'id' => (string) Str::uuid(),
+                    'tenant_id' => $this->tenantId,
+                    'user_id' => $this->memberId,
+                    'role_code' => 'STORE_MANAGER',
+                    'scope_type' => 'TENANT',
+                    'scope_id' => null,
+                    'status' => 'PENDING',
+                    'valid_from' => now()->subDay()->toDateString(),
+                    'valid_to' => null,
+                    'grant_reason' => 'Attempt direct database insert for overlapping role period.',
+                    'granted_by' => $this->adminId,
+                    'approved_by' => null,
+                    'approved_at' => null,
+                    'revoked_by' => null,
+                    'revoked_at' => null,
+                    'revocation_reason' => null,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+                $this->fail('The database must reject overlapping pending/active domain-role periods.');
+            } catch (QueryException $exception) {
+                $this->assertSame('23P01', $exception->errorInfo[0] ?? null);
+            }
+        } finally {
+            $runtime->rollBack();
+        }
+
+        $this->actAs($this->ownerId);
+        $this->getJson('/api/v1/enterprise/domain-role-assignments?user_id='.$this->memberId)
+            ->assertOk()
+            ->assertJsonFragment(['id' => $expiredId])
+            ->assertJsonFragment(['id' => $currentId]);
+    }
+
+    public function test_promoting_a_member_to_tenant_admin_revokes_member_domain_roles(): void
+    {
+        $this->actAs($this->ownerId);
+        $email = DB::connection('pgsql_test_admin')->table('users')->where('id', $this->memberId)->value('email');
+
+        $this->postJson('/api/v1/enterprise/members', [
+            'email' => $email,
+            'membership_role' => 'MEMBER',
+            'reason' => 'Add a member before tenant administrator promotion.',
+        ])->assertCreated();
+
+        $this->actAs($this->adminId);
+        $assignment = $this->postJson('/api/v1/enterprise/domain-role-assignments', [
+            'user_id' => $this->memberId,
+            'role_code' => 'STORE_MANAGER',
+            'grant_reason' => 'Assign a store role before membership promotion.',
+        ])->assertCreated();
+
+        $assignmentId = $assignment->json('data.id');
+        $this->assertIsString($assignmentId);
+
+        $this->actAs($this->ownerId);
+        $this->postJson('/api/v1/enterprise/domain-role-assignments/'.$assignmentId.'/approve', [
+            'reason' => 'Approve the role before the identity becomes an admin.',
+        ])->assertOk();
+
+        $this->patchJson('/api/v1/enterprise/members/'.$this->memberId.'/role', [
+            'membership_role' => 'ADMIN',
+            'reason' => 'Promote the member to tenant administrator.',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('tenant_memberships', [
+            'tenant_id' => $this->tenantId,
+            'user_id' => $this->memberId,
+            'membership_role' => 'ADMIN',
+            'status' => 'ACTIVE',
+        ], 'pgsql_test_admin');
+        $this->assertDatabaseHas('tenant_domain_role_assignments', [
+            'tenant_id' => $this->tenantId,
+            'id' => $assignmentId,
+            'status' => 'REVOKED',
+        ], 'pgsql_test_admin');
+        $this->assertDatabaseHas('audit_events', [
+            'tenant_id' => $this->tenantId,
+            'action' => 'TENANT_DOMAIN_ROLE_REVOKED',
+            'object_id' => $assignmentId,
+        ], 'pgsql_test_admin');
+    }
 }

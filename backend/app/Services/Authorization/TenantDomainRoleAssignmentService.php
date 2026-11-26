@@ -8,11 +8,21 @@ use Illuminate\Validation\ValidationException;
 
 class TenantDomainRoleAssignmentService
 {
+    public function forTenant(string $tenantId, ?string $userId = null): object
+    {
+        return DB::table('tenant_domain_role_assignments')
+            ->where('tenant_id', $tenantId)
+            ->when($userId !== null, fn ($query) => $query->where('user_id', $userId))
+            ->orderByDesc('created_at')
+            ->orderBy('id')
+            ->paginate(100);
+    }
+
     public function create(string $tenantId, string $actorId, array $data): object
     {
         return DB::transaction(function () use ($tenantId, $actorId, $data): object {
             $actor = $this->activeMembership($tenantId, $actorId);
-            if (! in_array($actor->membership_role, ['OWNER', 'ADMIN'], true)) {
+            if ($actor === null || ! in_array($actor->membership_role, ['OWNER', 'ADMIN'], true)) {
                 throw ValidationException::withMessages(['actor' => 'Tenant owner or administrator permission is required.']);
             }
 
@@ -29,15 +39,26 @@ class TenantDomainRoleAssignmentService
                 [$tenantId.':domain-role:'.$data['user_id'].':'.$data['role_code']],
             );
 
+            $validFrom = $data['valid_from'] ?? now()->toDateString();
+            $validTo = $data['valid_to'] ?? null;
+
+            // Only overlapping pending/active effective periods block a new grant.
+            // An expired assignment remains in the audit history but must not
+            // prevent a new, non-overlapping role period from being requested.
             $existing = DB::table('tenant_domain_role_assignments')
                 ->where('tenant_id', $tenantId)
                 ->where('user_id', $data['user_id'])
                 ->where('role_code', $data['role_code'])
                 ->whereIn('status', ['PENDING', 'ACTIVE'])
+                ->whereDate('valid_from', '<=', $validTo ?? '9999-12-31')
+                ->where(function ($query) use ($validFrom): void {
+                    $query->whereNull('valid_to')
+                        ->orWhereDate('valid_to', '>=', $validFrom);
+                })
                 ->exists();
 
             if ($existing) {
-                throw ValidationException::withMessages(['role_code' => 'An active or pending assignment already exists for this role.']);
+                throw ValidationException::withMessages(['role_code' => 'An overlapping pending or active assignment already exists for this role.']);
             }
 
             $id = (string) Str::uuid();
@@ -49,8 +70,8 @@ class TenantDomainRoleAssignmentService
                 'scope_type' => 'TENANT',
                 'scope_id' => null,
                 'status' => 'PENDING',
-                'valid_from' => $data['valid_from'] ?? now()->toDateString(),
-                'valid_to' => $data['valid_to'] ?? null,
+                'valid_from' => $validFrom,
+                'valid_to' => $validTo,
                 'grant_reason' => $data['grant_reason'],
                 'granted_by' => $actorId,
                 'created_at' => now(),
@@ -70,9 +91,40 @@ class TenantDomainRoleAssignmentService
     public function approve(string $tenantId, string $actorId, string $assignmentId, string $reason): object
     {
         return DB::transaction(function () use ($tenantId, $actorId, $assignmentId, $reason): object {
-            $actor = $this->activeMembership($tenantId, $actorId);
+            // Read the immutable recipient key first, without locking the
+            // assignment. Membership rows must be locked before the assignment
+            // row to match the membership-change trigger's lock order.
+            $snapshot = DB::table('tenant_domain_role_assignments')
+                ->where('tenant_id', $tenantId)
+                ->where('id', $assignmentId)
+                ->first();
+
+            if ($snapshot === null || $snapshot->status !== 'PENDING') {
+                throw ValidationException::withMessages(['assignment' => 'Only a pending role assignment can be approved.']);
+            }
+            if ($snapshot->granted_by === $actorId || $snapshot->user_id === $actorId) {
+                throw ValidationException::withMessages(['conflict_of_duties' => 'The requester or role recipient cannot approve this assignment.']);
+            }
+            if (trim($reason) === '') {
+                throw ValidationException::withMessages(['reason' => 'An approval reason is required.']);
+            }
+
+            // Always acquire the two membership locks in a stable user-id order.
+            $memberIds = array_values(array_unique([$actorId, $snapshot->user_id]));
+            sort($memberIds, SORT_STRING);
+            $memberships = [];
+            foreach ($memberIds as $memberId) {
+                $memberships[$memberId] = $this->activeMembership($tenantId, $memberId);
+            }
+
+            $actor = $memberships[$actorId] ?? null;
             if ($actor === null || $actor->membership_role !== 'OWNER') {
                 throw ValidationException::withMessages(['approver' => 'Only the tenant owner can approve domain-role assignments.']);
+            }
+
+            $target = $memberships[$snapshot->user_id] ?? null;
+            if ($target === null || $target->membership_role !== 'MEMBER') {
+                throw ValidationException::withMessages(['user_id' => 'Only an active ordinary tenant member can receive a domain role.']);
             }
 
             $assignment = DB::table('tenant_domain_role_assignments')
@@ -81,19 +133,10 @@ class TenantDomainRoleAssignmentService
                 ->lockForUpdate()
                 ->first();
 
-            if ($assignment === null || $assignment->status !== 'PENDING') {
-                throw ValidationException::withMessages(['assignment' => 'Only a pending role assignment can be approved.']);
-            }
-            if ($assignment->granted_by === $actorId || $assignment->user_id === $actorId) {
-                throw ValidationException::withMessages(['conflict_of_duties' => 'The requester or role recipient cannot approve this assignment.']);
-            }
-            if (trim($reason) === '') {
-                throw ValidationException::withMessages(['reason' => 'An approval reason is required.']);
-            }
-
-            $target = $this->activeMembership($tenantId, $assignment->user_id);
-            if ($target === null || $target->membership_role !== 'MEMBER') {
-                throw ValidationException::withMessages(['user_id' => 'Only an active ordinary tenant member can receive a domain role.']);
+            if ($assignment === null || $assignment->status !== 'PENDING'
+                || $assignment->user_id !== $snapshot->user_id
+                || $assignment->granted_by !== $snapshot->granted_by) {
+                throw ValidationException::withMessages(['assignment' => 'The pending assignment changed before approval. Refresh and review it again.']);
             }
 
             DB::table('tenant_domain_role_assignments')->where('tenant_id', $tenantId)->where('id', $assignmentId)->update([
@@ -148,11 +191,16 @@ class TenantDomainRoleAssignmentService
 
     private function activeMembership(string $tenantId, string $userId): ?object
     {
-        return DB::table('tenant_memberships')
-            ->where('tenant_id', $tenantId)
-            ->where('user_id', $userId)
-            ->where('status', 'ACTIVE')
-            ->first(['membership_role']);
+        $row = DB::selectOne(
+            'SELECT public.lock_active_tenant_membership(?::uuid, ?::uuid) AS membership_role',
+            [$tenantId, $userId],
+        );
+
+        if (! is_string($row?->membership_role)) {
+            return null;
+        }
+
+        return (object) ['membership_role' => $row->membership_role];
     }
 
     private function audit(string $tenantId, string $actorId, string $action, string $objectId, array $scope, string $reason): void

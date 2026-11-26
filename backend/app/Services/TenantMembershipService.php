@@ -37,12 +37,26 @@ class TenantMembershipService
 
     public function changeRole(string $userId, string $role, string $reason): string
     {
-        return $this->call('SELECT public.change_tenant_member_role(?::uuid, ?, ?) AS membership_id', [$userId, $role, $reason]);
+        return DB::transaction(function () use ($userId, $role, $reason): string {
+            DB::selectOne("SELECT set_config('app.current_action_reason', ?, true)", [$reason]);
+
+            return $this->call(
+                'SELECT public.change_tenant_member_role(?::uuid, ?, ?) AS membership_id',
+                [$userId, $role, $reason],
+            );
+        }, 3);
     }
 
     public function revoke(string $userId, string $reason): string
     {
-        return $this->call('SELECT public.revoke_tenant_member(?::uuid, ?) AS membership_id', [$userId, $reason]);
+        return DB::transaction(function () use ($userId, $reason): string {
+            DB::selectOne("SELECT set_config('app.current_action_reason', ?, true)", [$reason]);
+
+            return $this->call(
+                'SELECT public.revoke_tenant_member(?::uuid, ?) AS membership_id',
+                [$userId, $reason],
+            );
+        }, 3);
     }
 
     private function call(string $sql, array $bindings): string
