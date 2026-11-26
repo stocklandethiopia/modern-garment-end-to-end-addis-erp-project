@@ -28,37 +28,39 @@ class PersonalAccessTokenTest extends TestCase
         $now = now();
         $admin = DB::connection('pgsql_test_admin');
 
-        $admin->table('tenants')->insert([
-            'id' => $this->tenantId,
-            'code' => 'TOKEN-'.Str::upper(Str::random(8)),
-            'name' => 'Token Test Tenant',
-            'status' => 'ACTIVE',
-            'locale' => 'en',
-            'timezone' => 'Africa/Addis_Ababa',
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
+        $admin->transaction(function () use ($admin, $now): void {
+    $admin->table('tenants')->insert([
+                'id' => $this->tenantId,
+                'code' => 'TOKEN-'.Str::upper(Str::random(8)),
+                'name' => 'Token Test Tenant',
+                'status' => 'ACTIVE',
+                'locale' => 'en',
+                'timezone' => 'Africa/Addis_Ababa',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
 
-        $admin->table('users')->insert([
-            'id' => $this->userId,
-            'name' => 'Token Test Owner',
-            'email' => $this->email,
-            'password' => Hash::make($this->password),
-            'status' => 'ACTIVE',
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
+            $admin->table('users')->insert([
+                'id' => $this->userId,
+                'name' => 'Token Test Owner',
+                'email' => $this->email,
+                'password' => Hash::make($this->password),
+                'status' => 'ACTIVE',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
 
-        $admin->table('tenant_memberships')->insert([
-            'id' => (string) Str::uuid(),
-            'tenant_id' => $this->tenantId,
-            'user_id' => $this->userId,
-            'membership_role' => 'OWNER',
-            'status' => 'ACTIVE',
-            'joined_at' => $now,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
+            $admin->table('tenant_memberships')->insert([
+                'id' => (string) Str::uuid(),
+                'tenant_id' => $this->tenantId,
+                'user_id' => $this->userId,
+                'membership_role' => 'OWNER',
+                'status' => 'ACTIVE',
+                'joined_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        });
     }
 
     public function test_access_token_can_select_tenant_and_last_used_timestamp_is_updated(): void
