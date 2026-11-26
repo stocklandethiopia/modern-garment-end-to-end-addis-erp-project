@@ -423,7 +423,7 @@ BEGIN
         target_tenant_id, target_plan_code, target_entitlement_status, target_feature_flags, target_limits,
         effective_from, effective_to, v_actor_id, left(btrim(action_reason), 500), v_now
     )
-    ON CONFLICT (tenant_id) DO UPDATE
+    ON CONFLICT ON CONSTRAINT platform_tenant_entitlements_tenant_id_key DO UPDATE
        SET plan_code = EXCLUDED.plan_code,
            entitlement_status = EXCLUDED.entitlement_status,
            status_before_tenant_suspend = NULL,
