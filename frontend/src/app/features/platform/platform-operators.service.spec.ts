@@ -34,7 +34,7 @@ describe('PlatformOperatorsService', () => {
       user_email: 'operator@example.test',
       role_code: 'PLATFORM_SUPPORT' as const,
       valid_from: '2026-11-27',
-      valid_to: null,
+      valid_to: '2027-11-27',
       reason: 'Read-only platform support for incident triage.',
     };
     service.request(input).subscribe((response) => {
