@@ -60,8 +60,8 @@
                 </td>
                 <td>{{ tenant.plan_code }}</td>
                 <td>{{ tenant.entitlement_status }}</td>
-                <td>{{ tenant.valid_from ? (tenant.valid_from | date:'mediumDate') : '—' }}</td>
-                <td>{{ tenant.valid_to ? (tenant.valid_to | date:'mediumDate') : '—' }}</td>
+                <td>{{ tenant.valid_from ? (tenant.valid_from | date:'mediumDate':'UTC') : '—' }}</td>
+                <td>{{ tenant.valid_to ? (tenant.valid_to | date:'mediumDate':'UTC') : '—' }}</td>
                 <td>{{ tenant.lifecycle_version }}</td>
               </tr>
             }
