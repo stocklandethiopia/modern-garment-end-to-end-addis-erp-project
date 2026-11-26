@@ -401,4 +401,54 @@ class TenantMembershipLifecycleTest extends TestCase
             ->assertJsonFragment(['id' => $currentId]);
     }
 
+
+    public function test_promoting_a_member_to_tenant_admin_revokes_member_domain_roles(): void
+    {
+        $this->actAs($this->ownerId);
+        $email = DB::connection('pgsql_test_admin')->table('users')->where('id', $this->memberId)->value('email');
+
+        $this->postJson('/api/v1/enterprise/members', [
+            'email' => $email,
+            'membership_role' => 'MEMBER',
+            'reason' => 'Add a member before tenant administrator promotion.',
+        ])->assertCreated();
+
+        $this->actAs($this->adminId);
+        $assignment = $this->postJson('/api/v1/enterprise/domain-role-assignments', [
+            'user_id' => $this->memberId,
+            'role_code' => 'STORE_MANAGER',
+            'grant_reason' => 'Assign a store role before membership promotion.',
+        ])->assertCreated();
+
+        $assignmentId = $assignment->json('data.id');
+        $this->assertIsString($assignmentId);
+
+        $this->actAs($this->ownerId);
+        $this->postJson('/api/v1/enterprise/domain-role-assignments/'.$assignmentId.'/approve', [
+            'reason' => 'Approve the role before the identity becomes an admin.',
+        ])->assertOk();
+
+        $this->patchJson('/api/v1/enterprise/members/'.$this->memberId.'/role', [
+            'membership_role' => 'ADMIN',
+            'reason' => 'Promote the member to tenant administrator.',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('tenant_memberships', [
+            'tenant_id' => $this->tenantId,
+            'user_id' => $this->memberId,
+            'membership_role' => 'ADMIN',
+            'status' => 'ACTIVE',
+        ], 'pgsql_test_admin');
+        $this->assertDatabaseHas('tenant_domain_role_assignments', [
+            'tenant_id' => $this->tenantId,
+            'id' => $assignmentId,
+            'status' => 'REVOKED',
+        ], 'pgsql_test_admin');
+        $this->assertDatabaseHas('audit_events', [
+            'tenant_id' => $this->tenantId,
+            'action' => 'TENANT_DOMAIN_ROLE_REVOKED',
+            'object_id' => $assignmentId,
+        ], 'pgsql_test_admin');
+    }
+
 }
