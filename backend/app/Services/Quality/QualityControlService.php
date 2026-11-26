@@ -138,8 +138,8 @@ class QualityControlService
             if ($inspection->reviewed_by !== null || $inspection->reviewed_at !== null) {
                 throw ValidationException::withMessages(['inspection' => 'A quality inspection can only receive one final independent review. Reinspection requires a new inspection record.']);
             }
-            if (! in_array($data['decision'], ['ACCEPT', 'REJECT', 'RETURN_FOR_REINSPECTION'], true)) {
-                throw ValidationException::withMessages(['decision' => 'Unsupported inspection review decision.']);
+            if (! in_array($data['decision'], ['ACCEPT', 'REJECT'], true)) {
+                throw ValidationException::withMessages(['decision' => 'Unsupported inspection review decision. Create a new inspection record for reinspection rather than reopening this one.']);
             }
             if ($data['decision'] === 'ACCEPT' && ! in_array($inspection->result_status, ['PASS', 'PASS_WITH_DEVIATION'], true)) {
                 throw ValidationException::withMessages(['decision' => 'A failed or contained inspection cannot be accepted; resolve the nonconformance and create a new inspection.']);
@@ -148,11 +148,9 @@ class QualityControlService
                 throw ValidationException::withMessages(['review_reason' => 'A review decision reason is required.']);
             }
 
-            $newStatus = match ($data['decision']) {
-                'ACCEPT' => $inspection->result_status === 'PASS_WITH_DEVIATION' ? 'PASS_WITH_DEVIATION' : 'PASS',
-                'REJECT' => 'FAIL',
-                default => 'IN_PROGRESS',
-            };
+            $newStatus = $data['decision'] === 'ACCEPT'
+                ? ($inspection->result_status === 'PASS_WITH_DEVIATION' ? 'PASS_WITH_DEVIATION' : 'PASS')
+                : 'FAIL';
 
             DB::table('quality_inspections')->where('tenant_id', $tenantId)->where('id', $inspectionId)->update([
                 'result_status' => $newStatus,
@@ -286,6 +284,53 @@ class QualityControlService
             }
 
             return DB::table('quality_release_decisions')->where('tenant_id', $tenantId)->where('id', $decisionId)->first();
+        }, 3);
+    }
+
+
+    public function decideOperationRelease(string $tenantId, string $actorId, string $operationId, array $data): object
+    {
+        return DB::transaction(function () use ($tenantId, $actorId, $operationId, $data): object {
+            $operation = DB::table('production_order_operations')->where('tenant_id', $tenantId)
+                ->where('id', $operationId)->lockForUpdate()->first();
+            if ($operation === null || ! in_array($operation->status, ['IN_PROGRESS','COMPLETED'], true)) {
+                throw ValidationException::withMessages(['operation' => 'A quality release decision requires an active or completed production operation.']);
+            }
+
+            $inspection = DB::table('quality_inspections')->where('tenant_id', $tenantId)
+                ->where('id', $data['inspection_id'])
+                ->where('subject_type', 'PRODUCTION_ORDER_OPERATION')
+                ->where('subject_id', $operationId)
+                ->whereIn('result_status', ['PASS','PASS_WITH_DEVIATION'])
+                ->whereNotNull('reviewed_by')->whereNotNull('reviewed_at')->first();
+            if ($inspection === null) {
+                throw ValidationException::withMessages(['inspection_id' => 'A reviewed passing inspection linked to the exact operation is required.']);
+            }
+            if ($inspection->inspected_by === $actorId || $inspection->reviewed_by === $actorId) {
+                throw ValidationException::withMessages(['approver' => 'The inspector and reviewer cannot release their own inspection.']);
+            }
+            if (DB::table('quality_nonconformances')->where('tenant_id', $tenantId)
+                ->where('inspection_id', $inspection->id)->whereNotIn('status', ['RESOLVED','CLOSED'])->exists()) {
+                throw ValidationException::withMessages(['nonconformances' => 'Open nonconformances block operation release.']);
+            }
+
+            $id = (string) Str::uuid();
+            DB::table('quality_release_decisions')->insert([
+                'id' => $id,
+                'tenant_id' => $tenantId,
+                'subject_type' => 'PRODUCTION_ORDER_OPERATION',
+                'subject_id' => $operationId,
+                'release_stage' => 'PRODUCTION_OPERATION',
+                'decision' => $data['decision'],
+                'reason' => $data['reason'],
+                'linked_inspection_id' => $inspection->id,
+                'conditions' => json_encode($data['conditions'] ?? [], JSON_THROW_ON_ERROR),
+                'decided_by' => $actorId,
+                'decided_at' => now(),
+                'created_at' => now(),
+            ]);
+
+            return DB::table('quality_release_decisions')->where('tenant_id', $tenantId)->where('id', $id)->first();
         }, 3);
     }
 
