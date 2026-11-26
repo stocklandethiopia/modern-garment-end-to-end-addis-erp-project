@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 class DocumentIntegrationService
 {
@@ -66,7 +67,7 @@ class DocumentIntegrationService
             throw ValidationException::withMessages(['file' => 'The uploaded file could not be hashed.']);
         }
 
-        $disk = (string) config('filesystems.private_documents_disk', 's3');
+        $disk = (string) config('filesystems.private_documents_disk', 'local');
         $folder = 'tenants/'.$tenantId.'/documents/'.now()->format('Y/m');
         $safeName = Str::uuid().'.'.$file->getClientOriginalExtension();
         $objectReference = Storage::disk($disk)->putFileAs($folder, $file, $safeName, [

@@ -56,3 +56,13 @@ Define lawful purpose, retention period, correction process, export, deletion/an
 - Treat retrieved documents and model output as untrusted content.
 - Human approval is required for payroll, hiring/rejection, disciplinary action, performance rating, financial posting, stock adjustment and other consequential decisions.
 - Record model/service version, prompt/template version, source references, approver and resulting action where AI affects a business workflow.
+
+
+## 8. Optional external provider credentials
+
+- Core ERP functions must operate without Google/Firebase, Cloudflare or AI-provider credentials.
+- Future AI-agent and third-party integrations are explicit optional capabilities, not implicit requirements of the application shell.
+- Store provider credentials only in server-side secret management and inject them into the relevant backend/worker process at runtime. Never place them in Angular environment files, browser storage, client-side bundles, source control or logs.
+- Give each provider integration a separate credential, minimum scopes, rotation owner, expiry/revocation procedure, tenant/data boundary and audit record.
+- Keep provider adapters disabled until configured and approved. Core APIs and workflows must have deterministic no-provider behavior; provider failure must fail closed for the requested integration action without weakening ERP authorization or blocking unrelated transactions.
+- Do not enable live agent API calls, external storage or external identity providers merely because a developer tool auto-provisioned a cloud project during source authoring.

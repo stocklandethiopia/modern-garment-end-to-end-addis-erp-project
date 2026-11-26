@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - work/wp01-16-completion-2026-11-26
+      - audit/provider-neutral-storage-2026-11-27
     paths:
       - 'backend/**'
       - 'frontend/**'
