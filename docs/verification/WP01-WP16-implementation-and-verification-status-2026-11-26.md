@@ -3,11 +3,13 @@
 **Snapshot date:** 2026-11-26  
 **Candidate branch:** `work/wp01-16-completion-2026-11-26`  
 **Intended review target:** `delivery/autonomous-wp-01-16`  
-**Release status:** NOT RELEASED — CI and domain acceptance must pass first.
+**Candidate source status:** TECHNICAL CI VERIFIED on exact work-branch head `a8777a71eb923cdb69a9cbdfff19b692fa5cd4a7` (all four jobs of run [#45884447069](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45884447069) passed).  
+**Delivery status:** owner-authorized promotion to the canonical delivery branch is not subject to a repeated owner-acceptance gate; exact-head checks and task reconciliation remain mandatory.  
+**Production status:** NOT RELEASED — full WP-16 production acceptance and the listed professional/operational gates remain outstanding.
 
 ## Executive disposition
 
-This branch adds a candidate implementation slice and a combined CI workflow. It does **not** establish that WP-01–WP-16 are all complete. A successful migration/test build is a necessary software gate, not a substitute for full domain acceptance, factory/store UAT, independent security/performance testing, data migration rehearsals, backup/restore, rollback, statutory validation or deployment approval.
+This branch adds a candidate implementation slice and a combined CI workflow. The recorded exact-head CI run passed and authorizes promotion of verified source increments into the canonical delivery branch under the Product Owner's standing instruction; routine package-by-package owner acceptance is not a release prerequisite. It does **not** establish that WP-01–WP-16 are all complete. A successful migration/test build is a software gate for the code it covers, not a substitute for full domain acceptance, factory/store UAT, independent security/performance testing, data migration rehearsals, backup/restore, rollback, statutory validation or accountable production deployment.
 
 ## Work-package evidence
 
@@ -66,7 +68,7 @@ All must migrate in order on PostgreSQL 18 using the intended migration role. Ne
 3. No live payment, bank-file transmission, payroll disbursement, tax declaration, customs/FX calculation or legal sign-off has occurred.
 4. No production database migration, customer data load, or destructive change has been run.
 5. No production concurrency/load/soak test, deadlock campaign, backup/restore rehearsal, DR test, rollback drill, independent penetration test or full garment-factory/store UAT is evidenced here.
-6. No final release should be created until all required CI jobs pass on the exact commit and remaining human/professional gates are documented.
+6. No final **production** release should be claimed until all required WP-16 CI, business, security, operational, recovery and applicable human/professional gates pass. This does not prohibit or delay a verified source/integration release to the canonical delivery branch after exact-head CI and scope-specific software checks pass.
 
 ## Required release gates
 
@@ -113,3 +115,10 @@ All required jobs passed on the same SHA:
 Artifact: `modern-garment-addis-erp-wp01-wp16-candidate`, GitHub Actions artifact ID `15148571903`, 701,359 bytes, expires 24 February 2027. It contains the combined repository source archive, checksum manifest and build-verification record, keyed to the SHA above.
 
 This changes the **combined candidate CI status** to PASS. It does not change individual WP implementation acceptance statuses or certify end-to-end factory/customer operation. PR #5 remains draft/open/unmerged. Production installer, Codespaces devcontainer, release container images, production rollout, load/soak/concurrency, recovery, external integration UAT, independent security review and legal/customer/factory sign-offs remain separate work.
+
+
+## Owner standing delivery amendment — 26 November 2026
+
+The Product Owner has expressly replaced routine owner-acceptance stops with continuous verified delivery. ChatGPT is authorized to promote verified work into `delivery/autonomous-wp-01-16` after exact-head CI and relevant technical gates pass, without a further acceptance form, signature or notification acknowledgement. This status file's `NOT RELEASED` language applies only to the **final production ERP release**, not to verified source commits or integration increments.
+
+This candidate still has the package-level limitations recorded above. The remaining production and domain gates must be implemented, tested and reported; they are not waived. The next task-level report must list every WP task, the governing standard, evidence, exact commit/workflow, and completed/partial/blocked/failed/not-run counts. If an external or professional action cannot be completed autonomously, isolate that exact action and continue all other work.
