@@ -252,7 +252,7 @@ CREATE TABLE inventory_transactions (
     trim_lot_id uuid,
     from_location_id uuid,
     to_location_id uuid,
-    movement_type varchar(32) NOT NULL CHECK (movement_type IN ('RECEIPT','TRANSFER','ISSUE','RETURN','ADJUSTMENT','SCRAP','CONSUMPTION','DISPATCH','CUSTOMER_RETURN')),
+    movement_type varchar(32) NOT NULL CHECK (movement_type IN ('RECEIPT','TRANSFER','ISSUE','RETURN','ADJUSTMENT','SCRAP','CONSUMPTION','DISPATCH','CUSTOMER_RETURN','QUALITY_RELEASE')),
     quantity numeric(18,6) NOT NULL CHECK (quantity > 0),
     unit_code varchar(16) NOT NULL,
     idempotency_key varchar(160) NOT NULL,
