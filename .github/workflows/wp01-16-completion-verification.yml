@@ -62,13 +62,13 @@ jobs:
       APP_ENV: testing
       APP_DEBUG: 'false'
       DB_CONNECTION: pgsql
-      DB_HOST: 127.0.0.1
+      DB_HOST: localhost
       DB_PORT: 5432
       DB_DATABASE: erp_test
       DB_USERNAME: erp_migrator
       DB_PASSWORD: migrator-password
       CACHE_STORE: redis
-      REDIS_HOST: 127.0.0.1
+      REDIS_HOST: localhost
       REDIS_PORT: 6379
       QUEUE_CONNECTION: sync
     steps:
@@ -93,7 +93,7 @@ jobs:
       - name: Create restricted migration and runtime roles
         run: |
           set -euo pipefail
-          PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -d erp_test -v ON_ERROR_STOP=1 <<'SQL'
+          PGPASSWORD=postgres psql -h localhost -U postgres -d erp_test -v ON_ERROR_STOP=1 <<'SQL'
           CREATE ROLE erp_migrator LOGIN CREATEROLE CREATEDB PASSWORD 'migrator-password';
           CREATE ROLE app_runtime LOGIN NOBYPASSRLS PASSWORD 'runtime-password';
           ALTER DATABASE erp_test OWNER TO erp_migrator;
@@ -122,7 +122,7 @@ jobs:
       - name: Verify forced RLS on new tenant tables
         run: |
           set -euo pipefail
-          PGPASSWORD=migrator-password psql -h 127.0.0.1 -U erp_migrator -d erp_test -v ON_ERROR_STOP=1 <<'SQL'
+          PGPASSWORD=migrator-password psql -h localhost -U erp_migrator -d erp_test -v ON_ERROR_STOP=1 <<'SQL'
           DO $$
           DECLARE t text;
           BEGIN
