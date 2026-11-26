@@ -484,4 +484,168 @@ class TenantMembershipLifecycleTest extends TestCase
             'object_id' => $assignmentId,
         ], 'pgsql_test_admin');
     }
+
+    public function test_owner_can_transfer_ownership_and_exactly_one_active_owner_remains(): void
+    {
+        $this->actAs($this->ownerId);
+        $email = DB::connection('pgsql_test_admin')->table('users')->where('id', $this->memberId)->value('email');
+
+        $this->postJson('/api/v1/enterprise/members', [
+            'email' => $email,
+            'membership_role' => 'MEMBER',
+            'reason' => 'Add a successor candidate to the tenant.',
+        ])->assertCreated();
+
+        $this->postJson('/api/v1/enterprise/ownership/transfer', [
+            'target_user_id' => $this->memberId,
+            'reason' => 'Transfer business ownership to the designated successor.',
+        ])->assertOk()
+            ->assertJsonPath('data.previous_owner_user_id', $this->ownerId)
+            ->assertJsonPath('data.new_owner_user_id', $this->memberId)
+            ->assertJsonPath('data.status', 'TRANSFERRED');
+
+        // Force deferred commit-time owner invariant checks inside the test
+        // transaction so the regression test proves the database guard.
+        DB::connection('pgsql')->statement('SET CONSTRAINTS ALL IMMEDIATE');
+
+        $this->assertDatabaseHas('tenant_memberships', [
+            'tenant_id' => $this->tenantId,
+            'user_id' => $this->ownerId,
+            'membership_role' => 'ADMIN',
+            'status' => 'ACTIVE',
+        ], 'pgsql_test_admin');
+        $this->assertDatabaseHas('tenant_memberships', [
+            'tenant_id' => $this->tenantId,
+            'user_id' => $this->memberId,
+            'membership_role' => 'OWNER',
+            'status' => 'ACTIVE',
+        ], 'pgsql_test_admin');
+
+        $ownerCount = DB::connection('pgsql_test_admin')->table('tenant_memberships')
+            ->where('tenant_id', $this->tenantId)
+            ->where('membership_role', 'OWNER')
+            ->where('status', 'ACTIVE')
+            ->count();
+        $this->assertSame(1, $ownerCount);
+
+        $this->assertDatabaseHas('audit_events', [
+            'tenant_id' => $this->tenantId,
+            'action' => 'TENANT_OWNERSHIP_TRANSFERRED',
+            'object_id' => $this->tenantId,
+        ], 'pgsql_test_admin');
+
+        // The former owner is now an administrator and cannot transfer ownership again.
+        $this->actAs($this->ownerId);
+        $this->postJson('/api/v1/enterprise/ownership/transfer', [
+            'target_user_id' => $this->adminId,
+            'reason' => 'Attempt a second transfer after losing ownership.',
+        ])->assertForbidden();
+    }
+
+    public function test_non_owner_cannot_transfer_tenant_ownership(): void
+    {
+        $this->actAs($this->adminId);
+
+        $this->postJson('/api/v1/enterprise/ownership/transfer', [
+            'target_user_id' => $this->memberId,
+            'reason' => 'Attempt an unauthorized tenant ownership transfer.',
+        ])->assertForbidden();
+    }
+
+    public function test_owner_cannot_leave_tenant_until_ownership_is_transferred(): void
+    {
+        $this->actAs($this->ownerId);
+
+        $this->postJson('/api/v1/enterprise/membership/leave', [
+            'reason' => 'Attempt to leave while still owning the tenant.',
+        ])->assertForbidden();
+
+        $this->assertDatabaseHas('tenant_memberships', [
+            'tenant_id' => $this->tenantId,
+            'user_id' => $this->ownerId,
+            'membership_role' => 'OWNER',
+            'status' => 'ACTIVE',
+        ], 'pgsql_test_admin');
+    }
+
+    public function test_member_can_leave_and_their_domain_roles_are_revoked(): void
+    {
+        $this->actAs($this->ownerId);
+        $email = DB::connection('pgsql_test_admin')->table('users')->where('id', $this->memberId)->value('email');
+
+        $this->postJson('/api/v1/enterprise/members', [
+            'email' => $email,
+            'membership_role' => 'MEMBER',
+            'reason' => 'Add a member before voluntary departure.',
+        ])->assertCreated();
+
+        $this->actAs($this->adminId);
+        $assignment = $this->postJson('/api/v1/enterprise/domain-role-assignments', [
+            'user_id' => $this->memberId,
+            'role_code' => 'STORE_MANAGER',
+            'grant_reason' => 'Assign an operational role before member departure.',
+        ])->assertCreated();
+
+        $assignmentId = $assignment->json('data.id');
+        $this->assertIsString($assignmentId);
+
+        $this->actAs($this->ownerId);
+        $this->postJson('/api/v1/enterprise/domain-role-assignments/'.$assignmentId.'/approve', [
+            'reason' => 'Approve the operational role before member departure.',
+        ])->assertOk();
+
+        $this->actAs($this->memberId);
+        $this->postJson('/api/v1/enterprise/membership/leave', [
+            'reason' => 'I am voluntarily leaving this tenant workspace.',
+        ])->assertOk()
+            ->assertJsonPath('data.user_id', $this->memberId)
+            ->assertJsonPath('data.status', 'LEFT');
+
+        $this->assertDatabaseHas('tenant_memberships', [
+            'tenant_id' => $this->tenantId,
+            'user_id' => $this->memberId,
+            'status' => 'REVOKED',
+        ], 'pgsql_test_admin');
+        $this->assertDatabaseHas('tenant_domain_role_assignments', [
+            'tenant_id' => $this->tenantId,
+            'id' => $assignmentId,
+            'status' => 'REVOKED',
+        ], 'pgsql_test_admin');
+        $this->assertDatabaseHas('audit_events', [
+            'tenant_id' => $this->tenantId,
+            'action' => 'TENANT_MEMBER_LEFT',
+        ], 'pgsql_test_admin');
+
+        $ownerCount = DB::connection('pgsql_test_admin')->table('tenant_memberships')
+            ->where('tenant_id', $this->tenantId)
+            ->where('membership_role', 'OWNER')
+            ->where('status', 'ACTIVE')
+            ->count();
+        $this->assertSame(1, $ownerCount);
+    }
+
+    public function test_database_rejects_a_tenant_with_no_active_owner_at_constraint_check(): void
+    {
+        $admin = DB::connection('pgsql_test_admin');
+        $admin->beginTransaction();
+
+        try {
+            $admin->table('tenant_memberships')
+                ->where('tenant_id', $this->tenantId)
+                ->where('user_id', $this->ownerId)
+                ->update(['membership_role' => 'ADMIN']);
+
+            try {
+                $admin->statement('SET CONSTRAINTS ALL IMMEDIATE');
+                $this->fail('The database must reject a tenant with no active OWNER membership.');
+            } catch (QueryException $exception) {
+                $this->assertSame('23514', $exception->errorInfo[0] ?? null);
+            }
+        } finally {
+            if ($admin->transactionLevel() > 0) {
+                $admin->rollBack();
+            }
+        }
+    }
+
 }
