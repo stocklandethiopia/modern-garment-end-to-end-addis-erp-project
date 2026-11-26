@@ -17,6 +17,8 @@ class TenantIsolationTest extends TestCase
 
     private string $userId;
 
+    private string $tenantBOwnerId;
+
     private string $legalEntityA;
 
     private string $legalEntityB;
@@ -36,6 +38,7 @@ class TenantIsolationTest extends TestCase
         $this->tenantA = (string) Str::uuid();
         $this->tenantB = (string) Str::uuid();
         $this->userId = (string) Str::uuid();
+        $this->tenantBOwnerId = (string) Str::uuid();
 
         $admin = DB::connection('pgsql_test_admin');
         $now = now();
@@ -54,24 +57,49 @@ class TenantIsolationTest extends TestCase
         }
 
         $admin->table('users')->insert([
-            'id' => $this->userId,
-            'name' => 'Tenant Test User',
-            'email' => 'tenant-'.Str::lower(Str::random(8)).'@example.test',
-            'password' => Hash::make('a-long-test-password'),
-            'status' => 'ACTIVE',
-            'created_at' => $now,
-            'updated_at' => $now,
+            [
+                'id' => $this->userId,
+                'name' => 'Tenant A Test User',
+                'email' => 'tenant-a-'.Str::lower(Str::random(8)).'@example.test',
+                'password' => Hash::make('a-long-test-password'),
+                'status' => 'ACTIVE',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'id' => $this->tenantBOwnerId,
+                'name' => 'Tenant B Owner',
+                'email' => 'tenant-b-owner-'.Str::lower(Str::random(8)).'@example.test',
+                'password' => Hash::make('another-long-test-password'),
+                'status' => 'ACTIVE',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
         ]);
 
+        // Both fixtures represent fully provisioned ACTIVE tenants. Their
+        // owners are distinct so the requester is genuinely a non-member of B.
         $admin->table('tenant_memberships')->insert([
-            'id' => (string) Str::uuid(),
-            'tenant_id' => $this->tenantA,
-            'user_id' => $this->userId,
-            'membership_role' => 'OWNER',
-            'status' => 'ACTIVE',
-            'joined_at' => $now,
-            'created_at' => $now,
-            'updated_at' => $now,
+            [
+                'id' => (string) Str::uuid(),
+                'tenant_id' => $this->tenantA,
+                'user_id' => $this->userId,
+                'membership_role' => 'OWNER',
+                'status' => 'ACTIVE',
+                'joined_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'id' => (string) Str::uuid(),
+                'tenant_id' => $this->tenantB,
+                'user_id' => $this->tenantBOwnerId,
+                'membership_role' => 'OWNER',
+                'status' => 'ACTIVE',
+                'joined_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
         ]);
 
         foreach ([$this->tenantA => 'A Entity', $this->tenantB => 'B Entity'] as $tenantId => $name) {
