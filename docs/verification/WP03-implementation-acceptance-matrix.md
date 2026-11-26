@@ -49,7 +49,7 @@ This ledger reconciles the requirements assigned to WP-03 in docs/requirements/r
 | Invitations and identity verification | backend/app/Http/Controllers/Enterprise/TenantInvitationController.php; backend/app/Services/TenantInvitationService.php; backend/app/Notifications/TenantInvitationNotification.php; backend/database/migrations/2026_11_24_000014_create_secure_tenant_invitations.php |
 | Tenant/site/entity/location | Enterprise LegalEntityController, BusinessSiteController, InventoryLocationController and LicensingEvidenceController; migration 000001 |
 | Scope grants | AccessScopeController; ScopedAccessService; migration 000009 |
-| Domain roles | TenantDomainRoleAssignmentController; TenantDomainRoleAssignmentService; DomainCapabilityAuthorizer; migrations 000027–000029 |
+| Domain roles | TenantDomainRoleAssignmentController; TenantDomainRoleAssignmentService; DomainCapabilityAuthorizer; migrations 000027–000030 |
 | Request actor context | ResolveAuthenticatedIdentityContext; TenantContextResolver |
 | Tests | TenantProvisioningServiceTest, TenantIsolationTest, TenantMembershipLifecycleTest, TenantInvitationLifecycleTest and DomainRlsSecurityTest |
 
@@ -59,11 +59,11 @@ Previous integrated candidate SHA dbd01b56510e87beebfac454ae49723bfbf5c633 passe
 - Combined WP-01–WP-16 workflow #45891155076: all four jobs passed; backend 78 tests / 967 assertions; Angular 27 tests / 7 files and production build; RLS/migrations; WP-01 source validation; artifact assembly.
 - Destination delivery CI on merge commit 6bd8990d434d3cbc9f51e58489cc76fb240a83b6: #45891439094 and #45891445136.
 
-These runs predate the new WP-03 code in this branch and therefore do **not** verify migration 000028 or the new role lifecycle tests. PR #6 exact-head CI is the required verification for this increment.
+These runs predate the new WP-03 code in this branch and therefore do **not** verify migrations 000028–000030 or the new role lifecycle tests. PR #6 exact-head CI is the required verification for this increment.
 
 ## Next implementation sequence
 
-1. Finish tenant membership ↔ domain-role lifecycle (revoke, role promotion, reactivation, overlap/effective-date, race/concurrency and audit). New migration 000029 replaces the overly restrictive partial unique index with a transaction-advisory-lock overlap trigger, allowing historical non-overlapping periods while rejecting concurrent overlaps. Prove it on exact-head PostgreSQL CI in PR #6.
+1. Finish tenant membership ↔ domain-role lifecycle (revoke, role promotion, reactivation, overlap/effective-date, race/concurrency and audit). Migration 000029 replaces the overly restrictive partial unique index with a transaction-advisory-lock overlap trigger. Migration 000030 provides a narrowly granted SECURITY DEFINER reader that locks active membership rows without granting app_runtime direct table UPDATE privileges. Prove both on exact-head PostgreSQL CI in PR #6.
 2. Complete a domain-role administration API/UI and a full list of role codes, status/effective dates, conflict/approval history and revoke reasons.
 3. Design and implement owner transfer/succession/leave plus last-owner protection, using an explicit owner-only state machine and concurrency locks.
 4. Complete tenant activation/suspension/closure/export/retention/recovery and platform entitlement separation.
