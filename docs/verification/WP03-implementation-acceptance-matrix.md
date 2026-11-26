@@ -70,6 +70,22 @@ This ledger reconciles the requirements assigned to WP-03 in docs/requirements/r
 - PR #7 merged at `f7516de080c24ecd71ce599820e91f8f03ebab56`; destination CI [#45896477349](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45896477349) passed on the exact merge commit.
 - Earlier failed attempts on intermediate heads were corrected (Pint style, atomic fixture setup and owner-invariant fixture alignment) and superseded; only the exact-head PASS above is acceptance evidence for the merged increment.
 
+## Tenant lifecycle and platform entitlement foundation — current branch increment
+
+**Candidate state:** IMPLEMENTED FOUNDATION — EXACT-HEAD CI PENDING. This source is on the isolated WP-03 work branch and must not be merged until the PostgreSQL migration, Laravel tests, RLS checks and Angular CI for the exact head pass.
+
+| Acceptance scenario | Implementation/evidence | Current status | Remaining acceptance |
+|---|---|---|---|
+| AT-ENT-PLATFORM-001 platform authority is separate from tenant roles | Global `platform_operator_grants` with PLATFORM_ADMIN and PLATFORM_SUPPORT roles. No grant is auto-seeded. Application has no DML grants on the table; initial grants require controlled two-person DBA bootstrap. | IMPLEMENTED — exact-head CI pending | Verify grant expiry/revocation, support read-only behavior, platform admin-only write access, and no tenant owner/member escalation. |
+| AT-ENT-LIFECYCLE-001 suspend/reactivate tenant | `PATCH /api/v1/platform/tenants/{tenantId}/lifecycle` and `public.platform_change_tenant_status`; ACTIVE↔SUSPENDED, plus closure. Suspension disables normal tenant context and stores entitlement status for a reasoned reactivation. | IMPLEMENTED — exact-head CI pending | Verify every tenant-protected API denies suspended/closed tenants, concurrent lifecycle transitions serialize, and recovery has an approved operator route. |
+| AT-ENT-LIFECYCLE-002 terminal closure | CLOSED is terminal in this initial policy. Tenant data is retained; no delete or automatic purge is performed. | IMPLEMENTED — exact-head CI pending | Define retention period, legal hold, export, closure approval, and separately approved recovery/exception process. |
+| AT-ENT-ENTITLEMENT-001 tenant entitlement state | `platform_tenant_entitlements` defaults every tenant to `UNASSIGNED / REVIEW_REQUIRED`. Platform admin can set plans, boolean feature flags, non-negative integer limits and effective dates. Tenant can read only its own entitlement. | IMPLEMENTED — exact-head CI pending | Define signed-off commercial plan catalogue, feature gate enforcement for each module, tenant quota enforcement, billing/renewal process and expiry behavior. |
+| AT-ENT-AUDIT-PLATFORM-001 global platform audit | `platform_audit_events` records operator, tenant, before/after, reason and correlation ID; UPDATE/DELETE blocked and direct app_runtime table access revoked. | IMPLEMENTED — exact-head CI pending | Add independent audit integrity review, export/retention policy and adversarial tamper attempts. |
+
+**New code paths:** migration `backend/database/migrations/2026_11_26_000032_add_platform_entitlements_and_tenant_lifecycle.php`; service `backend/app/Services/PlatformAdministrationService.php`; controllers `backend/app/Http/Controllers/Enterprise/PlatformAdministrationController.php` and `TenantEntitlementController.php`; routes in `backend/routes/domain-api.php`; tests in `backend/tests/Feature/PlatformAdministrationTest.php`; operator bootstrap and boundary in `docs/security/platform-administration-bootstrap.md`.
+
+**Bootstrap restriction:** the migration intentionally creates no PLATFORM_ADMIN or PLATFORM_SUPPORT identities. A named operator must be appointed and granted out of band by the controlled database authority process documented in `docs/security/platform-administration-bootstrap.md`. No tenant OWNER/ADMIN route can grant platform access.
+
 ## Next implementation sequence
 
 1. Implement tenant lifecycle: activation, suspension, closure, archive/export, retention, legal hold and controlled recovery. Keep suspended/closed tenant access fail-closed.
