@@ -216,9 +216,9 @@ jobs:
           cat work-packages/wp-01-requirements-traceability/source/WP01_R3_SOURCE_2026-11-26.tar.xz.b64.part-* | base64 --decode > /tmp/WP01_R3_SOURCE_2026-11-26.tar.xz
           echo '44f69b36d6ed389633d4e305dacfa825fbdffb99d78cc903e3f050761811a6e7  /tmp/WP01_R3_SOURCE_2026-11-26.tar.xz' | sha256sum --check
           tar -xJf /tmp/WP01_R3_SOURCE_2026-11-26.tar.xz -C /tmp/wp01-r3-source
-          cd /tmp/wp01-r3-source/wp01-r2-release
-          sha256sum --check CHECKSUMS.sha256
-          cd package
+          cd /tmp/wp01-r3-source
+          sha256sum --check wp01-r2-release/CHECKSUMS.sha256
+          cd wp01-r2-release/package
           node scripts/validate-work-package.mjs
           node --test
           node scripts/audit-quality.mjs
