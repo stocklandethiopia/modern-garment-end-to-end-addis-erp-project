@@ -177,8 +177,11 @@ BEGIN
         RAISE EXCEPTION 'A grant reason of 10 to 500 characters is required.'
             USING ERRCODE = '22023';
     END IF;
-    IF start_date < CURRENT_DATE OR (effective_to IS NOT NULL AND effective_to < start_date) THEN
-        RAISE EXCEPTION 'Platform grant validity dates are invalid.'
+    IF start_date < CURRENT_DATE
+       OR effective_to IS NULL
+       OR effective_to < start_date
+       OR effective_to > start_date + 365 THEN
+        RAISE EXCEPTION 'Platform grant validity must be explicit, current and no longer than 365 days.'
             USING ERRCODE = '22023';
     END IF;
 
