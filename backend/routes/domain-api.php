@@ -44,6 +44,8 @@ Route::middleware(['auth:sanctum', ResolveTenantContext::class])->prefix('v1')->
         Route::post('/finished-goods/production-receipts', [FinishedGoodsController::class, 'receiveProductionOutput']);
         Route::post('/finished-goods/{lotId}/release', [FinishedGoodsController::class, 'releaseLot']);
         Route::post('/customer-orders', [FinishedGoodsController::class, 'storeCustomerOrder']);
+        Route::post('/customer-orders/{orderId}/credit-decision', [FinishedGoodsController::class, 'recordCreditDecision']);
+        Route::post('/credit-decisions/{decisionId}/approve-exception', [FinishedGoodsController::class, 'approveCreditException']);
         Route::post('/customer-orders/{orderId}/confirm', [FinishedGoodsController::class, 'confirmCustomerOrder']);
         Route::post('/order-lines/{lineId}/reservations', [FinishedGoodsController::class, 'reserveOrderLine']);
         Route::post('/reservations/{reservationId}/dispatch', [FinishedGoodsController::class, 'dispatchReservation']);
