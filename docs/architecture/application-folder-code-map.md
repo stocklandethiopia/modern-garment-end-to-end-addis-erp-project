@@ -164,7 +164,7 @@ Route registration is deliberately explicit: `bootstrap/app.php` loads `routes/a
 
 `backend/database/migrations/` contains the ordered PostgreSQL schema history. The inspected delivery tree has the initial user migration and the 27 numbered enterprise/domain migrations through:
 
-`2026_11_26_000027_create_tenant_domain_role_assignments.php` and WP-03 lifecycle/overlap/locked-reader guards `2026_11_26_000028_revoke_domain_roles_on_membership_change.php`, `2026_11_26_000029_enforce_non_overlapping_domain_role_periods.php` and `2026_11_26_000030_add_locked_tenant_membership_reader.php`
+`2026_11_26_000027_create_tenant_domain_role_assignments.php` and WP-03 lifecycle/ownership guards `2026_11_26_000028_revoke_domain_roles_on_membership_change.php`, `2026_11_26_000029_enforce_non_overlapping_domain_role_periods.php`, `2026_11_26_000030_add_locked_tenant_membership_reader.php` and `2026_11_26_000031_add_tenant_owner_succession_and_exit.php`
 
 Migration ownership by sequence:
 
@@ -177,7 +177,7 @@ Migration ownership by sequence:
 | `2026_11_24_000013–000014` | Secure membership lifecycle and tenant invitations |
 | `2026_11_26_000015–000021` | Sourcing/material traceability, routes/MES, quality/CAPA, distribution, IE/workforce, finance/payroll draft controls, documents/integrations/agents |
 | `2026_11_26_000022–000026` | Receipt genealogy/immutability, finished-goods reservation, finance/agent uniqueness and customer-credit controls |
-| `2026_11_26_000027–000030` | Tenant domain-role assignment foundation, automatic role revocation on member revocation/promotion, and database-enforced non-overlapping effective periods |
+| `2026_11_26_000027–000031` | Tenant domain-role assignment foundation, automatic role revocation, database-enforced effective periods, locked membership lookup, single active owner invariant, ownership succession and safe voluntary tenant exit |
 
 **Migration rules:** every tenant-owned table must have tenant-leading keys/FKs, forced PostgreSQL RLS and minimum explicit runtime grants. Use `erp_migrator` for migrations and `app_runtime NOBYPASSRLS` for application requests. Append-only ledgers and audit events must not receive broad runtime UPDATE/DELETE privileges. Do not rename/reorder migrations already recorded in any environment without an explicit migration-history compatibility plan.
 
@@ -335,6 +335,7 @@ Backend and frontend domain boundaries must match. A new Laravel controller/serv
 | Invitations | `Enterprise/TenantInvitationController.php`; `TenantInvitationService.php`; `Notifications/TenantInvitationNotification.php` | Invitation registration is API-backed; dedicated admin invitation UI remains open | Invitation migration; `TenantInvitationLifecycleTest.php`, `TenantMembershipLifecycleTest.php` (membership-to-domain-role revocation, role promotion and effective-period overlap cases) |
 | Legal entities/sites/locations | `Enterprise/LegalEntityController.php`; `BusinessSiteController.php`; `InventoryLocationController.php` | `legal-entity.service.ts`, `legal-entities.component.*`, `business-site.service.ts`, `business-sites.component.*` | Enterprise foundation migration and related tests |
 | Scoped access/domain roles | `Enterprise/AccessScopeController.php`; `TenantDomainRoleAssignmentController.php`; `ScopedAccessService.php`; `Authorization/DomainCapabilityAuthorizer.php`; `TenantDomainRoleAssignmentService.php` | Tenant-level role register API: `GET/POST /api/v1/enterprise/domain-role-assignments`, plus approve/revoke actions; admin UI remains open | Migrations 000010 and 000027–000030; domain-role periods prevent overlapping active/pending grants; membership locks are executed by a narrowly granted SECURITY DEFINER function so app_runtime does not need direct UPDATE privilege on tenant_memberships. membership revocation or promotion to tenant ADMIN automatically ends active/pending domain roles and writes audit evidence. Complete entity/site/department/warehouse/channel enforcement remains open |
+| Owner succession and voluntary leave | `Enterprise/TenantOwnershipController.php`; `TenantOwnershipService.php`; `public.transfer_tenant_ownership(uuid,text)`; `public.leave_tenant(text)` | `POST /api/v1/enterprise/ownership/transfer`; `POST /api/v1/enterprise/membership/leave` | Migration 000031 enforces one active OWNER per tenant, serialized handover, deferred owner-count guard, reasoned audit, and blocks an OWNER from leaving before transfer |
 | Identity request context | `ResolveAuthenticatedIdentityContext.php`; `TenantContextResolver.php` | Auth session/interceptor | Context is request/transaction-local; verify reuse/concurrency and revocation paths |
 
 **WP-03 is not complete.** The existing code is a foundation. The accepted architecture still requires owner succession/leave and last-owner controls, complete tenant lifecycle/platform entitlements, effective-dated roles tied to actual organization/site/department/warehouse/channel data, downstream target-record scope checks, MFA/OIDC/SSO and session recovery/rotation, complete invitation/operator UIs, and installer/recovery/rollback/deployment handover.
