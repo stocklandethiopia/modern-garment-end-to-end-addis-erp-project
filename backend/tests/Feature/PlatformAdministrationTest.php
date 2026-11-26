@@ -113,6 +113,19 @@ class PlatformAdministrationTest extends TestCase
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
+            [
+                'id' => (string) Str::uuid(),
+                'user_id' => $this->grantOfficerId,
+                'role_code' => 'PLATFORM_ADMIN',
+                'status' => 'ACTIVE',
+                'valid_from' => now()->toDateString(),
+                'grant_reason' => 'Test fixture independent second platform administrator.',
+                'granted_by' => $this->securityApproverId,
+                'approved_by' => $this->platformAdminId,
+                'approved_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
         ]);
     }
 
@@ -158,6 +171,7 @@ class PlatformAdministrationTest extends TestCase
     {
         $this->actAs($this->platformSupportId);
         $this->getJson('/api/v1/platform/tenants')->assertOk();
+        $this->getJson('/api/v1/platform/operators/grants')->assertForbidden();
 
         $this->assertDatabaseHas('platform_audit_events', [
             'actor_user_id' => $this->platformSupportId,
@@ -315,4 +329,138 @@ class PlatformAdministrationTest extends TestCase
         $this->assertFalse((bool) $runtime->scalar("SELECT has_table_privilege('app_runtime', 'platform_audit_events', 'UPDATE')"));
         $this->assertFalse((bool) $runtime->scalar("SELECT has_table_privilege('app_runtime', 'platform_audit_events', 'DELETE')"));
     }
+
+
+    public function test_platform_context_is_global_and_tenant_users_have_no_platform_roles(): void
+    {
+        $this->actAs($this->platformAdminId);
+        $this->getJson('/api/v1/platform/context')
+            ->assertOk()
+            ->assertJsonPath('data.roles.0', 'PLATFORM_ADMIN');
+
+        $this->actAs($this->platformSupportId);
+        $this->getJson('/api/v1/platform/context')
+            ->assertOk()
+            ->assertJsonPath('data.roles.0', 'PLATFORM_SUPPORT');
+
+        $this->actAs($this->tenantOwnerId);
+        $this->getJson('/api/v1/platform/context')
+            ->assertOk()
+            ->assertJsonPath('data.roles', []);
+    }
+
+    public function test_platform_operator_grants_require_independent_approval_and_keep_audit_history(): void
+    {
+        $admin = DB::connection('pgsql_test_admin');
+        $targetEmail = (string) $admin->table('users')->where('id', $this->securityApproverId)->value('email');
+
+        $this->actAs($this->platformAdminId);
+        $response = $this->postJson('/api/v1/platform/operators/grants', [
+            'user_email' => $targetEmail,
+            'role_code' => 'PLATFORM_SUPPORT',
+            'valid_from' => now()->toDateString(),
+            'valid_to' => now()->addDays(30)->toDateString(),
+            'reason' => 'Temporary read-only support for an approved incident review.',
+        ])->assertCreated()
+            ->assertJsonPath('data.grant_status', 'PENDING');
+
+        $grantId = (string) $response->json('data.grant_id');
+
+        // The requester cannot approve the request they created.
+        $this->postJson('/api/v1/platform/operators/grants/'.$grantId.'/approve', [
+            'reason' => 'The requester must not approve their own grant.',
+        ])->assertUnprocessable();
+
+        // A different already-active PLATFORM_ADMIN can approve it.
+        $this->actAs($this->grantOfficerId);
+        $this->postJson('/api/v1/platform/operators/grants/'.$grantId.'/approve', [
+            'reason' => 'Independent approval after reviewing support need and expiry.',
+        ])->assertOk()
+            ->assertJsonPath('data.grant_status', 'ACTIVE');
+
+        // The original requester can subsequently revoke the target's grant.
+        $this->actAs($this->platformAdminId);
+        $this->postJson('/api/v1/platform/operators/grants/'.$grantId.'/revoke', [
+            'reason' => 'The approved support period has ended and access is no longer needed.',
+        ])->assertOk()
+            ->assertJsonPath('data.grant_status', 'REVOKED');
+
+        $this->assertDatabaseHas('platform_operator_grants', [
+            'id' => $grantId,
+            'user_id' => $this->securityApproverId,
+            'status' => 'REVOKED',
+            'granted_by' => $this->platformAdminId,
+            'approved_by' => $this->grantOfficerId,
+            'revoked_by' => $this->platformAdminId,
+        ], 'pgsql_test_admin');
+
+        foreach ([
+            'PLATFORM_OPERATOR_GRANT_REQUESTED',
+            'PLATFORM_OPERATOR_GRANT_APPROVED',
+            'PLATFORM_OPERATOR_GRANT_REVOKED',
+        ] as $action) {
+            $this->assertDatabaseHas('platform_audit_events', [
+                'actor_user_id' => match ($action) {
+                    'PLATFORM_OPERATOR_GRANT_REQUESTED' => $this->platformAdminId,
+                    'PLATFORM_OPERATOR_GRANT_APPROVED' => $this->grantOfficerId,
+                    default => $this->platformAdminId,
+                },
+                'action' => $action,
+                'object_id' => $grantId,
+            ], 'pgsql_test_admin');
+        }
+    }
+
+    public function test_platform_operator_grant_cannot_revoke_the_current_admin_identity(): void
+    {
+        $grantId = (string) DB::connection('pgsql_test_admin')->table('platform_operator_grants')
+            ->where('user_id', $this->platformAdminId)
+            ->where('role_code', 'PLATFORM_ADMIN')
+            ->value('id');
+
+        $this->actAs($this->platformAdminId);
+        $this->postJson('/api/v1/platform/operators/grants/'.$grantId.'/revoke', [
+            'reason' => 'An administrator cannot revoke their own global role.',
+        ])->assertUnprocessable();
+
+        $this->assertDatabaseHas('platform_operator_grants', [
+            'id' => $grantId,
+            'status' => 'ACTIVE',
+            'revoked_at' => null,
+        ], 'pgsql_test_admin');
+    }
+
+    public function test_expired_platform_operator_grants_are_closed_and_audited_when_register_is_read(): void
+    {
+        $admin = DB::connection('pgsql_test_admin');
+        $expiredId = (string) Str::uuid();
+        $admin->table('platform_operator_grants')->insert([
+            'id' => $expiredId,
+            'user_id' => $this->securityApproverId,
+            'role_code' => 'PLATFORM_SUPPORT',
+            'status' => 'ACTIVE',
+            'valid_from' => now()->subDays(30)->toDateString(),
+            'valid_to' => now()->subDay()->toDateString(),
+            'grant_reason' => 'Test fixture grant with an elapsed approved period.',
+            'granted_by' => $this->grantOfficerId,
+            'approved_by' => $this->platformAdminId,
+            'approved_at' => now()->subDays(29),
+            'created_at' => now()->subDays(30),
+            'updated_at' => now()->subDays(29),
+        ]);
+
+        $this->actAs($this->platformAdminId);
+        $this->getJson('/api/v1/platform/operators/grants')->assertOk();
+
+        $this->assertDatabaseHas('platform_operator_grants', [
+            'id' => $expiredId,
+            'status' => 'EXPIRED',
+        ], 'pgsql_test_admin');
+        $this->assertDatabaseHas('platform_audit_events', [
+            'actor_user_id' => $this->platformAdminId,
+            'action' => 'PLATFORM_OPERATOR_GRANT_EXPIRED',
+            'object_id' => $expiredId,
+        ], 'pgsql_test_admin');
+    }
+
 }
