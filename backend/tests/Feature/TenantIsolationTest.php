@@ -486,10 +486,7 @@ class TenantIsolationTest extends TestCase
 
     public function test_non_admin_member_cannot_create_business_site(): void
     {
-        DB::connection('pgsql_test_admin')->table('tenant_memberships')
-            ->where('tenant_id', $this->tenantA)
-            ->where('user_id', $this->userId)
-            ->update(['membership_role' => 'MEMBER']);
+        Sanctum::actingAs(User::query()->findOrFail($this->memberId), ['tenant:select', 'erp:access']);
 
         $this->withHeader('X-Tenant-Id', $this->tenantA)
             ->postJson('/api/v1/enterprise/sites', [
@@ -632,10 +629,7 @@ class TenantIsolationTest extends TestCase
 
     public function test_user_cannot_submit_licence_evidence_without_tenant_admin_role(): void
     {
-        DB::connection('pgsql_test_admin')->table('tenant_memberships')
-            ->where('tenant_id', $this->tenantA)
-            ->where('user_id', $this->userId)
-            ->update(['membership_role' => 'MEMBER']);
+        Sanctum::actingAs(User::query()->findOrFail($this->memberId), ['tenant:select', 'erp:access']);
 
         $this->withHeader('X-Tenant-Id', $this->tenantA)
             ->postJson('/api/v1/enterprise/legal-entities/'.$this->legalEntityA.'/licences', [
