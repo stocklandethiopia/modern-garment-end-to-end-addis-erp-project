@@ -74,3 +74,11 @@ Owner delegation authorizes routine product and engineering decisions; it does n
 ## Next execution
 
 Continue **WP-03** until its remaining identity/invitation, tenant lifecycle, owner succession/leave, effective-dated role/scope, MFA/OIDC/SSO, platform admin/entitlements, complete acceptance matrix and installer/operator/deployment handover requirements are implemented and verified. Do not begin WP-04 as the current package execution checkpoint until WP-03's full definition of done and numbered handover pass. Maintain the fixed WP order. Each domain slice includes migrations/schema, backend policies/commands, Angular task workflows, audit/events, unit/integration/API/UI tests and evidence. Never mark a package complete until its full approved scope and handover definition of done are met.
+
+## Owner-directed product clarification — Miret and current Angular adoption (26 November 2026)
+
+The Product Owner has directed that the approved garment operating-system goal be interpreted through the four connected Miret pillars: product identity/integrity, quality at source, industrial/business efficiency, and modern technology/optimization. This is a cross-cutting clarification to the existing WP-00–WP-16 scope and not a new package, package merge, package reorder or automatic acceptance of implementation.
+
+The canonical model and acceptance journeys are documented in docs/product/miret-system-operating-model.md. Current Angular features and their maturity/adoption limits are recorded in docs/architecture/angular-current-capabilities-and-adoption-standard.md. WP-06/WP-10/WP-11/WP-12/WP-15/WP-16 have explicit links to the Miret contract. Existing package statuses above remain unchanged: a design document is not a tested runtime feature, a CI job is not factory/store acceptance, and an agent prototype is not authority to approve or post a transaction.
+
+Official standard snapshots (ISO 9001:2026, ISO 2859-1:2026, ISO/IEC 17025:2017 and AATCC 2026 Volume 101) are sources for the standards registry, not a blanket certification or a substitute for buyer/product/market and qualified local approval. The Miret document deliberately does not set a global AQL or factory target.
