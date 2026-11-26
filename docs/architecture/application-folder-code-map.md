@@ -1,7 +1,7 @@
 # Application folder and code-location map
 
 **Repository:** `stocklandethiopia/modern-garment-end-to-end-addis-erp-project`  
-**Baseline inspected:** delivery commit `6bd8990d434d3cbc9f51e58489cc76fb240a83b6`  
+**Baseline inspected:** delivery commit `f7516de080c24ecd71ce599820e91f8f03ebab56`  
 **Working branch:** `work/wp03-identity-platform-completion-2026-11-26`  
 **Purpose:** authoritative path map for the Laravel API, Angular application, migrations, tests, route registration and governed project documentation.
 
