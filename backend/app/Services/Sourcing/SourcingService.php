@@ -3,6 +3,7 @@
 namespace App\Services\Sourcing;
 
 use App\Services\Inventory\InventoryLedgerService;
+use App\Services\Support\DecimalQuantity;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -231,8 +232,8 @@ class SourcingService
                     ->whereNotIn('gr.status', ['CANCELLED'])
                     ->sum('grl.quantity_received');
 
-                $remaining = (float) $poLine->ordered_quantity - (float) $alreadyReceived;
-                if ((float) $line['quantity_received'] > $remaining) {
+                $remaining = DecimalQuantity::subtract((string) $poLine->ordered_quantity, (string) $alreadyReceived);
+                if (DecimalQuantity::exceeds((string) $line['quantity_received'], $remaining)) {
                     throw ValidationException::withMessages(['quantity_received' => 'Receipt quantity exceeds the outstanding purchase order quantity.']);
                 }
 
@@ -277,9 +278,11 @@ class SourcingService
                 throw ValidationException::withMessages(['quality_inspection_id' => 'A reviewed passing incoming-material inspection linked to this receipt line is required.']);
             }
 
-            $receivedQty = (float) $line->quantity_received;
-            $acceptedQty = (float) $data['materialized_quantity'];
-            if ($acceptedQty <= 0 || $acceptedQty > $receivedQty) {
+            $receivedUnits = DecimalQuantity::units((string) $line->quantity_received);
+            $acceptedUnits = DecimalQuantity::units((string) $data['materialized_quantity']);
+            $receivedQty = DecimalQuantity::format($receivedUnits);
+            $acceptedQty = DecimalQuantity::format($acceptedUnits);
+            if ($acceptedUnits <= 0 || $acceptedUnits > $receivedUnits) {
                 throw ValidationException::withMessages(['materialized_quantity' => 'Materialized quantity must be positive and cannot exceed received quantity.']);
             }
 
@@ -361,11 +364,11 @@ class SourcingService
 
             DB::table('goods_receipt_lines')->where('tenant_id', $tenantId)->where('id', $line->id)->update([
                 'quantity_accepted' => $acceptedQty,
-                'quantity_rejected' => max(0, $receivedQty - $acceptedQty),
+                'quantity_rejected' => DecimalQuantity::format(max(0, $receivedUnits - $acceptedUnits)),
                 'updated_at' => now(),
             ]);
 
-            $acceptedOnLine = (float) DB::table('goods_receipt_lines')->where('tenant_id', $tenantId)->where('purchase_order_line_id', $poLine->id)->sum('quantity_accepted');
+            $acceptedOnLine = (string) DB::table('goods_receipt_lines')->where('tenant_id', $tenantId)->where('purchase_order_line_id', $poLine->id)->sum('quantity_accepted');
             DB::table('purchase_order_lines')->where('tenant_id', $tenantId)->where('id', $poLine->id)->update([
                 'accepted_quantity' => $acceptedOnLine, 'updated_at' => now(),
             ]);
