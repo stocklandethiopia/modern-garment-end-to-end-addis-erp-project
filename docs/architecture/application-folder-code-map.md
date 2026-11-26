@@ -3,7 +3,8 @@
 **Repository:** `stocklandethiopia/modern-garment-end-to-end-addis-erp-project`  
 **Baseline inspected:** delivery commit `f7516de080c24ecd71ce599820e91f8f03ebab56`  
 **Working branch:** `agent/chatgpt-wp03-continuation-2026-11-27` (created from the pushed WP-03 candidate branch).  
-**Candidate base SHA:** `9db3c419f6c3e6c260de7009e62a31ad795d08f9`; current branch CI is pending.  
+**Isolated continuation branch:** `agent/chatgpt-wp03-continuation-2026-11-27`; it includes the latest platform service/test fixes from the parallel WP-03 candidate and the project path-map/config cleanup.  
+**PHP formatting checkpoint:** [run #45898385234](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45898385234) passed; full exact-PR-head ERP/WP verification remains pending.  
 **Purpose:** authoritative path map for the Laravel API, Angular application, migrations, tests, route registration and governed project documentation.
 
 This map records the tracked code paths that existed at the inspected delivery head. It is a location index, not a claim that every listed domain is complete. A file being present only proves that source exists; the work-package handover register and exact-SHA test evidence determine implementation/acceptance status.
@@ -25,7 +26,7 @@ repository-root/
 ```
 
 **Delivery baseline inventory (`f7516de`):** 286 tracked files across 385 tree entries.  
-**Current WP-03 candidate inventory (`9db3c41`):** 299 tracked files across 398 tree entries, including 73 files under `backend/app/`, 34 migrations, 13 backend test files and 68 files under `frontend/src/app/`. The primary application code is under `backend/app/` and `frontend/src/app/`; no additional product/runtime application exists at the repository root.
+**Current WP-03 candidate inventory:** 299 tracked files across 398 tree entries, including 73 files under `backend/app/`, 34 migrations, 13 backend test files and 68 files under `frontend/src/app/`. The primary application code is under `backend/app/` and `frontend/src/app/`; no additional product/runtime application exists at the repository root.
 
 ## 2. Backend — Laravel API
 
