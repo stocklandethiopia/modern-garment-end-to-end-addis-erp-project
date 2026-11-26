@@ -1,4 +1,4 @@
-.PHONY: infra-up infra-down api-install api-key api-migrate api-test api-lint api-serve web-install web-test web-build web-serve test
+.PHONY: infra-up infra-down api-install api-key api-migrate api-test api-lint api-serve web-install web-test web-build web-serve check-no-loopback-defaults test
 
 infra-up:
 	docker compose up -d postgres redis
@@ -22,7 +22,7 @@ api-lint:
 	cd backend && php artisan pint --test
 
 api-serve:
-	cd backend && php artisan serve --host=0.0.0.0 --port=8000
+	cd backend && php artisan serve --port=8000
 
 web-install:
 	cd frontend && npm install
@@ -36,4 +36,7 @@ web-build:
 web-serve:
 	cd frontend && npm start
 
-test: api-lint api-test web-test web-build
+check-no-loopback-defaults:
+	php scripts/check-no-loopback-defaults.php
+
+test: check-no-loopback-defaults api-lint api-test web-test web-build
