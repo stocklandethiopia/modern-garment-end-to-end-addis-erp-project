@@ -67,6 +67,8 @@ jobs:
       DB_DATABASE: erp_test
       DB_USERNAME: erp_migrator
       DB_PASSWORD: migrator-password
+      TEST_DB_ADMIN_USERNAME: erp_test_admin
+      TEST_DB_ADMIN_PASSWORD: test-admin-password
       CACHE_STORE: redis
       REDIS_HOST: localhost
       REDIS_PORT: 6379
@@ -96,9 +98,16 @@ jobs:
           PGPASSWORD=postgres psql -h localhost -U postgres -d erp_test -v ON_ERROR_STOP=1 <<'SQL'
           CREATE ROLE erp_migrator LOGIN CREATEROLE CREATEDB PASSWORD 'migrator-password';
           CREATE ROLE app_runtime LOGIN NOBYPASSRLS PASSWORD 'runtime-password';
+          CREATE ROLE erp_test_admin LOGIN BYPASSRLS PASSWORD 'test-admin-password';
           ALTER DATABASE erp_test OWNER TO erp_migrator;
-          GRANT CONNECT, TEMPORARY ON DATABASE erp_test TO app_runtime;
+          GRANT CONNECT, TEMPORARY ON DATABASE erp_test TO app_runtime, erp_test_admin;
           GRANT app_runtime TO erp_migrator;
+          -- Test fixtures only: this account never runs the application. It needs
+          -- explicit table/sequence rights for setup while bypassing RLS.
+          ALTER DEFAULT PRIVILEGES FOR ROLE erp_migrator IN SCHEMA public
+            GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO erp_test_admin;
+          ALTER DEFAULT PRIVILEGES FOR ROLE erp_migrator IN SCHEMA public
+            GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO erp_test_admin;
           SQL
         working-directory: .
 
