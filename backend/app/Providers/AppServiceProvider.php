@@ -88,5 +88,8 @@ class AppServiceProvider extends ServiceProvider
         $domainAuthorizer = app(DomainCapabilityAuthorizer::class);
         Gate::define('commerce.review-credit', fn ($user): bool => $domainAuthorizer->allows($user, 'commerce.review-credit'));
         Gate::define('commerce.approve-credit-exception', fn ($user): bool => $domainAuthorizer->allows($user, 'commerce.approve-credit-exception'));
+
+        $domainAuthorizer = app(DomainCapabilityAuthorizer::class);
+        Gate::define('devices.resolve-scan', fn ($user): bool => $domainAuthorizer->allows($user, 'devices.resolve-scan'));
 }
 }
