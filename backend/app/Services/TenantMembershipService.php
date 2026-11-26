@@ -97,7 +97,7 @@ class TenantMembershipService
                         'role_code' => $assignment->role_code,
                         'reason_origin' => 'TENANT_MEMBERSHIP_REVOKED',
                     ], JSON_THROW_ON_ERROR),
-                    'reason' => $revocationReason,
+                    'reason' => mb_substr($revocationReason, 0, 500),
                     'correlation_id' => (string) Str::uuid(),
                     'occurred_at' => $now,
                     'created_at' => $now,
