@@ -2,8 +2,8 @@
 
 **Repository:** `stocklandethiopia/modern-garment-end-to-end-addis-erp-project`  
 **Baseline inspected:** delivery commit `bd41c83e141835db3c0f03ac8d711096728a07b4`  
-**Working branch:** `agent/chatgpt-wp03-continuation-2026-11-27` (created from the pushed WP-03 candidate branch).  
-**Isolated continuation branch:** `agent/chatgpt-wp03-continuation-2026-11-27`; it includes the latest platform service/test fixes from the parallel WP-03 candidate and the project path-map/config cleanup.  
+**Active WP-03 branch:** `work/wp03-completion-2026-11-27`, created from canonical delivery head `f948bb85de4194ae18dc8ee8c974c3ad0986623c`.  
+**Prior WP-03 evidence branches:** `work/wp03-identity-platform-completion-2026-11-26` and `agent/chatgpt-wp03-continuation-2026-11-27`; these remain historical evidence and are not the active working branch.  
 **Integrated WP-03 baseline:** PR #9 merged at `bd41c83e141835db3c0f03ac8d711096728a07b4`; exact-head ERP CI [#45899259026](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45899259026) and combined WP verification [#45899259071](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/45899259071) passed. The current continuation added privileged tenant-register read auditing, verified in PR #11 on exact SHA `92d99588f10a281ef41ae87e27deeb1b6a31ff70` (ERP CI #45900565705; combined WP verification #45900565706; 93 backend tests / 1,081 assertions; artifact ID `15155567006`).  
 **Purpose:** authoritative path map for the Laravel API, Angular application, migrations, tests, route registration and governed project documentation.
 
@@ -389,3 +389,56 @@ Backend and frontend domain boundaries must match. A new Laravel controller/serv
 - `docs/security/platform-administration-bootstrap.md`: controlled two-person operator-grant provisioning and lifecycle/entitlement security boundary.
 - Route registration: `backend/routes/domain-api.php`; `/api/v1/platform/*` uses global identity context, while `/api/v1/tenant/entitlements` uses tenant context.
 - Integrated status: platform lifecycle/entitlement API and migration 000032 are exact-head CI verified and merged in PR #9. The current continuation branch adds immutable auditing for authorized platform tenant-register reads; its exact-head CI is pending. Controlled platform operator appointment, full feature-gate enforcement, retention/legal hold/export/recovery and platform Angular UI remain open.
+
+
+## WP-03 global platform operator and read-only register candidate — 27 November 2026
+
+**Active candidate branch:** `work/wp03-completion-2026-11-27`  
+**Integration base:** `delivery/autonomous-wp-01-16` at `f948bb85de4194ae18dc8ee8c974c3ad0986623c`  
+**Status:** source candidate; exact-head PostgreSQL, Laravel, Angular and combined WP CI has not yet been observed.
+
+### Backend locations
+
+```text
+backend/
+├── app/
+│   ├── Http/Controllers/Enterprise/
+│   │   ├── PlatformAdministrationController.php       # global platform role context and existing tenant controls
+│   │   └── PlatformOperatorGrantController.php        # list/request/approve/revoke operator grants
+│   └── Services/
+│       └── PlatformAdministrationService.php          # narrow SECURITY DEFINER function calls/error mapping
+├── database/migrations/
+│   └── 2026_11_27_000033_create_platform_operator_grant_lifecycle.php
+├── routes/
+│   └── domain-api.php                                 # authenticated global /api/v1/platform/* routes
+└── tests/Feature/
+    └── PlatformAdministrationTest.php                 # role context, two-person grant flow, revocation, expiry audit
+```
+
+Migration 000033 adds active-role resolution, grant-register reads, reasoned request/approval/revocation and on-demand expiry/audit functions. It grants no direct app_runtime table DML. PostgreSQL validates the active PLATFORM_ADMIN identity, independent approval, target account status, role, reason, validity period and self-action restrictions. Effective access ends at the validity date; persisted EXPIRED status and its audit event are swept on a later authorized admin operation. A scheduled expiry worker is not yet present.
+
+### Angular locations
+
+```text
+frontend/src/app/
+├── app.component.html                              # tenant workspace shell vs global platform navigation
+├── app.routes.ts                                   # /platform/tenants and /platform/operators
+├── core/auth/
+│   ├── auth-session.service.ts                     # tenant memberships and global roles loaded independently
+│   └── auth-session.service.spec.ts                # platform-only login and fail-closed tests
+└── features/platform/
+    ├── platform-tenants.service.ts                 # read-only tenant register API
+    ├── platform-tenants.service.spec.ts
+    ├── platform-tenants.component.ts
+    ├── platform-tenants.component.html
+    ├── platform-tenants.component.css
+    ├── platform-operators.service.ts                # grant API client
+    ├── platform-operators.service.spec.ts
+    ├── platform-operators.component.ts
+    ├── platform-operators.component.html
+    └── platform-operators.component.css
+```
+
+PLATFORM_SUPPORT sees only the global tenant register. PLATFORM_ADMIN additionally sees operator grant management. Tenant roles do not imply global platform authority. When a platform user also has tenant memberships, the shell retains tenant workspace selection; with no tenant membership, the user sees global navigation only.
+
+**Acceptance boundary:** new source paths and tests are candidate implementation evidence, not a PASS until the exact branch head completes both ERP CI and the combined WP verification workflow. A missing scheduled expiry worker, full target-resource scope enforcement, MFA/OIDC/SSO and remaining WP-03 tenant-retention/recovery workflows remain open.
