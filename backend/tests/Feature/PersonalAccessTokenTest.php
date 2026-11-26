@@ -29,7 +29,7 @@ class PersonalAccessTokenTest extends TestCase
         $admin = DB::connection('pgsql_test_admin');
 
         $admin->transaction(function () use ($admin, $now): void {
-    $admin->table('tenants')->insert([
+            $admin->table('tenants')->insert([
                 'id' => $this->tenantId,
                 'code' => 'TOKEN-'.Str::upper(Str::random(8)),
                 'name' => 'Token Test Tenant',
