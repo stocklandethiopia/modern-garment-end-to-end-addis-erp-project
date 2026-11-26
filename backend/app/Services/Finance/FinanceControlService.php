@@ -53,10 +53,10 @@ class FinanceControlService
                 $credit = (string) ($line['credit_amount'] ?? '0');
                 $baseDebit = (string) ($line['base_debit_amount'] ?? '0');
                 $baseCredit = (string) ($line['base_credit_amount'] ?? '0');
-                if (DecimalQuantity::units($debit) > 0 === DecimalQuantity::units($credit) > 0) {
+                if ((DecimalQuantity::units($debit) > 0) === (DecimalQuantity::units($credit) > 0)) {
                     throw ValidationException::withMessages(["lines.{$index}" => 'Each journal line must contain either a debit or credit, not both.']);
                 }
-                if (DecimalQuantity::units($baseDebit) > 0 === DecimalQuantity::units($baseCredit) > 0) {
+                if ((DecimalQuantity::units($baseDebit) > 0) === (DecimalQuantity::units($baseCredit) > 0)) {
                     throw ValidationException::withMessages(["lines.{$index}" => 'Each journal line must contain either a base debit or base credit, not both.']);
                 }
 
