@@ -99,4 +99,19 @@ class QualityController extends Controller
 
         return response()->json(['data' => $this->quality->decideMaterialRelease($this->tenant->requireTenantId(), $this->tenant->requireActorId(), $lotId, $data)]);
     }
+    public function releaseProductionOperation(Request $request, string $operationId): JsonResponse
+    {
+        Gate::authorize('quality.release-production-operation');
+        $data = $request->validate([
+            'inspection_id' => ['required','uuid'],
+            'decision' => ['required','in:RELEASE,RELEASE_WITH_DEVIATION,HOLD,REJECT,REINSPECT'],
+            'reason' => ['required','string','max:2000'],
+            'conditions' => ['nullable','array'],
+        ]);
+
+        return response()->json(['data' => $this->quality->decideOperationRelease(
+            $this->tenant->requireTenantId(), $this->tenant->requireActorId(), $operationId, $data
+        )]);
+    }
+
 }
