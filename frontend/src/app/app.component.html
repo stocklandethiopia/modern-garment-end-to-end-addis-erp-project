@@ -54,33 +54,45 @@
         </div>
       }
 
-      <nav class="primary-nav" aria-label="Workspace navigation">
-        <span class="nav-caption">WORKSPACE</span>
-        @for (item of navigation; track item.path) {
-          <a class="nav-link" [routerLink]="item.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-            <span class="nav-icon" aria-hidden="true">{{ item.icon }}</span>
-            <span>{{ item.label }}</span>
-          </a>
-        }
-        @if (session.canManagePlatform()) {
-          <a class="nav-link" routerLink="/platform/operators" routerLinkActive="active">
-            <span class="nav-icon" aria-hidden="true">⚿</span>
-            <span>Platform operators</span>
-          </a>
-        }
-      </nav>
-
-      @for (group of domainGroups; track group.label) {
-        <section class="nav-group" [attr.aria-label]="group.label">
-          <span class="nav-caption">{{ group.label }}</span>
-          @for (item of group.items; track item) {
-            <div class="nav-link nav-link-disabled" aria-disabled="true">
-              <span class="nav-dot" aria-hidden="true"></span>
-              <span>{{ item }}</span>
-              <span class="planned-tag">PLANNED</span>
-            </div>
+      @if (session.activeTenant()) {
+        <nav class="primary-nav" aria-label="Workspace navigation">
+          <span class="nav-caption">WORKSPACE</span>
+          @for (item of navigation; track item.path) {
+            <a class="nav-link" [routerLink]="item.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+              <span class="nav-icon" aria-hidden="true">{{ item.icon }}</span>
+              <span>{{ item.label }}</span>
+            </a>
           }
-        </section>
+        </nav>
+
+        @for (group of domainGroups; track group.label) {
+          <section class="nav-group" [attr.aria-label]="group.label">
+            <span class="nav-caption">{{ group.label }}</span>
+            @for (item of group.items; track item) {
+              <div class="nav-link nav-link-disabled" aria-disabled="true">
+                <span class="nav-dot" aria-hidden="true"></span>
+                <span>{{ item }}</span>
+                <span class="planned-tag">PLANNED</span>
+              </div>
+            }
+          </section>
+        }
+      }
+
+      @if (session.isPlatformOperator()) {
+        <nav class="primary-nav" aria-label="Platform administration">
+          <span class="nav-caption">GLOBAL PLATFORM</span>
+          <a class="nav-link" routerLink="/platform/tenants" routerLinkActive="active">
+            <span class="nav-icon" aria-hidden="true">▦</span>
+            <span>Tenant register</span>
+          </a>
+          @if (session.canManagePlatform()) {
+            <a class="nav-link" routerLink="/platform/operators" routerLinkActive="active">
+              <span class="nav-icon" aria-hidden="true">⚿</span>
+              <span>Platform operators</span>
+            </a>
+          }
+        </nav>
       }
 
       <div class="sidebar-footer">
