@@ -17,6 +17,10 @@ class TenantIsolationTest extends TestCase
 
     private string $userId;
 
+    private string $tenantBOwnerId;
+
+    private string $memberId;
+
     private string $legalEntityA;
 
     private string $legalEntityB;
@@ -36,43 +40,92 @@ class TenantIsolationTest extends TestCase
         $this->tenantA = (string) Str::uuid();
         $this->tenantB = (string) Str::uuid();
         $this->userId = (string) Str::uuid();
+        $this->tenantBOwnerId = (string) Str::uuid();
+        $this->memberId = (string) Str::uuid();
 
         $admin = DB::connection('pgsql_test_admin');
         $now = now();
 
-        foreach ([$this->tenantA, $this->tenantB] as $index => $tenantId) {
-            $admin->table('tenants')->insert([
-                'id' => $tenantId,
-                'code' => 'TEST-'.($index + 1).'-'.Str::upper(Str::random(6)),
-                'name' => 'Test tenant '.($index + 1),
-                'status' => 'ACTIVE',
-                'locale' => 'en',
-                'timezone' => 'Africa/Addis_Ababa',
-                'created_at' => $now,
-                'updated_at' => $now,
+        // Tenant root + initial owner are committed atomically. Both ACTIVE
+        // tenants are fully provisioned; the current test user is only a
+        // member of tenant A, while tenant B belongs to a different identity.
+        $admin->transaction(function () use ($admin, $now): void {
+            foreach ([$this->tenantA, $this->tenantB] as $index => $tenantId) {
+                $admin->table('tenants')->insert([
+                    'id' => $tenantId,
+                    'code' => 'TEST-'.($index + 1).'-'.Str::upper(Str::random(6)),
+                    'name' => 'Test tenant '.($index + 1),
+                    'status' => 'ACTIVE',
+                    'locale' => 'en',
+                    'timezone' => 'Africa/Addis_Ababa',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+
+            $admin->table('users')->insert([
+                [
+                    'id' => $this->userId,
+                    'name' => 'Tenant A Test User',
+                    'email' => 'tenant-a-'.Str::lower(Str::random(8)).'@example.test',
+                    'password' => Hash::make('a-long-test-password'),
+                    'status' => 'ACTIVE',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+                [
+                    'id' => $this->tenantBOwnerId,
+                    'name' => 'Tenant B Owner',
+                    'email' => 'tenant-b-owner-'.Str::lower(Str::random(8)).'@example.test',
+                    'password' => Hash::make('another-long-test-password'),
+                    'status' => 'ACTIVE',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+                [
+                    'id' => $this->memberId,
+                    'name' => 'Tenant A Ordinary Member',
+                    'email' => 'tenant-a-member-'.Str::lower(Str::random(8)).'@example.test',
+                    'password' => Hash::make('member-long-test-password'),
+                    'status' => 'ACTIVE',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
             ]);
-        }
 
-        $admin->table('users')->insert([
-            'id' => $this->userId,
-            'name' => 'Tenant Test User',
-            'email' => 'tenant-'.Str::lower(Str::random(8)).'@example.test',
-            'password' => Hash::make('a-long-test-password'),
-            'status' => 'ACTIVE',
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
-
-        $admin->table('tenant_memberships')->insert([
-            'id' => (string) Str::uuid(),
-            'tenant_id' => $this->tenantA,
-            'user_id' => $this->userId,
-            'membership_role' => 'OWNER',
-            'status' => 'ACTIVE',
-            'joined_at' => $now,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
+            $admin->table('tenant_memberships')->insert([
+                [
+                    'id' => (string) Str::uuid(),
+                    'tenant_id' => $this->tenantA,
+                    'user_id' => $this->userId,
+                    'membership_role' => 'OWNER',
+                    'status' => 'ACTIVE',
+                    'joined_at' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+                [
+                    'id' => (string) Str::uuid(),
+                    'tenant_id' => $this->tenantB,
+                    'user_id' => $this->tenantBOwnerId,
+                    'membership_role' => 'OWNER',
+                    'status' => 'ACTIVE',
+                    'joined_at' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+                [
+                    'id' => (string) Str::uuid(),
+                    'tenant_id' => $this->tenantA,
+                    'user_id' => $this->memberId,
+                    'membership_role' => 'MEMBER',
+                    'status' => 'ACTIVE',
+                    'joined_at' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+            ]);
+        });
 
         foreach ([$this->tenantA => 'A Entity', $this->tenantB => 'B Entity'] as $tenantId => $name) {
             $entityId = (string) Str::uuid();
@@ -230,10 +283,8 @@ class TenantIsolationTest extends TestCase
 
     public function test_member_without_tenant_admin_role_cannot_create_legal_entity(): void
     {
-        DB::connection('pgsql_test_admin')->table('tenant_memberships')
-            ->where('tenant_id', $this->tenantA)
-            ->where('user_id', $this->userId)
-            ->update(['membership_role' => 'MEMBER']);
+        // Use a real ordinary member; never demote the tenant's only OWNER.
+        Sanctum::actingAs(User::query()->findOrFail($this->memberId), ['tenant:select', 'erp:access']);
 
         $this->withHeader('X-Tenant-Id', $this->tenantA)
             ->postJson('/api/v1/enterprise/legal-entities', [
@@ -435,10 +486,7 @@ class TenantIsolationTest extends TestCase
 
     public function test_non_admin_member_cannot_create_business_site(): void
     {
-        DB::connection('pgsql_test_admin')->table('tenant_memberships')
-            ->where('tenant_id', $this->tenantA)
-            ->where('user_id', $this->userId)
-            ->update(['membership_role' => 'MEMBER']);
+        Sanctum::actingAs(User::query()->findOrFail($this->memberId), ['tenant:select', 'erp:access']);
 
         $this->withHeader('X-Tenant-Id', $this->tenantA)
             ->postJson('/api/v1/enterprise/sites', [
@@ -581,10 +629,7 @@ class TenantIsolationTest extends TestCase
 
     public function test_user_cannot_submit_licence_evidence_without_tenant_admin_role(): void
     {
-        DB::connection('pgsql_test_admin')->table('tenant_memberships')
-            ->where('tenant_id', $this->tenantA)
-            ->where('user_id', $this->userId)
-            ->update(['membership_role' => 'MEMBER']);
+        Sanctum::actingAs(User::query()->findOrFail($this->memberId), ['tenant:select', 'erp:access']);
 
         $this->withHeader('X-Tenant-Id', $this->tenantA)
             ->postJson('/api/v1/enterprise/legal-entities/'.$this->legalEntityA.'/licences', [

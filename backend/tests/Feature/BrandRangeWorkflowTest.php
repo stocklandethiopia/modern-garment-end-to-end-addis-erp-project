@@ -29,61 +29,63 @@ class BrandRangeWorkflowTest extends TestCase
         $this->ownerId = (string) Str::uuid();
         $this->approverId = (string) Str::uuid();
 
-        $admin->table('tenants')->insert([
-            'id' => $this->tenantId,
-            'code' => 'RANGE-'.Str::upper(Str::random(8)),
-            'name' => 'Brand and range workflow tenant',
-            'status' => 'ACTIVE',
-            'locale' => 'en',
-            'timezone' => 'Africa/Addis_Ababa',
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
+        $admin->transaction(function () use ($admin, $now): void {
+            $admin->table('tenants')->insert([
+                'id' => $this->tenantId,
+                'code' => 'RANGE-'.Str::upper(Str::random(8)),
+                'name' => 'Brand and range workflow tenant',
+                'status' => 'ACTIVE',
+                'locale' => 'en',
+                'timezone' => 'Africa/Addis_Ababa',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
 
-        $admin->table('users')->insert([
-            [
-                'id' => $this->ownerId,
-                'name' => 'Range Planner',
-                'email' => 'range-owner-'.Str::lower(Str::random(8)).'@example.test',
-                'password' => Hash::make('a-long-test-password'),
-                'status' => 'ACTIVE',
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            [
-                'id' => $this->approverId,
-                'name' => 'Commercial Approver',
-                'email' => 'range-approver-'.Str::lower(Str::random(8)).'@example.test',
-                'password' => Hash::make('a-long-test-password'),
-                'status' => 'ACTIVE',
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-        ]);
+            $admin->table('users')->insert([
+                [
+                    'id' => $this->ownerId,
+                    'name' => 'Range Planner',
+                    'email' => 'range-owner-'.Str::lower(Str::random(8)).'@example.test',
+                    'password' => Hash::make('a-long-test-password'),
+                    'status' => 'ACTIVE',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+                [
+                    'id' => $this->approverId,
+                    'name' => 'Commercial Approver',
+                    'email' => 'range-approver-'.Str::lower(Str::random(8)).'@example.test',
+                    'password' => Hash::make('a-long-test-password'),
+                    'status' => 'ACTIVE',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+            ]);
 
-        $admin->table('tenant_memberships')->insert([
-            [
-                'id' => (string) Str::uuid(),
-                'tenant_id' => $this->tenantId,
-                'user_id' => $this->ownerId,
-                'membership_role' => 'OWNER',
-                'status' => 'ACTIVE',
-                'joined_at' => $now,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            [
-                'id' => (string) Str::uuid(),
-                'tenant_id' => $this->tenantId,
-                'user_id' => $this->approverId,
-                'membership_role' => 'ADMIN',
-                'status' => 'ACTIVE',
-                'joined_at' => $now,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-        ]);
+            $admin->table('tenant_memberships')->insert([
+                [
+                    'id' => (string) Str::uuid(),
+                    'tenant_id' => $this->tenantId,
+                    'user_id' => $this->ownerId,
+                    'membership_role' => 'OWNER',
+                    'status' => 'ACTIVE',
+                    'joined_at' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+                [
+                    'id' => (string) Str::uuid(),
+                    'tenant_id' => $this->tenantId,
+                    'user_id' => $this->approverId,
+                    'membership_role' => 'ADMIN',
+                    'status' => 'ACTIVE',
+                    'joined_at' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+            ]);
 
+        });
         $this->actAsOwner();
     }
 

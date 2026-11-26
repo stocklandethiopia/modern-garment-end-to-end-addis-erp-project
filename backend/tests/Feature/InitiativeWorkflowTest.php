@@ -20,6 +20,8 @@ class InitiativeWorkflowTest extends TestCase
 
     private string $approverId;
 
+    private string $otherTenantOwnerId;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -30,62 +32,88 @@ class InitiativeWorkflowTest extends TestCase
         $this->otherTenantId = (string) Str::uuid();
         $this->userId = (string) Str::uuid();
         $this->approverId = (string) Str::uuid();
+        $this->otherTenantOwnerId = (string) Str::uuid();
 
-        foreach ([$this->tenantId => 'MERCH-TEST-1', $this->otherTenantId => 'MERCH-TEST-2'] as $tenantId => $code) {
-            $admin->table('tenants')->insert([
-                'id' => $tenantId,
-                'code' => $code.'-'.Str::upper(Str::random(6)),
-                'name' => $code,
-                'status' => 'ACTIVE',
-                'locale' => 'en',
-                'timezone' => 'Africa/Addis_Ababa',
-                'created_at' => $now,
-                'updated_at' => $now,
+        // Both ACTIVE customer tenants and their initial owner identities are
+        // provisioned in one transaction so the deferred owner invariant is
+        // checked only after the full initial membership set exists.
+        $admin->transaction(function () use ($admin, $now): void {
+            foreach ([$this->tenantId => 'MERCH-TEST-1', $this->otherTenantId => 'MERCH-TEST-2'] as $tenantId => $code) {
+                $admin->table('tenants')->insert([
+                    'id' => $tenantId,
+                    'code' => $code.'-'.Str::upper(Str::random(6)),
+                    'name' => $code,
+                    'status' => 'ACTIVE',
+                    'locale' => 'en',
+                    'timezone' => 'Africa/Addis_Ababa',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+
+            $admin->table('users')->insert([
+                [
+                    'id' => $this->userId,
+                    'name' => 'Merchandising Test Owner',
+                    'email' => 'merch-'.Str::lower(Str::random(10)).'@example.test',
+                    'password' => Hash::make('a-long-test-password'),
+                    'status' => 'ACTIVE',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+                [
+                    'id' => $this->approverId,
+                    'name' => 'Independent Merchandising Approver',
+                    'email' => 'approver-'.Str::lower(Str::random(10)).'@example.test',
+                    'password' => Hash::make('a-long-test-password'),
+                    'status' => 'ACTIVE',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+                [
+                    'id' => $this->otherTenantOwnerId,
+                    'name' => 'Other Tenant Owner',
+                    'email' => 'other-tenant-owner-'.Str::lower(Str::random(10)).'@example.test',
+                    'password' => Hash::make('another-long-test-password'),
+                    'status' => 'ACTIVE',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
             ]);
-        }
 
-        $admin->table('users')->insert([
-            'id' => $this->userId,
-            'name' => 'Merchandising Test Owner',
-            'email' => 'merch-'.Str::lower(Str::random(10)).'@example.test',
-            'password' => Hash::make('a-long-test-password'),
-            'status' => 'ACTIVE',
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
-
-        $admin->table('users')->insert([
-            'id' => $this->approverId,
-            'name' => 'Independent Merchandising Approver',
-            'email' => 'approver-'.Str::lower(Str::random(10)).'@example.test',
-            'password' => Hash::make('a-long-test-password'),
-            'status' => 'ACTIVE',
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
-
-        $admin->table('tenant_memberships')->insert([
-            [
-                'id' => (string) Str::uuid(),
-                'tenant_id' => $this->tenantId,
-                'user_id' => $this->userId,
-                'membership_role' => 'OWNER',
-                'status' => 'ACTIVE',
-                'joined_at' => $now,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-            [
-                'id' => (string) Str::uuid(),
-                'tenant_id' => $this->tenantId,
-                'user_id' => $this->approverId,
-                'membership_role' => 'ADMIN',
-                'status' => 'ACTIVE',
-                'joined_at' => $now,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ],
-        ]);
+            $admin->table('tenant_memberships')->insert([
+                [
+                    'id' => (string) Str::uuid(),
+                    'tenant_id' => $this->tenantId,
+                    'user_id' => $this->userId,
+                    'membership_role' => 'OWNER',
+                    'status' => 'ACTIVE',
+                    'joined_at' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+                [
+                    'id' => (string) Str::uuid(),
+                    'tenant_id' => $this->tenantId,
+                    'user_id' => $this->approverId,
+                    'membership_role' => 'ADMIN',
+                    'status' => 'ACTIVE',
+                    'joined_at' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+                [
+                    'id' => (string) Str::uuid(),
+                    'tenant_id' => $this->otherTenantId,
+                    'user_id' => $this->otherTenantOwnerId,
+                    'membership_role' => 'OWNER',
+                    'status' => 'ACTIVE',
+                    'joined_at' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+            ]);
+        });
 
         Sanctum::actingAs(User::query()->findOrFail($this->userId), ['tenant:select', 'erp:access']);
     }
@@ -314,10 +342,12 @@ class InitiativeWorkflowTest extends TestCase
             ->postJson('/api/v1/product/initiatives/'.$initiativeId.'/submit', [])
             ->assertOk();
 
+        // Downgrade the separate ADMIN fixture, preserving the tenant's only OWNER.
         DB::connection('pgsql_test_admin')->table('tenant_memberships')
             ->where('tenant_id', $this->tenantId)
-            ->where('user_id', $this->userId)
+            ->where('user_id', $this->approverId)
             ->update(['membership_role' => 'MEMBER']);
+        Sanctum::actingAs(User::query()->findOrFail($this->approverId), ['tenant:select', 'erp:access']);
 
         $this->withHeader('X-Tenant-Id', $this->tenantId)
             ->postJson('/api/v1/product/initiatives/'.$initiativeId.'/decisions', [
