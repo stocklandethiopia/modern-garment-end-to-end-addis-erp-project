@@ -246,9 +246,9 @@ BEGIN
             USING ERRCODE = '22023';
     END IF;
 
-    SELECT status INTO v_before_status
-      FROM public.tenants
-     WHERE id = target_tenant_id
+    SELECT tenant.status INTO v_before_status
+      FROM public.tenants tenant
+     WHERE tenant.id = target_tenant_id
      FOR UPDATE;
     IF NOT FOUND THEN
         RAISE EXCEPTION 'Tenant was not found.'
@@ -268,39 +268,39 @@ BEGIN
             USING ERRCODE = '22023';
     END IF;
 
-    SELECT entitlement_status INTO v_entitlement_before
-      FROM public.platform_tenant_entitlements
-     WHERE tenant_id = target_tenant_id
+    SELECT entitlement.entitlement_status INTO v_entitlement_before
+      FROM public.platform_tenant_entitlements entitlement
+     WHERE entitlement.tenant_id = target_tenant_id
      FOR UPDATE;
 
-    UPDATE public.tenants
+    UPDATE public.tenants AS tenant
        SET status = target_status,
            status_changed_at = v_now,
            status_change_reason = left(btrim(action_reason), 500),
-           closed_at = CASE WHEN target_status = 'CLOSED' THEN v_now ELSE closed_at END,
-           lifecycle_version = lifecycle_version + 1,
+           closed_at = CASE WHEN target_status = 'CLOSED' THEN v_now ELSE tenant.closed_at END,
+           lifecycle_version = tenant.lifecycle_version + 1,
            updated_at = v_now
-     WHERE id = target_tenant_id;
+     WHERE tenant.id = target_tenant_id;
 
     IF target_status IN ('SUSPENDED', 'CLOSED') THEN
-        UPDATE public.platform_tenant_entitlements
+        UPDATE public.platform_tenant_entitlements AS entitlement
            SET status_before_tenant_suspend = CASE
-                   WHEN entitlement_status = 'SUSPENDED' THEN status_before_tenant_suspend
-                   ELSE entitlement_status
+                   WHEN entitlement.entitlement_status = 'SUSPENDED' THEN entitlement.status_before_tenant_suspend
+                   ELSE entitlement.entitlement_status
                END,
                entitlement_status = 'SUSPENDED',
                updated_by = v_actor_id,
                update_reason = left(btrim(action_reason), 500),
                updated_at = v_now
-         WHERE tenant_id = target_tenant_id;
+         WHERE entitlement.tenant_id = target_tenant_id;
     ELSE
-        UPDATE public.platform_tenant_entitlements
-           SET entitlement_status = COALESCE(status_before_tenant_suspend, 'REVIEW_REQUIRED'),
+        UPDATE public.platform_tenant_entitlements AS entitlement
+           SET entitlement_status = COALESCE(entitlement.status_before_tenant_suspend, 'REVIEW_REQUIRED'),
                status_before_tenant_suspend = NULL,
                updated_by = v_actor_id,
                update_reason = left(btrim(action_reason), 500),
                updated_at = v_now
-         WHERE tenant_id = target_tenant_id;
+         WHERE entitlement.tenant_id = target_tenant_id;
     END IF;
 
     INSERT INTO public.platform_audit_events (
@@ -309,7 +309,11 @@ BEGIN
     ) VALUES (
         v_actor_id, target_tenant_id, 'TENANT_LIFECYCLE_CHANGED', 'TENANT', target_tenant_id,
         jsonb_build_object('status', v_before_status, 'entitlement_status', v_entitlement_before),
-        jsonb_build_object('status', target_status, 'lifecycle_version', (SELECT lifecycle_version FROM public.tenants WHERE id = target_tenant_id)),
+        jsonb_build_object('status', target_status, 'lifecycle_version', (
+            SELECT tenant.lifecycle_version
+              FROM public.tenants tenant
+             WHERE tenant.id = target_tenant_id
+        )),
         left(btrim(action_reason), 500), v_correlation_id, v_now
     );
 
@@ -387,9 +391,9 @@ BEGIN
             USING ERRCODE = '22023';
     END IF;
 
-    SELECT status INTO v_tenant_status
-      FROM public.tenants
-     WHERE id = target_tenant_id
+    SELECT tenant.status INTO v_tenant_status
+      FROM public.tenants tenant
+     WHERE tenant.id = target_tenant_id
      FOR UPDATE;
     IF NOT FOUND THEN
         RAISE EXCEPTION 'Tenant was not found.'
@@ -401,15 +405,15 @@ BEGIN
     END IF;
 
     SELECT jsonb_build_object(
-        'plan_code', plan_code,
-        'entitlement_status', entitlement_status,
-        'feature_flags', feature_flags,
-        'limits', limits,
-        'valid_from', valid_from,
-        'valid_to', valid_to
+        'plan_code', entitlement.plan_code,
+        'entitlement_status', entitlement.entitlement_status,
+        'feature_flags', entitlement.feature_flags,
+        'limits', entitlement.limits,
+        'valid_from', entitlement.valid_from,
+        'valid_to', entitlement.valid_to
     ) INTO v_before
-      FROM public.platform_tenant_entitlements
-     WHERE tenant_id = target_tenant_id
+      FROM public.platform_tenant_entitlements entitlement
+     WHERE entitlement.tenant_id = target_tenant_id
      FOR UPDATE;
 
     INSERT INTO public.platform_tenant_entitlements (
@@ -432,15 +436,15 @@ BEGIN
            updated_at = EXCLUDED.updated_at;
 
     SELECT jsonb_build_object(
-        'plan_code', plan_code,
-        'entitlement_status', entitlement_status,
-        'feature_flags', feature_flags,
-        'limits', limits,
-        'valid_from', valid_from,
-        'valid_to', valid_to
+        'plan_code', entitlement.plan_code,
+        'entitlement_status', entitlement.entitlement_status,
+        'feature_flags', entitlement.feature_flags,
+        'limits', entitlement.limits,
+        'valid_from', entitlement.valid_from,
+        'valid_to', entitlement.valid_to
     ) INTO v_after
-      FROM public.platform_tenant_entitlements
-     WHERE tenant_id = target_tenant_id;
+      FROM public.platform_tenant_entitlements entitlement
+     WHERE entitlement.tenant_id = target_tenant_id;
 
     INSERT INTO public.platform_audit_events (
         actor_user_id, tenant_id, action, object_type, object_id,
