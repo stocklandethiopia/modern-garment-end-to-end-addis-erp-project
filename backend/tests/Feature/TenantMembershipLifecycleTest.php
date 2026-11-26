@@ -601,6 +601,8 @@ class TenantMembershipLifecycleTest extends TestCase
             ->assertJsonPath('data.user_id', $this->memberId)
             ->assertJsonPath('data.status', 'LEFT');
 
+        DB::connection('pgsql')->statement('SET CONSTRAINTS ALL IMMEDIATE');
+
         $this->assertDatabaseHas('tenant_memberships', [
             'tenant_id' => $this->tenantId,
             'user_id' => $this->memberId,
