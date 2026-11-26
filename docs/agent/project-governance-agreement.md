@@ -185,3 +185,46 @@ Maintain a dated record in this document or a linked decision log for:
 - WP-00 was accepted by the Product Owner on 22 November 2026, who expressly delegated autonomous execution, routine package decisions and internal package approval for WP-01 through WP-16 to ChatGPT.
 - Execution authorization: proceed sequentially from **WP-01 — Requirements and traceability** through **WP-16 — End-to-end verification and release**, with numbered evidence handovers and no routine stop between packages.
 - Human-only gates remain limited to genuine legal/professional sign-off, live statutory activation, actual payroll/financial execution, destructive production changes, protected credentials/secrets and a production deployment/release requiring an accountable operator.
+
+
+
+## Owner standing amendment — 26 November 2026: continuous verified delivery
+
+**Authority:** The Product Owner's explicit instruction in the ERP project conversation on 26 November 2026. **Effective immediately.** This amendment supersedes any earlier wording or interpretation in this repository that requires repeated package-by-package Product Owner acceptance, a notification-and-wait cycle, or routine confirmation before implementation, package advancement, verified technical release, or integration-branch merge.
+
+### A. Standing execution and repository authority
+
+1. The Product Owner authorizes ChatGPT to execute WP-01 through WP-16 sequentially and end-to-end within the unchanged approved product goal, WP sequence, architecture, security, legal and engineering standards.
+2. ChatGPT is authorized to make ordinary in-scope decisions, implement, test, self-review, commit, push, prepare/promote pull requests, and merge verified work into `delivery/autonomous-wp-01-16` without asking for a separate acceptance, signature, form, notification acknowledgement or routine confirmation after each WP.
+3. The delivery branch is the canonical integration/release-candidate branch. `main` remains the final canonical production/release branch. Verified increments must move into the delivery branch without routine owner delay; promotion to `main` follows WP-16 full-system acceptance and the approved final release gates.
+4. No work may be held merely because the owner has not replied to a handover notification. A genuine external legal/professional, account permission, production-operator or irreversible-action boundary must be isolated precisely; all independent safe work continues.
+5. No classic personal access token is to be created, pasted into files, placed in workflow logs, or committed for this authorization. Use the connected GitHub integration and the repository's approved credential/secrets mechanism. Never store an account email as an application login or hard-code the owner's email into product behavior unless an approved requirement explicitly calls for it.
+
+### B. Technical release policy and status vocabulary
+
+A successful GitHub CI run is evidence for the checks it actually executes; it is not proof that every WP task or the production ERP is complete. Apply these separate statuses and do not collapse them into a generic `NOT RELEASED` label:
+
+- **IMPLEMENTATION IN PROGRESS:** source or workflow is being developed.
+- **TECHNICAL CI VERIFIED:** required automated checks passed for the exact recorded source SHA.
+- **VERIFIED INTEGRATION RELEASE:** the tested increment has been committed and merged to the canonical delivery branch, with its evidence and open-task report.
+- **WP COMPLETE / RELEASED:** all applicable WP requirements and task-level definition-of-done checks are complete or explicitly classified under an allowed non-blocking external dependency; evidence and report are published.
+- **PRODUCTION RELEASE PENDING:** the source is integrated, but one or more WP-16 operational, professional, customer, security, recovery or deployment gates remain outstanding.
+- **PRODUCTION RELEASED:** final WP-16 requirements, immutable-artifact verification, staging/UAT, required human/professional approvals, deployment and recovery evidence are all satisfied.
+
+For a package release, verify the exact source SHA, all required CI jobs, migration/RLS and security controls applicable to the changed scope, package tests, source provenance and acceptance evidence. When these pass, ChatGPT must promote the verified work into the delivery branch without routine owner acceptance. Do not wait for a separate owner acceptance notification. If the package still has incomplete tasks, report the exact counts and task IDs and describe the commit as a **verified integration increment**, not as a completed WP.
+
+The task-level report for each WP must reconcile every task ID and its approved standard, evidence, commit, exact-SHA test/workflow result, status (PASS, PARTIAL, BLOCKED, FAIL, NOT RUN or NOT APPLICABLE), remaining action and dependency. Distinguish work completed from externally required evidence. Never invent a task total, claim an unrun test passed, or turn an unresolved item into a pass to release code.
+
+### C. Production and high-impact boundaries remain intact
+
+This amendment removes the routine owner-acceptance hold; it does **not** waive engineering quality, security, legal correctness, privacy, financial integrity, safety, data integrity, or release evidence. No unsafe tenant/RLS bypass, secret disclosure, unlicensed code, false legal parameter, real payroll/bank/payment execution, statutory activation, destructive production-data action, or live production deployment may be performed without its required qualified or accountable authorization. These constraints must not be used to stop non-production engineering, tests, documentation, staging preparation or other independent safe work.
+
+### D. Controlled use of the legacy ERP research
+
+The Product Owner authorizes read-only consultation of the accessible Stockland ERP 16.1.89 and related legacy Stockland ERP repositories for relevant payroll, employment, pension and tax research. This permission is limited to research and evidence reconciliation. Legacy source code, WordPress architecture, customer/account identifiers, environment settings, credentials, email identities, database assumptions and unrelated workflows are not to be imported into this greenfield ERP. Prior payroll calculations and legal interpretations are historical product evidence, not automatically current law. Every statutory rule adopted here must be independently reconciled to the current official Ethiopian instrument, article/clause, effective date and applicable authority; ambiguous or changed matters remain review-required before statutory activation.
+
+### E. Release reporting and communication
+
+After each WP release or verified integration increment, provide the Product Owner a local reconciliation report covering the complete task list, task totals, completed/partial/blocked/failed/not-run counts, evidence, exact commits and workflows, defects, remaining actions and recommendations. Do not create a form or request an acceptance response. Raise a question only where a concrete decision is genuinely outside the standing authorization or required from an external accountable person.
+
+**Decision recorded:** routine WP handover acceptance gates are superseded by this standing delivery authorization. The WP-00–WP-16 sequence, product scope and quality standards remain unchanged.

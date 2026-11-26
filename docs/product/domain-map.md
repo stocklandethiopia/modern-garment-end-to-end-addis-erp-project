@@ -4,6 +4,8 @@ This is the product capability map, not a claim that every capability has alread
 
 **Governing design standard:** This map must be interpreted and extended in line with the [Apparel Business Operating System Charter](apparel-business-operating-system-charter.md). Every workflow must improve how apparel work is planned, executed, controlled, learned from and proven—not merely collect completed transaction data.
 
+**Cross-cutting Miret operating model:** Every domain must be evaluated through four connected lenses: product identity/genealogy, quality at source, industrial/business efficiency and modern technology/operational agents. The owner-directed model, trace keys, quality gates, monthly-to-hourly planning, role-agent boundaries and acceptance journeys are specified in [Miret — Four-Pillar Garment Operating Model](miret-system-operating-model.md). This is a cross-cutting interpretation of the existing WP-00–WP-16 sequence, not a new domain or claim of implementation.
+
 ## A. Business initiative, brand strategy and product innovation
 
 The business lifecycle begins before a buyer order and before a factory work order. The system must support companies that own brands and stores, create their own collections, buy or outsource manufacturing, operate factories, distribute other brands, or combine these models. Customer/buyer orders are one demand source—not the only reason a product is created.

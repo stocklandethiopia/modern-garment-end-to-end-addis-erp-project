@@ -213,3 +213,24 @@ A quality decision triggers an authorized WMS/manufacturing command; the quality
 **Dependencies:** WP-02 legal-source and applicability holds; WP-03 tenant/security/audit; WP-05 released product specs; WP-07 incoming materials/SDS; WP-08 route; WP-09 production actuals; WP-12 stock disposition/shipment hold; WP-13 tax/financial evidence; WP-14 worker/health/privacy.
 
 **Decision:** internally accepted under delegated execution. Proceed to WP-12 — Warehouse, Distribution and Channel Commerce.
+
+## 16. Miret quality chain, current standards and downstream sale
+
+WP-11 supplies the quality pillar of [Miret — Four-Pillar Garment Operating Model](../product/miret-system-operating-model.md). Each quality event must be tied to product/style revision, material/lot or bundle/carton, route step, location, customer/market, inspector, effective specification/control-plan revision, sample and result. The same product passport continues through shipment, DC/branch/store receipt, wholesale/retail/digital sale and customer return or complaint.
+
+### Standards registry
+
+Maintain a versioned, sourced standards and customer-requirements register. At this update (26 November 2026), official source snapshots include ISO 9001:2026 (edition 6; QMS), ISO 2859-1:2026 (edition 3; lot-by-lot attributes sampling), ISO/IEC 17025:2017 (laboratory competence, last confirmed by ISO in 2023), and AATCC 2026 Volume 101 (textile test methods). Their uses are distinct:
+
+- ISO 9001 is a management-system framework, not a garment/product acceptance limit.
+- ISO 2859-1 is a sampling scheme; an AQL, lot size, inspection level, normal/reduced/tightened or skip-lot choice is made for the approved customer/product/process risk and contract. Never set one universal AQL in the application.
+- ISO/IEC 17025 informs laboratory competence/accreditation scope when test results must come from a competent laboratory.
+- AATCC supplies method-specific textile tests; record the exact method, edition, condition and result, and apply only where the fabric/product/customer/market requirement calls for it.
+
+Store source/publisher, exact reference and edition, effective date, characteristic/test, market/buyer/product/material/process scope, sampling scheme, limits, lab/equipment, calibration and approval evidence. Legal obligations remain governed by WP-02 and qualified local review; buyer specifications and voluntary standards are not silently treated as law.
+
+Official references: [ISO 9001:2026](https://www.iso.org/standard/9001), [ISO 2859-1:2026](https://www.iso.org/standard/2859-1), [ISO/IEC 17025:2017](https://www.iso.org/standard/17025), [AATCC 2026 Manual, Volume 101](https://www.aatcc.org/news-read/insights/announcing-the-101st-edition-of-the-aatcc-manual-of-international-test-methods-and-procedures).
+
+### Post-shipment feedback
+
+For DC, own branch, store, wholesale account, retailer/reseller, e-commerce and direct customer flows, capture receipt inspection/discrepancy, transit damage, presentation/label/pack defects, customer complaint, return reason, photo/evidence, style/variant and production-lot link, disposition and remedy. Returned items follow inspection and authorized restock, rework, supplier claim, scrap or other disposition. Aggregate trends feed CAPA, supplier review, product development and the next initiative. A return does not rewrite the original final-inspection result.

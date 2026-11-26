@@ -160,3 +160,11 @@ Distribution, order management and channel commerce are first-class bounded cont
 - New legal instruments enter a draft review state; compare amendments, identify impacted transactions/modules, prepare tests and require competent local approval before activation.
 - Historical postings retain the original legal rule and calculation version. Do not silently recalculate posted payroll, tax, customs, stock or financial records after a law change.
 - Keep the public-procurement compliance pack optional and applicability-gated; internal procurement controls remain a distinct private-enterprise governance feature.
+
+## 13. Miret cross-pillar orchestration and modern Angular adoption
+
+The product must use one Miret operating model for Product identity, Quality at source, Industrial/business Efficiency and Technology/optimization. The single connected record/event chain links approved product revisions, supplier/material lots, route/SOP/method and quality-plan revisions, line/shift/machine/worker context, accepted production events, holds/rework/reinspection, cartons/shipments, DC/branch/store, sale and returns. Do not let each dashboard create its own unconnected definition of the product, good output or efficiency.
+
+The monthly-capacity → MPS → daily line/shift → hourly control hierarchy, SAM/SMV formulas and quality-based accepted-output definitions remain owned by WP-06/WP-10/WP-11. All cross-domain analytics must show KPI definition, denominator, time window and source-event drill-down. Role-specific operational agents are WP-15 capabilities, not alternative transaction services.
+
+Modern Angular feature maturity, API-read patterns, forms, signals, zoneless compatibility, lazy/deferred views, hydration and experimental Web MCP handling are specified in [Angular Current Capabilities and Adoption Standard](angular-current-capabilities-and-adoption-standard.md). Adopt stable features only after validating compatibility with the locked Angular 22 toolchain; do not install Angular's moving GitHub main or experimental code in production.

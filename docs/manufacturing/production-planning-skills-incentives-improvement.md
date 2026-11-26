@@ -228,3 +228,13 @@ Events: ProductionPlanApproved.v1, LineAssignmentChanged.v1, HourlyOutputRecorde
 **Dependencies:** WP-06 standards/capacity, WP-07 materials, WP-08 route engine, WP-09 actual work events, WP-11 quality/HSE, WP-14 HR/payroll and WP-15 analytics.
 
 **Decision:** internally accepted under delegated execution. Proceed to WP-11 — Quality, Compliance, CAPA and HSE.
+
+## 15. Miret integration — monthly capacity to hourly accepted output
+
+WP-10 is the efficiency pillar of the Miret model; it must consume approved product identity, effective SAM/SMV and route from WP-05/06/08, resource/material readiness from WP-07, actual operation events from WP-09, and quality disposition from WP-11. The planning hierarchy remains monthly/seasonal capacity → MPS → material/resource plan → line loading → daily line/shift plan → hourly control → shift handover. Do not create a second planning sequence or a second definition of efficiency.
+
+The line plan must identify its exact style/revision, order, route and operation standards, line/work-centre, machines/attachments, shift calendar, planned headcount and verified skill coverage, net productive minutes, material/trim availability, maintenance/changeover assumptions, quality gates and delivery cutoff. A planner can compare scenarios; only the authorized owner publishes and dispatches the plan.
+
+The dashboard and agent must preserve requested vs feasible quantity; planned vs actual total and accepted-good output, rejects, rework, scrap and operation WIP; the approved SAM/SMV and target-efficiency version; earned standard minutes and eligible direct-labour minutes with scope; machine downtime and reason-coded material, skill, quality, maintenance and route loss; FPY/defects/rework and any stop/hold; forecast completion, named recovery owner and due time.
+
+The Miret formula, earned-minute definitions and fair-work safeguards are specified in [Miret — Four-Pillar Garment Operating Model](../product/miret-system-operating-model.md). Acceptance must include a monthly-to-daily-to-hourly replay, style changeover, mixed-style load, absent skill, machine failure, material shortage, quality hold and approved re-plan. Do not claim site-calibrated capacity until real factory time-study and resource data are approved.

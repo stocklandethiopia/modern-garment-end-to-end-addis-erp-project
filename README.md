@@ -30,6 +30,8 @@ Exact supported patch versions are recorded in the platform standard and must be
 ## Start here
 
 1. Platform architecture and technology standard: docs/architecture/platform-standard.md
+2. Miret four-pillar operating model: docs/product/miret-system-operating-model.md
+3. Angular current capabilities and adoption standard: docs/architecture/angular-current-capabilities-and-adoption-standard.md
 2. End-to-end business domain map: docs/product/domain-map.md
 3. Apparel business operating system charter and manufacturing excellence: docs/product/apparel-business-operating-system-charter.md
 4. Distribution network, order management and channel commerce: docs/product/distribution-and-channel-commerce.md
