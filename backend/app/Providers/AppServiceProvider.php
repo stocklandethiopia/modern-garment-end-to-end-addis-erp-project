@@ -2,6 +2,10 @@
 
 namespace App\Providers;
 
+
+
+use App\Services\Authorization\DomainCapabilityAuthorizer;
+use Illuminate\Support\Facades\Gate;
 use App\Support\TenantContext;
 use Illuminate\Support\ServiceProvider;
 
@@ -37,5 +41,13 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('manufacturing.release-production-order', fn ($user): bool => $domainAuthorizer->allows($user, 'manufacturing.release-production-order'));
         Gate::define('manufacturing.start-production-order', fn ($user): bool => $domainAuthorizer->allows($user, 'manufacturing.start-production-order'));
         Gate::define('manufacturing.record-execution', fn ($user): bool => $domainAuthorizer->allows($user, 'manufacturing.record-execution'));
+
+        $domainAuthorizer = app(DomainCapabilityAuthorizer::class);
+        Gate::define('inventory.receive-finished-goods', fn ($user): bool => $domainAuthorizer->allows($user, 'inventory.receive-finished-goods'));
+        Gate::define('quality.release-finished-goods', fn ($user): bool => $domainAuthorizer->allows($user, 'quality.release-finished-goods'));
+        Gate::define('commerce.create-customer-order', fn ($user): bool => $domainAuthorizer->allows($user, 'commerce.create-customer-order'));
+        Gate::define('commerce.confirm-customer-order', fn ($user): bool => $domainAuthorizer->allows($user, 'commerce.confirm-customer-order'));
+        Gate::define('inventory.reserve-finished-goods', fn ($user): bool => $domainAuthorizer->allows($user, 'inventory.reserve-finished-goods'));
+        Gate::define('distribution.dispatch-shipment', fn ($user): bool => $domainAuthorizer->allows($user, 'distribution.dispatch-shipment'));
 }
 }
