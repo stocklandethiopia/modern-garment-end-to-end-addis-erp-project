@@ -212,7 +212,8 @@ jobs:
         run: npm run build
 
   wp01-source-package:
-    name: WP-01 r3 source integrity and tests
+    name: WP-01 r3 integrity, tests and combined candidate packaging
+    needs: [backend-postgresql, frontend-angular]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout exact commit
@@ -238,21 +239,13 @@ jobs:
           node --test
           node scripts/audit-quality.mjs --strict --markdown docs/WP01_AUDIT_RESULT_CI.md
 
-  combined-release-candidate:
-    name: Assemble combined ERP repository candidate
-    needs: [backend-postgresql, frontend-angular, wp01-source-package]
-    runs-on: ubuntu-latest
-    if: success()
-    steps:
-      - name: Checkout exact verified commit
-        uses: actions/checkout@v4
-
-      - name: Create source archive and checksums
+      - name: Create combined source archive and checksums after all verification jobs pass
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p dist
           git archive --format=tar.gz --prefix=modern-garment-addis-erp/ HEAD > dist/modern-garment-addis-erp-wp01-wp16-candidate.tar.gz
+          test -s dist/modern-garment-addis-erp-wp01-wp16-candidate.tar.gz
           sha256sum dist/modern-garment-addis-erp-wp01-wp16-candidate.tar.gz > dist/SHA256SUMS.txt
           {
             echo "# Combined ERP candidate build"
@@ -261,7 +254,7 @@ jobs:
             echo "Branch/ref: ${GITHUB_REF}"
             echo "Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
             echo
-            echo "All required backend, frontend and WP-01 source-package jobs succeeded."
+            echo "Backend/PostgreSQL/RLS, Angular and WP-01 source-package verification jobs succeeded."
             echo "This artifact is a review candidate; production deployment and professional sign-offs remain separate gates."
           } > dist/BUILD-VERIFICATION.md
 
@@ -272,3 +265,4 @@ jobs:
           path: dist/*
           if-no-files-found: error
           retention-days: 90
+
