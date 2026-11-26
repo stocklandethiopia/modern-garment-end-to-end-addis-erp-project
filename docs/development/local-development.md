@@ -37,7 +37,7 @@ composer install
 php artisan key:generate
 \`\`\`
 
-The copied \`.env\` is local-only and ignored by Git. For local Compose defaults it uses the local PostgreSQL/Redis host ports and the two limited DB roles.
+The copied `.env` is local-only and ignored by Git. The committed example contains no machine-specific service endpoint. Before starting the API, set `APP_URL`, `FRONTEND_URL`, `DB_HOST`, `REDIS_HOST` and `SANCTUM_STATEFUL_DOMAINS` in the ignored file to the actual origins and service addresses reachable from your developer process. The included Compose file publishes the database and Redis ports on the host's IPv6 loopback interface; use the matching host address for a host-run Laravel process. Never copy those local values into a committed template or a deployed environment.
 
 Run schema migrations using the migration role, not the runtime role:
 
@@ -105,7 +105,7 @@ npm install
 npm start
 \`\`\`
 
-Open \`http://localhost:4200\`. The development proxy forwards \`/api\` to Laravel at \`localhost:8000\`. The overview displays actual API health status and labels domain modules according to their implementation state; it does not fabricate customer operations, production KPIs or inventory.
+Open the origin printed by Angular CLI. The development proxy in `frontend/proxy.conf.json` forwards `/api` to the developer API process; it is not used by production builds. The overview displays actual API health status and labels domain modules according to their implementation state; it does not fabricate customer operations, production KPIs or inventory.
 
 ## 7. Run checks
 
