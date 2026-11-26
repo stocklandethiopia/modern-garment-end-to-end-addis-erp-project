@@ -356,8 +356,30 @@ BEGIN
         RAISE EXCEPTION 'Feature flags and limits must be JSON objects.'
             USING ERRCODE = '22023';
     END IF;
+    IF EXISTS (
+        SELECT 1 FROM jsonb_each(target_feature_flags)
+        WHERE jsonb_typeof(value) <> 'boolean'
+    ) THEN
+        RAISE EXCEPTION 'Each feature flag value must be boolean.'
+            USING ERRCODE = '22023';
+    END IF;
+    IF EXISTS (
+        SELECT 1 FROM jsonb_each(target_limits)
+        WHERE jsonb_typeof(value) <> 'number'
+           OR (value #>> '{}')::numeric < 0
+           OR trunc((value #>> '{}')::numeric) <> (value #>> '{}')::numeric
+    ) THEN
+        RAISE EXCEPTION 'Each entitlement limit must be a non-negative integer.'
+            USING ERRCODE = '22023';
+    END IF;
     IF effective_to IS NOT NULL AND (effective_from IS NULL OR effective_to < effective_from) THEN
         RAISE EXCEPTION 'Entitlement effective dates are invalid.'
+            USING ERRCODE = '22023';
+    END IF;
+    IF target_entitlement_status = 'ACTIVE'
+       AND (effective_from IS NULL OR effective_from > CURRENT_DATE
+            OR (effective_to IS NOT NULL AND effective_to < CURRENT_DATE)) THEN
+        RAISE EXCEPTION 'Active entitlements must be effective on the current date.'
             USING ERRCODE = '22023';
     END IF;
     IF action_reason IS NULL OR length(btrim(action_reason)) < 10 OR length(action_reason) > 500 THEN
