@@ -67,19 +67,19 @@ For a new tenant after initial setup, use the future controlled tenant-administr
 ## 5. Run the backend
 
 \`\`\`bash
-php artisan serve --host=0.0.0.0 --port=8000
+php artisan serve --port=8000
 \`\`\`
 
-Health check:
+Health check (set `API_ORIGIN` to the `APP_URL` value configured in the ignored environment file):
 
 \`\`\`bash
-curl http://localhost:8000/api/v1/health
+curl "${API_ORIGIN}/api/v1/health"
 \`\`\`
 
 Issue a short-scope personal access token:
 
 \`\`\`bash
-curl -X POST http://localhost:8000/api/v1/auth/tokens \\
+curl -X POST "${API_ORIGIN}/api/v1/auth/tokens" \\
   -H "Content-Type: application/json" \\
   -d '{"email":"owner@example.test","password":"YOUR_LOCAL_PASSWORD","device_name":"local-browser"}'
 \`\`\`
@@ -87,7 +87,7 @@ curl -X POST http://localhost:8000/api/v1/auth/tokens \\
 Use the returned access token and the tenant UUID from provisioning:
 
 \`\`\`bash
-curl http://localhost:8000/api/v1/enterprise/legal-entities \\
+curl "${API_ORIGIN}/api/v1/enterprise/legal-entities" \\
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \\
   -H "X-Tenant-Id: YOUR_TENANT_UUID" \\
   -H "Accept: application/json"
@@ -112,6 +112,7 @@ Open \`http://localhost:4200\`. The development proxy forwards \`/api\` to Larav
 From repository root:
 
 \`\`\`bash
+make check-no-loopback-defaults
 make api-lint
 make api-test
 make web-test
