@@ -14,12 +14,14 @@ import { ProductDevelopmentComponent } from './features/product-development/prod
 import { TechnicalProductDevelopmentComponent } from './features/product-development/technical-product-development.component';
 import { SampleFitComponent } from './features/product-development/sample-fit.component';
 import { PlatformOperatorsComponent } from './features/platform/platform-operators.component';
+import { PlatformTenantsComponent } from './features/platform/platform-tenants.component';
 
 export const routes: Routes = [
   { path: '', component: OverviewComponent, title: 'Overview · Modern Garment ERP' },
   { path: 'enterprise/members', component: TenantMembersComponent, title: 'Tenant members · Modern Garment ERP' },
   { path: 'enterprise/legal-entities', component: LegalEntitiesComponent, title: 'Legal entities · Modern Garment ERP' },
   { path: 'enterprise/sites', component: BusinessSitesComponent, title: 'Business sites · Modern Garment ERP' },
+  { path: 'platform/tenants', component: PlatformTenantsComponent, title: 'Platform tenant register · Modern Garment ERP' },
   { path: 'platform/operators', component: PlatformOperatorsComponent, title: 'Platform operators · Modern Garment ERP' },
   { path: 'product/initiatives', component: InitiativesComponent, title: 'Initiatives · Modern Garment ERP' },
   { path: 'product/market-insights', component: MarketInsightsComponent, title: 'Market insights · Modern Garment ERP' },
