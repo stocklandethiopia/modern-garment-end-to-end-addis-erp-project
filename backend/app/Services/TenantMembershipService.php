@@ -7,6 +7,7 @@ namespace App\Services;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class TenantMembershipService
@@ -42,7 +43,70 @@ class TenantMembershipService
 
     public function revoke(string $userId, string $reason): string
     {
-        return $this->call('SELECT public.revoke_tenant_member(?::uuid, ?) AS membership_id', [$userId, $reason]);
+        return DB::transaction(function () use ($userId, $reason): string {
+            // The controlled PostgreSQL function revokes the membership. In the
+            // same outer request transaction, revoke all its domain-role grants
+            // so later membership reactivation cannot silently restore access.
+            $membershipId = $this->call(
+                'SELECT public.revoke_tenant_member(?::uuid, ?) AS membership_id',
+                [$userId, $reason],
+            );
+
+            $context = DB::selectOne(
+                "SELECT
+                    NULLIF(current_setting('app.current_tenant_id', true), '')::text AS tenant_id,
+                    NULLIF(current_setting('app.current_user_id', true), '')::text AS actor_id",
+            );
+
+            if (! is_string($context?->tenant_id) || $context->tenant_id === ''
+                || ! is_string($context?->actor_id) || $context->actor_id === '') {
+                throw new AuthorizationException('A verified tenant and actor context is required to revoke associated domain roles.');
+            }
+
+            $assignments = DB::table('tenant_domain_role_assignments')
+                ->where('tenant_id', $context->tenant_id)
+                ->where('user_id', $userId)
+                ->whereIn('status', ['PENDING', 'ACTIVE'])
+                ->lockForUpdate()
+                ->get(['id', 'role_code']);
+
+            $now = now();
+            $revocationReason = 'Tenant membership revoked: '.trim($reason);
+
+            foreach ($assignments as $assignment) {
+                DB::table('tenant_domain_role_assignments')
+                    ->where('tenant_id', $context->tenant_id)
+                    ->where('id', $assignment->id)
+                    ->update([
+                        'status' => 'REVOKED',
+                        'revoked_by' => $context->actor_id,
+                        'revoked_at' => $now,
+                        'revocation_reason' => $revocationReason,
+                        'updated_at' => $now,
+                    ]);
+
+                DB::table('audit_events')->insert([
+                    'id' => (string) Str::uuid(),
+                    'tenant_id' => $context->tenant_id,
+                    'actor_user_id' => $context->actor_id,
+                    'action' => 'TENANT_DOMAIN_ROLE_REVOKED',
+                    'object_type' => 'TENANT_DOMAIN_ROLE_ASSIGNMENT',
+                    'object_id' => $assignment->id,
+                    'scope' => json_encode([
+                        'user_id' => $userId,
+                        'role_code' => $assignment->role_code,
+                        'reason_origin' => 'TENANT_MEMBERSHIP_REVOKED',
+                    ], JSON_THROW_ON_ERROR),
+                    'reason' => $revocationReason,
+                    'correlation_id' => (string) Str::uuid(),
+                    'occurred_at' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+
+            return $membershipId;
+        }, 3);
     }
 
     private function call(string $sql, array $bindings): string
