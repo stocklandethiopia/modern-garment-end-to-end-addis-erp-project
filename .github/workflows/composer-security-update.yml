@@ -1,6 +1,12 @@
 name: Controlled Composer security update
 
 on:
+  push:
+    branches:
+      - work/wp01-16-completion-2026-11-26
+    paths:
+      - 'backend/composer.json'
+      - '.github/workflows/composer-security-update.yml'
   workflow_dispatch:
     inputs:
       confirm_branch:
