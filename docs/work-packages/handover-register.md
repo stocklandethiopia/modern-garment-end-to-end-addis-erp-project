@@ -2,7 +2,8 @@
 
 **Project:** Modern Garment End-to-End Addis ERP  
 **Canonical integration branch:** `delivery/autonomous-wp-01-16`  
-**Active WP-03 work branch:** `work/wp03-identity-platform-completion-2026-11-26`  
+**Parallel WP-03 implementation branch:** `work/wp03-identity-platform-completion-2026-11-26`  
+**ChatGPT continuation branch:** `agent/chatgpt-wp03-continuation-2026-11-27`  
 **Execution authority:** Product Owner accepted WP-00 and expressly delegated autonomous sequential delivery and routine in-scope package decisions on 22 November 2026.  
 **Rule:** This ledger records actual evidence, not planned completion. A package is internally accepted only where its specified output exists and its definition of done has been assessed. A documented design is not an implemented or tested application.
 
@@ -115,10 +116,10 @@ Next work must close and evidence: (1) tenant activation/suspension/closure/expo
 
 ## Current WP-03 platform-lifecycle candidate — 26 November 2026
 
-- Active work branch: `work/wp03-identity-platform-completion-2026-11-26`; candidate PR review is being prepared against `delivery/autonomous-wp-01-16`.
+- Parallel implementation branch: `work/wp03-identity-platform-completion-2026-11-26`; ChatGPT's isolated continuation branch: `agent/chatgpt-wp03-continuation-2026-11-27`. Both target `delivery/autonomous-wp-01-16` only after exact-head CI.
 - Candidate migration: `2026_11_26_000032_add_platform_entitlements_and_tenant_lifecycle.php`.
 - Adds separate PLATFORM_ADMIN / PLATFORM_SUPPORT grant records, global platform tenant register, controlled ACTIVE/SUSPENDED/CLOSED lifecycle, tenant entitlement plans/feature flags/limits, tenant-scoped entitlement reads and append-only platform audit.
 - No platform operator is seeded. Initial grants require two-person DBA bootstrap documented in `docs/security/platform-administration-bootstrap.md`; tenant OWNER/ADMIN cannot self-elevate.
 - Candidate endpoints: `GET /api/v1/platform/tenants`; `PATCH /api/v1/platform/tenants/{tenantId}/lifecycle`; `PUT /api/v1/platform/tenants/{tenantId}/entitlements`; tenant read `GET /api/v1/tenant/entitlements`.
 - Tests: `backend/tests/Feature/PlatformAdministrationTest.php` covers role separation, support read-only, entitlement change/read, lifecycle transitions, terminal closure and app_runtime table-privilege boundaries.
-- **Status: IMPLEMENTED CANDIDATE — NOT YET CI VERIFIED / NOT MERGED.** No operator has been provisioned and no commercial entitlement is activated. Feature-gate enforcement, plan catalogue approval, retention/legal hold, export/recovery and platform Angular UI remain open.
+- **Status: IMPLEMENTED CANDIDATE — PHP FORMAT CHECK PASSED; FULL ERP/WP EXACT-HEAD CI PENDING / NOT MERGED.** No operator has been provisioned and no commercial entitlement is activated. Feature-gate enforcement, plan catalogue approval, retention/legal hold, export/recovery and platform Angular UI remain open.
