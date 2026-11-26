@@ -51,7 +51,11 @@ class TenantOwnershipController extends Controller
             'reason' => ['required', 'string', 'min:10', 'max:2000'],
         ]);
 
-        $membershipId = $ownership->leave(trim($data['reason']));
+        $membershipId = $ownership->leave(
+            $tenantContext->tenantId(),
+            (string) $request->user()->getAuthIdentifier(),
+            trim($data['reason']),
+        );
 
         return response()->json([
             'data' => [
