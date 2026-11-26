@@ -53,3 +53,36 @@ The backend remains portable: it can be deployed behind a reverse proxy or ingre
 - External Cloudflare and Google AI Studio account/session state: not accessible from this repository audit.
 
 No baseline branch, default branch, production environment, customer data or live deployment was modified.
+
+
+## Exact repository fingerprint checks requested on 2026-11-27
+
+The following searches were performed against the repository's indexed source and configuration. All returned zero matching files:
+
+| Fingerprint or dependency family | Result |
+|---|---:|
+| Supplied Google/Firebase project ID | 0 |
+| Supplied Google Cloud project number | 0 |
+| Supplied Android application package | 0 |
+| Supplied Firebase Storage bucket hostname | 0 |
+| Both supplied OAuth client IDs | 0 |
+| Exact supplied API-key fingerprint and API-key prefix | 0 |
+| Firebase domains: firebaseapp.com, firebaseio.com, firebasestorage.app | 0 |
+| Google API hosts: googleapis.com, identitytoolkit, securetoken, Firestore, Storage and Generative Language API endpoints | 0 |
+| Firebase initialization names, Firebase Admin SDK, Firebase Storage/Auth SDK, google-services.json, GoogleService-Info.plist, firebase.json and .firebaserc | 0 |
+| AngularFire, Firebase Admin, Google Cloud Storage and Google auth client packages | 0 |
+| Cloudflare, cloudflared, Wrangler, Workers/Pages and tunnel-token fingerprints | 0 |
+
+The source-tree review found no Firebase, Android or Cloudflare configuration file names. The inspected Angular manifest contains Angular framework/tooling dependencies and no Firebase/Google client SDK. The inspected Composer manifest contains Laravel/Sanctum and ordinary PHP dependencies and no Firebase/Google server SDK. Composer/npm lockfiles showed no Firebase/Google SDK dependency in the prior dependency review. The audit did not copy any provided key, project configuration or OAuth identifier into the repository.
+
+**Search limitation:** GitHub's indexed code-search endpoint searches the repository's default branch. The supplied work-branch tree and source/configuration paths were also inspected directly; the current report does not claim that GitHub's indexed search alone exhaustively searches every historical Git blob, inaccessible secret store, deleted file or external account. No conclusion about Google AI Studio/Cloudflare account resources can be drawn from Git alone.
+
+## Core ERP versus external API boundary
+
+The user clarified that Google AI Studio is intended only as a source-code authoring/commit workflow. The ERP must not require Firebase, Google Cloud, Cloudflare, an AI vendor, or any provider-specific public URL to boot, authenticate users, create business records or perform core workflows. The Angular UI continues to use the same-origin Laravel API. That Laravel API is an internal application contract, not a third-party-hosted API dependency.
+
+No external AI agent provider key or connector is required or configured in this core. Future agent integrations are deferred until explicitly designed and must be optional backend-side adapters: disabled by default, secrets injected only at runtime/server-side, independently permissioned and tenant-scoped, and covered by tests that pass with no provider key configured. Angular/browser bundles must never contain provider API keys. Provider unavailability must not disable core ERP transactions.
+
+## Verification status correction
+
+The provider-neutral storage unit test has been added, but it has not yet been observed passing on this branch. CI is being enabled for the isolated audit branch; do not treat a test that has only been authored as a passing test. Full migration/RLS, backend test, frontend test, dependency audit and production build results must be reported from the exact branch run.
