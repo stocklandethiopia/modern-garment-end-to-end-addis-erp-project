@@ -168,3 +168,15 @@ The product must use one Miret operating model for Product identity, Quality at 
 The monthly-capacity → MPS → daily line/shift → hourly control hierarchy, SAM/SMV formulas and quality-based accepted-output definitions remain owned by WP-06/WP-10/WP-11. All cross-domain analytics must show KPI definition, denominator, time window and source-event drill-down. Role-specific operational agents are WP-15 capabilities, not alternative transaction services.
 
 Modern Angular feature maturity, API-read patterns, forms, signals, zoneless compatibility, lazy/deferred views, hydration and experimental Web MCP handling are specified in [Angular Current Capabilities and Adoption Standard](angular-current-capabilities-and-adoption-standard.md). Adopt stable features only after validating compatibility with the locked Angular 22 toolchain; do not install Angular's moving GitHub main or experimental code in production.
+
+
+## 12. External provider and AI-agent boundary
+
+- Core ERP boot, sign-in, tenant selection, business transactions, reports and audit must not require Firebase, Google Cloud, Cloudflare, a hosted AI model, or any other vendor-specific public API or domain.
+- The browser application calls the same-origin Laravel API using relative paths. Angular code must not contain provider API keys, service-account credentials, direct provider SDK initialization or hard-coded provider URLs.
+- Google AI Studio is a source-authoring/development tool only. It is not a runtime, identity provider, database, object store, API host or deployment dependency for this ERP.
+- No external AI/agent provider is selected or required for the core build. Agent provider selection and API credentials are deferred until a separately approved integration design exists.
+- When an agent provider is later selected, connect it through a backend-owned adapter/interface. Keep it optional, feature-flagged and disabled until configured; inject credentials only into the server/worker runtime through an approved secret store; never commit credentials or embed them in the Angular bundle.
+- Agent adapters may propose or compute results, but Laravel authorization, PostgreSQL tenant isolation, business rules and human approval gates remain authoritative. A provider timeout, quota exhaustion or account disconnection must not prevent ordinary ERP transactions.
+- File storage is accessed through Laravel's storage abstraction. The local private disk is the default; any remote storage adapter is an explicit operator-selected deployment option, not a core account requirement.
+- Provider-specific configuration must be isolated and removable without altering the ERP data model or business-domain workflows. Automated tests must verify core flows with no provider credentials or network calls.
