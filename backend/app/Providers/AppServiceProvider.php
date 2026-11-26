@@ -74,5 +74,15 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('quality.set-disposition', fn ($user): bool => $domainAuthorizer->allows($user, 'quality.set-disposition'));
         Gate::define('quality.implement-capa', fn ($user): bool => $domainAuthorizer->allows($user, 'quality.implement-capa'));
         Gate::define('quality.verify-capa', fn ($user): bool => $domainAuthorizer->allows($user, 'quality.verify-capa'));
+
+        $domainAuthorizer = app(DomainCapabilityAuthorizer::class);
+        Gate::define('planning.manage-capacity', fn ($user): bool => $domainAuthorizer->allows($user, 'planning.manage-capacity'));
+        Gate::define('planning.manage-ie-standard', fn ($user): bool => $domainAuthorizer->allows($user, 'planning.manage-ie-standard'));
+        Gate::define('planning.approve-ie-standard', fn ($user): bool => $domainAuthorizer->allows($user, 'planning.approve-ie-standard'));
+        Gate::define('planning.create-production-plan', fn ($user): bool => $domainAuthorizer->allows($user, 'planning.create-production-plan'));
+        Gate::define('planning.approve-production-plan', fn ($user): bool => $domainAuthorizer->allows($user, 'planning.approve-production-plan'));
+        Gate::define('workforce.assess-skills', fn ($user): bool => $domainAuthorizer->allows($user, 'workforce.assess-skills'));
+        Gate::define('workforce.assign-operations', fn ($user): bool => $domainAuthorizer->allows($user, 'workforce.assign-operations'));
+        Gate::define('workforce.confirm-assignments', fn ($user): bool => $domainAuthorizer->allows($user, 'workforce.confirm-assignments'));
 }
 }
