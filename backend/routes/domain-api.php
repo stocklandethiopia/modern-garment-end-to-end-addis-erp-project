@@ -1,5 +1,9 @@
 <?php
 
+use App\Http\Controllers\Integration\DocumentIntegrationController;
+
+use App\Http\Controllers\Finance\FinanceControlController;
+
 use App\Http\Controllers\Distribution\FinishedGoodsController;
 
 use App\Http\Controllers\Manufacturing\ManufacturingController;
