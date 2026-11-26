@@ -13,7 +13,7 @@ export interface PlatformOperatorGrant {
   role_code: PlatformRoleCode;
   grant_status: PlatformGrantStatus;
   valid_from: string;
-  valid_to: string | null;
+  valid_to: string;
   grant_reason: string;
   granted_by: string;
   grantor_name: string;
