@@ -69,5 +69,10 @@ class AppServiceProvider extends ServiceProvider
 
         $domainAuthorizer = app(DomainCapabilityAuthorizer::class);
         Gate::define('quality.release-production-operation', fn ($user): bool => $domainAuthorizer->allows($user, 'quality.release-production-operation'));
+
+        $domainAuthorizer = app(DomainCapabilityAuthorizer::class);
+        Gate::define('quality.set-disposition', fn ($user): bool => $domainAuthorizer->allows($user, 'quality.set-disposition'));
+        Gate::define('quality.implement-capa', fn ($user): bool => $domainAuthorizer->allows($user, 'quality.implement-capa'));
+        Gate::define('quality.verify-capa', fn ($user): bool => $domainAuthorizer->allows($user, 'quality.verify-capa'));
 }
 }
