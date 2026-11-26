@@ -84,5 +84,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('workforce.assess-skills', fn ($user): bool => $domainAuthorizer->allows($user, 'workforce.assess-skills'));
         Gate::define('workforce.assign-operations', fn ($user): bool => $domainAuthorizer->allows($user, 'workforce.assign-operations'));
         Gate::define('workforce.confirm-assignments', fn ($user): bool => $domainAuthorizer->allows($user, 'workforce.confirm-assignments'));
+
+        $domainAuthorizer = app(DomainCapabilityAuthorizer::class);
+        Gate::define('commerce.review-credit', fn ($user): bool => $domainAuthorizer->allows($user, 'commerce.review-credit'));
+        Gate::define('commerce.approve-credit-exception', fn ($user): bool => $domainAuthorizer->allows($user, 'commerce.approve-credit-exception'));
 }
 }
