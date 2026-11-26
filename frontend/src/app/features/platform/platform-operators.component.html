@@ -110,8 +110,8 @@
                     </span>
                   </td>
                   <td>
-                    <strong>{{ grant.valid_from | date:'mediumDate' }}</strong>
-                    <small>{{ grant.valid_to ? (grant.valid_to | date:'mediumDate') : 'No scheduled expiry' }}</small>
+                    <strong>{{ grant.valid_from | date:'mediumDate':'UTC' }}</strong>
+                    <small>{{ grant.valid_to ? (grant.valid_to | date:'mediumDate':'UTC') : 'No scheduled expiry' }}</small>
                   </td>
                   <td>{{ grant.grantor_name }}</td>
                   <td>{{ grant.approver_name ?? 'Awaiting independent approval' }}</td>
