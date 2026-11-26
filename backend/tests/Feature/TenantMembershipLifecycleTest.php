@@ -401,7 +401,6 @@ class TenantMembershipLifecycleTest extends TestCase
             ->assertJsonFragment(['id' => $currentId]);
     }
 
-
     public function test_promoting_a_member_to_tenant_admin_revokes_member_domain_roles(): void
     {
         $this->actAs($this->ownerId);
