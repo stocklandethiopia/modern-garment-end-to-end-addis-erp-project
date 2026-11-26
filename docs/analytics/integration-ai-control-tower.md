@@ -251,3 +251,29 @@ Events: IntegrationConnectionVerified.v1, SourceEventQuarantined.v1, ProjectionR
 **Dependencies:** all domain source transactions WP-03–WP-14; privacy/legal rule source WP-02; platform/runtime WP-16.
 
 **Decision:** internally accepted under delegated execution. Proceed to WP-16 — End-to-End Acceptance, Security, Reliability, Build, Deployment and Rollback.
+
+## 14. Miret operational-agent contract and role-specific catalogue
+
+Miret is the cross-cutting four-pillar operating model defined in [Miret — Four-Pillar Garment Operating Model](../product/miret-system-operating-model.md). WP-15 must provide actual operational assistance for each activity, not a generic chat surface. Every agent entry below is a bounded task, not an autonomous department manager.
+
+| Role and trigger | Agent's useful work | Capability boundary |
+|---|---|---|
+| Merchandiser starts an initiative/range review | Summarize approved market, sell-through, returns and cost signals; draft opportunity/range/size-curve scenarios | Cite sources, assumptions and confidence; human owner approves portfolio, price and launch |
+| Designer/technical developer opens a style revision | Compare approved tech-pack, measurement, tolerance, BOM, artwork, care/label and packaging revisions | Stage proposed changes only; preserve approved snapshots and reviewer separation |
+| Buyer/material controller reviews inbound supply | Extract GRN/PO/certificate evidence, compare spec/quantity/UOM/lead time and surface shortage or supplier-quality pattern | Do not award supplier, approve PO, change bank details or post stock |
+| Incoming/inline QC opens an inspection task | Resolve product/material/route context, retrieve effective inspection plan, prepare measurement/defect capture and summarize similar prior defects | Inspector records result; quality authority owns disposition, deviation, hold and release |
+| IE/planner runs monthly or daily planning | Calculate available capacity from effective SAM, calendars, people/skills, machines, materials, maintenance and changeover | Explain formula, inputs, bottleneck and alternatives; authorized planner approves plan/target |
+| Operator/supervisor scans a bundle or sees a line exception | Resolve eligible next operation/SOP, show required skill/machine/quality check; open Andon and suggest recovery | No route skip, skill bypass, quality-hold bypass or direct machine control |
+| Finishing/packing operator closes a carton | Validate pack specification, SKU/size/colour ratio, quantity and label; reconcile item-to-carton-to-order genealogy | Cannot mark unreconciled/held goods shipment-ready |
+| DC/branch/store user receives, counts, transfers or picks | Scan item/lot/carton/location, detect duplicate/mismatch and stage movement or discrepancy | Laravel validates custody, reservation, stock and idempotency |
+| Wholesale/retail/POS operator imports a workbook or return | Parse, map SKU/variant, detect duplicate tender/order rows, stage preview and reconcile quantities/value | User approval and owning POS/OMS/Finance command required for posting/refund |
+| Quality/IE/management reviews a KPI exception | Explain KPI formula, period, denominator and original event evidence; group recurring constraints and suggest owner/action | No fabricated root cause, opaque ranking or cross-tenant disclosure |
+| HR/Finance reviewer needs an explanation | Retrieve approved policy and explain a calculation draft or missing evidence | No autonomous adverse employment decision, payroll run, tax activation, payment or journal posting |
+
+### Required capability metadata
+
+Each operational tool must declare its owner/domain, semantic version, typed schema, required permission and tenant/site scope, data classification, allowed state transition, risk tier, approval requirement, idempotency key, timeout/retry semantics, audit/correlation fields, source evidence, evaluation cases and disable/rollback behavior. A model cannot provide its own tenant, user, authority or approval identity.
+
+Every agent result must label source facts separately from inference/recommendation. It must show the relevant ERP record, exact specification or KPI version, assumptions, uncertainty, proposed effect and the human action still required. If a required source or permission is missing, the safe outcome is “cannot determine / needs review”, not a guessed transaction.
+
+Agent quality is measured by task outcomes: reduced scan resolution time and exception rate, fewer duplicate imports, faster shortage/quality escalation, more reproducible plan scenarios, shorter defect containment time and better traceability completeness. Conversation count or generated text volume is not an operational success metric.
