@@ -41,6 +41,28 @@ Route::middleware(['auth:sanctum', ResolveTenantContext::class])->prefix('v1')->
         Route::post('/reservations/{reservationId}/dispatch', [FinishedGoodsController::class, 'dispatchReservation']);
     });
 
+    Route::prefix('finance')->group(function (): void {
+        Route::post('/journals', [FinanceControlController::class, 'storeJournal']);
+        Route::post('/journals/{journalId}/submit', [FinanceControlController::class, 'submitJournal']);
+        Route::post('/journals/{journalId}/decision', [FinanceControlController::class, 'decideJournal']);
+        Route::post('/journals/{journalId}/post', [FinanceControlController::class, 'postJournal']);
+        Route::post('/payroll-drafts', [FinanceControlController::class, 'storePayrollDraft']);
+        Route::post('/payroll-drafts/{runId}/lines', [FinanceControlController::class, 'addPayrollDraftLine']);
+        Route::post('/payroll-drafts/{runId}/submit', [FinanceControlController::class, 'submitPayroll']);
+        Route::post('/payroll-drafts/{runId}/professional-decision', [FinanceControlController::class, 'decidePayroll']);
+    });
+
+    Route::prefix('documents')->group(function (): void {
+        Route::post('/', [DocumentIntegrationController::class, 'registerDocument']);
+        Route::post('/{documentId}/extraction-runs', [DocumentIntegrationController::class, 'beginExtraction']);
+        Route::post('/extraction-runs/{runId}/result', [DocumentIntegrationController::class, 'stageExtractionResult']);
+        Route::post('/extraction-runs/{runId}/review', [DocumentIntegrationController::class, 'reviewExtraction']);
+    });
+
+    Route::prefix('devices')->group(function (): void {
+        Route::post('/scan-events', [DocumentIntegrationController::class, 'recordScan']);
+    });
+
     Route::prefix('manufacturing')->group(function (): void {
         Route::post('/routes', [ManufacturingController::class, 'storeRoute']);
         Route::post('/routes/{routeId}/steps', [ManufacturingController::class, 'addRouteSteps']);
