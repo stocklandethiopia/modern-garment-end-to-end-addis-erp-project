@@ -30,7 +30,7 @@ class BrandRangeWorkflowTest extends TestCase
         $this->approverId = (string) Str::uuid();
 
         $admin->transaction(function () use ($admin, $now): void {
-    $admin->table('tenants')->insert([
+            $admin->table('tenants')->insert([
                 'id' => $this->tenantId,
                 'code' => 'RANGE-'.Str::upper(Str::random(8)),
                 'name' => 'Brand and range workflow tenant',
