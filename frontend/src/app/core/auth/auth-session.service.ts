@@ -27,6 +27,12 @@ interface TenantListResponse {
   data: TenantMembership[];
 }
 
+interface PlatformContextResponse {
+  data: {
+    roles: string[];
+  };
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthSessionService {
   private readonly http = inject(HttpClient);
@@ -43,6 +49,17 @@ export class AuthSessionService {
   private readonly activeTenantState = signal<TenantMembership | null>(null);
   readonly activeTenant = this.activeTenantState.asReadonly();
 
+  private readonly platformRolesState = signal<string[]>([]);
+  readonly platformRoles = this.platformRolesState.asReadonly();
+
+  isPlatformOperator(): boolean {
+    return this.platformRolesState().some((role) => role === 'PLATFORM_ADMIN' || role === 'PLATFORM_SUPPORT');
+  }
+
+  canManagePlatform(): boolean {
+    return this.platformRolesState().includes('PLATFORM_ADMIN');
+  }
+
   login(email: string, password: string): Observable<TenantMembership[]> {
     return this.http.post<TokenResponse>('/api/v1/auth/tokens', {
       email: email.trim().toLowerCase(),
@@ -55,9 +72,15 @@ export class AuthSessionService {
       }),
       switchMap(() => this.http.get<TenantListResponse>('/api/v1/tenants')),
       map((response) => response.data),
-      tap((memberships) => {
+      switchMap((memberships) => this.http.get<PlatformContextResponse>('/api/v1/platform/context').pipe(
+        map((context) => ({ memberships, platformRoles: context.data.roles ?? [] })),
+        catchError(() => of({ memberships, platformRoles: [] as string[] })),
+      )),
+      map(({ memberships, platformRoles }) => {
+        this.platformRolesState.set(platformRoles);
         this.membershipsState.set(memberships);
         this.activeTenantState.set(memberships.length === 1 ? memberships[0] ?? null : null);
+        return memberships;
       }),
       catchError((error: unknown) => {
         this.clearSession();
@@ -90,5 +113,6 @@ export class AuthSessionService {
     this.userState.set(null);
     this.membershipsState.set([]);
     this.activeTenantState.set(null);
+    this.platformRolesState.set([]);
   }
 }
