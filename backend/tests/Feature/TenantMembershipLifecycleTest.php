@@ -40,7 +40,7 @@ class TenantMembershipLifecycleTest extends TestCase
         $now = now();
 
         $admin->transaction(function () use ($admin, $now): void {
-    $admin->table('tenants')->insert([
+            $admin->table('tenants')->insert([
                 'id' => $this->tenantId,
                 'code' => 'MEMBERS-'.Str::upper(Str::random(8)),
                 'name' => 'Membership lifecycle tenant',
