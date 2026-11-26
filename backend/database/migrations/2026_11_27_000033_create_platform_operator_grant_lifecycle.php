@@ -24,6 +24,7 @@ DECLARE
     expired_record record;
     expired_count integer := 0;
     event_time timestamptz := clock_timestamp();
+    expiry_reason text;
 BEGIN
     IF expiry_actor_id IS NULL THEN
         RAISE EXCEPTION 'Platform audit actor is required for grant expiry.'
@@ -31,15 +32,25 @@ BEGIN
     END IF;
 
     FOR expired_record IN
-        UPDATE public.platform_operator_grants grant_record
-           SET status = 'EXPIRED',
-               updated_at = event_time
+        SELECT grant_record.id, grant_record.user_id, grant_record.role_code,
+               grant_record.status, grant_record.valid_from, grant_record.valid_to
+          FROM public.platform_operator_grants grant_record
          WHERE grant_record.status IN ('PENDING', 'ACTIVE')
            AND grant_record.valid_to IS NOT NULL
            AND grant_record.valid_to < CURRENT_DATE
-        RETURNING grant_record.id, grant_record.user_id, grant_record.role_code,
-                  grant_record.status, grant_record.valid_from, grant_record.valid_to
+         ORDER BY grant_record.id
+         FOR UPDATE
     LOOP
+        expiry_reason := CASE expired_record.status
+            WHEN 'PENDING' THEN 'Pending platform operator request expired without approval.'
+            ELSE 'Approved platform operator grant reached its approved end date.'
+        END;
+
+        UPDATE public.platform_operator_grants
+           SET status = 'EXPIRED',
+               updated_at = event_time
+         WHERE id = expired_record.id;
+
         INSERT INTO public.platform_audit_events (
             actor_user_id, tenant_id, action, object_type, object_id,
             before_state, after_state, reason, occurred_at
@@ -49,12 +60,12 @@ BEGIN
             jsonb_build_object(
                 'user_id', expired_record.user_id,
                 'role_code', expired_record.role_code,
-                'status', 'ACTIVE_OR_PENDING',
+                'status', expired_record.status,
                 'valid_from', expired_record.valid_from,
                 'valid_to', expired_record.valid_to
             ),
             jsonb_build_object('status', 'EXPIRED'),
-            'Operator grant reached the end of its approved validity period.',
+            expiry_reason,
             event_time
         );
         expired_count := expired_count + 1;
