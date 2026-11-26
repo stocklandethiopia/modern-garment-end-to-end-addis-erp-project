@@ -86,15 +86,41 @@ class FinishedGoodsController extends Controller
         ], 201);
     }
 
+    public function recordCreditDecision(Request $request, string $orderId): JsonResponse
+    {
+        Gate::authorize('commerce.review-credit');
+        $data = $request->validate([
+            'decision' => ['required','in:CLEAR,HELD'],
+            'decision_reference' => ['required','string','max:180'],
+            'reason' => ['required','string','max:2000'],
+        ]);
+
+        return response()->json(['data' => $this->finishedGoods->recordCustomerCreditDecision(
+            $this->tenant->requireTenantId(), $this->tenant->requireActorId(), $orderId, $data
+        )], 201);
+    }
+
+    public function approveCreditException(Request $request, string $decisionId): JsonResponse
+    {
+        Gate::authorize('commerce.approve-credit-exception');
+        $data = $request->validate([
+            'approval_reference' => ['required','string','max:180'],
+        ]);
+
+        return response()->json(['data' => $this->finishedGoods->approveCustomerCreditException(
+            $this->tenant->requireTenantId(), $this->tenant->requireActorId(), $decisionId, $data['approval_reference']
+        )]);
+    }
+
     public function confirmCustomerOrder(Request $request, string $orderId): JsonResponse
     {
         Gate::authorize('commerce.confirm-customer-order');
         $data = $request->validate([
-            'credit_control_status' => ['required','in:CLEAR,APPROVED_EXCEPTION'],
+            'credit_control_decision_id' => ['required','uuid'],
         ]);
 
         return response()->json([
-            'data' => $this->finishedGoods->confirmCustomerOrder($this->tenant->requireTenantId(), $this->tenant->requireActorId(), $orderId, $data['credit_control_status']),
+            'data' => $this->finishedGoods->confirmCustomerOrder($this->tenant->requireTenantId(), $this->tenant->requireActorId(), $orderId, $data['credit_control_decision_id']),
         ]);
     }
 
