@@ -185,14 +185,14 @@ class IndustrialEngineeringService
             }
 
             $shift = DB::table('work_shift_definitions')->where('tenant_id', $tenantId)->where('id', $slot->shift_id)->first();
-            $start = new \\DateTimeImmutable($data['planned_start_at']);
-            $end = new \\DateTimeImmutable($data['planned_end_at']);
-            $shiftStart = new \\DateTimeImmutable($slot->work_date.' '.$shift->starts_at);
+            $start = new \DateTimeImmutable($data['planned_start_at']);
+            $end = new \DateTimeImmutable($data['planned_end_at']);
+            $shiftStart = new \DateTimeImmutable($slot->work_date.' '.$shift->starts_at);
             $shiftEndsNextDay = $shift->ends_at < $shift->starts_at;
             $shiftEndDate = $shiftEndsNextDay
-                ? (new \\DateTimeImmutable($slot->work_date))->modify('+1 day')->format('Y-m-d')
+                ? (new \DateTimeImmutable($slot->work_date))->modify('+1 day')->format('Y-m-d')
                 : $slot->work_date;
-            $shiftEnd = new \\DateTimeImmutable($shiftEndDate.' '.$shift->ends_at);
+            $shiftEnd = new \DateTimeImmutable($shiftEndDate.' '.$shift->ends_at);
             if ($start < $shiftStart || $end > $shiftEnd || $end <= $start ||
                 $start->format('Y-m-d') !== $slot->work_date) {
                 throw ValidationException::withMessages(['planned_start_at' => 'The scheduled interval must fit inside the selected work-centre shift slot.']);
@@ -296,8 +296,8 @@ class IndustrialEngineeringService
             if ($centre === null || $shift === null || $centre->site_id !== $shift->site_id) {
                 throw ValidationException::withMessages(['work_centre_id' => 'An active work centre and a shift at the same site are required.']);
             }
-            $shiftStartClock = new \\DateTimeImmutable('1970-01-01 '.$shift->starts_at);
-            $shiftEndClock = new \\DateTimeImmutable('1970-01-01 '.$shift->ends_at);
+            $shiftStartClock = new \DateTimeImmutable('1970-01-01 '.$shift->starts_at);
+            $shiftEndClock = new \DateTimeImmutable('1970-01-01 '.$shift->ends_at);
             if ($shiftEndClock <= $shiftStartClock) {
                 $shiftEndClock = $shiftEndClock->modify('+1 day');
             }
