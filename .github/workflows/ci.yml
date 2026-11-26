@@ -79,6 +79,9 @@ jobs:
           coverage: none
           tools: composer:v2
 
+      - name: Reject loopback endpoints in runtime defaults and env template
+        run: php ../scripts/check-no-loopback-defaults.php
+
       - name: Create restricted PostgreSQL roles
         env:
           PGPASSWORD: local-postgres-password
