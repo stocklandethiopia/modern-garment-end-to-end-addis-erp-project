@@ -32,7 +32,7 @@ class DemandOtbPricingWorkflowTest extends TestCase
         $this->legalEntityId = (string) Str::uuid();
 
         $admin->transaction(function () use ($admin, $now): void {
-    $admin->table('tenants')->insert([
+            $admin->table('tenants')->insert([
                 'id' => $this->tenantId,
                 'code' => 'PLAN-'.Str::upper(Str::random(8)),
                 'name' => 'Planning workflow tenant',
