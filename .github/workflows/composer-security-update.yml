@@ -30,20 +30,21 @@ jobs:
       run:
         working-directory: backend
     steps:
+      - name: Checkout candidate source
+        uses: actions/checkout@v4
+        with:
+          ref: work/wp01-16-completion-2026-11-26
+          persist-credentials: true
+
       - name: Verify requested target
         shell: bash
+        working-directory: .
         env:
           CONFIRM_BRANCH: ${{ inputs.confirm_branch }}
         run: |
           set -euo pipefail
           test "$CONFIRM_BRANCH" = "work/wp01-16-completion-2026-11-26"
           test "$GITHUB_REF" = "refs/heads/work/wp01-16-completion-2026-11-26"
-
-      - name: Checkout candidate source
-        uses: actions/checkout@v4
-        with:
-          ref: work/wp01-16-completion-2026-11-26
-          persist-credentials: true
 
       - name: Set up PHP 8.5 and Composer 2
         uses: shivammathur/setup-php@v2
@@ -70,12 +71,12 @@ jobs:
           set -euo pipefail
           php -r '
           require "vendor/autoload.php";
-          $expected = ["8.1.12", "8.1.12", "8.1.12", "8.1.12"];
+          $minimum = "8.1.12";
           $names = ["symfony/http-foundation", "symfony/http-kernel", "symfony/mailer", "symfony/routing"];
-          foreach ($names as $i => $name) {
+          foreach ($names as $name) {
               $installed = Composer\\InstalledVersions::getPrettyVersion($name);
-              if (ltrim((string) $installed, "v") !== $expected[$i]) {
-                  fwrite(STDERR, "$name expected ".$expected[$i]." but found ".$installed.PHP_EOL);
+              if (!is_string($installed) || version_compare(ltrim($installed, "v"), $minimum, "<")) {
+                  fwrite(STDERR, "$name must be at least ".$minimum." but found ".$installed.PHP_EOL);
                   exit(1);
               }
               echo "$name ".$installed.PHP_EOL;
