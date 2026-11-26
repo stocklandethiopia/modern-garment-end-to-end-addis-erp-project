@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Integration;
 
 use App\Http\Controllers\Controller;
 use App\Services\Integration\DocumentIntegrationService;
+use App\Services\Integration\DeviceScanResolutionService;
 use App\Services\Tenant\TenantContextResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,6 +14,7 @@ class DocumentIntegrationController extends Controller
 {
     public function __construct(
         private readonly DocumentIntegrationService $documents,
+        private readonly DeviceScanResolutionService $scanResolver,
         private readonly TenantContextResolver $tenant
     ) {
     }
@@ -120,4 +122,12 @@ class DocumentIntegrationController extends Controller
 
         return response()->json(['data' => $this->documents->recordScanEvent($this->tenant->requireTenantId(), $this->tenant->requireActorId(), $data)], 201);
     }
+    public function resolveScan(string $scanEventId): JsonResponse
+    {
+        Gate::authorize('devices.resolve-scan');
+        return response()->json([
+            'data' => $this->scanResolver->resolve($this->tenant->requireTenantId(), $scanEventId),
+        ]);
+    }
+
 }
