@@ -96,3 +96,55 @@ class DomainRlsSecurityTest extends TestCase
         });
     }
 }
+
+
+    public function test_agent_and_device_runtime_updates_are_limited_to_transition_columns(): void
+    {
+        if (DB::connection()->getDriverName() !== 'pgsql') {
+            $this->markTestSkipped('PostgreSQL privilege verification requires PostgreSQL.');
+        }
+
+        $roles = DB::select("SELECT 1 FROM pg_roles WHERE rolname = 'app_runtime'");
+        if ($roles === []) {
+            $this->markTestSkipped('The app_runtime role is provisioned by the PostgreSQL CI environment.');
+        }
+
+        $privileges = DB::selectOne(<<<'SQL'
+SELECT
+    has_column_privilege('app_runtime', 'public.agent_run_audits', 'status', 'UPDATE') AS run_status,
+    has_column_privilege('app_runtime', 'public.agent_run_audits', 'output_sha256', 'UPDATE') AS run_output_hash,
+    has_column_privilege('app_runtime', 'public.agent_run_audits', 'token_usage', 'UPDATE') AS run_token_usage,
+    has_column_privilege('app_runtime', 'public.agent_run_audits', 'tool_trace', 'UPDATE') AS run_tool_trace,
+    has_column_privilege('app_runtime', 'public.agent_run_audits', 'completed_at', 'UPDATE') AS run_completed_at,
+    has_column_privilege('app_runtime', 'public.agent_run_audits', 'input_sha256', 'UPDATE') AS run_input_hash,
+    has_column_privilege('app_runtime', 'public.agent_run_audits', 'started_by', 'UPDATE') AS run_started_by,
+    has_column_privilege('app_runtime', 'public.agent_action_proposals', 'status', 'UPDATE') AS proposal_status,
+    has_column_privilege('app_runtime', 'public.agent_action_proposals', 'proposed_payload', 'UPDATE') AS proposal_payload,
+    has_column_privilege('app_runtime', 'public.device_scan_events', 'resolution_status', 'UPDATE') AS scan_status,
+    has_column_privilege('app_runtime', 'public.device_scan_events', 'resolution_reference_type', 'UPDATE') AS scan_reference_type,
+    has_column_privilege('app_runtime', 'public.device_scan_events', 'resolution_reference_id', 'UPDATE') AS scan_reference_id,
+    has_column_privilege('app_runtime', 'public.device_scan_events', 'raw_metadata', 'UPDATE') AS scan_raw_metadata,
+    has_column_privilege('app_runtime', 'public.device_scan_events', 'event_key', 'UPDATE') AS scan_event_key,
+    has_column_privilege('app_runtime', 'public.device_scan_events', 'scanned_value', 'UPDATE') AS scan_value,
+    has_table_privilege('app_runtime', 'public.agent_approval_decisions', 'UPDATE') AS approval_updates,
+    has_table_privilege('app_runtime', 'public.agent_action_events', 'UPDATE') AS action_event_updates,
+    has_table_privilege('app_runtime', 'public.agent_approval_decisions', 'DELETE') AS approval_deletes,
+    has_table_privilege('app_runtime', 'public.agent_action_events', 'DELETE') AS action_event_deletes
+SQL);
+
+        foreach ([
+            'run_status', 'run_output_hash', 'run_token_usage', 'run_tool_trace',
+            'run_completed_at', 'proposal_status', 'scan_status', 'scan_reference_type',
+            'scan_reference_id', 'scan_raw_metadata',
+        ] as $column) {
+            self::assertTrue((bool) $privileges->{$column}, "app_runtime cannot update required transition column {$column}.");
+        }
+
+        foreach ([
+            'run_input_hash', 'run_started_by', 'proposal_payload',
+            'scan_event_key', 'scan_value', 'approval_updates', 'action_event_updates',
+            'approval_deletes', 'action_event_deletes',
+        ] as $column) {
+            self::assertFalse((bool) $privileges->{$column}, "app_runtime has an unexpected update/delete privilege: {$column}.");
+        }
+    }
