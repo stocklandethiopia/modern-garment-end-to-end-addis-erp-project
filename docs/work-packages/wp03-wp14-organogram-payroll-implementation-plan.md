@@ -117,16 +117,15 @@ Do not copy monetary limits from a sample ERP or infer legal authority from job 
 
 **Acceptance:** deterministic resolver tests; boundary/cumulative/currency/date/scope tests; no self-approval; revoked/expired appointment and delegation rejected; approval replay idempotent; material change invalidates prior approval.
 
-### WP03-ORG-04 — Integrate procurement, finance and domain approvals
+### WP03-ORG-04 — Publish the reusable DoA integration contract (WP-03 scope)
 
-- Replace generic procurement approver checks only after the DoA resolver supports the exact PO transaction and scopes.
-- Connect purchase request, supplier sourcing, PO, receipt, quality inspection, invoice and treasury steps to separate authorized capabilities.
-- Keep PO approval separate from payment/bank release, AP posting, goods receipt and quality disposition.
-- Add two-person bank-signatory and finance release controls as a separate treasury capability, not a PO approval role.
-- Integrate finance journal/period controls, HR employment actions, inventory adjustments, quality release, production exceptions and distribution credit decisions through reusable approval contracts.
-- Preserve existing tenant OWNER authority only for tenant/platform governance where already specified.
+- Publish the versioned API and event contracts for approval requests, rule resolution, approval steps, decisions, delegation and authority snapshots.
+- Provide a domain-neutral resolver that accepts a transaction type, authenticated actor, legal entity, scope, amount/currency, budget facts, risk attributes and transaction version from the owning domain.
+- Define consistent response states, denial reasons, idempotency keys, reapproval rules, audit events and outbox contracts.
+- Keep the WP-03 implementation independent of procurement, quality, distribution, finance and payroll transaction ownership. Each numbered package integrates its own transactions when reached in the approved sequence.
+- Preserve tenant OWNER authority only for tenant/platform governance; it is never transaction authority.
 
-**Acceptance:** cross-domain approval matrix; negative tests for privilege escalation, tenant-owner misuse, receipt/PO self-approval, AP/payment conflation and out-of-scope approver.
+**Acceptance:** OpenAPI/event schemas, resolver unit and security tests, policy-version replay, scope/amount/date/currency boundary tests, maker-checker conflict tests and integration contract tests using synthetic domain adapters. Domain production integrations are delivered by their numbered packages below.
 
 ### WP03-ORG-05 — Angular organogram and authority workbench
 
