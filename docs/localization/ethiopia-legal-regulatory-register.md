@@ -146,17 +146,17 @@ The internal control layer is an enterprise best-practice baseline; it must not 
 
 ### G. Internal Ethiopian ERP comparison — functional patterns only
 
-The existing Notion *Stockland ERP — Functional Acceptance Runbook* contains historical acceptance evidence for finance/procurement and payroll workflows. It is useful as an internal process benchmark, not as a legal authority or schema baseline.
+Prior sample-system material may contain useful workflow and control observations, but it is not a legal authority, product boundary or database/schema baseline for this greenfield ERP. Ethiopian law and the customer’s own legally applicable organization, employment and tax facts remain authoritative.
 
 Useful controls to preserve in the new customer-neutral product:
 - Purchase order, supplier invoice/AP, customer AR, inventory receipt/movement and balanced GL journals are distinct linked records—not one overloaded transaction.
-- Procurement approval, independent Owner decision, warehouse receipt, actual quantity, justified variance, source audit and notification are separate steps.
+- Procurement approval by the currently delegated company position, independent warehouse receipt, actual quantity, justified variance, source audit and notification are separate steps.
 - Supplier invoice matching and AP settlement should remain separate from customer AR and stock ledger posting.
 - Warehouse physical count is distinct from stock movement; duplicate receipt/PICK must not duplicate inventory movement.
 - Finance dashboard/report views are location-scoped and must show query failure/empty states honestly.
 - Maker-checker, idempotency, exact quantity, audit log, approved variance and balanced journal checks are process-quality requirements even when the underlying customer is private-sector.
 
-**Do not copy legacy legal calculations:** the older runbook contains historic/synthetic payroll examples using an earlier PAYE table and pension-before-tax arithmetic. Those are examples of old ERP test behavior, not current law. Recalculate each employee tax, pension base, withholding and other statutory item from the current Gazette/directive and contract-specific classification. The legacy 49-table ERP contract and its Stockland organization are not the schema or tenant model for this greenfield SaaS.
+**Do not copy legacy legal calculations or engineering design:** historic/synthetic payroll examples, fixed product-version identifiers, database tables and customer-specific organization models are not this ERP’s legal basis or schema. The ETB 30,000 pension-first example is retained only as a candidate regression alongside the gross-taxable comparison. PAYE-base selection remains on legal hold until a qualified Ethiopian tax opinion identifies the controlling clauses and expressly approves the method. New payroll uses official Ethiopian sources, server-side calculation, effective-dated source evidence and a frozen SHA-256 calculation snapshot. No posted payroll or historical transaction is rewritten.
 
 ## 7. Research boundary and open verification items
 
@@ -222,6 +222,10 @@ The ERP must model legal entity + licence category + activity + site/address + b
 - **Accounting:** Financial Reporting Proclamation 847/2014 and AABE standards/pronouncements; the reporting framework depends on entity/reporting class and current AABE adoption.
 - **Privacy:** Personal Data Protection Proclamation 1321/2024; implementing authority, directions, cross-border transfers and data-subject processes require current legal review.
 - **Environment/product standards:** Proclamations 300/2002 and 1090/2018, related industrial pollution provisions, local permits and current Ethiopian Standards Institute requirements must be resolved by process, chemical, product and site.
+
+## 8.1 Ethiopia payroll localization and calculation release gate
+
+The payroll-specific legal interpretation, candidate calculation regression, server-side calculator source, official source requirements and activation checklist are maintained in [Ethiopia Payroll Localization](ethiopia-payroll-localization-2026-11-27.md) and [Ethiopia Payroll Engineering Release Gate](ethiopia-payroll-engineering-release-gate.md). The PAYE-base interaction with employee pension remains unresolved pending written qualified advice. The payroll feature gates are default-off; no statutory rate or payroll result is activated merely because a Gazette table or candidate test exists.
 
 ## 9. WP-02 legal holds and activation gates
 
