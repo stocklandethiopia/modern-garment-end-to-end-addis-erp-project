@@ -1234,23 +1234,24 @@ No application service or database migration has been modified by this audit add
 
 ## 15. Finance and industrial-engineering control audit
 
-### 15.1 Approved finance journal lines remain writable
+### 15.1 Approved finance journal lines are protected against mutation in the current source
 
-**Finding:** The database balance trigger validates journal lines when the journal transitions to UNDER_REVIEW or APPROVED. It is defined as a trigger on finance_journals only. The migration grants app_runtime INSERT and UPDATE on finance_journal_lines, but does not add a trigger that blocks line mutation when the parent journal has left DRAFT.
+**Verified current source state: the core immutability control is already integrated.**
 
-The posting service recomputes balanced base totals before posting. This catches an unbalanced edit, but it does not prove the lines posted are the lines the approver reviewed: an account allocation or line description/source reference can be changed after approval while keeping the debit/credit totals balanced.
+The first review of migration 000020 alone suggested that no database trigger froze journal lines after submission. A subsequent inspection of migration 000022 corrected that conclusion. Migration 000022 creates guard_finance_journal_line_mutation() and a BEFORE INSERT OR UPDATE OR DELETE trigger on finance_journal_lines. The trigger locks the parent journal row and permits line mutation only while the parent status is DRAFT; otherwise it raises a database exception.
 
 **Source**
-- backend/database/migrations/2026_11_26_000020_create_finance_and_payroll_review_foundation.php: finance_journal_lines, enforce_balanced_finance_journal(), journal balance trigger and app_runtime grants.
-- backend/app/Services/Finance/FinanceControlService.php: createJournalDraft(), submitJournal(), decideJournal() and postApprovedJournal().
+- backend/database/migrations/2026_11_26_000020_create_finance_and_payroll_review_foundation.php: journal and line tables, balanced-journal gate and grants.
+- backend/database/migrations/2026_11_26_000022_add_receipt_traceability_links_and_immutability_guards.php: guard_finance_journal_line_mutation() and finance_journal_lines_draft_only.
 
-**Required implementation**
-- [ ] Freeze journal line INSERT/UPDATE/DELETE once the parent journal leaves DRAFT.
-- [ ] Enforce the same immutability in PostgreSQL, not only by omitting an application endpoint.
-- [ ] If correction is required, return the journal through a controlled revision/resubmission workflow or create a replacement journal; never silently change approved lines.
-- [ ] Bind approval evidence to a canonical journal/line snapshot hash and verify it again at posting.
-- [ ] Enforce that each line account belongs to the same legal entity as the parent journal at database level as well as service level.
-- [ ] Add adversarial tests that change account, amount, currency, cost centre or source reference after submission/approval; the database must reject the mutation and the original approved snapshot must remain unchanged.
+This is an important existing control and should be retained. The remaining work is verification and test evidence, not reimplementation.
+
+**Remaining actions**
+- [ ] Add PostgreSQL feature tests proving INSERT/UPDATE/DELETE succeed in DRAFT and fail immediately after the journal enters UNDER_REVIEW, APPROVED or a later state.
+- [ ] Verify the database trigger cannot be bypassed by the runtime role, bulk updates, alternate API paths or concurrent line writes racing submission.
+- [ ] Verify the parent-row lock orders line changes against concurrent submit/approve/post transitions without deadlock or stale approval.
+- [ ] Retain approved journal source/line provenance and prove reversal uses the immutable original posted snapshot.
+- [ ] Keep the trigger in every supported clean-install and upgrade path; do not replace it with an application-only check.
 
 ### 15.2 Statutory rule approval does not require retained source-byte identity
 
@@ -1466,3 +1467,136 @@ The schema is a foundation, not a working cutting-room bundle traceability workf
 7. Add complete quality and manufacturing PostgreSQL feature suites and execute them on an exact commit SHA.
 
 No manufacturing/quality runtime source has been changed by this audit update. It records the schema/service corrections and acceptance evidence required to complete the corresponding work packages.
+
+
+---
+
+## 19. Sourcing, material receiving and integration runtime audit
+
+### 19.1 WP-07 has real supplier/PO/receipt/lot slices, but sourcing event and quotation execution is absent
+
+**Verified source**
+- backend/app/Services/Sourcing/SourcingService.php
+- backend/app/Http/Controllers/Sourcing/SourcingController.php
+- backend/routes/domain-api.php, v1/sourcing
+- backend/database/migrations/2026_11_26_000015_create_sourcing_material_traceability.php
+- docs/procurement/supplier-sourcing-material-traceability.md
+
+The current service implements supplier creation/approval, PO create/submit/decide/send, goods receipt and inspected receipt-line materialization. It does not implement methods for creating/issuing/closing sourcing events, issuing RFQs/RFPs, capturing supplier quotes, evaluating comparative bids, recording an award or managing supplier-quote review. The sourcing_events and supplier_quotes tables exist, but the service/controller/route inventory does not expose these lifecycle operations.
+
+The WP-07 design document describes the full supplier qualification → requisition → RFQ/tender/quote → technical/commercial evaluation → award → PO → receipt → QC → AP/3-way-match lifecycle and explicitly states that operational implementation follows in vertical slices. The current implementation should therefore be treated as the supplier/PO/receipt foundation, not a complete sourcing-to-pay workflow.
+
+**Remaining implementation**
+- [ ] Implement versioned sourcing event create/submit/issue/close lifecycle, invitation/response windows and allowed supplier/category scope.
+- [ ] Implement supplier quote submission and controlled revisions, source-document evidence, price/lead-time/validity/incoterm data and independent review.
+- [ ] Implement technical compliance and commercial comparison as separate typed evaluation results, preserving evaluator inputs and conflicts of interest.
+- [ ] Implement award recommendation/decision with requester/buyer/evaluator/approver segregation and a reasoned, immutable decision record.
+- [ ] When purchase_orders.sourcing_event_id is supplied, validate the event status and selected approved supplier quote/award; preserve an explicit policy path for legitimate direct purchases and emergency exceptions.
+- [ ] Build the Sourcing UI: supplier qualification queues, RFQ workspace, quote comparison, award approvals, PO schedule/change orders and receipt exceptions.
+- [ ] Add PostgreSQL feature tests from supplier discovery through quote/award/PO, including expiry, conflict, supplier suspension and tenant/site scope.
+
+### 19.2 Purchase-order rejection and dispatch evidence are not represented accurately
+
+**Finding A — reject versus cancel:** decidePurchaseOrder(..., approve: false, ...) changes the PO status to CANCELLED, while also populating approved_by and approved_at. The schema has no distinct REJECTED decision status or decision actor/reason fields. A rejected submission is therefore represented as a cancellation and an approval-named event, reducing audit clarity.
+
+**Finding B — sent event attribution:** markPurchaseOrderSent() accepts only tenant and order IDs. The controller does not pass the authenticated actor. The PO schema has no sent_by, sent_at, external transmission reference or supplier acknowledgement state. The method changes status to SENT without proving who dispatched which approved revision or whether the supplier received/acknowledged it.
+
+**Required implementation**
+- [ ] Separate rejection from post-approval cancellation in the state model and preserve decision, reason, actor and timestamp.
+- [ ] Add a versioned PO dispatch event with authenticated sender, exact approved PO revision/hash, transmission channel/provider reference, attempted/sent timestamp and supplier acknowledgement/exception.
+- [ ] Make resend/retry idempotent and prevent dispatch of an unapproved or superseded revision.
+- [ ] Test reject, cancel, dispatch retry, amendment after approval and supplier acknowledgement.
+
+### 19.3 Goods-receipt status and non-inventory service receipt are incomplete
+
+**Finding A — receipt header lifecycle:** recordGoodsReceipt() creates a goods_receipts row in INSPECTION_PENDING. materializeInspectedReceiptLine() creates a lot and updates receipt-line quantities and PO-line accepted quantities, but does not update the corresponding goods-receipt header to ACCEPTED, PART_ACCEPTED or REJECTED after its lines are inspected/materialized. The table includes those terminal/aggregate states, but the service path does not finish the header lifecycle.
+
+**Finding B — service/subcontract receipt:** PO line schema and controller accept SERVICE and SUBCONTRACT_PROCESS material types. materializeInspectedReceiptLine() explicitly rejects those types because they do not become inventory material lots. The inspected SourcingService has no separate service-performance/quantity acceptance method to complete those receipt lines, update accepted quantities or close a service/subcontract PO.
+
+**Finding C — legal-entity/site binding:** PO stores a legal_entity_id; goods receipt accepts any tenant-scoped destination inventory location of type QUARANTINE. It does not resolve the location's operational node/site and verify that it is authorized for the PO legal entity/delivery site. Tenant isolation alone is not sufficient to enforce the procurement destination and custody boundary.
+
+**Required implementation**
+- [ ] Derive receipt header status transactionally from every receipt line's accepted/rejected/held quantities and inspection state; support partial line receipts and multi-line receipts.
+- [ ] Add separate non-inventory acceptance for service/subcontract milestones, work evidence, measured quantity, quality/service approval, contract deliverable and AP handoff.
+- [ ] Validate destination site/operational node/legal entity against the PO and supplier delivery scope, allowing cross-site exceptions only through an approved transfer/authorization model.
+- [ ] Add receipt code/request idempotency with payload fingerprint; identical retries return the original receipt, conflicting retries are rejected.
+- [ ] Add tests for mixed material/service POs, partial accepted/rejected quantities, multiple receipt events, closed PO, cancelled receipt, cross-site destination and duplicate receipt retry.
+
+### 19.4 Supplier and PO governance evidence is reference-only and needs source linkage
+
+**Finding:** supplier approval requires two non-empty reference strings and a reviewer different from the supplier creator. The supplier row stores both references, but the inspected approval path does not bind them to verified document assets, document checksums, evidence type, supplier site/category scope, validity period or expiry/review date. It sets both due-diligence and quality status to APPROVED in one operation.
+
+This is a useful initial gate, but the richer WP-07 supplier design requires separate due-diligence, technical/quality, site/process, legal and financial evidence with independent owners and expiry. A reference string is not itself evidence verification.
+
+**Required implementation**
+- [ ] Link each approval assertion to tenant-scoped document assets and controlled source metadata/hash.
+- [ ] Separate due diligence, technical/quality, legal/site/HSE and financial approval tracks where required by supplier risk/category.
+- [ ] Scope qualification to supplier site, material/process family, customer/style restriction, quantity and effective dates.
+- [ ] Add expiry, suspension, conditional approval, trial quantity and periodic requalification workflows.
+- [ ] Block new PO/award when the relevant qualification is expired, suspended or outside the approved supply scope.
+
+### 19.5 Integration outbox has state transitions but lacks complete delivery runtime and recovery
+
+**Verified source**
+- backend/app/Services/Integration/IntegrationOutboxService.php
+- backend/app/Services/Integration/DocumentIntegrationService.php
+- backend/database/migrations/2026_11_26_000021_create_documents_integrations_and_agent_controls.php
+- backend/config/queue.php
+- backend/.env.example
+- backend/routes/domain-api.php
+
+IntegrationOutboxService implements claimBatch() with FOR UPDATE SKIP LOCKED, markDelivered() and markFailed() with exponential backoff/dead-letter transition. integration_endpoint_registry and integration_outbox_events are tenant-RLS tables. These are real foundations. The inspected source tree has no outbox consumer Job/Command/Listener/worker, and the API route inventory has no integration endpoint/connection administration path to configure and activate connectors. The default application queue is sync.
+
+**Remaining implementation**
+- [ ] Implement endpoint/connection lifecycle: tenant/entity scope, provider type, event allow-list, secret-vault reference, permission scopes, environment, approval, verification, activation/suspension and credential rotation.
+- [ ] Implement typed event contracts, schema versions, payload validation and compatibility policy.
+- [ ] Implement actual outbound adapter execution, response capture, signing/authentication, rate limit, timeout and retry policy.
+- [ ] Bind outbox enqueue to the originating business transaction using the transactional outbox pattern.
+- [ ] Compare payload hash and canonical request identity on duplicate event_key; return identical event only for identical payload and reject conflicting replay.
+- [ ] Add PROCESSING lease expiry, worker identity/fencing token and safe recovery for a worker that crashes after claiming an event.
+- [ ] Add per-endpoint delivery metrics, queue lag, alert, dead-letter triage and approved replay UI/API.
+- [ ] Add inbox/webhook receipt, signature, timestamp/replay validation and consumer-side deduplication.
+- [ ] Add end-to-end tests for publish once, duplicate identical event, conflicting duplicate, timeout-after-remote-success, worker crash, lease recovery, dead letter and replay.
+
+### 19.6 Document upload records metadata but does not yet prove stored-object integrity or complete extraction/import
+
+**Finding A — metadata registration:** registerDocument() validates that a submitted SHA-256 string has the right shape and stores the caller-supplied object-storage reference. It does not retrieve that object, verify its byte size/hash or set checksum_verified_at. The upload path computes the local uploaded-file hash, but it also does not read the stored object back and verify the stored bytes.
+
+**Finding B — failed metadata write:** storeUploadedFile() writes the object first and then inserts the document row. If the metadata insert fails, there is no compensating object cleanup/reconciliation path; orphan private objects can remain.
+
+**Finding C — extraction execution:** beginExtraction() inserts a QUEUED extraction run. There is no extraction worker/provider invocation in the inspected source tree. stageExtractionResult() accepts result payload from an authorized API principal, but does not record a distinct provider worker identity or provider execution reference. reviewExtraction() can set APPROVED_FOR_IMPORT, but the inspected code has no approved-values import adapter that turns those values into a domain record through a typed domain command.
+
+**Required implementation**
+- [ ] Verify existence, byte size, media identity and SHA-256 by reading the saved object from the configured private disk before setting checksum_verified_at.
+- [ ] Store a canonical storage-object version/reference and immutable document metadata snapshot; detect object replacement or deletion.
+- [ ] Add compensating deletion/orphan reconciliation when upload succeeds but metadata persistence fails.
+- [ ] Use malware scanning, content disarm/reconstruction where applicable and quarantined file state before normal retrieval/extraction.
+- [ ] Add an authenticated extraction worker identity, job claim/retry/lease state, provider/model/version/correlation, input hash, output hash and reproducible source locations.
+- [ ] Validate extraction fields against a versioned profile and proposed target-domain schema; reject unknown/low-confidence/malformed values.
+- [ ] Implement human-approved import via the appropriate domain service and persist source-document-to-imported-record lineage; approval alone must not imply that a record was imported.
+- [ ] Test modified bytes, missing object, orphan upload, unsupported content, malware result, duplicated extraction run, stale worker result, conflicting provider result and approved import replay.
+
+### 19.7 Device scan resolution is intentionally read-only, but device identity and event integrity remain to be built
+
+**Verified behavior:** DeviceScanResolutionService::resolve() performs tenant-scoped lookups for roll, trim, cutting bundle, finished-goods lot, customer order and shipment identifiers. It marks a scan RESOLVED only when exactly one candidate exists, AMBIGUOUS for multiple matches and REJECTED when no match exists. The service explicitly performs no inventory or production action. This is a safe identifier-resolution foundation.
+
+**Remaining implementation**
+- [ ] Create a registered device identity and tenant/site/work-centre binding; do not treat the client-supplied device_reference as authentication.
+- [ ] Authenticate and authorize device/service credentials separately from a normal human bearer token where applicable.
+- [ ] Validate device time skew, clock source, offline sequence and replay window; store raw signed envelope and normalized time.
+- [ ] Add payload fingerprint conflict detection for duplicated device_scan_events.event_key.
+- [ ] Implement a separate explicit domain command after resolution, with user/device authority, resource state checks and inventory/production idempotency. Resolution alone must never mutate business state.
+- [ ] Build the offline queue, reconciliation/exception UI, revoked-device handling, duplicate scan and out-of-order replay tests.
+
+---
+
+## 20. Sourcing/integration implementation order
+
+1. Complete RFQ/quote/evaluation/award workflow and connect it to authorized PO creation.
+2. Add distinct PO rejection/cancellation and auditable dispatch/acknowledgement.
+3. Complete goods-receipt header state, service/subcontract acceptance and entity/site destination validation.
+4. Bind supplier qualification evidence to verified documents and scoped expiry.
+5. Build outbox endpoint administration, actual adapter workers, lease recovery and payload-aware idempotency.
+6. Complete private object hash verification, orphan cleanup, extraction worker and approved domain-import pipeline.
+7. Implement registered/authenticated device identity while preserving read-only scan resolution until an explicit domain command is authorized.
+8. Add sourcing and integration PostgreSQL/API/E2E tests and update the WP-07/WP-15 operator UI.
