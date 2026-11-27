@@ -82,6 +82,8 @@ The numbered design packages WP-00 through WP-16 have been prepared and internal
 - [WP-01 Requirements traceability](docs/requirements/requirements-traceability.md)
 - [WP-02 Ethiopia legal-source register and holds](docs/localization/ethiopia-legal-regulatory-register.md)
 - [WP-03 Tenant, organisation and identity architecture](docs/architecture/tenant-organization-identity.md)
+- [WP-03 Enterprise Foundation Engineering LLD](docs/architecture/wp03-enterprise-foundation-engineering-lld.md)
+- [WP-03 / WP-14 Ethiopia organogram and payroll localization notes](docs/localization/wp03-ethiopia-organogram-payroll-localization-notes.md)
 - [WP-04 Initiative, market insight and merchandising](docs/product/initiative-merchandising-range-planning.md)
 - [WP-05 PLM, design studio and product development](docs/product/plm-design-studio-product-development.md)
 - [WP-06 Industrial engineering and capacity](docs/engineering/industrial-engineering-capacity-standard.md)
