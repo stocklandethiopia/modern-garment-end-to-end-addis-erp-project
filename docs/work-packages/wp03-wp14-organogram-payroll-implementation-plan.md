@@ -313,7 +313,7 @@ Events carry schema version, tenant, legal entity, aggregate ID, occurred-at, ef
 | WP-15 agent governance | Scoped read tools, proposals, approval boundary, audit and evaluation |
 | WP-16 release | E2E, security, performance, recovery, UAT, installer, operational and legal acceptance |
 
-The implementation sequence is: finish WP-03 active identity/tenant requirements → deliver organogram/position/DoA as the WP-03 organization authority increment → complete WP-03 acceptance/handover → continue WP-04 through WP-13 in fixed order → execute WP-14 HR/payroll build → add WP-15 agent integration in its numbered package → prove cross-domain release at WP-16. The WP-14 design and isolated payroll calculation may be prepared earlier, but no production payroll dependency may skip WP-03 or WP-02.
+The implementation sequence is: finish WP-03 active identity/tenant requirements → deliver and accept the reusable organogram/position/DoA foundation → complete WP-03 acceptance/handover → deliver WP-04 through WP-13 in their respective numbered packages, with each domain integrating the DoA contract when reached → execute WP-14 employee/payroll build → execute WP-15 agent integration in WP-15 → prove cross-domain release at WP-16. WP-14 design and isolated, non-activating calculation research may be prepared earlier, but no production payroll dependency may skip WP-02 legal review, WP-03 organization authority or the intervening package sequence.
 
 ## 7. Global acceptance and quality gates
 
