@@ -1801,3 +1801,135 @@ This correctly prevents a technical pack from being treated as fully ready while
 7. Execute a cross-domain production-intent journey using the exact release candidate SHA; preserve the complete evidence manifest.
 
 No WP-05/WP-07/WP-11 runtime source or database migration has been modified by this audit section. It records the verified state-machine defect and the required forward implementation path.
+
+
+---
+
+## 23. WP-04 merchandising, forecast, OTB and commercial pricing integration audit
+
+### 23.1 Current WP-04 source includes meaningful planning and governance
+
+The current canonical source exposes initiative, evidence policy, market insight, brand strategy, season/collection, range, assortment, forecast, OTB, price list, promotion and account-term APIs.
+
+Useful controls already present:
+- initiative stage decisions and owner/approver separation;
+- evidence policies versioned by initiative type, stage and market, with age/confidence/source-reliability/geography/segment/sample-denominator requirements;
+- per-initiative evidence sufficiency evaluation rather than a misleading tenant-wide percentage;
+- market insight source-event idempotency with payload SHA-256, advisory lock, conflicting payload rejection and duplicate receipt audit;
+- frozen range-plan dependency for product briefs;
+- OTB policies with effective dates, formula version, consistent budget/valuation basis, commitment and receipt inclusion rules, and non-overlapping active policy periods;
+- PostgreSQL NUMERIC OTB calculation avoiding binary floating-point arithmetic;
+- OTB scenarios explicitly labelled non-posting planning simulations which do not create purchase orders or accounting entries;
+- effective-dated price lists, price floors, independent publication and overlap checks by legal entity/channel/market/currency/brand/account;
+- promotions restricted to a published price list, explicit positive eligibility scope, independent approval and no-stack overlap checks;
+- assortment account terms with scoped review.
+
+These controls should be preserved as WP-04 is connected to real procurement, inventory, commerce and finance records.
+
+### 23.2 Forecast publication accepts supplied forecast rows; no statistical forecast execution pipeline is present in the inspected source
+
+**Finding:** DemandPlanningController.publishRun() accepts forecast rows from the caller, accepts a method value of MANUAL_CONSENSUS, STATISTICAL_BASELINE or EXTERNAL_MODEL_IMPORT, accepts an optional model_version, and persists the forecast run immediately with status PUBLISHED. The inspected delivery tree has no demand-forecast model service, feature pipeline, model worker, statistical baseline implementation or external-model ingestion adapter.
+
+This is a valid manual forecast publication/import foundation. It is not evidence that a statistical forecast was computed or an external model ran simply because the method string is supplied.
+
+**Source**
+- backend/app/Http/Controllers/Merchandising/DemandPlanningController.php, publishRun(), runs() and showRun().
+- backend/database/migrations/2026_11_22_000005_create_brand_range_assortment_planning_tables.php, demand forecast run and row tables.
+- The inspected service tree has no separate forecast computation service.
+
+**Required implementation**
+- [ ] Give each forecast method a method-specific source path: manual consensus, deterministic statistical baseline and external-model import.
+- [ ] For MANUAL_CONSENSUS, retain contributor inputs, consensus method, reviewer decision, assumptions and approval identity.
+- [ ] For STATISTICAL_BASELINE, implement a repeatable computation service/worker with data cutoff, grain, feature/source snapshot, missing-data and stockout treatment, seasonality, model/formula version, run parameters and output hash.
+- [ ] For EXTERNAL_MODEL_IMPORT, record provider/model identity, model artifact/version, source request/reference, signed or retained input/output artifact, import mapping, validation and reviewer.
+- [ ] Distinguish DRAFT, GENERATED/IMPORTED, REVIEWED and PUBLISHED states where the selected method requires review; do not label a client-supplied forecast as a computed model result.
+- [ ] Store immutable forecast input snapshot and result checksum, source cutoff and generation correlation.
+- [ ] Add tests for duplicate dimension/time-bucket rows, missing source data, duplicate run request, altered model output, invalid currency, confidence bounds, stockout distortion and approved reforecast/supersession.
+- [ ] Connect actual sales, stockout, returns, channel and inventory observations from WP-12/13 for rolling forecast evaluation.
+
+### 23.3 OTB period and scenario calculations are not sourced from live procurement/inventory/forecast actuals
+
+**Finding:** createPeriod() requires the user to supply beginning inventory, planned sales, planned markdowns, planned ending inventory, on-order purchases, commitments and actual receipts as numeric request fields. It calculates and persists a DRAFT period using these supplied values.
+
+simulateScenario() accepts optional range_plan_id and forecast_run_id; it verifies the IDs are tenant-scoped and frozen/published, then stores them on the scenario. The arithmetic itself begins with the period values and permits request assumptions to override those values. It does not query the referenced range plan to derive the range mix, query forecast rows to derive planned sales, or query PO/open commitment, inventory-ledger and receipt rows to verify on-order purchases, commitments or actual receipts.
+
+The scenario is explicitly a planning-only simulation and its approval explicitly does not create a purchase order or accounting entry. This is a useful safety boundary. The integration work is to make the planning numbers traceable and reproducible, not to convert approval into an automatic PO.
+
+**Source**
+- backend/app/Http/Controllers/Merchandising/OtbPlanningController.php, createPeriod(), simulateScenario(), approveScenario() and calculate().
+- calculate() uses exact PostgreSQL NUMERIC arithmetic for the stored decimal inputs.
+- backend/app/Services/Merchandising/MerchandisingDashboardService.php, unavailableKpis() identifies OTB utilization as unavailable until authoritative procurement and finance data are connected.
+
+**Required implementation**
+- [ ] Add a source-backed OTB period builder which resolves the approved legal-entity policy and reads opening inventory valuation, frozen range demand, forecast version, open approved PO commitments, actual receipts, approved markdown assumptions and the policy-defined valuation basis.
+- [ ] Persist each source record/version and its as-of timestamp, query cutoff and source hash in an immutable OTB input snapshot.
+- [ ] Where a user overrides a derived value, record the derived baseline, override, reason, evidence, author and independent approver separately; do not overwrite source facts.
+- [ ] Validate that the supplied range plan and forecast run actually match the OTB period's legal entity, brand/season/channel/market and horizon; reject tenant-only but commercially unrelated references.
+- [ ] Recompute a scenario from its frozen inputs and formula version; store the exact policy version and calculation hash.
+- [ ] Keep the distinction between an approved planning scenario and a purchase commitment. Only WP-07's PO workflow and its approvals can create purchasing obligations; WP-13 owns the financial posting.
+- [ ] Add regression tests for stale forecast, changed PO receipt, duplicated on-order commitment, inventory valuation change, policy change, manual override and cross-entity/mismatched horizon.
+
+### 23.4 Price lists and promotions are authorable but not yet consumed by transactional pricing
+
+**Finding:** CommercialPricingController exposes authoring and review paths for price lists, price-list lines and promotions: list/create/edit-draft/publish price list, list/create promotion, add eligibility and approve promotion. There is no inspected service method or customer-order/commerce endpoint that resolves an effective price for a product/customer/account/channel/location/date or applies an approved promotion to an order.
+
+The WP-12 customer-order creation service accepts unit_price from the caller and stores it on the customer-order line. It does not call a published price list, verify the product's current effective price, calculate promotion eligibility/stacking, apply the price floor or derive a tax profile. This leaves the WP-04 price catalogue disconnected from the WP-12 order transaction.
+
+**Source**
+- backend/app/Http/Controllers/Merchandising/CommercialPricingController.php.
+- backend/routes/api.php, product price-list and promotion routes.
+- backend/app/Services/Distribution/FinishedGoodsService.php, createCustomerOrder() consumes caller-supplied line unit_price.
+- price_lists, price_list_lines, promotions and promotion_eligibility are created/approved in WP-04; no price-resolution service is present in the inspected service tree.
+
+**Required implementation**
+- [ ] Implement a deterministic PriceResolver service keyed by legal entity, currency, brand, product/style revision, market, channel, account, location and effective timestamp.
+- [ ] Define and test precedence when a more-specific price list and a general price list both match; use immutable version selection.
+- [ ] Resolve customer eligibility, account terms, discount/promotion inclusion/exclusion, stacking order, floor and approved funding limits.
+- [ ] Resolve tax profile through the approved WP-02/WP-13 legal/tax configuration rather than trusting a caller-supplied label.
+- [ ] Make order creation call the pricing service server-side; reject client-supplied price mismatches or treat them only as a requested override requiring independent approval.
+- [ ] Store immutable price-list/version/line, promotion/version, tax rule, currency and calculation snapshot on the order line so later price changes do not rewrite history.
+- [ ] Add quote, order, wholesale, reseller, own-retail, POS, D2C and return/refund price-reconciliation tests.
+- [ ] Keep published price-list lines immutable; correction should create a new version/effective period, not alter an already-used transactional price.
+
+### 23.5 Merchandising KPI service explicitly identifies missing operational actuals
+
+MerchandisingDashboardService.unavailableKpis() correctly lists the following as unavailable in the current slice:
+- forecast bias and WAPE (requires WP-12 actual sales and stockout treatment);
+- sell-through (requires posted sales and available-for-sale inventory);
+- gross and contribution margin (requires WP-13 posted revenue and cost);
+- OTB utilization (requires WP-07 procurement and WP-13 finance actuals);
+- markdown exposure (requires posted markdown history and inventory age);
+- returns and fit feedback (requires WP-05 approved fit outcomes and WP-12 returns);
+- range-to-capacity fit (requires WP-06 validated factory capacity and WP-07 material availability).
+
+The KPI service is careful not to show fabricated performance indicators. Preserve the unavailable-state behavior until each source has been integrated and independently reconciled.
+
+**Required implementation**
+- [ ] Define a canonical KPI semantic contract for numerator/denominator, event status included, currency/valuation basis, time zone/period, source tables and as-of cutoffs.
+- [ ] Introduce data freshness/coverage status and distinguish zero activity from missing data or unavailable source.
+- [ ] Connect WP-12 posted orders/sales/returns/inventory and WP-13 posted finance/cost actuals.
+- [ ] Connect WP-06 approved capacity/SAM and WP-07 material availability to range feasibility.
+- [ ] Reconcile each derived KPI to its source transaction ledger and test late-arriving corrections/reversals.
+
+### 23.6 Market-insight source provenance requires more than a reference string
+
+**Finding:** MarketInsightController has strong payload-level deduplication, but InsightSourceController.store() accepts source_reference, a reliability score and permitted-use basis as caller-supplied metadata. It does not link the insight source to a verified retained source artifact, captured bytes, checksum, source version, collection authority or rights/expiry evidence. Market insight evidence sufficiency can qualify a source based on the supplied reliability score; it does not prove the underlying source itself was retained or authentic.
+
+**Required implementation**
+- [ ] Link source records to retained document/web capture/event artifacts with immutable ID, retrieval timestamp, content hash, source version and provenance.
+- [ ] Separate source reliability assessment from evidence authenticity and permitted-use/legal basis.
+- [ ] Retain collection method, source owner/authority, consent/licence basis, geographic and personal-data restrictions and expiry/retention.
+- [ ] Preserve source snapshots referenced by initiative decisions so historical evidence can be reproduced even after source records or policies change.
+- [ ] Add tamper, source-revocation, expiry, duplicate-event and cross-tenant provenance tests.
+
+---
+
+## 24. WP-04/WP-06 implementation sequence
+
+1. Add forecast method-specific workflows and immutable data/model provenance.
+2. Connect OTB source snapshots to frozen range, approved forecast, actual inventory, PO commitments, receipts and finance valuation.
+3. Implement server-side effective price/promotion resolution and call it from WP-12 customer-order/commerce flows.
+4. Add evidence source artifact verification and immutable initiative decision evidence snapshots.
+5. Complete operational KPI source integrations only as the WP-06/WP-07/WP-12/WP-13 ledgers become authoritative.
+6. Complete the IE capacity-slot site equality check at slot creation, plus operation quantity reservation, plan revalidation and workforce scope/overlap controls.
+7. Add cross-package PostgreSQL feature tests from initiative/range/forecast/OTB/pricing through PO/order/actual/KPI reconciliation.
