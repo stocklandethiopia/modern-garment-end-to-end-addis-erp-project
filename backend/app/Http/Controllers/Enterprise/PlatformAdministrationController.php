@@ -11,14 +11,14 @@ use Illuminate\Http\Request;
 
 class PlatformAdministrationController extends Controller
 {
-    public function context(PlatformAdministrationService $platform): JsonResponse
+    public function context(Request $request, PlatformAdministrationService $platform): JsonResponse
     {
-        return response()->json(['data' => ['roles' => $platform->currentOperatorRoles()]]);
+        return response()->json(['data' => ['roles' => $platform->currentOperatorRoles((string) $request->user()->getAuthIdentifier())]]);
     }
 
-    public function index(PlatformAdministrationService $platform): JsonResponse
+    public function index(Request $request, PlatformAdministrationService $platform): JsonResponse
     {
-        return response()->json(['data' => $platform->tenants()]);
+        return response()->json(['data' => $platform->tenants((string) $request->user()->getAuthIdentifier())]);
     }
 
     public function changeLifecycle(
@@ -32,7 +32,7 @@ class PlatformAdministrationController extends Controller
         ]);
 
         return response()->json([
-            'data' => $platform->changeTenantStatus($tenantId, $data['status'], trim($data['reason'])),
+            'data' => $platform->changeTenantStatus((string) $request->user()->getAuthIdentifier(), $tenantId, $data['status'], trim($data['reason'])),
         ]);
     }
 
@@ -55,6 +55,7 @@ class PlatformAdministrationController extends Controller
 
         return response()->json([
             'data' => $platform->setTenantEntitlements(
+                (string) $request->user()->getAuthIdentifier(),
                 $tenantId,
                 $data['plan_code'],
                 $data['status'],
