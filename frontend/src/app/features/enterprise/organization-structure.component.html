@@ -153,6 +153,9 @@
               <span class="unit-copy">
                 <strong>{{ unit.unit_name }}</strong>
                 <small>{{ unit.unit_code }} · {{ unit.unit_type.replace('_', ' ') }}</small>
+                @if (unit.parent_id) {
+                  <span class="unit-parent">Parent: {{ unitName(unit.parent_id) }}</span>
+                }
                 <span class="unit-meta">{{ unit.status }} · From {{ unit.valid_from }}</span>
               </span>
               <span class="unit-chevron" aria-hidden="true">›</span>
@@ -249,7 +252,8 @@
             <div class="empty-state compact"><strong>No positions registered</strong><p>Add job slots for the selected unit. Appointments and incumbents are handled by the authoritative People & Payroll model.</p></div>
           } @else {
             <div class="table-wrap">
-              <table>
+              <table aria-label="Job positions in the selected organizational unit">
+                <caption class="sr-only">Job positions in the selected organizational unit</caption>
                 <thead><tr><th>Position</th><th>Class</th><th>Grade</th><th>Effective</th></tr></thead>
                 <tbody>
                   @for (position of positionsInSelectedUnit(); track position.id) {
@@ -381,7 +385,8 @@
       <div class="empty-state compact"><strong>No position reporting relationships recorded</strong><p>Configure solid-line and functional reporting only after the relevant position slots exist.</p></div>
     } @else {
       <div class="table-wrap">
-        <table>
+        <table aria-label="Position reporting relationships">
+          <caption class="sr-only">Position reporting relationships</caption>
           <thead><tr><th>Position</th><th>Reports to</th><th>Type</th><th>Effective period</th></tr></thead>
           <tbody>
             @for (relation of reportingRelations(); track relation.id) {
