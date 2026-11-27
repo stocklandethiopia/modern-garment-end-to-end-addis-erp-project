@@ -82,6 +82,50 @@ class QualityInspectionReviewStateTest extends TestCase
         });
     }
 
+    public function test_capa_creation_and_nonconformance_state_change_are_committed_together(): void
+    {
+        $admin = DB::connection('pgsql_test_admin');
+        $nonconformanceId = (string) Str::uuid();
+        $admin->table('quality_nonconformances')->insert([
+            'id' => $nonconformanceId,
+            'tenant_id' => $this->tenantId,
+            'inspection_id' => $this->inspectionId,
+            'nonconformance_code' => 'NC-'.Str::upper(Str::random(8)),
+            'defect_description' => 'Test quality nonconformance requiring corrective action.',
+            'severity' => 'MEDIUM',
+            'affected_quantity' => '1.0000',
+            'containment_status' => 'REQUIRED',
+            'disposition' => 'PENDING',
+            'status' => 'OPEN',
+            'opened_by' => $this->inspectorId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $service = app(QualityControlService::class);
+
+        DB::transaction(function () use ($service, $nonconformanceId): void {
+            DB::selectOne("SELECT set_config('app.current_tenant_id', ?, true)", [$this->tenantId]);
+
+            $action = $service->createCorrectiveAction($this->tenantId, $this->inspectorId, $nonconformanceId, [
+                'action_code' => 'CAPA-'.Str::upper(Str::random(8)),
+                'action_type' => 'CORRECTIVE',
+                'action_description' => 'Correct the source process and verify effectiveness.',
+                'effectiveness_criteria' => 'No repeat defect in the defined verification period.',
+            ]);
+
+            self::assertSame($nonconformanceId, $action->nonconformance_id);
+            self::assertSame('OPEN', $action->status);
+
+            $nonconformance = DB::table('quality_nonconformances')
+                ->where('tenant_id', $this->tenantId)
+                ->where('id', $nonconformanceId)
+                ->first();
+
+            self::assertSame('CAPA_REQUIRED', $nonconformance->status);
+        });
+    }
+
     public function test_passing_inspection_can_be_submitted_then_independently_reviewed(): void
     {
         $service = app(QualityControlService::class);
