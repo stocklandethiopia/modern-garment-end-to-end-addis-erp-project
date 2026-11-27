@@ -60,6 +60,9 @@ Every pull request should run:
 
 The pipeline must fail closed for required checks. A skipped test is not a pass.
 
+
+For runner billing, manual self-hosted verification, and exact-SHA continuity, follow the [CI Runner Continuity and Exact-Head Verification standard](ci-runner-continuity.md). Delivery pull requests use the combined WP verification workflow so backend and frontend lanes are not charged twice for the same pull request.
+
 ## 6. Release and deployment
 
 - Build once and promote the same immutable image/artifact through environments.
