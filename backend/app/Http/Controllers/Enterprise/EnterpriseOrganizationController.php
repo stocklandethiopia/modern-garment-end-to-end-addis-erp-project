@@ -9,6 +9,7 @@ use App\Services\Enterprise\EnterpriseOrganizationService;
 use App\Support\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class EnterpriseOrganizationController extends Controller
@@ -157,9 +158,11 @@ class EnterpriseOrganizationController extends Controller
         TenantContext $tenantContext,
         EnterpriseOrganizationService $organization,
     ): JsonResponse {
-        $units = $organization->units($tenantContext->tenantId());
-        abort_if(
-            ! $units->getCollection()->contains('id', $unitId),
+        abort_unless(
+            DB::table('org_units')
+                ->where('tenant_id', $tenantContext->tenantId())
+                ->where('id', $unitId)
+                ->exists(),
             404,
             'Organizational unit not found.',
         );
