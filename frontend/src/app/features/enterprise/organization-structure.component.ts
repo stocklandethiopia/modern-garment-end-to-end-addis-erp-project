@@ -84,7 +84,9 @@ export class OrganizationStructureComponent {
   readonly parentUnitOptions = computed(() => {
     const byId = new Map<string, OrganizationUnit>();
     for (const unit of [...this.knownUnits(), ...this.units()]) byId.set(unit.id, unit);
-    return [...byId.values()].sort((a, b) => a.unit_code.localeCompare(b.unit_code));
+    return [...byId.values()]
+      .filter((unit) => unit.status === 'ACTIVE')
+      .sort((a, b) => a.unit_code.localeCompare(b.unit_code));
   });
 
   readonly managerPositionChoices = computed(() => this.knownPositions()
