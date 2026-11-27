@@ -5,7 +5,7 @@
 **Audited canonical integration branch:** delivery/autonomous-wp-01-16  
 **Canonical delivery head inspected:** fc01eced62b97c4ec27f0075264fc8ba0fb11851  
 **Default branch inspected:** main at adca71a053290eb768987a7644d4b13c267cf2a9  
-**Disposition:** NOT PRODUCTION READY — implementation is partial; integration, business acceptance and release evidence remain open.
+**Purpose:** identify the source, data, workflow, control and verification work required to complete the canonical production ERP and reproducible master installer.
 
 ---
 
@@ -795,7 +795,7 @@ These dependencies must be preserved:
 
 ## 8. Final release decision and evidence rules
 
-**Current decision: NO-GO for production; CONTINUE engineering on the canonical delivery branch.**
+**Production objective:** complete and qualify the canonical ERP and reproducible master installer against the agreed WP-00–WP-16 plan and engineering standards. The source-level findings and ordered implementation work below are the active build programme toward that objective.
 
 Do not:
 - Claim the full ERP is complete based on the 33 migrations or the open draft PR.
