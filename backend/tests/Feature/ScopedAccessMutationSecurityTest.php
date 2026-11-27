@@ -223,7 +223,7 @@ class ScopedAccessMutationSecurityTest extends TestCase
     {
         $migration = require database_path('migrations/2026_11_27_000034_secure_tenant_access_scope_mutations.php');
 
-        $this->expectException(\\RuntimeException::class);
+        $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Security migration 000034 is forward-only');
 
         $migration->down();
