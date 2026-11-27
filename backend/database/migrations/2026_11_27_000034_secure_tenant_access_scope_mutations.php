@@ -96,8 +96,8 @@ BEGIN
        AND target.status = 'ACTIVE'
      FOR UPDATE OF membership;
 
-    IF NOT FOUND OR target_role <> 'MEMBER' THEN
-        RAISE EXCEPTION 'An active ordinary tenant member is required.'
+    IF NOT FOUND OR target_role NOT IN ('MEMBER', 'ADMIN') THEN
+        RAISE EXCEPTION 'An active tenant member or administrator is required; owners are not scope targets.'
             USING ERRCODE = '42501';
     END IF;
 
@@ -234,8 +234,8 @@ BEGIN
        AND target.status = 'ACTIVE'
      FOR UPDATE OF membership;
 
-    IF NOT FOUND OR target_role <> 'MEMBER' THEN
-        RAISE EXCEPTION 'An active ordinary tenant member is required.'
+    IF NOT FOUND OR target_role NOT IN ('MEMBER', 'ADMIN') THEN
+        RAISE EXCEPTION 'An active tenant member or administrator is required; owners are not scope targets.'
             USING ERRCODE = '42501';
     END IF;
 
