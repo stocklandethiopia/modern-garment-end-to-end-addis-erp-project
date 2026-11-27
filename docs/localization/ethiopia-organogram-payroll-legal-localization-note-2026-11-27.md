@@ -151,12 +151,11 @@ The project's payroll source analysis notes that Article 10 of Income Tax Procla
 
 The official Federal Negarit Gazette copy is dated 18 March 2022, Year 28, No. 16. The source identifies 11% employer and 7% employee contributions under the private-organization pension scheme, subject to coverage and statutory salary rules.
 
-The project's payroll source analysis records:
-- coverage must be evaluated under the complete Article 3 scope and exclusions;
-- the law includes a worker definition tied to at least 45 days of service, subject to the actual statutory wording and applicability;
-- Article 2(7) defines pension salary as monthly salary for services during regular working hours without deduction for income tax or any other matter;
-- the employee contribution reduces employee net pay; employer contribution is an employer cost and must never be deducted from the employee;
-- Article 12 and current implementing instruments address payment/remittance obligations; due dates and operational mechanics must be confirmed before integration.
+The Gazette text distinguishes the worker definition from the scope-of-application clause. Article 2(1) defines a private-organization employee as a salaried person employed for not less than 45 days (definite or indefinite period or piece of work) and includes managerial employees. Article 3(1) states the Proclamation applies to employees of private organizations who are Ethiopian nationals, subject to the provision stated there for foreign nationals of Ethiopian origin and international agreements. Article 3(2) addresses employees already covered by provident funds or similarly named schemes; Article 3(3) permits certain religious/political-organization and informal-sector employees to be covered upon consent; Article 3(4) lists exclusions including domestic workers, employees of governmental international organizations and foreign diplomatic missions, and sole owners' managers/employees or sole owners. Exact facts, the complete Amharic Gazette and any applicable agreement/directive must be reviewed before coverage is determined.
+
+Article 2(7) defines pension salary as monthly salary for services rendered during regular working hours without deductions for income tax or any other matter. The official text's contribution collection/remittance rules include monthly payment and a 30-day period from the last day of the salary-payment month under Article 12(1)–(2); other subsections address the authorized collection bodies and further compliance. Confirm the current administrative route and implementing directives before integrating remittance.
+
+The project payroll source analysis identifies employer 11% and employee 7% contribution rates. The exact rate, applicable worker class, salary basis and any transitional or implementing rules must be retained in the frozen legal rule with the clause and source hash. The employee contribution affects employee net pay; employer contribution is an employer cost and must never be deducted from employee earnings.
 
 Directives 1085/2025, 1086/2025 and 1087/2025 have been identified in the project source register as implementation, arrears-enforcement and contribution collection/transfer/supervision items. Their complete texts, exact clauses, current status and applicability must be downloaded, hashed and independently reviewed. The pension salary base is not automatically the same thing as the PAYE base.
 
@@ -258,7 +257,7 @@ Before changing either flag, all of the following must be evidenced:
 - MoJ — Public Procurement Proclamation No. 1333/2024: https://justice.gov.et/en/law/the-federal-public-procurement-and-property-administration-proclamation/
 - Ministry of Revenues — Proclamation No. 1395/2025 Gazette PDF: https://www.mor.gov.et/DomesticProclamations/1786970364007-582645424-pdf-%C3%A1%C2%8A%C2%A0%C3%A1%C2%8B%C2%8B%C3%A1%C2%8C%C2%85-%C3%A1%C2%89%C2%81%C3%A1%C2%8C%C2%A5-%C3%A1%C2%88%C2%AD-1395-2017.pdf
 - MoJ — Regulation No. 597/2026 Gazette PDF: https://justice.gov.et/wp-content/uploads/2026/11/%E1%8C%98%E1%88%9B%E1%8C%AB%E1%88%AC-%E1%8C%A5%E1%88%AD-597-2019.pdf
-- HOPR — Pension Proclamation No. 1268/2022 Gazette PDF: https://www.hopr.gov.et/admin/Files/2026/2/25/fc53f560-b228-4314-b372-da2b26ef4b53_Upploads_04012023090127_%E1%8B%A8%E1%8C%8D%E1%88%8D%20%E1%8B%B5%E1%88%AD%E1%8C%85%E1%89%B5%20%E1%88%A0%E1%88%AB%E1%89%B0%E1%8A%9E%E1%89%BD%20%E1%8C%A1%E1%88%AB%E1%89%B3%20%E1%8A%A0%E1%8B%8B%E1%8C%85%20%E1%89%81%E1%8C%A5%E1%122%E1%88%AD%201268%20%281%29.pdf
+- HOPR — Pension Proclamation No. 1268/2022 Gazette PDF: https://www.hopr.gov.et/admin/Files/2026/2/25/fc53f560-b228-4314-b372-da2b26ef4b53_Upploads_04012023090127_%E1%8B%A8%E1%8C%8D%E1%88%8D%20%E1%8B%B5%E1%88%AD%E1%8C%85%E1%89%B5%20%E1%88%A0%E1%88%AB%E1%89%B0%E1%8A%9E%E1%89%BD%20%E1%8C%A1%E1%88%A8%E1%89%B3%20%E1%8A%A0%E1%8B%8B%E1%8C%85%20%E1%89%81%E1%8C%A5%E1%12268.pdf
 - MoJ — Labour Proclamation No. 1156/2019: https://justice.gov.et/en/law/labour-proclamation/
 - MoJ — Personal Data Protection Proclamation No. 1321/2024: https://justice.gov.et/en/law/personal-data-protection-proclamation/
 - Ministry of Trade and Regional Integration — Business Licensing Proclamation source in project legal register: https://www.motri.gov.et/sites/default/files/resource/proclamation-no-980_2016_0.pdf
