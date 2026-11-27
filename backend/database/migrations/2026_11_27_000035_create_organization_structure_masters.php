@@ -9,6 +9,7 @@ return new class extends Migration
 {
     private array $tables = [
         'position_reporting_relations',
+        'org_unit_manager_assignments',
         'job_positions',
         'org_units',
     ];
@@ -83,6 +84,29 @@ CREATE TABLE public.job_positions (
 CREATE INDEX job_positions_org_unit_idx ON public.job_positions (tenant_id, org_unit_id, status, position_code);
 CREATE INDEX job_positions_validity_idx ON public.job_positions (tenant_id, valid_from, valid_to, status);
 
+
+CREATE TABLE public.org_unit_manager_assignments (
+    id uuid PRIMARY KEY,
+    tenant_id uuid NOT NULL REFERENCES public.tenants(id) ON DELETE RESTRICT,
+    org_unit_id uuid NOT NULL,
+    manager_position_id uuid NOT NULL,
+    valid_from date NOT NULL,
+    valid_to date,
+    reason varchar(1000) NOT NULL,
+    created_by uuid NOT NULL REFERENCES public.users(id) ON DELETE RESTRICT,
+    created_at timestamptz NOT NULL,
+    updated_at timestamptz NOT NULL,
+    UNIQUE (tenant_id, id),
+    UNIQUE (tenant_id, org_unit_id, manager_position_id, valid_from),
+    FOREIGN KEY (tenant_id, org_unit_id)
+        REFERENCES public.org_units(tenant_id, id) ON DELETE RESTRICT,
+    FOREIGN KEY (tenant_id, manager_position_id)
+        REFERENCES public.job_positions(tenant_id, id) ON DELETE RESTRICT,
+    CHECK (valid_to IS NULL OR valid_to >= valid_from)
+);
+CREATE INDEX org_unit_manager_assignments_lookup_idx
+    ON public.org_unit_manager_assignments (tenant_id, org_unit_id, valid_from, valid_to);
+
 CREATE TABLE public.position_reporting_relations (
     id uuid PRIMARY KEY,
     tenant_id uuid NOT NULL REFERENCES public.tenants(id) ON DELETE RESTRICT,
@@ -113,7 +137,7 @@ DO $$
 DECLARE
     table_name text;
 BEGIN
-    FOREACH table_name IN ARRAY ARRAY['org_units','job_positions','position_reporting_relations'] LOOP
+    FOREACH table_name IN ARRAY ARRAY['org_units','job_positions','org_unit_manager_assignments','position_reporting_relations'] LOOP
         EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', table_name);
         EXECUTE format('ALTER TABLE public.%I FORCE ROW LEVEL SECURITY', table_name);
         EXECUTE format(
@@ -125,7 +149,7 @@ BEGIN
 END $$;
 
 GRANT SELECT, INSERT, UPDATE ON public.org_units, public.job_positions,
-    public.position_reporting_relations TO app_runtime;
+    public.org_unit_manager_assignments, public.position_reporting_relations TO app_runtime;
 SQL);
     }
 
