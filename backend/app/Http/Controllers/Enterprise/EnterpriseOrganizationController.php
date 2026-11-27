@@ -38,10 +38,24 @@ class EnterpriseOrganizationController extends Controller
     ];
 
     public function units(
+        Request $request,
         TenantContext $tenantContext,
         EnterpriseOrganizationService $organization,
     ): JsonResponse {
-        return response()->json($organization->units($tenantContext->tenantId()));
+        $tenantId = $tenantContext->tenantId();
+        $filters = $request->validate([
+            'page' => ['sometimes', 'integer', 'min:1'],
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'q' => ['sometimes', 'string', 'max:120'],
+            'unit_type' => ['sometimes', Rule::in(self::UNIT_TYPES)],
+            'status' => ['sometimes', Rule::in(['ACTIVE', 'INACTIVE'])],
+            'legal_entity_id' => ['sometimes', 'uuid'],
+            'business_site_id' => ['sometimes', 'uuid'],
+            'parent_id' => ['sometimes', 'uuid'],
+            'valid_on' => ['sometimes', 'date_format:Y-m-d'],
+        ]);
+
+        return response()->json($organization->units($tenantId, $filters));
     }
 
     public function storeUnit(
@@ -99,10 +113,28 @@ class EnterpriseOrganizationController extends Controller
     }
 
     public function positions(
+        Request $request,
         TenantContext $tenantContext,
         EnterpriseOrganizationService $organization,
     ): JsonResponse {
-        return response()->json($organization->positions($tenantContext->tenantId()));
+        $tenantId = $tenantContext->tenantId();
+        $filters = $request->validate([
+            'page' => ['sometimes', 'integer', 'min:1'],
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'q' => ['sometimes', 'string', 'max:120'],
+            'org_unit_id' => [
+                'sometimes',
+                'uuid',
+                Rule::exists('org_units', 'id')->where(
+                    fn ($query) => $query->where('tenant_id', $tenantId),
+                ),
+            ],
+            'status' => ['sometimes', Rule::in(['ACTIVE', 'INACTIVE'])],
+            'position_class' => ['sometimes', Rule::in(self::POSITION_CLASSES)],
+            'valid_on' => ['sometimes', 'date_format:Y-m-d'],
+        ]);
+
+        return response()->json($organization->positions($tenantId, $filters));
     }
 
     public function storePosition(
@@ -154,6 +186,7 @@ class EnterpriseOrganizationController extends Controller
     }
 
     public function managerAssignments(
+        Request $request,
         string $unitId,
         TenantContext $tenantContext,
         EnterpriseOrganizationService $organization,
@@ -166,8 +199,14 @@ class EnterpriseOrganizationController extends Controller
             404,
             'Organizational unit not found.',
         );
+        $filters = $request->validate([
+            'page' => ['sometimes', 'integer', 'min:1'],
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'q' => ['sometimes', 'string', 'max:120'],
+            'valid_on' => ['sometimes', 'date_format:Y-m-d'],
+        ]);
 
-        return response()->json($organization->managerAssignments($tenantContext->tenantId(), $unitId));
+        return response()->json($organization->managerAssignments($tenantContext->tenantId(), $unitId, $filters));
     }
 
     public function assignUnitManager(
@@ -203,10 +242,27 @@ class EnterpriseOrganizationController extends Controller
     }
 
     public function reportingRelations(
+        Request $request,
         TenantContext $tenantContext,
         EnterpriseOrganizationService $organization,
     ): JsonResponse {
-        return response()->json($organization->reportingRelations($tenantContext->tenantId()));
+        $tenantId = $tenantContext->tenantId();
+        $filters = $request->validate([
+            'page' => ['sometimes', 'integer', 'min:1'],
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'q' => ['sometimes', 'string', 'max:120'],
+            'reporting_type' => ['sometimes', Rule::in(['SOLID_LINE', 'FUNCTIONAL'])],
+            'position_id' => [
+                'sometimes',
+                'uuid',
+                Rule::exists('job_positions', 'id')->where(
+                    fn ($query) => $query->where('tenant_id', $tenantId),
+                ),
+            ],
+            'valid_on' => ['sometimes', 'date_format:Y-m-d'],
+        ]);
+
+        return response()->json($organization->reportingRelations($tenantId, $filters));
     }
 
     public function storeReportingRelation(
