@@ -196,6 +196,16 @@ class QualityInspectionReviewStateTest extends TestCase
             self::assertNull($submitted->reviewed_by);
             self::assertNull($submitted->reviewed_at);
 
+            $releaseEligibleBeforeReview = DB::table('quality_inspections')
+                ->where('tenant_id', $this->tenantId)
+                ->where('id', $this->inspectionId)
+                ->whereIn('result_status', ['PASS', 'PASS_WITH_DEVIATION'])
+                ->whereNotNull('reviewed_by')
+                ->whereNotNull('reviewed_at')
+                ->exists();
+
+            self::assertFalse($releaseEligibleBeforeReview);
+
             try {
                 $service->reviewInspection($this->tenantId, $this->inspectorId, $this->inspectionId, [
                     'decision' => 'ACCEPT',
@@ -215,6 +225,16 @@ class QualityInspectionReviewStateTest extends TestCase
             self::assertSame('PASS', $reviewed->submitted_result_status);
             self::assertSame($this->reviewerId, $reviewed->reviewed_by);
             self::assertNotNull($reviewed->reviewed_at);
+
+            $releaseEligibleAfterReview = DB::table('quality_inspections')
+                ->where('tenant_id', $this->tenantId)
+                ->where('id', $this->inspectionId)
+                ->whereIn('result_status', ['PASS', 'PASS_WITH_DEVIATION'])
+                ->whereNotNull('reviewed_by')
+                ->whereNotNull('reviewed_at')
+                ->exists();
+
+            self::assertTrue($releaseEligibleAfterReview);
         });
     }
 }
