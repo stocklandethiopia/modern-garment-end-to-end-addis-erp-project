@@ -2575,3 +2575,94 @@ Document registration checks the shape of a supplied SHA-256, not actual bytes. 
 7. Add outbox lease/fencing/reclaim behavior and payload-aware idempotency for outbox/device scans.
 8. Implement extraction workers, verified private-object integrity and approved typed domain import.
 9. Add WP-11/WP-15 PostgreSQL, API, retry/concurrency and browser workflow test suites; record exact tested SHA.
+
+
+---
+
+## 32. WP-08 / WP-10 / WP-11 — Route effectiveness, quality release authority and operation-state integrity
+
+### 32.1 Approved route versions are not resolved against effective dates
+
+**Finding:** process_route_versions stores effective_from and effective_to, allows approved/superseded states and checks only that the end date is not before the start date. decideRoute() approves a submitted route without checking whether its effective period overlaps another approved route for the same tenant/style revision. createProductionOrder() selects a route by caller-supplied ID, matching style/revision and status APPROVED; it does not compare the route's effective period to the production order's planned start date. There is no inspected service method that transitions an older route to SUPERSEDED.
+
+**Effect:** two approved route versions can overlap for the same style revision, or an order planned before/after a route's valid interval can use that route. Route identity is pinned to the order, but route applicability to the execution date is not proven.
+
+**Source**
+- backend/database/migrations/2026_11_26_000016_create_route_and_manufacturing_execution.php, process_route_versions.effective_from/effective_to, status constraint and unique version key.
+- backend/app/Services/Manufacturing/ManufacturingExecutionService.php, createRouteVersion(), decideRoute() and createProductionOrder().
+- backend/app/Http/Controllers/Manufacturing/ManufacturingController.php, route and order request contracts.
+
+**Required implementation**
+- [ ] Require a non-null effective-from date for routes that can be used for bulk production.
+- [ ] Define date interval semantics and enforce non-overlap for APPROVED route versions for the same tenant, style revision and applicable site/process scope.
+- [ ] Resolve and pin the route version from the production order planned start date and applicable style/site/customer/process dimensions; do not accept an arbitrary route ID as proof of applicability.
+- [ ] Implement an authorized supersession lifecycle with reason, actor, timestamp and the successor route version; preserve historical order pins.
+- [ ] Revalidate the pinned route before order release and actual start; a later route change must not rewrite a released order's route snapshot.
+- [ ] Add tests for overlapping approval, gap periods, null effective date, future-dated order, superseded route, backdated correction and historical order reproducibility.
+
+### 32.2 A historical quality RELEASE can override a later HOLD/REJECT during route progression
+
+**Finding:** QualityControlService.decideOperationRelease() appends a new quality_release_decisions row for RELEASE, RELEASE_WITH_DEVIATION, HOLD, REJECT or REINSPECT. The schema is append-only for the application role and has an index by subject/date, but no current-decision pointer or unique effective-decision version. In ManufacturingExecutionService.recordOperationEvent() a predecessor quality gate is considered released when a query finds any decision for that operation with decision RELEASE or RELEASE_WITH_DEVIATION. It does not select the latest decision or require the latest decision to remain a release.
+
+**Effect:** if a quality release is recorded and a later decision puts the operation on HOLD, REJECT or REINSPECT, the old positive row still satisfies the predecessor gate. A downstream operation can start even though the later quality disposition has withdrawn permission to proceed.
+
+**Source**
+- backend/app/Services/Quality/QualityControlService.php, decideOperationRelease() around lines 405–450.
+- backend/database/migrations/2026_11_26_000017_create_quality_capa_and_release_gates.php, quality_release_decisions and quality_release_subject_idx.
+- backend/app/Services/Manufacturing/ManufacturingExecutionService.php, recordOperationEvent() START predecessor quality-gate check around lines 286–302.
+
+**Required implementation**
+- [ ] Define one effective quality-release state per subject and release stage, versioned over the decision history.
+- [ ] When evaluating a gate, resolve the latest effective decision under a row lock or immutable current-decision pointer; proceed only if that decision is RELEASE or RELEASE_WITH_DEVIATION and all conditions remain satisfied.
+- [ ] Make HOLD/REJECT/REINSPECT supersede the previous release immediately, including queued downstream work where operationally possible.
+- [ ] Require downstream release to revalidate the current linked inspection, open NCR/CAPA state, deviation conditions and exact operation/route revision.
+- [ ] Add tests for RELEASE → HOLD, RELEASE → REJECT, RELEASE → REINSPECT, a subsequent authorized re-release, concurrent release/hold decisions and retry/replay.
+
+### 32.3 PASS_WITH_DEVIATION is derived from a caller-supplied boolean, not a verified deviation approval
+
+**Finding:** QualityController.submitInspectionResult() accepts deviation_approved as a client boolean. QualityControlService.submitInspectionResult() sets the inspection result to PASS_WITH_DEVIATION when that boolean is true, without loading a linked deviation/waiver record, approved concession, risk assessment, expiry, affected quantity or authorized approver. reviewInspection() can subsequently ACCEPT the PASS_WITH_DEVIATION result, and decideOperationRelease() accepts either PASS or PASS_WITH_DEVIATION as the basis for RELEASE as well as RELEASE_WITH_DEVIATION. Thus the client-supplied boolean can influence a controlled quality state without a distinct deviation authorization record.
+
+**Effect:** the system cannot prove what requirement was deviated from, who authorized it, the scope/quantity/time/customer applicability, the controls/conditions or whether an approval is still valid. An ordinary inspection submission may be represented as an approved deviation before the separate reviewer/release step.
+
+**Source**
+- backend/app/Http/Controllers/Quality/QualityController.php, submitInspectionResult() validation of deviation_approved.
+- backend/app/Services/Quality/QualityControlService.php, submitInspectionResult(), reviewInspection() and decideOperationRelease().
+- backend/database/migrations/2026_11_26_000017_create_quality_capa_and_release_gates.php, quality_inspections and quality_release_decisions.
+
+**Required implementation**
+- [ ] Remove client authority to assert deviation approval. Inspection submission may request a deviation review but must not mark the deviation approved.
+- [ ] Add a versioned deviation/concession record linked to exact inspection, product/style revision, operation, customer requirement, defect/NCR, affected quantity/lot, validity period and documented risk/containment conditions.
+- [ ] Require an independent position/DoA-authorized reviewer and, where applicable, customer approval before a deviation can be accepted.
+- [ ] Permit PASS_WITH_DEVIATION only when the independent deviation decision is valid and pinned; record the deviation ID and decision version on the inspection.
+- [ ] At operation/material/finished-goods/shipment release, require RELEASE_WITH_DEVIATION where a deviation is present and verify all stated conditions; do not allow a generic RELEASE to erase the deviation context.
+- [ ] Test forged boolean, missing/expired/revoked approval, wrong style/customer/operation/lot, quantity over approved scope, approval by creator/inspector and deviation amendment after release.
+
+### 32.4 BLOCK events can alter completed or skipped operations
+
+**Finding:** in ManufacturingExecutionService.recordOperationEvent(), the BLOCK branch updates the operation status to BLOCKED without validating its prior state. The same event endpoint can therefore move a COMPLETED, SKIPPED or QUEUED operation to BLOCKED. UNBLOCK then changes any BLOCKED operation to IN_PROGRESS without restoring or verifying its prior state. The database status constraint permits the resulting values and does not encode a legal transition graph.
+
+**Effect:** completed work can be reopened by a later generic event, historical completed_at can remain while the state is no longer COMPLETED, and an optional skipped operation can become executable without a controlled reopen/revision decision. This undermines production quantity and genealogy finality.
+
+**Source**
+- backend/app/Services/Manufacturing/ManufacturingExecutionService.php, recordOperationEvent() BLOCK and UNBLOCK branches around lines 340–356.
+- backend/database/migrations/2026_11_26_000016_create_route_and_manufacturing_execution.php, production_order_operations.status constraint and production event table.
+- backend/app/Http/Controllers/Manufacturing/ManufacturingController.php, recordOperationEvent() accepts BLOCK/UNBLOCK through the general manufacturing execution ability.
+
+**Required implementation**
+- [ ] Define and enforce an explicit operation state-transition matrix in the domain service and, for critical invariants, in PostgreSQL.
+- [ ] Allow BLOCK only from an authorized active state such as QUEUED/READY/IN_PROGRESS; a completed/skipped operation must be corrected through a separate approved correction/reopen workflow.
+- [ ] Preserve prior state and block owner/reason; UNBLOCK must restore the permitted prior state after required checks rather than always forcing IN_PROGRESS.
+- [ ] Require appropriate supervisor/quality authority for block/unblock and keep actor/reason/condition evidence in the event.
+- [ ] Add tests for block from every status, unblock from every block origin, completed/skipped immutability, concurrent block/unblock, event replay and order-completion consistency.
+
+### 32.5 WP-08/WP-10/WP-11 integration acceptance sequence
+
+1. Implement route effective-date and supersession resolution with a forward migration and exact route-version resolver.
+2. Implement the latest-effective quality release decision contract and use it at every predecessor/operation/finished-goods/shipment gate.
+3. Replace deviation_approved input with a controlled deviation/concession approval lifecycle and exact inspection/release linkage.
+4. Implement the production-operation state transition matrix for block, unblock, skip, start, output, defect, downtime and completion.
+5. Add PostgreSQL Feature tests under the non-owner application role for every transition, tenant/site boundary, approval separation, duplicate/conflicting replay and concurrency.
+6. Add a browser E2E journey for route revision/effectivity → production order → optional/conditional operation → inspection → deviation review (where applicable) → quality release/hold → downstream operation start.
+7. Record exact candidate SHA, route/inspection/release snapshots and test evidence in the WP-08/WP-10/WP-11 acceptance ledger.
+
+No manufacturing or quality runtime source/migration was changed by this audit section; it records verified source/schema control gaps and their forward implementation path.
