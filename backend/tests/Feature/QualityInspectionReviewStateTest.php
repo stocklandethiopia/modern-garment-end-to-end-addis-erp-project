@@ -126,6 +126,57 @@ class QualityInspectionReviewStateTest extends TestCase
         });
     }
 
+    public function test_resolved_nonconformance_cannot_be_reopened_by_new_capa(): void
+    {
+        $admin = DB::connection('pgsql_test_admin');
+        $nonconformanceId = (string) Str::uuid();
+        $admin->table('quality_nonconformances')->insert([
+            'id' => $nonconformanceId,
+            'tenant_id' => $this->tenantId,
+            'inspection_id' => $this->inspectionId,
+            'nonconformance_code' => 'NC-CLOSED-'.Str::upper(Str::random(6)),
+            'defect_description' => 'Previously resolved quality nonconformance.',
+            'severity' => 'LOW',
+            'affected_quantity' => '1.0000',
+            'containment_status' => 'CONTAINED',
+            'disposition' => 'REWORK',
+            'status' => 'RESOLVED',
+            'opened_by' => $this->inspectorId,
+            'resolved_by' => $this->reviewerId,
+            'resolved_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $service = app(QualityControlService::class);
+
+        try {
+            DB::transaction(function () use ($service, $nonconformanceId): void {
+                DB::selectOne("SELECT set_config('app.current_tenant_id', ?, true)", [$this->tenantId]);
+                $service->createCorrectiveAction($this->tenantId, $this->inspectorId, $nonconformanceId, [
+                    'action_code' => 'CAPA-CLOSED-'.Str::upper(Str::random(6)),
+                    'action_type' => 'CORRECTIVE',
+                    'action_description' => 'This must be rejected without a controlled reopening.',
+                ]);
+            });
+
+            self::fail('A resolved nonconformance must not be reopened by creating a new action.');
+        } catch (\Illuminate\Validation\ValidationException) {
+            // Expected: reopening is a separately controlled state transition.
+        }
+
+        self::assertSame(
+            'RESOLVED',
+            $admin->table('quality_nonconformances')->where('tenant_id', $this->tenantId)
+                ->where('id', $nonconformanceId)->value('status'),
+        );
+        self::assertSame(
+            0,
+            $admin->table('quality_corrective_actions')->where('tenant_id', $this->tenantId)
+                ->where('nonconformance_id', $nonconformanceId)->count(),
+        );
+    }
+
     public function test_passing_inspection_can_be_submitted_then_independently_reviewed(): void
     {
         $service = app(QualityControlService::class);
