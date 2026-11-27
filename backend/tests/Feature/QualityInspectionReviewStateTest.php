@@ -67,6 +67,29 @@ class QualityInspectionReviewStateTest extends TestCase
                 ],
             ]);
 
+            $admin->table('tenant_memberships')->insert([
+                [
+                    'id' => (string) Str::uuid(),
+                    'tenant_id' => $this->tenantId,
+                    'user_id' => $this->inspectorId,
+                    'membership_role' => 'OWNER',
+                    'status' => 'ACTIVE',
+                    'joined_at' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+                [
+                    'id' => (string) Str::uuid(),
+                    'tenant_id' => $this->tenantId,
+                    'user_id' => $this->reviewerId,
+                    'membership_role' => 'MEMBER',
+                    'status' => 'ACTIVE',
+                    'joined_at' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+            ]);
+
             $admin->table('quality_inspections')->insert([
                 'id' => $this->inspectionId,
                 'tenant_id' => $this->tenantId,
