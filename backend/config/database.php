@@ -27,6 +27,8 @@ return [
         // A separate, narrowly privileged connection for SECURITY DEFINER APIs.
         // app_runtime deliberately cannot execute identity-sensitive mutation functions.
         'pgsql_control' => array_merge($pgsql, [
+            // Do not inherit DB_URL credentials: the normal app URL may contain app_runtime.
+            'url' => env('CONTROL_DB_URL'),
             'username' => env('CONTROL_DB_USERNAME', 'app_control'),
             'password' => env('CONTROL_DB_PASSWORD', ''),
         ]),
