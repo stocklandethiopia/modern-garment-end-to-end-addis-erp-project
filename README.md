@@ -82,6 +82,8 @@ The numbered design packages WP-00 through WP-16 have been prepared and internal
 - [WP-01 Requirements traceability](docs/requirements/requirements-traceability.md)
 - [WP-02 Ethiopia legal-source register and holds](docs/localization/ethiopia-legal-regulatory-register.md)
 - [WP-03 Tenant, organisation and identity architecture](docs/architecture/tenant-organization-identity.md)
+- [WP-03 enterprise organogram and delegated authority](docs/organization/enterprise-organogram-and-delegated-authority.md)
+- [WP-03 / WP-14 organogram and Ethiopia payroll implementation plan](docs/work-packages/wp03-wp14-organogram-payroll-implementation-plan.md)
 - [WP-04 Initiative, market insight and merchandising](docs/product/initiative-merchandising-range-planning.md)
 - [WP-05 PLM, design studio and product development](docs/product/plm-design-studio-product-development.md)
 - [WP-06 Industrial engineering and capacity](docs/engineering/industrial-engineering-capacity-standard.md)
@@ -93,6 +95,8 @@ The numbered design packages WP-00 through WP-16 have been prepared and internal
 - [WP-12 WMS, distribution and channel commerce](docs/distribution/wms-order-management-channel-commerce.md)
 - [WP-13 Finance, accounting, treasury and tax](docs/finance/finance-accounting-treasury-tax-costing.md)
 - [WP-14 Workforce, payroll and compensation](docs/hr/workforce-payroll-pension-benefits-compensation.md)
+- [Ethiopia payroll localization and statutory source basis](docs/localization/ethiopia-payroll-localization-2026-11-27.md)
+- [Ethiopia payroll engineering release gate](docs/localization/ethiopia-payroll-engineering-release-gate.md)
 - [WP-15 Analytics, integration and AI control tower](docs/analytics/integration-ai-control-tower.md)
 - [WP-16 E2E acceptance, security and release controls](docs/release/end-to-end-acceptance-security-deployment.md)
 
