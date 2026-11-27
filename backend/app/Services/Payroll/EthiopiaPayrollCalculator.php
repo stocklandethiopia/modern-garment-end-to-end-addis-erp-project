@@ -679,8 +679,11 @@ final class EthiopiaPayrollCalculator
         $parts = explode('.', $raw, 2);
         $whole = (int) $parts[0];
         $fraction = isset($parts[1]) ? (int) str_pad($parts[1], 2, '0') : 0;
-        if ($whole > intdiv(PHP_INT_MAX - $fraction, 100)) {
-            throw new InvalidArgumentException("{$field} exceeds the supported monetary range.");
+        // Percentage multiplication uses at most 10,000 basis points.
+        // Bound minor units before any rate calculation to avoid PHP integer overflow.
+        $maximumMinorUnits = intdiv(PHP_INT_MAX, 10000);
+        if ($whole > intdiv($maximumMinorUnits - $fraction, 100)) {
+            throw new InvalidArgumentException("{$field} exceeds the supported monetary calculation range.");
         }
 
         return ($whole * 100) + $fraction;
