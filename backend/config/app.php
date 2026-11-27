@@ -4,7 +4,7 @@ return [
     'name' => env('APP_NAME', 'Modern Garment Addis ERP'),
     'env' => env('APP_ENV', 'production'),
     'debug' => (bool) env('APP_DEBUG', false),
-    'url' => env('APP_URL', 'http://localhost'),
+    'url' => env('APP_URL', 'https://api.example.invalid'),
     'frontend_url' => env('FRONTEND_URL'),
     'timezone' => 'UTC',
     'locale' => env('APP_LOCALE', 'en'),

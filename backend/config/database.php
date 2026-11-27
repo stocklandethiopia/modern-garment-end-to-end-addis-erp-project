@@ -3,7 +3,7 @@
 $pgsql = [
     'driver' => 'pgsql',
     'url' => env('DB_URL'),
-    'host' => env('DB_HOST', 'localhost'),
+    'host' => env('DB_HOST'),
     'port' => env('DB_PORT', '5432'),
     'database' => env('DB_DATABASE', 'garment_erp'),
     'charset' => 'utf8',
@@ -37,7 +37,7 @@ return [
         ],
         'default' => [
             'url' => env('REDIS_URL'),
-            'host' => env('REDIS_HOST', 'localhost'),
+            'host' => env('REDIS_HOST'),
             'username' => env('REDIS_USERNAME'),
             'password' => env('REDIS_PASSWORD'),
             'port' => env('REDIS_PORT', '6379'),
@@ -45,7 +45,7 @@ return [
         ],
         'cache' => [
             'url' => env('REDIS_URL'),
-            'host' => env('REDIS_HOST', 'localhost'),
+            'host' => env('REDIS_HOST'),
             'username' => env('REDIS_USERNAME'),
             'password' => env('REDIS_PASSWORD'),
             'port' => env('REDIS_PORT', '6379'),

@@ -91,3 +91,13 @@ Every release record must include:
 - Rollback/recovery instructions.
 
 A repository commit is not a production deployment. A successful container build is not proof of a successful business workflow.
+
+
+## 9. Runtime endpoint and loopback policy
+
+- Application runtime source and committed environment templates must not contain implicit loopback endpoints. Do not hard-code `localhost`, the IPv4 loopback range, or IPv6 loopback as a default for PostgreSQL, Redis, SMTP, the API origin or the frontend origin.
+- Database, Redis, mail and public-origin hosts are supplied explicitly by the target environment. Runtime configuration must not silently fall back to a workstation or runner.
+- The committed `backend/.env.example` uses non-routable `.invalid` example origins and mandatory host placeholders; deployment operators replace them through environment configuration or the approved secret manager.
+- `make check-no-loopback-defaults` and the required GitHub Actions backend job scan runtime source/configuration and the committed environment template. Both fail the build when a loopback endpoint is reintroduced.
+- Explicit loopback values remain permitted only in isolated developer/test infrastructure such as CI service endpoints, PHPUnit configuration, Docker Compose host publishing, the Angular development proxy and local-development instructions. These exceptions must never be copied into application runtime defaults or production deployment configuration.
+- Angular production builds must use same-origin relative API paths such as `/api/v1/health`; the development proxy is not a production API dependency.

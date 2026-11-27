@@ -52,7 +52,8 @@ jobs:
       APP_ENV: testing
       APP_DEBUG: "true"
       APP_KEY: base64:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
-      APP_URL: http://localhost:8000
+      APP_URL: https://api.example.invalid
+      SANCTUM_STATEFUL_DOMAINS: app.example.invalid
       DB_CONNECTION: pgsql
       DB_HOST: localhost
       DB_PORT: 5432
@@ -78,6 +79,9 @@ jobs:
           extensions: ctype, curl, dom, fileinfo, filter, hash, mbstring, openssl, pdo, pdo_pgsql, pgsql, session, tokenizer, xml
           coverage: none
           tools: composer:v2
+
+      - name: Reject loopback endpoints in runtime defaults and env template
+        run: php ../scripts/check-no-loopback-defaults.php
 
       - name: Create restricted PostgreSQL roles
         env:
