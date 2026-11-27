@@ -59,6 +59,7 @@ class PlatformOperatorGrantController extends Controller
         string $grantId,
         PlatformAdministrationService $platform,
     ): JsonResponse {
+        abort_unless(Str::isUuid($grantId), 404);
         $data = $request->validate([
             'reason' => ['required', 'string', 'min:10', 'max:500'],
         ]);
