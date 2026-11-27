@@ -497,6 +497,11 @@ final class EthiopiaPayrollCalculator
                 }
                 if ($requireApproved) {
                     $this->assertIndependentDecision($evidence, $preparedBy, "other_deductions.{$index}");
+                    if (! $this->isUuid((string) ($evidence['document_storage_reference'] ?? ''))
+                        || ! preg_match('/^[a-f0-9]{64}$/Di', (string) ($evidence['source_sha256'] ?? ''))
+                    ) {
+                        throw new InvalidArgumentException("other_deductions.{$index} requires a stored signed authorization document and SHA-256.");
+                    }
                 }
             }
             $total += $amount;
