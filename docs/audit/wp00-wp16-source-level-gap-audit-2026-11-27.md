@@ -2202,3 +2202,140 @@ The lot stores style_id/style_revision_no from the order, but its SKU/colour/siz
 8. Enforce production passport, SKU/size/colour and legal-entity/site genealogy at finished-goods receipt.
 9. Validate reservation unit dimensions and supported conversions.
 10. Add end-to-end WP-12 sales/order/credit/ATP/reserve/ship/deliver/return/refund/AR test journeys.
+
+
+---
+
+## 22. WP-03 / WP-04 — Scoped authorization, forecast lineage and commercial guardrails
+
+### 22.1 Scoped tenant members can reach merchandising routes that do not evaluate their scope
+
+**Finding:** the tenant middleware does not enforce SCOPED mode itself. ResolveTenantContext::handle() validates an active tenant membership, binds the transaction-local tenant/user context and continues the request. It does not load tenant_access_scope_modes, reject SCOPED members, or call ScopedAccessService or DomainCapabilityAuthorizer.
+
+The explicit scope service is used in selected merchandising actions (brand/collection/range/assortment and account-terms workflows). It is not injected or called in the inspected:
+- backend/app/Http/Controllers/Merchandising/CommercialPricingController.php;
+- backend/app/Http/Controllers/Merchandising/OtbPlanningController.php;
+- backend/app/Http/Controllers/Merchandising/DemandPlanningController.php.
+
+These controllers are routed under the general auth:sanctum, token.ability:erp:access, tenant.context group in backend/routes/api.php, not under a target-record authorization middleware. AppServiceProvider defines the role-matrix Gate abilities, but defining a Gate does not enforce it on a controller action that never calls it. DomainCapabilityAuthorizer correctly denies a MEMBER in SCOPED mode when its Gate is evaluated, but these merchandising paths do not evaluate the Gate or exact brand/site/market grants.
+
+**Effect:** a tenant member set to SCOPED can still invoke tenant-wide list/create/simulation actions for prices, promotions, demand forecasts and OTB through these controllers. Tenant RLS still prevents cross-tenant access; it does not enforce intra-tenant brand/site/market grants. This is a same-tenant least-privilege gap.
+
+**Source**
+- backend/app/Http/Middleware/ResolveTenantContext.php, handle().
+- backend/app/Services/ScopedAccessService.php, assertBrand(), assertSite(), assertMarket() and mode lookup.
+- backend/app/Services/Authorization/DomainCapabilityAuthorizer.php, the SCOPED-member fail-closed check.
+- backend/app/Providers/AppServiceProvider.php, centrally defined Gates.
+- backend/routes/api.php, shared tenant route group.
+- The three merchandising controllers above.
+- backend/tests/Feature/BrandRangeWorkflowTest.php, test_scoped_administrator_cannot_freeze_a_range_without_brand_and_market_grants() verifies the selected range-freeze path, but there is no corresponding test for pricing, forecast or OTB.
+
+**Required implementation**
+- [ ] Apply a common domain authorization boundary to every merchandising list/read/write action, with the exact target context resolved before the service executes.
+- [ ] For price lists, resolve brand, legal entity, channel, market and account; enforce READ, CREATE, APPROVE or MANAGE at the exact record scope.
+- [ ] For OTB policies/periods/scenarios, resolve legal entity plus collection/range/market/channel dimensions where attached; do not infer authority from tenant membership.
+- [ ] For forecasts/adjustments, validate every dimension reference, then require matching brand/market/channel/account/store grants for each row or authorized aggregate.
+- [ ] Keep administrative bypass only for the explicitly approved tenant/platform administration roles; do not give domain-wide access to a scoped department or operational member.
+- [ ] Add adversarial tests that set a member to SCOPED, grant one brand/site/market, then prove list filtering and read/create/approve actions for other scopes return no data or 403/404 as designed.
+- [ ] Add regression coverage for the currently covered range-freeze path and account-terms scopes so a future route cannot omit the scope boundary.
+
+### 22.2 Demand forecast publication accepts unvalidated dimension JSON
+
+**Finding:** DemandPlanningController::publishRun() validates forecasts.*.dimension_refs only as an array. It does not validate the required key set and value type for each grain, nor verify that referenced style/category/channel/account/store records exist, are active, belong to the tenant, or are consistent with each other. The endpoint rejects duplicate JSON dimension/time combinations but that only prevents identical payload keys; it does not establish that those keys identify valid business objects.
+
+The same method writes every supplied run as status = PUBLISHED in one transaction for all three methods (MANUAL_CONSENSUS, STATISTICAL_BASELINE, EXTERNAL_MODEL_IMPORT). model_version is optional, and no source artifact, algorithm parameter hash, training-data window, import checksum or model evaluation record is required for statistical/external results.
+
+**Effect:** a published forecast can contain arbitrary or mismatched dimension references and cannot be reliably joined to product, assortment, channel, account or store master records. The method label alone does not establish statistical or external-model provenance.
+
+**Source**
+- backend/app/Http/Controllers/Merchandising/DemandPlanningController.php, publishRun() around lines 61–152.
+- backend/database/migrations/2026_11_22_000005_create_brand_range_assortment_planning_tables.php, demand_forecast_runs and demand_forecasts; dimension_refs is JSONB and has no relational dimension constraints.
+- backend/tests/Feature/DemandOtbPricingWorkflowTest.php, createForecast() and the forecast tests.
+
+**Required implementation**
+- [ ] Define a JSON schema/typed DTO per grain: STYLE_WEEK, STYLE_MONTH, CATEGORY_WEEK, CATEGORY_MONTH, CHANNEL_CATEGORY_WEEK, ACCOUNT_STYLE_WEEK and STORE_STYLE_WEEK.
+- [ ] Validate each dimension ID/code against tenant-scoped master data and verify the row's channel, market, account, brand and store hierarchy is internally consistent.
+- [ ] Bind the rows to the applicable approved assortment/range/product revision and effective dates when that is part of the selected grain.
+- [ ] Keep manual, statistical and imported forecasts distinct; require a model/source version, immutable parameter/input manifest, source/import file hash and provenance record for non-manual methods.
+- [ ] Add a deliberate draft → validation → publish/approval lifecycle if consensus approval is required by the planning authority; do not silently classify a raw imported payload as a validated model output.
+- [ ] Test each grain schema, cross-tenant dimension, inactive style/store, inconsistent channel/account, unknown reference, duplicate row and source-hash mismatch.
+
+### 22.3 Approved forecast adjustments are not materialized as an effective forecast version
+
+**Finding:** createAdjustment() creates an append-only forecast_adjustments record. approveAdjustment() inserts an APPROVE_ADJUSTMENT row in merchandising_decisions and an audit event but does not set forecast_adjustments.approved_by. showRun() derives an is_approved flag by joining the decisions table, so the decision history is visible; however, the approved adjustment remains a separate record and does not change or supersede the published forecast. There is no service in the inspected demand-planning path that materializes a new approved forecast version or effective-forecast projection from the accepted adjustments.
+
+The current OTB scenario can reference a forecast_run_id, but its calculation reads the manually stored OTB period assumptions and optional scenario assumptions; it does not query the forecast rows or approved adjustments to derive planned sales.
+
+**Effect:** users can approve an adjustment and see it marked approved, while downstream planning still consumes the original published forecast or manually entered OTB numbers. This breaks the intended forecast → approved adjustment → range/OTB planning lineage.
+
+**Source**
+- backend/app/Http/Controllers/Merchandising/DemandPlanningController.php, createAdjustment(), approveAdjustment() and showRun().
+- backend/database/migrations/2026_11_22_000005_create_brand_range_assortment_planning_tables.php, forecast_adjustments.approved_by.
+- backend/app/Http/Controllers/Merchandising/OtbPlanningController.php, simulateScenario() and calculate().
+- backend/tests/Feature/DemandOtbPricingWorkflowTest.php, test_forecast_runs_and_adjustments_are_append_only_and_independently_approved() verifies that the original forecast stays unchanged, but there is no test proving an effective adjusted forecast version is generated and consumed by OTB.
+
+**Required implementation**
+- [ ] Preserve the original forecast run immutably.
+- [ ] Add an effective forecast snapshot/run that pins the exact base run and all approved adjustment IDs/versions/hashes.
+- [ ] Store a deterministic adjustment decision result; either populate approved_by consistently with the decision record or remove the redundant column through a forward migration and make the decision join the explicit source of truth.
+- [ ] Add a materialization service that rejects pending/rejected adjustments and computes the effective row set using decimal arithmetic.
+- [ ] Allow OTB simulation to pin the effective forecast snapshot, derive sales/receipts by the policy's selected valuation basis and retain an explicit override record where planners change it manually.
+- [ ] Test exact same base forecast, approved override, duplicate approval, multiple adjustments to one forecast row, conflicting edits, immutable history and OTB snapshot reproducibility.
+
+### 22.4 OTB policy approval thresholds are stored but never evaluated
+
+**Finding:** createPolicy() requires an approval_thresholds array and persists it to otb_policies. activatePolicy() validates the inclusion rule modes, but does not validate or use the threshold structure. approveScenario() only requires a tenant administrator and that the author differs from the approver; it never loads the linked policy's approval_thresholds, computes the relevant amount/variance and routes approvals by threshold.
+
+**Effect:** the stored threshold configuration creates the appearance of configured delegated authority, but it currently has no effect on the approval decision. A scenario requiring a higher-level or multi-step approval would still pass the same tenant-admin check.
+
+**Source**
+- backend/app/Http/Controllers/Merchandising/OtbPlanningController.php, createPolicy() around lines 27–89, activatePolicy() around lines 90–169 and approveScenario() around lines 356–400.
+- backend/database/migrations/2026_11_22_000005_create_brand_range_assortment_planning_tables.php, otb_policies.approval_thresholds.
+- docs/organization/enterprise-organogram-and-delegated-authority.md (PR #16 design) specifies position/incumbent/delegation authority rather than universal tenant-owner approvals.
+
+**Required implementation**
+- [ ] Define a versioned, validated threshold schema: currency/basis, amount bands, variance/exception bands, required position/role, approver count, segregation, effective dates and escalation.
+- [ ] Integrate the approved WP-03 organization/position/DoA resolver; do not infer business authority from OWNER/ADMIN membership.
+- [ ] Snapshot the exact DoA policy version and approval route when the scenario is submitted.
+- [ ] Require every approval step, reject self-approval and re-evaluate effective incumbent/delegation status before each decision.
+- [ ] Test under/over threshold, mixed currencies, changed policy after submission, delegated approver expiry and conflicting concurrent decisions.
+
+### 22.5 Promotion approval does not enforce margin floor or price outcome
+
+**Finding:** createPromotion() accepts a fixed-amount discount greater than zero without comparing the amount with the linked price-list lines. Only percentage discounts are capped at 100%. It stores optional margin_floor, but approvePromotion() does not evaluate margin_floor, the linked line cost_basis, list/wholesale prices or the post-discount margin. The inspected controller contains no price-resolution method that applies the promotion safely to an order line.
+
+**Effect:** a fixed discount can exceed a product's published price; an approved promotion can violate its configured margin floor. Recording margin_floor does not make it an enforced financial guardrail.
+
+**Additional eligibility finding:** addPromotionEligibility() accepts a free-form scope_reference for CHANNEL, PRODUCT, CATEGORY, ACCOUNT, LOCATION or BRAND. It does not verify that the reference exists in the tenant or is valid for the linked price list. approvePromotion() requires an inclusion row, but its overlap query only joins identical scope_type and scope_reference rows and ignores exclusion scopes. A CHANNEL inclusion and a PRODUCT/CATEGORY inclusion can refer to intersecting real-world items while the equality join reports no overlap; the approval path therefore cannot guarantee no-stack safety across heterogeneous scope types.
+
+**Source**
+- backend/app/Http/Controllers/Merchandising/CommercialPricingController.php, createPromotion(), addPromotionEligibility() and approvePromotion().
+- backend/database/migrations/2026_11_22_000005_create_brand_range_assortment_planning_tables.php, price_list_lines, promotions and promotion_eligibility.
+- backend/tests/Feature/DemandOtbPricingWorkflowTest.php, promotion approval and basic unsafe-value tests.
+
+**Required implementation**
+- [ ] Enforce a line-level maximum discount and non-negative final price for fixed-amount promotions.
+- [ ] Compute post-discount gross margin using the effective, approved cost basis and currency/valuation basis; enforce the configured margin floor before approval and at transaction execution.
+- [ ] Validate each eligibility reference against the right tenant-scoped master (channel, style/product, category, customer/account, operational location, brand).
+- [ ] Introduce normalized eligibility predicates/intersection evaluation so overlap considers cross-type intersections and exclusions, not only exact type/reference matches.
+- [ ] Implement one deterministic effective-price resolver for price lists, account terms, markdowns, promotions, coupon stacking, time zones, currency and order-line scope.
+- [ ] Pin the price/promotion resolver inputs, versions, decision and result to every order quote/order line for reproducibility.
+- [ ] Test fixed discount above price, percentage boundary, below-margin outcome, stale cost, cross-type overlap, exclusions, expiry/timezone, currency mismatch, stacking policy and repeat quote calculation.
+
+### 22.6 OTB scenario references are not reconciled to the OTB policy or used as calculation inputs
+
+**Finding:** simulateScenario() validates that optional range_plan_id and forecast_run_id exist in the tenant (and are frozen/published respectively), but it does not verify their legal-entity, brand, market, channel, currency or period relevance to the otb_period and its otb_policy. The formula is calculated from the OTB period's manually entered amounts plus caller-supplied assumptions. The optional forecast and range references are saved as attribution only and do not change those inputs. The endpoint allows arbitrary extra keys in the assumptions map, though the calculation reads only its fixed known keys.
+
+**Effect:** an OTB scenario may cite a forecast or range plan that is unrelated to the period's commercial scope, and the user may reasonably believe that cited forecast/range informed the budget calculation when it did not.
+
+**Required implementation**
+- [ ] Resolve the period's policy/legal entity and the forecast/range's full collection/brand/market/channel/currency scope before accepting the scenario.
+- [ ] Reject incompatible or stale references; pin compatible source versions and exact input hashes.
+- [ ] Derive default sales/receipts/ending inventory from the selected effective forecast and approved assortment, with explicit documented override fields.
+- [ ] Validate an allow-list of assumption names and units and reject unknown keys.
+- [ ] Preserve a calculation manifest containing formula version, currency, valuation basis, input provenance, overrides and resulting available budget.
+- [ ] Add tests for mismatched tenant (already protected), mismatched entity/brand/market/channel/currency/period, stale forecast, unknown assumption and deterministic recomputation.
+
+### 22.7 WP-04 test coverage extension
+
+Existing DemandOtbPricingWorkflowTest covers the happy paths for forecast runs, adjustment approval, OTB policy/period/scenario and price list/promotion approval, plus basic validation. BrandRangeWorkflowTest covers selected brand/range/assortment and scoped range-freeze behavior. The next test increment must add the specific same-tenant scope-bypass, forecast dimension, effective-forecast materialization, DoA-threshold, promotion margin/overlap and OTB source-lineage scenarios above. Tests must execute under the non-owner application database role and be run on the exact candidate SHA.
