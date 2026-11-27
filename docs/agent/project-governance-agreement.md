@@ -246,7 +246,7 @@ After each WP release or verified integration increment, provide the Product Own
 ### B. Audit and progress-reporting discipline
 
 1. Reports must focus on concrete WP-00–WP-16 findings: what exists, exact source paths and commit, what is integrated, what is tested, what remains to implement, dependencies and the next executable action.
-2. Do not use blanket project headings or summaries such as **"Production release: NO-GO"** or **"Canonical delivery: partial"** as substitutes for the task-level evidence report. State the project's production objective positively and identify precise remaining engineering work.
+2. Do not use blanket negative release labels or broad status summaries as substitutes for the task-level evidence report. State the project's production objective positively and identify precise remaining engineering work.
 3. Do not hide, soften or misstate a real defect, missing feature, failed test or unrun check. Use the existing task-level evidence vocabulary from the 26 November amendment (PASS, PARTIAL, BLOCKED, FAIL, NOT RUN, NOT APPLICABLE, PENDING OWNER APPROVAL) with exact requirement/task IDs and source SHA.
 4. Distinguish a component/source increment, an integrated WP increment, a verified installer, a WP-complete handover and a fully qualified production deployment. Do not infer one from another.
 5. Keep the audit within the assigned project and approved boundaries. Do not introduce unrelated services, competing architecture, new product scope or unnecessary advisory requests.
