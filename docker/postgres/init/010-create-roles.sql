@@ -5,7 +5,8 @@ CREATE ROLE erp_test_admin LOGIN PASSWORD 'local-test-admin-password' NOSUPERUSE
 
 GRANT CONNECT ON DATABASE garment_erp TO erp_migrator, app_runtime, erp_test_admin;
 GRANT USAGE, CREATE ON SCHEMA public TO erp_migrator;
-GRANT USAGE ON SCHEMA public TO app_runtime, erp_test_admin;
+GRANT USAGE ON SCHEMA public TO app_runtime, app_control, erp_test_admin;
+REVOKE CREATE ON SCHEMA public FROM app_control;
 
 -- CI/local test fixtures only. This login can bypass RLS but is never used by the API.
 ALTER DEFAULT PRIVILEGES FOR ROLE erp_migrator IN SCHEMA public
