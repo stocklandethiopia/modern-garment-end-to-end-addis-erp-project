@@ -24,6 +24,64 @@ class PlatformAdministrationService
         }
     }
 
+    public function currentOperatorRoles(): array
+    {
+        try {
+            return array_values(array_map(
+                static fn (object $row): string => (string) $row->role_code,
+                DB::select('SELECT role_code FROM public.platform_current_operator_roles()'),
+            ));
+        } catch (QueryException $exception) {
+            if (($exception->errorInfo[0] ?? null) === '42501') {
+                throw new AuthorizationException('The authenticated platform identity could not be resolved.');
+            }
+
+            throw $exception;
+        }
+    }
+
+    public function operatorGrants(): array
+    {
+        try {
+            return DB::select('SELECT * FROM public.platform_list_operator_grants()');
+        } catch (QueryException $exception) {
+            if (($exception->errorInfo[0] ?? null) === '42501') {
+                throw new AuthorizationException('An active platform administrator grant is required.');
+            }
+
+            throw $exception;
+        }
+    }
+
+    public function requestOperatorGrant(
+        string $userEmail,
+        string $roleCode,
+        ?string $validFrom,
+        ?string $validTo,
+        string $reason,
+    ): object {
+        return DB::transaction(fn (): object => $this->call(
+            'SELECT * FROM public.platform_request_operator_grant(?, ?, ?::date, ?::date, ?)',
+            [$userEmail, $roleCode, $validFrom, $validTo, $reason],
+        ), 3);
+    }
+
+    public function approveOperatorGrant(string $grantId, string $reason): object
+    {
+        return DB::transaction(fn (): object => $this->call(
+            'SELECT * FROM public.platform_approve_operator_grant(?::uuid, ?)',
+            [$grantId, $reason],
+        ), 3);
+    }
+
+    public function revokeOperatorGrant(string $grantId, string $reason): object
+    {
+        return DB::transaction(fn (): object => $this->call(
+            'SELECT * FROM public.platform_revoke_operator_grant(?::uuid, ?)',
+            [$grantId, $reason],
+        ), 3);
+    }
+
     public function changeTenantStatus(string $tenantId, string $status, string $reason): object
     {
         return DB::transaction(function () use ($tenantId, $status, $reason): object {
@@ -115,7 +173,12 @@ class PlatformAdministrationService
             }
 
             if ($sqlState === 'P0002') {
-                throw new ValidationException(['tenant_id' => 'The requested tenant does not exist.']);
+                $safe = str_contains($message, 'target identity')
+                    ? 'An active account with that email address was not found.'
+                    : (str_contains($message, 'platform operator grant')
+                        ? 'The requested platform operator grant is no longer pending or active.'
+                        : 'The requested tenant does not exist.');
+                throw ValidationException::withMessages(['platform' => $safe]);
             }
 
             if (in_array($sqlState, ['22023', '23514'], true)) {
@@ -128,8 +191,17 @@ class PlatformAdministrationService
                     str_contains($message, 'Plan code') => 'The supplied plan code is not supported.',
                     str_contains($message, 'Entitlement status') => 'The supplied entitlement status is not supported.',
                     str_contains($message, 'JSON objects') => 'Feature flags and limits must be JSON objects.',
-                    str_contains($message, 'effective dates') => 'The supplied entitlement effective dates are invalid.',
-                    default => 'The requested platform operation violates a lifecycle or entitlement rule.',
+                    str_contains($message, 'effective dates') || str_contains($message, 'validity dates') => 'The supplied effective dates are invalid.',
+                    str_contains($message, 'last active platform administrator') => 'The last active platform administrator cannot be removed.',
+                    str_contains($message, 'requester and the grant recipient') => 'The grant requester and recipient must be different from the approving administrator.',
+                    str_contains($message, 'cannot request platform access for their own identity') => 'An administrator cannot request platform access for their own account.',
+                    str_contains($message, 'already exists for this account and role') => 'A pending or active grant already exists for this account and role.',
+                    str_contains($message, 'grant reason') => 'A reason of 10 to 500 characters is required.',
+                    str_contains($message, 'approval reason') => 'An approval reason of 10 to 500 characters is required.',
+                    str_contains($message, 'revocation reason') => 'A revocation reason of 10 to 500 characters is required.',
+                    str_contains($message, 'no longer active') => 'The target account is no longer active.',
+                    str_contains($message, 'cannot revoke their own platform grant') => 'An administrator cannot revoke their own account.',
+                    default => 'The requested platform operation violates a lifecycle, entitlement or operator-governance rule.',
                 };
 
                 throw ValidationException::withMessages(['platform' => $safe]);

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Agents\AgentGovernanceController;
 use App\Http\Controllers\Distribution\FinishedGoodsController;
 use App\Http\Controllers\Enterprise\PlatformAdministrationController;
+use App\Http\Controllers\Enterprise\PlatformOperatorGrantController;
 use App\Http\Controllers\Enterprise\TenantDomainRoleAssignmentController;
 use App\Http\Controllers\Enterprise\TenantEntitlementController;
 use App\Http\Controllers\Enterprise\TenantOwnershipController;
@@ -17,7 +18,12 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth:sanctum', 'token.ability:erp:access', 'identity.context'])
     ->prefix('v1/platform')
     ->group(function (): void {
+        Route::get('/context', [PlatformAdministrationController::class, 'context']);
         Route::get('/tenants', [PlatformAdministrationController::class, 'index']);
+        Route::get('/operators/grants', [PlatformOperatorGrantController::class, 'index']);
+        Route::post('/operators/grants', [PlatformOperatorGrantController::class, 'store'])->middleware('throttle:10,1');
+        Route::post('/operators/grants/{grantId}/approve', [PlatformOperatorGrantController::class, 'approve']);
+        Route::post('/operators/grants/{grantId}/revoke', [PlatformOperatorGrantController::class, 'revoke']);
         Route::patch('/tenants/{tenantId}/lifecycle', [PlatformAdministrationController::class, 'changeLifecycle']);
         Route::put('/tenants/{tenantId}/entitlements', [PlatformAdministrationController::class, 'updateEntitlements']);
     });

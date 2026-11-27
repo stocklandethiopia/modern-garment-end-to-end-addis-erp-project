@@ -1,7 +1,7 @@
 # Platform administration and tenant entitlement bootstrap
 
 **Work package:** WP-03 — Enterprise, tenant, organisation and identity  
-**Status:** PLATFORM LIFECYCLE/ENTITLEMENT FOUNDATION AND PRIVILEGED REGISTER-READ AUDIT INTEGRATED — PR #9 and PR #11 exact-head CI verified  
+**Status:** PLATFORM LIFECYCLE/ENTITLEMENT FOUNDATION INTEGRATED; TWO-PERSON OPERATOR-GRANT LIFECYCLE AND PLATFORM UI ADDED ON WP-03 CANDIDATE BRANCH — EXACT-HEAD CI PENDING  
 **Code boundary:** Laravel platform API + PostgreSQL fixed-search-path SECURITY DEFINER functions  
 **Authority boundary:** Platform administration is separate from tenant OWNER/ADMIN authority.
 
@@ -11,17 +11,17 @@
 |---|---|---|
 | Tenant OWNER | One tenant | Tenant configuration and delegated business administration. Cannot grant platform privileges, change tenant platform status or assign platform plan/features. |
 | Tenant ADMIN | One tenant | Delegated tenant member/domain workflows. Cannot manage platform entitlements or suspend another tenant. |
-| PLATFORM_SUPPORT | Global platform | Read the platform tenant register; cannot change tenant lifecycle or entitlements. |
-| PLATFORM_ADMIN | Global platform | Change tenant lifecycle and platform plan/features/limits, subject to reason, database checks and immutable platform audit. |
-| DBA / controlled bootstrap operator | Database authority | Provision/revoke platform operator grants through a reviewed, two-person controlled process. This is not an application role and must not be exposed as a tenant UI action. |
+| PLATFORM_SUPPORT | Global platform | Read the platform tenant register only. Cannot change tenant lifecycle, entitlements or operator grants. |
+| PLATFORM_ADMIN | Global platform | Read the tenant register; request, independently approve and revoke operator grants; change tenant lifecycle and plan/features/limits, subject to reason, database checks and immutable platform audit. |
+| DBA / controlled bootstrap operator | Database authority | Appoint the first PLATFORM_ADMIN and perform approved break-glass recovery if no active administrator remains. Routine subsequent grants use the application’s two-person workflow. This is not a tenant role. |
 
-The platform grant table has no application INSERT/UPDATE/DELETE grant. The regular `app_runtime` role can only read its own grant rows (RLS filtered by the authenticated identity) and can invoke the narrow role-checked functions. A tenant OWNER cannot turn themselves into a platform operator.
+The platform grant table has no application INSERT/UPDATE/DELETE grant. The regular `app_runtime` role can only read its own grant rows (RLS filtered by authenticated identity) and invoke narrow, fixed-search-path SECURITY DEFINER functions that re-check global role, validity and separation-of-duties rules in PostgreSQL. No controller or Angular permission is trusted as the final authority. A tenant OWNER/ADMIN cannot turn themselves into a platform operator.
 
 ## 2. Initial platform operator bootstrap
 
 No platform operator is automatically created by the migration, owner provisioning command or tenant OWNER role. Existing legal/customer/production identity is not guessed and no email is hard-coded.
 
-After the organisation appoints a named platform operator, the accountable DBA performs a reviewed grant insert under the controlled migration/DBA connection. It must use **two different, active global user identities** for `granted_by` and `approved_by`, with a documented reason and validity period. The application does not expose a route for this grant operation.
+After the organisation appoints a named first platform administrator, the accountable DBA performs the initial grant using the controlled migration/DBA connection. It must use **two different, active global user identities** for `granted_by` and `approved_by`, with a documented reason and validity period. The application never seeds a real platform operator automatically. After this bootstrap, routine grant requests are handled through the two-person application workflow below.
 
 Illustrative SQL only — substitute verified database UUIDs and the approved validity date after the separate appointment/approval record exists:
 
@@ -46,7 +46,25 @@ INSERT INTO public.platform_operator_grants (
 COMMIT;
 ```
 
-Do not execute this example with placeholder values. Verify the resulting user, two-person approval, role, effective period and audit/approval record before enabling platform administration. Revoke or expire the operator grant promptly when the appointment ends.
+Do not execute this example with placeholder values. Verify the resulting user, two-person approval, role, effective period and separate appointment record before enabling platform administration. Do not use the example SQL for routine grants after the first platform administrator has been appointed.
+
+
+## 2.1 Routine two-person operator-grant lifecycle
+
+Once at least one active PLATFORM_ADMIN exists, subsequent platform operator grants must use the application workflow and not direct table writes:
+
+- `GET /api/v1/platform/context` resolves the signed-in identity's currently active, date-effective platform roles. It requires authenticated global identity context and does not require tenant membership.
+- `GET /api/v1/platform/operators/grants` lists the grant register for PLATFORM_ADMIN only. PLATFORM_SUPPORT receives 403.
+- `POST /api/v1/platform/operators/grants` creates a PENDING grant for an existing ACTIVE global identity. The request specifies role, validity start/end and a 10–500 character justification. No new user, tenant or login credential is created by this endpoint. **The end date is mandatory for application requests and cannot be later than 365 days after the start date.** The initial first-admin DBA bootstrap is separately reviewed and is the only approved exception to that application limit.
+- `POST /api/v1/platform/operators/grants/{grantId}/approve` activates a PENDING grant only when a different active PLATFORM_ADMIN approves it with an independent reason. The requester and grant recipient are both barred from approving it.
+- `POST /api/v1/platform/operators/grants/{grantId}/revoke` revokes a PENDING or ACTIVE grant, requires a reason and prevents an operator from revoking their own grant.
+
+Only `PLATFORM_ADMIN` may request, approve, revoke or list the global grant register. `PLATFORM_SUPPORT` remains read-only. A customer-tenant owner/admin does not receive these endpoints by virtue of their tenant role. The initial first-admin appointment and exceptional recovery remain controlled DBA processes, not routine app actions.
+
+Each accepted transition appends an immutable `platform_audit_events` action:
+`PLATFORM_OPERATOR_GRANT_REQUESTED`, `PLATFORM_OPERATOR_GRANT_APPROVED`, `PLATFORM_OPERATOR_GRANT_REVOKED`. The event records the actor, grant ID, before/after state and reason. The grant row separately records requester, approver, revoker and timestamps.
+
+Authorization checks the grant date on every `platform_current_operator_roles()` lookup, so access is ineffective once the approved `valid_to` date has elapsed even if the stored status has not yet been swept. The status/audit expiry transition is currently performed lazily when an authorized PLATFORM_ADMIN lists the grant register or requests/approves/revokes a grant; a scheduled expiry worker is not yet claimed as implemented. The next scheduler/recovery design must use a separately constrained system actor and must not let app_runtime forge arbitrary audit actors.
 
 ## 3. Tenant lifecycle model
 
@@ -73,9 +91,13 @@ Entitlement records contain:
 The database rejects non-object feature/limit payloads, non-boolean feature values, negative/non-integer limits, invalid effective dates, and an ACTIVE entitlement outside its effective period. An inactive tenant cannot receive ACTIVE entitlements.
 
 The current tenant can read its own entitlement summary at `GET /api/v1/tenant/entitlements`; it cannot change it. Platform administration endpoints are:
-- `GET /api/v1/platform/tenants` — PLATFORM_ADMIN or PLATFORM_SUPPORT;
+- `GET /api/v1/platform/context` — resolves active global operator roles for an authenticated identity;
+- `GET /api/v1/platform/tenants` — PLATFORM_ADMIN or PLATFORM_SUPPORT, read only and audit logged;
 - `PATCH /api/v1/platform/tenants/{tenantId}/lifecycle` — PLATFORM_ADMIN only;
-- `PUT /api/v1/platform/tenants/{tenantId}/entitlements` — PLATFORM_ADMIN only.
+- `PUT /api/v1/platform/tenants/{tenantId}/entitlements` — PLATFORM_ADMIN only;
+- `GET/POST /api/v1/platform/operators/grants` — PLATFORM_ADMIN only;
+- `POST /api/v1/platform/operators/grants/{grantId}/approve` — independent PLATFORM_ADMIN approval;
+- `POST /api/v1/platform/operators/grants/{grantId}/revoke` — reasoned PLATFORM_ADMIN revocation.
 
 These routes require an authenticated identity context. The database functions independently validate the platform grant, so controller/middleware checks are not the only security boundary.
 
@@ -83,7 +105,7 @@ The global tenant-register read is itself privileged metadata access. The follow
 
 ## 5. Database and audit controls
 
-Migration: `backend/database/migrations/2026_11_26_000032_add_platform_entitlements_and_tenant_lifecycle.php`.
+Foundation migration: `backend/database/migrations/2026_11_26_000032_add_platform_entitlements_and_tenant_lifecycle.php`. Operator grant lifecycle migration: `backend/database/migrations/2026_11_27_000033_create_platform_operator_grant_lifecycle.php`.
 
 Tables:
 - `platform_operator_grants`: global operator grants; self-read RLS; no runtime write privileges.
@@ -95,9 +117,15 @@ Functions:
 - `public.platform_change_tenant_status(uuid,text,text)`
 - `public.platform_set_tenant_entitlements(uuid,text,text,jsonb,jsonb,date,date,text)`
 - `public.platform_get_current_entitlement(uuid)`
+- `public.platform_current_operator_roles()`
+- `public.platform_list_operator_grants()`
+- `public.platform_request_operator_grant(text,text,date,date,text)`
+- `public.platform_approve_operator_grant(uuid,text)`
+- `public.platform_revoke_operator_grant(uuid,text)`
+- internal `public.platform_expire_operator_grants(uuid)`
 - private `public.require_platform_operator(text)`
 
-All exposed functions use SECURITY DEFINER with fixed `search_path = pg_catalog, public`; PUBLIC EXECUTE is revoked and only app_runtime EXECUTE is granted to the four intended API functions. The privileged functions re-check global operator status/role/validity from PostgreSQL. Direct updates to tenants, entitlements, grants or platform audit remain unavailable to app_runtime.
+All exposed functions use SECURITY DEFINER with fixed `search_path = pg_catalog, public`; PUBLIC EXECUTE is revoked and app_runtime receives EXECUTE only on the narrow intended API functions. The internal expiry helper is not executable by PUBLIC/app_runtime directly. Privileged functions re-check global operator status/role/validity from PostgreSQL. Direct updates to tenants, entitlements, grants or platform audit remain unavailable to app_runtime.
 
 Migration rollback is intentionally blocked when grants, configured entitlements or audit history exist; this preserves platform governance and audit evidence.
 
@@ -106,6 +134,7 @@ Migration rollback is intentionally blocked when grants, configured entitlements
 - Assign the real PLATFORM_ADMIN and PLATFORM_SUPPORT identities using the controlled two-person process; this repository intentionally seeds none.
 - Complete a formal entitlement catalogue/plan definition with the product owner; no feature is enabled merely because a plan name exists.
 - Define tenant closure retention schedule, legal hold, data export and approved recovery workflow.
-- Add MFA/OIDC/SSO and dedicated platform administration Angular workflows.
+- Complete scheduled persisted expiry sweeps with a non-forgeable system audit identity; current role authorization already stops access at the validity date, and persisted EXPIRED status is swept on authorized admin activity.
+- Add MFA/OIDC/SSO and complete platform administration Angular workflows (read-only tenant register and operator-grant workbench have been added on the candidate branch; exact-head CI is pending).
 - Run tenant lifecycle and entitlement test matrix, independent authorization review, concurrency tests and backup/restore rehearsal.
 - Do not use tenant OWNER or ADMIN identities as a substitute for platform authority.

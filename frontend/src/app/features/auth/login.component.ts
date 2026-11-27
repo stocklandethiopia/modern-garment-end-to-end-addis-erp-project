@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { AuthSessionService } from '../../core/auth/auth-session.service';
@@ -12,6 +13,7 @@ import { AuthSessionService } from '../../core/auth/auth-session.service';
 })
 export class LoginComponent {
   private readonly session = inject(AuthSessionService);
+  private readonly router = inject(Router);
 
   readonly busy = signal(false);
   readonly errorMessage = signal<string | null>(null);
@@ -38,7 +40,12 @@ export class LoginComponent {
 
     this.session.login(this.form.controls.email.value, this.form.controls.password.value)
       .subscribe({
-        next: () => this.busy.set(false),
+        next: () => {
+          this.busy.set(false);
+          if (!this.session.activeTenant() && this.session.isPlatformOperator()) {
+            this.router.navigateByUrl('/platform/tenants');
+          }
+        },
         error: (error: unknown) => {
           this.busy.set(false);
           this.errorMessage.set(

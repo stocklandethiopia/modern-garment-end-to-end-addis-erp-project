@@ -1,7 +1,8 @@
 # WP-03 — Requirement-level implementation and acceptance ledger
 
-**Parallel implementation branch:** `work/wp03-identity-platform-completion-2026-11-26`  
-**Isolated continuation branch:** `agent/chatgpt-wp03-continuation-2026-11-27`  
+**Active implementation branch:** `work/wp03-completion-2026-11-27`  
+**Integrated base:** `delivery/autonomous-wp-01-16` at `f948bb85de4194ae18dc8ee8c974c3ad0986623c`  
+**Prior implementation evidence:** `work/wp03-identity-platform-completion-2026-11-26`, `agent/chatgpt-wp03-continuation-2026-11-27`  
 **Integration base:** `delivery/autonomous-wp-01-16`  
 **Governed scope:** WP-03 only, within the fixed WP-00–WP-16 sequence  
 **Status:** PARTIAL FOUNDATION — exact-SHA CI evidence exists; WP-03 handover is open.
@@ -100,3 +101,53 @@ This ledger reconciles the requirements assigned to WP-03 in docs/requirements/r
 7. Complete secret provisioning/rotation, recovery, migration rollback and non-production deployment drills. Execute full GAR-ENT-001..010 and GAR-PLT-001/003/004/005 positive, negative, retry, expiry, concurrency, audit and tenant-crossing acceptance. Reconcile WP-01 R3's 128 records to the 120 visible GAR rows and document the exact eight-record delta.
 
 **WP-03 remains open.** No later work package can be treated as accepted to bypass it. Routine owner acceptance is not required between safe engineering steps; exact technical evidence is.
+
+
+## Global platform operator grant workflow — 27 November 2026 candidate increment
+
+**Status:** IMPLEMENTED CANDIDATE — exact-head PostgreSQL/Angular CI and acceptance run pending. This increment is not yet merged into the canonical delivery branch and does not close WP-03.
+
+| Acceptance scenario | Candidate implementation | Current status | Exact remaining proof |
+|---|---|---|---|
+| AT-ENT-PLATFORM-003 global platform-only sign-in | Global token authentication already accepts an active user without checking tenant membership. GET /api/v1/platform/context resolves only that identity's active, effective global roles through an authenticated identity context. Angular sign-in loads tenant memberships and platform roles separately; no tenant membership is required for platform operators. | IMPLEMENTED CANDIDATE | Run new AuthSessionService tests and prove platform-only sign-in, ordinary-tenant no-platform role, context endpoint failure fail-closed behavior and session reset. |
+| AT-ENT-PLATFORM-004 platform support is read-only | The existing platform tenant register is available to PLATFORM_ADMIN/PLATFORM_SUPPORT and is read-audited. New Angular PlatformTenantsComponent exposes only the global read-only register. PLATFORM_SUPPORT cannot list/manage operator grants and sees no tenant workspace actions while no tenant is selected. | IMPLEMENTED CANDIDATE | Run backend and Angular tests; manually verify support route/role with a no-tenant identity; verify no lifecycle, entitlement or grant mutation control is present and API denies mutation. |
+| AT-ENT-PLATFORM-005 two-person platform operator appointment | Migration 2026_11_27_000033_create_platform_operator_grant_lifecycle.php adds database functions for request, independent approval, revoke, active-role resolution and expiry sweep. A different active PLATFORM_ADMIN must approve; requester and target cannot approve; reasons are mandatory; every application grant has an explicit expiry no more than 365 days after its start; no direct app_runtime table DML is added. | IMPLEMENTED CANDIDATE | Execute the new PostgreSQL feature tests, test forbidden direct DML/EXECUTE, test stale/expired identity, duplicate grant, requester/recipient conflict, concurrent request/approval/revoke and immutable audit events. |
+| AT-ENT-PLATFORM-006 global operator administration UI | Angular /platform/operators workbench provides admin-only request/list/approve/revoke actions; support receives the separate read-only tenant register. Existing tenant roles do not imply platform roles. | IMPLEMENTED CANDIDATE | Pass Angular production build and service/session tests; perform authenticated two-admin workflow in a test environment and verify accessible keyboard/validation/error states. |
+| AT-ENT-PLATFORM-007 grant expiry and revocation audit | platform_current_operator_roles() enforces valid_from/valid_to at authorization time. On next authorized grant-register or grant-mutation operation, platform_expire_operator_grants() records EXPIRED state and an immutable platform audit event. | PARTIAL CANDIDATE | Prove the immediate access cutoff at the date boundary and sweep/audit semantics. A scheduled expiry worker with a non-forgeable system audit actor is not implemented; effective authorization is date-checked immediately, while EXPIRED status/audit is swept on authorized admin activity. |
+| AT-ENT-PLATFORM-008 tenant/global role separation | Tenant picker/workspace routes are rendered only with an active tenant; platform roles are fetched independently; grant functions and list functions re-check platform authority in PostgreSQL. | IMPLEMENTED CANDIDATE | Exact-head CI; cross-tenant/tenant-owner escalation tests; direct database privilege assertions and route registration check. |
+
+### New source locations
+
+| Concern | File |
+|---|---|
+| PostgreSQL grant lifecycle and role functions | backend/database/migrations/2026_11_27_000033_create_platform_operator_grant_lifecycle.php |
+| Global platform services | backend/app/Services/PlatformAdministrationService.php |
+| Grant controller | backend/app/Http/Controllers/Enterprise/PlatformOperatorGrantController.php |
+| Global platform context controller | backend/app/Http/Controllers/Enterprise/PlatformAdministrationController.php |
+| Global routes | backend/routes/domain-api.php |
+| Database/HTTP acceptance | backend/tests/Feature/PlatformAdministrationTest.php |
+| Global role session resolution | frontend/src/app/core/auth/auth-session.service.ts and auth-session.service.spec.ts |
+| Platform operator workbench | frontend/src/app/features/platform/platform-operators.service.ts, platform-operators.service.spec.ts, platform-operators.component.ts, platform-operators.component.html, platform-operators.component.css |
+| Read-only tenant register | frontend/src/app/features/platform/platform-tenants.service.ts, platform-tenants.service.spec.ts, platform-tenants.component.ts, platform-tenants.component.html, platform-tenants.component.css |
+| Application shell/routes | frontend/src/app/app.component.html; frontend/src/app/app.routes.ts |
+| Security boundary/runbook | docs/security/platform-administration-bootstrap.md |
+
+**Security boundary:** the first real PLATFORM_ADMIN appointment still requires the controlled two-person DBA bootstrap and an actual named identity. The new UI does not self-provision identities, does not seed operator roles, and does not make a tenant OWNER/ADMIN a global administrator. The expiry-date check prevents use after the effective end date; the persisted EXPIRED status/audit sweep runs on a subsequent authorized admin operation, not through a scheduled worker yet.
+
+The fixed WP-00–WP-16 sequence remains in force. All other WP-03 rows above remain PARTIAL/BLOCKED/NOT RUN as previously recorded; this candidate increment does not close tenant retention/legal hold/export/recovery, target-resource scope enforcement, MFA/OIDC/SSO, full installer/operator handover or full WP-03 acceptance.
+
+
+## Tenant scoped-access database mutation boundary — 27 November 2026
+
+**Status: IMPLEMENTED CANDIDATE — exact-head execution pending.** This is a security hardening increment only; it does not complete target-resource scope enforcement.
+
+| Acceptance scenario | Candidate evidence | Current status | Exact remaining proof |
+|---|---|---|---|
+| Runtime cannot directly alter scope modes or scope grants | Migration `2026_11_27_000034_secure_tenant_access_scope_mutations.php` revokes all direct table privileges on both tables from PUBLIC and app_runtime, then grants SELECT only. | IMPLEMENTED CANDIDATE | Execute migration on PostgreSQL 18; assert has_table_privilege returns false for INSERT/UPDATE/DELETE and true for SELECT on both tables. |
+| Only narrow scope mutation APIs are executable | Three fixed-search-path SECURITY DEFINER functions re-check active tenant, actor OWNER/ADMIN and target MEMBER before changing records. | IMPLEMENTED CANDIDATE | Verify function ownership, grants, RLS bypass under the migration role, PUBLIC execute revocation and forbidden direct calls on PostgreSQL. |
+| Mode/grant/revoke mutation and audit are atomic | Each function writes the immutable audit event in the same PostgreSQL transaction; application service no longer writes duplicate audit rows. | IMPLEMENTED CANDIDATE | Run feature tests and induce audit insert failure to prove the associated mutation rolls back. |
+| Concurrent duplicate effective grants are blocked | Transaction advisory lock plus overlap check rejects an active grant for the same member/scope/permission and overlapping validity interval. | IMPLEMENTED CANDIDATE | Execute duplicate and concurrent PostgreSQL regression cases under multiple connections. |
+| Rollback does not silently restore direct runtime writes | Migration 000034 is forward-only; down() explicitly refuses the downgrade. | DOCUMENTED / CANDIDATE | Validate deploy/recovery runbook uses a forward corrective migration and retains the secure privilege boundary. |
+| Target-resource SCOPED authorization | Existing domain Gate remains fail-closed; only BRAND/SITE/MARKET scope grant types exist, and controllers do not yet pass concrete target records into the Gate. | OPEN / FAIL-CLOSED | Implement legal-entity/site/department/warehouse/channel scope identities, pass real target IDs from each action, and prove positive and negative cross-target tests before allowing SCOPED users through any capability. |
+
+**Verification boundary:** PR #13 is still a candidate and is not merged. The latest known runner failure observed on prior head `0e38ff2496597cb9dd559bcde7d4ae7022e588b8` occurred before any Laravel or Angular step executed. It predates migration 000034's final candidate edits. No successful exact-head CI or PostgreSQL run is claimed for this increment.

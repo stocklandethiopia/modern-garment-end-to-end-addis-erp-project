@@ -30,14 +30,12 @@ class AccessScopeController extends Controller
 
         $data = $request->validate([
             'scope_mode' => ['required', Rule::in(['TENANT_WIDE', 'SCOPED'])],
-            'reason' => ['required', 'string', 'min:10', 'max:2000'],
+            'reason' => ['required', 'string', 'min:10', 'max:500'],
         ]);
 
         return response()->json([
             'data' => $scopes->setMode(
-                $tenantContext->tenantId(),
                 $userId,
-                (string) $request->user()->getAuthIdentifier(),
                 $data['scope_mode'],
                 trim($data['reason']),
             ),
@@ -59,14 +57,12 @@ class AccessScopeController extends Controller
             'permission_code' => ['required', Rule::in(['READ', 'CREATE', 'APPROVE', 'MANAGE'])],
             'valid_from' => ['nullable', 'date'],
             'valid_to' => ['nullable', 'date', 'after_or_equal:valid_from'],
-            'grant_reason' => ['required', 'string', 'min:10', 'max:2000'],
+            'grant_reason' => ['required', 'string', 'min:10', 'max:500'],
         ]);
 
         return response()->json([
             'data' => $scopes->grant(
-                $tenantContext->tenantId(),
                 $userId,
-                (string) $request->user()->getAuthIdentifier(),
                 $data,
             ),
         ], 201);
@@ -82,7 +78,7 @@ class AccessScopeController extends Controller
         abort_unless($tenantContext->canAdministerTenant(), 403, 'Tenant administrator permission is required.');
 
         $data = $request->validate([
-            'reason' => ['required', 'string', 'min:10', 'max:2000'],
+            'reason' => ['required', 'string', 'min:10', 'max:500'],
         ]);
 
         $grant = $scopes->forMember($tenantContext->tenantId(), $userId)['grants']
@@ -92,9 +88,7 @@ class AccessScopeController extends Controller
 
         return response()->json([
             'data' => $scopes->revoke(
-                $tenantContext->tenantId(),
                 $grantId,
-                (string) $request->user()->getAuthIdentifier(),
                 trim($data['reason']),
             ),
         ]);

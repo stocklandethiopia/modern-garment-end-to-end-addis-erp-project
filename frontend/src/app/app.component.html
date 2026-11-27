@@ -1,11 +1,11 @@
 @if (!session.accessToken()) {
   <app-login />
-} @else if (!session.activeTenant()) {
+} @else if (!session.activeTenant() && !session.isPlatformOperator()) {
   <app-tenant-picker />
 } @else {
   <div class="app-shell">
     <aside class="sidebar" aria-label="Main navigation">
-      <a class="brand" routerLink="/" aria-label="Modern Garment ERP home">
+      <a class="brand" [routerLink]="session.activeTenant() ? '/' : '/platform/tenants'" aria-label="Modern Garment ERP home">
         <span class="brand-mark">M</span>
         <span class="brand-copy">
           <strong>MODERN GARMENT</strong>
@@ -13,45 +13,86 @@
         </span>
       </a>
 
-      <div class="workspace-switcher">
-        <span class="workspace-avatar">W</span>
-        <span class="workspace-name">
-          <strong>Workspace</strong>
-          <small>{{ session.activeTenant()?.name }}</small>
-        </span>
-        <select
-          class="tenant-switch"
-          aria-label="Choose tenant workspace"
-          [value]="session.activeTenant()?.id ?? ''"
-          (change)="changeTenant($any($event.target).value)"
-        >
-          @for (membership of session.memberships(); track membership.id) {
-            <option [value]="membership.id">{{ membership.name }}</option>
+      @if (session.activeTenant()) {
+        <div class="workspace-switcher">
+          <span class="workspace-avatar">W</span>
+          <span class="workspace-name">
+            <strong>Workspace</strong>
+            <small>{{ session.activeTenant()?.name }}</small>
+          </span>
+          <select
+            class="tenant-switch"
+            aria-label="Choose tenant workspace"
+            [value]="session.activeTenant()?.id ?? ''"
+            (change)="changeTenant($any($event.target).value)"
+          >
+            @for (membership of session.memberships(); track membership.id) {
+              <option [value]="membership.id">{{ membership.name }}</option>
+            }
+          </select>
+        </div>
+      } @else {
+        <div class="workspace-switcher" aria-label="Global platform administration">
+          <span class="workspace-avatar">P</span>
+          <span class="workspace-name">
+            <strong>Platform</strong>
+            <small>Global control plane</small>
+          </span>
+          @if (session.memberships().length > 0) {
+            <select
+              class="tenant-switch"
+              aria-label="Choose customer workspace"
+              [value]="session.activeTenant()?.id ?? ''"
+              (change)="changeTenant($any($event.target).value)"
+            >
+              <option value="" disabled>Choose workspace</option>
+              @for (membership of session.memberships(); track membership.id) {
+                <option [value]="membership.id">{{ membership.name }}</option>
+              }
+            </select>
           }
-        </select>
-      </div>
+        </div>
+      }
 
-      <nav class="primary-nav" aria-label="Workspace navigation">
-        <span class="nav-caption">WORKSPACE</span>
-        @for (item of navigation; track item.path) {
-          <a class="nav-link" [routerLink]="item.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-            <span class="nav-icon" aria-hidden="true">{{ item.icon }}</span>
-            <span>{{ item.label }}</span>
-          </a>
+      @if (session.activeTenant()) {
+        <nav class="primary-nav" aria-label="Workspace navigation">
+          <span class="nav-caption">WORKSPACE</span>
+          @for (item of navigation; track item.path) {
+            <a class="nav-link" [routerLink]="item.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+              <span class="nav-icon" aria-hidden="true">{{ item.icon }}</span>
+              <span>{{ item.label }}</span>
+            </a>
+          }
+        </nav>
+
+        @for (group of domainGroups; track group.label) {
+          <section class="nav-group" [attr.aria-label]="group.label">
+            <span class="nav-caption">{{ group.label }}</span>
+            @for (item of group.items; track item) {
+              <div class="nav-link nav-link-disabled" aria-disabled="true">
+                <span class="nav-dot" aria-hidden="true"></span>
+                <span>{{ item }}</span>
+                <span class="planned-tag">PLANNED</span>
+              </div>
+            }
+          </section>
         }
-      </nav>
+      }
 
-      @for (group of domainGroups; track group.label) {
-        <section class="nav-group" [attr.aria-label]="group.label">
-          <span class="nav-caption">{{ group.label }}</span>
-          @for (item of group.items; track item) {
-            <div class="nav-link nav-link-disabled" aria-disabled="true">
-              <span class="nav-dot" aria-hidden="true"></span>
-              <span>{{ item }}</span>
-              <span class="planned-tag">PLANNED</span>
-            </div>
+      @if (session.isPlatformOperator()) {
+        <nav class="primary-nav" aria-label="Platform administration">
+          <span class="nav-caption">GLOBAL PLATFORM</span>
+          <a class="nav-link" routerLink="/platform/tenants" routerLinkActive="active">
+            <span class="nav-icon" aria-hidden="true">▦</span>
+            <span>Tenant register</span>
+          </a>
+          @if (session.canManagePlatform()) {
+            <a class="nav-link" routerLink="/platform/operators" routerLinkActive="active">
+              <span class="nav-icon" aria-hidden="true">⚿</span>
+              <span>Platform operators</span>
+            </a>
           }
-        </section>
+        </nav>
       }
 
       <div class="sidebar-footer">
@@ -64,9 +105,9 @@
     <main class="main-area">
       <header class="topbar">
         <div class="breadcrumbs">
-          <span>{{ session.activeTenant()?.name }}</span>
+          <span>{{ session.activeTenant()?.name ?? 'Platform administration' }}</span>
           <span class="crumb-divider">/</span>
-          <strong>Workspace</strong>
+          <strong>{{ session.activeTenant() ? 'Workspace' : 'Global platform' }}</strong>
         </div>
         <div class="topbar-actions">
           <span class="environment-label">DEVELOPMENT FOUNDATION</span>

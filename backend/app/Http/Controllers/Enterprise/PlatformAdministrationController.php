@@ -11,6 +11,11 @@ use Illuminate\Http\Request;
 
 class PlatformAdministrationController extends Controller
 {
+    public function context(PlatformAdministrationService $platform): JsonResponse
+    {
+        return response()->json(['data' => ['roles' => $platform->currentOperatorRoles()]]);
+    }
+
     public function index(PlatformAdministrationService $platform): JsonResponse
     {
         return response()->json(['data' => $platform->tenants()]);

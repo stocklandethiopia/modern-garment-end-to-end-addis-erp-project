@@ -1,0 +1,145 @@
+<section class="platform-page">
+  <header class="page-heading">
+    <div>
+      <span class="eyebrow">GLOBAL PLATFORM · ACCESS GOVERNANCE</span>
+      <h1>Platform operators</h1>
+      <p>Manage global platform administrator and read-only support grants. These roles are separate from all tenant memberships and domain roles.</p>
+    </div>
+    <button type="button" class="secondary-button" (click)="refresh()" [disabled]="loading() || saving() || !canManage()">Refresh</button>
+  </header>
+
+  @if (error()) {
+    <div class="feedback error" role="alert">{{ error() }}</div>
+  }
+  @if (notice()) {
+    <div class="feedback success" role="status">{{ notice() }}</div>
+  }
+
+  @if (!canManage()) {
+    <section class="policy-panel">
+      <h2>Restricted global capability</h2>
+      <p>Your current identity does not hold an active PLATFORM_ADMIN grant. Tenant OWNER or ADMIN permissions do not confer platform privileges.</p>
+    </section>
+  } @else {
+    <section class="policy-panel">
+      <h2>Two-person operator approval</h2>
+      <p>A platform administrator may request access for an existing active account. The requester and recipient cannot approve the same grant; a different active platform administrator must approve it. Support grants remain read-only. The initial platform administrator bootstrap remains a controlled DBA operation.</p>
+      <p class="policy-warning">Do not grant platform access to satisfy an ordinary tenant administration request. Use tenant memberships and domain roles for customer-workspace permissions.</p>
+    </section>
+
+    <form class="grant-form" [formGroup]="form" (ngSubmit)="requestGrant()">
+      <div class="form-heading">
+        <div>
+          <h2>Request a platform grant</h2>
+          <p>The target must already have an active global identity. No password, token or secret is collected here.</p>
+        </div>
+      </div>
+      <div class="form-grid">
+        <label>
+          <span>Existing account email</span>
+          <input type="email" formControlName="user_email" autocomplete="email" maxlength="254" required>
+        </label>
+        <label>
+          <span>Platform role</span>
+          <select formControlName="role_code">
+            <option value="PLATFORM_SUPPORT">Platform support · read only</option>
+            <option value="PLATFORM_ADMIN">Platform administrator</option>
+          </select>
+        </label>
+        <label>
+          <span>Effective from</span>
+          <input type="date" formControlName="valid_from" required>
+        </label>
+        <label>
+          <span>Effective until (required, maximum 365 days)</span>
+          <input type="date" formControlName="valid_to" required>
+        </label>
+        <label class="reason-field">
+          <span>Business and security justification</span>
+          <textarea formControlName="reason" rows="2" minlength="10" maxlength="500" required></textarea>
+        </label>
+      </div>
+      <div class="form-actions">
+        <span class="hint">Requests are pending until a separate active platform administrator approves them.</span>
+        <button class="primary-button" type="submit" [disabled]="form.invalid || saving()">
+          @if (saving()) { Submitting… } @else { Request grant }
+        </button>
+      </div>
+    </form>
+
+    <section class="grant-panel" aria-labelledby="grant-list-title">
+      <div class="panel-heading">
+        <div>
+          <h2 id="grant-list-title">Global operator grant register</h2>
+          <p>Every request, approval, revocation and validity expiry creates an immutable platform audit event.</p>
+        </div>
+        <span class="record-count">{{ grants().length }} records</span>
+      </div>
+
+      @if (loading()) {
+        <div class="empty-state" role="status">Loading platform operator grants…</div>
+      } @else if (grants().length === 0) {
+        <div class="empty-state">No platform operator grants are recorded.</div>
+      } @else {
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Account</th>
+                <th>Global role</th>
+                <th>Status</th>
+                <th>Validity</th>
+                <th>Requested by</th>
+                <th>Approved by</th>
+                <th><span class="visually-hidden">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (grant of grants(); track grant.grant_id) {
+                <tr>
+                  <td>
+                    <strong>{{ grant.user_name }}</strong>
+                    <small>{{ grant.user_email }}</small>
+                  </td>
+                  <td><span class="role-pill">{{ grant.role_code }}</span></td>
+                  <td>
+                    <span class="status-pill"
+                      [class.pending]="grant.grant_status === 'PENDING'"
+                      [class.closed]="grant.grant_status === 'REVOKED' || grant.grant_status === 'EXPIRED'">
+                      {{ grant.grant_status }}
+                    </span>
+                  </td>
+                  <td>
+                    <strong>{{ grant.valid_from | date:'mediumDate':'UTC' }}</strong>
+                    <small>{{ grant.valid_to ? (grant.valid_to | date:'mediumDate':'UTC') : 'No scheduled expiry' }}</small>
+                  </td>
+                  <td>{{ grant.grantor_name }}</td>
+                  <td>{{ grant.approver_name ?? 'Awaiting independent approval' }}</td>
+                  <td class="actions">
+                    @if (canApprove(grant)) {
+                      <button type="button" class="text-button" (click)="approve(grant)" [disabled]="saving()">Approve</button>
+                    }
+                    @if (canRevoke(grant)) {
+                      <button type="button" class="danger-button" (click)="revoke(grant)" [disabled]="saving()">Revoke</button>
+                    }
+                    @if (!canApprove(grant) && !canRevoke(grant)) {
+                      <span class="hint">No action</span>
+                    }
+                  </td>
+                </tr>
+                <tr class="reason-row">
+                  <td colspan="7">
+                    <span>Request reason:</span> {{ grant.grant_reason }}
+                    @if (grant.revocation_reason) {
+                      <span class="revocation-reason">Revocation reason:</span> {{ grant.revocation_reason }}
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  }
+</section>
