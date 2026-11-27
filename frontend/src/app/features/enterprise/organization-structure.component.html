@@ -140,8 +140,13 @@
         <div class="panel-heading">
           <div>
             <h3 id="unit-list-heading">Unit register</h3>
-            <span>{{ units().length }} loaded</span>
+            <span>{{ unitPage()?.total ?? units().length }} total</span>
           </div>
+        </div>
+        <div class="register-toolbar" role="search" aria-label="Search organizational units">
+          <label class="sr-only" for="unit-search">Search all organizational units</label>
+          <input id="unit-search" type="search" [formControl]="unitSearch" placeholder="Search code or unit name">
+          <button type="button" class="secondary-button" (click)="searchUnits()">Search</button>
         </div>
         <div class="unit-list">
           @for (unit of units(); track unit.id) {
@@ -161,6 +166,15 @@
               <span class="unit-chevron" aria-hidden="true">›</span>
             </button>
           }
+        </div>
+        <div class="pager" aria-label="Organizational unit pages">
+          <span>Page {{ unitPage()?.current_page ?? 1 }} of {{ unitPage()?.last_page ?? 1 }} · {{ unitPage()?.total ?? units().length }} total</span>
+          <div>
+            <button type="button" class="secondary-button" (click)="changeUnitPage(1)" [disabled]="(unitPage()?.current_page ?? 1) <= 1">First</button>
+            <button type="button" class="secondary-button" (click)="changeUnitPage((unitPage()?.current_page ?? 1) - 1)" [disabled]="(unitPage()?.current_page ?? 1) <= 1">Previous</button>
+            <button type="button" class="secondary-button" (click)="changeUnitPage((unitPage()?.current_page ?? 1) + 1)" [disabled]="(unitPage()?.current_page ?? 1) >= (unitPage()?.last_page ?? 1)">Next</button>
+            <button type="button" class="secondary-button" (click)="changeUnitPage(unitPage()?.last_page ?? 1)" [disabled]="(unitPage()?.current_page ?? 1) >= (unitPage()?.last_page ?? 1)">Last</button>
+          </div>
         </div>
       </section>
 
@@ -186,7 +200,7 @@
           }
 
           <div class="mini-grid">
-            <div><span>Sub-units</span><strong>{{ childUnits().length }}</strong></div>
+            <div><span>Sub-units on this page</span><strong>{{ childUnits().length }}</strong></div>
             <div><span>Effective from</span><strong>{{ unit.valid_from }}</strong></div>
             <div><span>Effective to</span><strong>{{ unit.valid_to || 'Open ended' }}</strong></div>
             <div><span>Legal entity</span><strong>{{ unit.legal_entity_id ? (legalEntities().find(e => e.id === unit.legal_entity_id)?.legal_name || 'Assigned') : 'Not assigned' }}</strong></div>
@@ -196,8 +210,13 @@
           <div class="subsection-heading">
             <div>
               <h4>Job positions</h4>
-              <span>{{ positionsInSelectedUnit().length }} positions in this unit</span>
+              <span>{{ positionPage()?.total ?? positionsInSelectedUnit().length }} positions in this unit</span>
             </div>
+          </div>
+          <div class="register-toolbar" role="search" aria-label="Search job positions">
+            <label class="sr-only" for="position-search">Search positions in this unit</label>
+            <input id="position-search" type="search" [formControl]="positionSearch" placeholder="Search position code, title or family">
+            <button type="button" class="secondary-button" (click)="searchPositions()">Search</button>
           </div>
 
           @if (showPositionForm() && canManage()) {
@@ -268,6 +287,15 @@
               </table>
             </div>
           }
+          <div class="pager" aria-label="Job position pages">
+            <span>Page {{ positionPage()?.current_page ?? 1 }} of {{ positionPage()?.last_page ?? 1 }} · {{ positionPage()?.total ?? 0 }} total</span>
+            <div>
+              <button type="button" class="secondary-button" (click)="changePositionPage(1)" [disabled]="(positionPage()?.current_page ?? 1) <= 1">First</button>
+              <button type="button" class="secondary-button" (click)="changePositionPage((positionPage()?.current_page ?? 1) - 1)" [disabled]="(positionPage()?.current_page ?? 1) <= 1">Previous</button>
+              <button type="button" class="secondary-button" (click)="changePositionPage((positionPage()?.current_page ?? 1) + 1)" [disabled]="(positionPage()?.current_page ?? 1) >= (positionPage()?.last_page ?? 1)">Next</button>
+              <button type="button" class="secondary-button" (click)="changePositionPage(positionPage()?.last_page ?? 1)" [disabled]="(positionPage()?.current_page ?? 1) >= (positionPage()?.last_page ?? 1)">Last</button>
+            </div>
+          </div>
 
           <div class="subsection-heading">
             <div>
@@ -320,6 +348,20 @@
               }
             </div>
           }
+          <div class="register-toolbar" role="search" aria-label="Search manager assignment history">
+            <label class="sr-only" for="manager-search">Search manager position history</label>
+            <input id="manager-search" type="search" [formControl]="managerSearch" placeholder="Search manager position">
+            <button type="button" class="secondary-button" (click)="searchManagers()">Search</button>
+          </div>
+          <div class="pager" aria-label="Manager assignment pages">
+            <span>Page {{ managerPage()?.current_page ?? 1 }} of {{ managerPage()?.last_page ?? 1 }} · {{ managerPage()?.total ?? 0 }} total</span>
+            <div>
+              <button type="button" class="secondary-button" (click)="changeManagerPage(1)" [disabled]="(managerPage()?.current_page ?? 1) <= 1">First</button>
+              <button type="button" class="secondary-button" (click)="changeManagerPage((managerPage()?.current_page ?? 1) - 1)" [disabled]="(managerPage()?.current_page ?? 1) <= 1">Previous</button>
+              <button type="button" class="secondary-button" (click)="changeManagerPage((managerPage()?.current_page ?? 1) + 1)" [disabled]="(managerPage()?.current_page ?? 1) >= (managerPage()?.last_page ?? 1)">Next</button>
+              <button type="button" class="secondary-button" (click)="changeManagerPage(managerPage()?.last_page ?? 1)" [disabled]="(managerPage()?.current_page ?? 1) >= (managerPage()?.last_page ?? 1)">Last</button>
+            </div>
+          </div>
         } @else {
           <div class="empty-state detail-empty"><strong>Select an organizational unit</strong><p>Choose a unit to inspect its position slots and manager-position history.</p></div>
         }
@@ -333,7 +375,7 @@
         <h2 id="reporting-heading">Position reporting relationships</h2>
         <p>Solid-line and functional reporting are recorded separately and by effective period.</p>
       </div>
-      @if (canManage() && positions().length > 1) {
+      @if (canManage() && reportingPositionChoices().length > 1) {
         <button type="button" class="primary-button" (click)="showReportingForm.set(!showReportingForm())">
           {{ showReportingForm() ? 'Close form' : 'Add reporting relationship' }}
         </button>
@@ -342,12 +384,18 @@
 
     @if (showReportingForm() && canManage()) {
       <form class="editor-card" [formGroup]="reportingForm" (ngSubmit)="createReportingRelation()" novalidate>
+        <div class="register-toolbar" role="search" aria-label="Find positions for reporting relationships">
+          <label class="sr-only" for="report-position-search">Search positions for reporting relationship</label>
+          <input id="report-position-search" type="search" [formControl]="reportingPositionSearch" placeholder="Find position code or title across the tenant">
+          <button type="button" class="secondary-button" (click)="searchReportingPositions()">Find positions</button>
+          <span>{{ reportingPositionChoices().length }} choices loaded · narrow the search for larger registers</span>
+        </div>
         <div class="form-grid">
           <div class="field">
             <label for="report-subject">Subject position</label>
             <select id="report-subject" formControlName="subject_position_id">
               <option value="">Choose position</option>
-              @for (position of positions(); track position.id) {
+              @for (position of reportingPositionChoices(); track position.id) {
                 <option [value]="position.id">{{ position.title }} · {{ position.position_code }} · {{ unitName(position.org_unit_id) }}</option>
               }
             </select>
@@ -381,6 +429,11 @@
       </form>
     }
 
+    <div class="register-toolbar" role="search" aria-label="Search reporting relationships">
+      <label class="sr-only" for="reporting-search">Search reporting relationships</label>
+      <input id="reporting-search" type="search" [formControl]="reportingSearch" placeholder="Search subject or manager position">
+      <button type="button" class="secondary-button" (click)="searchReporting()">Search</button>
+    </div>
     @if (reportingRelations().length === 0) {
       <div class="empty-state compact"><strong>No position reporting relationships recorded</strong><p>Configure solid-line and functional reporting only after the relevant position slots exist.</p></div>
     } @else {
@@ -401,5 +454,14 @@
         </table>
       </div>
     }
+    <div class="pager" aria-label="Reporting relationship pages">
+      <span>Page {{ reportingPage()?.current_page ?? 1 }} of {{ reportingPage()?.last_page ?? 1 }} · {{ reportingPage()?.total ?? 0 }} total</span>
+      <div>
+        <button type="button" class="secondary-button" (click)="changeReportingPage(1)" [disabled]="(reportingPage()?.current_page ?? 1) <= 1">First</button>
+        <button type="button" class="secondary-button" (click)="changeReportingPage((reportingPage()?.current_page ?? 1) - 1)" [disabled]="(reportingPage()?.current_page ?? 1) <= 1">Previous</button>
+        <button type="button" class="secondary-button" (click)="changeReportingPage((reportingPage()?.current_page ?? 1) + 1)" [disabled]="(reportingPage()?.current_page ?? 1) >= (reportingPage()?.last_page ?? 1)">Next</button>
+        <button type="button" class="secondary-button" (click)="changeReportingPage(reportingPage()?.last_page ?? 1)" [disabled]="(reportingPage()?.current_page ?? 1) >= (reportingPage()?.last_page ?? 1)">Last</button>
+      </div>
+    </div>
   </section>
 </section>
