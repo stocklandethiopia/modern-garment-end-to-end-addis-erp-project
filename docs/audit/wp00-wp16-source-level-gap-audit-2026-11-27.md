@@ -2291,7 +2291,7 @@ The inspected Angular feature tree has no dedicated finance/treasury/accounts-pa
 
 ## 31. WP-03 / WP-04 — Scoped authorization, forecast lineage and commercial guardrails
 
-### 29.1 Scoped tenant members can reach merchandising routes that do not evaluate their scope
+### 31.1 Scoped tenant members can reach merchandising routes that do not evaluate their scope
 
 **Finding:** the tenant middleware does not enforce SCOPED mode itself. ResolveTenantContext::handle() validates an active tenant membership, binds the transaction-local tenant/user context and continues the request. It does not load tenant_access_scope_modes, reject SCOPED members, or call ScopedAccessService or DomainCapabilityAuthorizer.
 
@@ -2322,7 +2322,7 @@ These controllers are routed under the general auth:sanctum, token.ability:erp:a
 - [ ] Add adversarial tests that set a member to SCOPED, grant one brand/site/market, then prove list filtering and read/create/approve actions for other scopes return no data or 403/404 as designed.
 - [ ] Add regression coverage for the currently covered range-freeze path and account-terms scopes so a future route cannot omit the scope boundary.
 
-### 29.2 Demand forecast publication accepts unvalidated dimension JSON
+### 31.2 Demand forecast publication accepts unvalidated dimension JSON
 
 **Finding:** DemandPlanningController::publishRun() validates forecasts.*.dimension_refs only as an array. It does not validate the required key set and value type for each grain, nor verify that referenced style/category/channel/account/store records exist, are active, belong to the tenant, or are consistent with each other. The endpoint rejects duplicate JSON dimension/time combinations but that only prevents identical payload keys; it does not establish that those keys identify valid business objects.
 
@@ -2343,7 +2343,7 @@ The same method writes every supplied run as status = PUBLISHED in one transacti
 - [ ] Add a deliberate draft → validation → publish/approval lifecycle if consensus approval is required by the planning authority; do not silently classify a raw imported payload as a validated model output.
 - [ ] Test each grain schema, cross-tenant dimension, inactive style/store, inconsistent channel/account, unknown reference, duplicate row and source-hash mismatch.
 
-### 29.3 Approved forecast adjustments are not materialized as an effective forecast version
+### 31.3 Approved forecast adjustments are not materialized as an effective forecast version
 
 **Finding:** createAdjustment() creates an append-only forecast_adjustments record. approveAdjustment() inserts an APPROVE_ADJUSTMENT row in merchandising_decisions and an audit event but does not set forecast_adjustments.approved_by. showRun() derives an is_approved flag by joining the decisions table, so the decision history is visible; however, the approved adjustment remains a separate record and does not change or supersede the published forecast. There is no service in the inspected demand-planning path that materializes a new approved forecast version or effective-forecast projection from the accepted adjustments.
 
@@ -2365,7 +2365,7 @@ The current OTB scenario can reference a forecast_run_id, but its calculation re
 - [ ] Allow OTB simulation to pin the effective forecast snapshot, derive sales/receipts by the policy's selected valuation basis and retain an explicit override record where planners change it manually.
 - [ ] Test exact same base forecast, approved override, duplicate approval, multiple adjustments to one forecast row, conflicting edits, immutable history and OTB snapshot reproducibility.
 
-### 29.4 OTB policy approval thresholds are stored but never evaluated
+### 31.4 OTB policy approval thresholds are stored but never evaluated
 
 **Finding:** createPolicy() requires an approval_thresholds array and persists it to otb_policies. activatePolicy() validates the inclusion rule modes, but does not validate or use the threshold structure. approveScenario() only requires a tenant administrator and that the author differs from the approver; it never loads the linked policy's approval_thresholds, computes the relevant amount/variance and routes approvals by threshold.
 
@@ -2383,7 +2383,7 @@ The current OTB scenario can reference a forecast_run_id, but its calculation re
 - [ ] Require every approval step, reject self-approval and re-evaluate effective incumbent/delegation status before each decision.
 - [ ] Test under/over threshold, mixed currencies, changed policy after submission, delegated approver expiry and conflicting concurrent decisions.
 
-### 29.5 Promotion approval does not enforce margin floor or price outcome
+### 31.5 Promotion approval does not enforce margin floor or price outcome
 
 **Finding:** createPromotion() accepts a fixed-amount discount greater than zero without comparing the amount with the linked price-list lines. Only percentage discounts are capped at 100%. It stores optional margin_floor, but approvePromotion() does not evaluate margin_floor, the linked line cost_basis, list/wholesale prices or the post-discount margin. The inspected controller contains no price-resolution method that applies the promotion safely to an order line.
 
@@ -2405,7 +2405,7 @@ The current OTB scenario can reference a forecast_run_id, but its calculation re
 - [ ] Pin the price/promotion resolver inputs, versions, decision and result to every order quote/order line for reproducibility.
 - [ ] Test fixed discount above price, percentage boundary, below-margin outcome, stale cost, cross-type overlap, exclusions, expiry/timezone, currency mismatch, stacking policy and repeat quote calculation.
 
-### 29.6 OTB scenario references are not reconciled to the OTB policy or used as calculation inputs
+### 31.6 OTB scenario references are not reconciled to the OTB policy or used as calculation inputs
 
 **Finding:** simulateScenario() validates that optional range_plan_id and forecast_run_id exist in the tenant (and are frozen/published respectively), but it does not verify their legal-entity, brand, market, channel, currency or period relevance to the otb_period and its otb_policy. The formula is calculated from the OTB period's manually entered amounts plus caller-supplied assumptions. The optional forecast and range references are saved as attribution only and do not change those inputs. The endpoint allows arbitrary extra keys in the assumptions map, though the calculation reads only its fixed known keys.
 
@@ -2419,7 +2419,7 @@ The current OTB scenario can reference a forecast_run_id, but its calculation re
 - [ ] Preserve a calculation manifest containing formula version, currency, valuation basis, input provenance, overrides and resulting available budget.
 - [ ] Add tests for mismatched tenant (already protected), mismatched entity/brand/market/channel/currency/period, stale forecast, unknown assumption and deterministic recomputation.
 
-### 29.7 WP-04 test coverage extension
+### 31.7 WP-04 test coverage extension
 
 Existing DemandOtbPricingWorkflowTest covers the happy paths for forecast runs, adjustment approval, OTB policy/period/scenario and price list/promotion approval, plus basic validation. BrandRangeWorkflowTest covers selected brand/range/assortment and scoped range-freeze behavior. The next test increment must add the specific same-tenant scope-bypass, forecast dimension, effective-forecast materialization, DoA-threshold, promotion margin/overlap and OTB source-lineage scenarios above. Tests must execute under the non-owner application database role and be run on the exact candidate SHA.
 
@@ -2433,7 +2433,7 @@ Existing DemandOtbPricingWorkflowTest covers the happy paths for forecast runs, 
 
 This pass inspected the current QualityControlService, QualityController, migration 000017, ManufacturingExecutionService, IntegrationOutboxService and DocumentIntegrationService at delivery SHA fc01eced62b97c4ec27f0075264fc8ba0fb11851.
 
-### 31.1 Quality inspection submission and independent review have an incompatible intermediate database state
+### 32.1 Quality inspection submission and independent review have an incompatible intermediate database state
 
 **Finding:** The quality inspection schema has a result_status CHECK allowing DRAFT, IN_PROGRESS, PASS, PASS_WITH_DEVIATION, FAIL, CONTAINED and CANCELLED. A second CHECK requires reviewed_by and reviewed_at whenever result_status is PASS or PASS_WITH_DEVIATION.
 
@@ -2457,7 +2457,7 @@ Step 1 is rejected by the database because the reviewer fields are still NULL. T
 - [ ] Add PostgreSQL tests for draft → inspector submits pass → different reviewer accepts → material/operation/finished-goods release can proceed; prove no release is possible before review.
 - [ ] Use a forward-only migration and preserve historical inspection identities; do not change the earlier migration in a way that breaks an installed database.
 
-### 31.2 Deviation and containment approvals are request booleans, not independently evidenced decisions
+### 32.2 Deviation and containment approvals are request booleans, not independently evidenced decisions
 
 **Finding A — deviation:** QualityController accepts deviation_approved as a boolean. submitInspectionResult() converts it into PASS_WITH_DEVIATION without a linked waiver/deviation record, applicable standard revision, affected quantity, conditions, expiry, reason or approver identity. The inspection reviewer is still independent, but that reviewer is not a substitute for a distinct deviation authority.
 
@@ -2470,7 +2470,7 @@ Step 1 is rejected by the database because the reviewer fields are still NULL. T
 - [ ] Derive PASS_WITH_DEVIATION or CONTAINED from those recorded decisions, not caller truth values.
 - [ ] Test unapproved, expired, wrong-subject, wrong-standard, wrong-quantity, cross-tenant and altered-evidence cases.
 
-### 31.3 Nonconformance disposition can assert authority containment without an authority event
+### 32.3 Nonconformance disposition can assert authority containment without an authority event
 
 **Finding:** setNonconformanceDisposition() updates a locked nonconformance record, but its closure does not capture the actorId even though the method accepts it. The update stores disposition, caller-provided containment_status, notes/root cause and status UNDER_REVIEW; it does not record a disposition requester, reviewer, authority, timestamp, or reasoned decision event. QualityController explicitly allows the caller to set containment_status to RELEASED_BY_AUTHORITY.
 
@@ -2484,7 +2484,7 @@ The current row has opened_by and resolved_by fields, but no separate dispositio
 - [ ] Preserve inspector, disposition requester, approver, CAPA implementer and effectiveness verifier separation where required.
 - [ ] Add authorization, same-actor, changed-scope, expired approval and audit atomicity tests.
 
-### 31.4 CAPA write and verification evidence still need transactional/evidence strengthening
+### 32.4 CAPA write and verification evidence still need transactional/evidence strengthening
 
 **Finding A — CAPA creation:** createCorrectiveAction() reads the nonconformance, inserts a corrective action and updates the nonconformance status to CAPA_REQUIRED as separate statements without one transaction and without locking the NC. A failure after the insert can leave the action and NC state inconsistent; two concurrent requests can create duplicate actions.
 
@@ -2497,7 +2497,7 @@ The current row has opened_by and resolved_by fields, but no separate dispositio
 - [ ] Retain the existing independent effectiveness verifier and other-open-CAPA check.
 - [ ] Add rollback, duplicate, concurrent, missing/altered evidence and NC-resolution tests.
 
-### 31.5 Inspection standard and sampling-plan references are not verified operational policies
+### 32.5 Inspection standard and sampling-plan references are not verified operational policies
 
 **Finding:** createInspection() stores inspection_standard_reference and sampling_plan_reference as nullable strings. The service accounts for the submitted sample_quantity and requires accepted plus rejected quantity to match it, but no inspected source path resolves the reference to an approved, versioned sampling plan or evaluates AQL/sample size/acceptance-rejection thresholds by inspection lot, risk, customer, defect class or process. The service marks PASS whenever rejected quantity is zero and the defects list is empty; no sampling-policy evaluator runs before that result.
 
@@ -2509,7 +2509,7 @@ The current row has opened_by and resolved_by fields, but no separate dispositio
 - [ ] Calculate pass/fail/conditional disposition from measured observations and policy thresholds, not only the absence of defect rows.
 - [ ] Add AQL boundary, sample-size manipulation, critical-defect, tolerance and stale-standard tests.
 
-### 31.6 Manufacturing quality-gate integration is present and must be preserved
+### 32.6 Manufacturing quality-gate integration is present and must be preserved
 
 **Verified positive behavior:** ManufacturingExecutionService.recordOperationEvent() checks the predecessor route step. If that predecessor is marked quality_gate, the service requires a quality_release_decisions row for that exact predecessor operation with decision RELEASE or RELEASE_WITH_DEVIATION before the next operation can start.
 
@@ -2522,7 +2522,7 @@ QualityControlService.decideOperationRelease() requires the linked inspection to
 - [ ] Ensure final quality gates, including the final operation/finished-goods stage, are enforced by their explicit release service and not inferred from production-order COMPLETED alone.
 - [ ] Test predecessor quality gate, prior release then later hold, concurrent release/hold, opened NC after release, and last-operation final inspection.
 
-### 31.7 Integration outbox claim has no lease expiry or worker fencing
+### 32.7 Integration outbox claim has no lease expiry or worker fencing
 
 **Finding:** claimBatch() claims only PENDING/RETRY events, moves them to PROCESSING and stores locked_at. markDelivered() and markFailed() require PROCESSING, but no method reclaims PROCESSING events after a worker crash/time-out. A worker that crashes after claim can leave an event permanently PROCESSING. There is no claimed_by worker identity, lease expiry, monotonically increasing claim token/fencing version or compare-and-set guard to stop a stale worker from finalizing a later worker's retry.
 
@@ -2534,7 +2534,7 @@ QualityControlService.decideOperationRelease() requires the linked inspection to
 - [ ] Add tests for worker crash after claim, expired lease, stale worker completion, concurrent reclaimer, remote success with lost response, and dead-letter replay.
 - [ ] Continue using the existing FOR UPDATE SKIP LOCKED batch claim and bounded retry/backoff.
 
-### 31.8 Outbox and scan-event idempotency return existing records without checking payload equality
+### 32.8 Outbox and scan-event idempotency return existing records without checking payload equality
 
 **Finding A — outbox:** enqueueDomainEvent() validates that payload_sha256 looks like a 64-hex hash, looks up an existing row by tenant/event_key and returns it without comparing the existing payload_sha256 to the incoming hash or comparing canonical event/aggregate identity. Reusing an event key with a different payload is silently treated as an identical retry. There is also a race between the read and insert which can surface as a unique-constraint exception.
 
@@ -2547,7 +2547,7 @@ QualityControlService.decideOperationRelease() requires the linked inspection to
 - [ ] Resolve the concurrent insert race by serializing or catching unique conflicts and performing the same payload comparison.
 - [ ] Add identical retry, changed-payload same-key, event-key race and cross-device retry tests.
 
-### 31.9 Document extraction and private-object path still lack complete source verification and worker execution
+### 32.9 Document extraction and private-object path still lack complete source verification and worker execution
 
 **Finding:** the document service has lifecycle methods for QUEUED, PROCESSING, EXTRACTED, REVIEW_REQUIRED, APPROVED_FOR_IMPORT and REJECTED, but the inspected repository contains no actual extraction worker/provider invocation or typed import adapter. stageExtractionResult() accepts a result while the run is QUEUED or PROCESSING, but it does not require a dedicated worker service principal, provider execution ID, signed result, model/version, input hash or output hash. reviewExtraction() can set APPROVED_FOR_IMPORT, but approval does not create the proposed domain record through its owning service.
 
@@ -2581,7 +2581,7 @@ Document registration checks the shape of a supplied SHA-256, not actual bytes. 
 
 ## 32. WP-08 / WP-10 / WP-11 — Route effectiveness, quality release authority and operation-state integrity
 
-### 32.1 Approved route versions are not resolved against effective dates
+### 34.1 Approved route versions are not resolved against effective dates
 
 **Finding:** process_route_versions stores effective_from and effective_to, allows approved/superseded states and checks only that the end date is not before the start date. decideRoute() approves a submitted route without checking whether its effective period overlaps another approved route for the same tenant/style revision. createProductionOrder() selects a route by caller-supplied ID, matching style/revision and status APPROVED; it does not compare the route's effective period to the production order's planned start date. There is no inspected service method that transitions an older route to SUPERSEDED.
 
@@ -2600,7 +2600,7 @@ Document registration checks the shape of a supplied SHA-256, not actual bytes. 
 - [ ] Revalidate the pinned route before order release and actual start; a later route change must not rewrite a released order's route snapshot.
 - [ ] Add tests for overlapping approval, gap periods, null effective date, future-dated order, superseded route, backdated correction and historical order reproducibility.
 
-### 32.2 A historical quality RELEASE can override a later HOLD/REJECT during route progression
+### 34.2 A historical quality RELEASE can override a later HOLD/REJECT during route progression
 
 **Finding:** QualityControlService.decideOperationRelease() appends a new quality_release_decisions row for RELEASE, RELEASE_WITH_DEVIATION, HOLD, REJECT or REINSPECT. The schema is append-only for the application role and has an index by subject/date, but no current-decision pointer or unique effective-decision version. In ManufacturingExecutionService.recordOperationEvent() a predecessor quality gate is considered released when a query finds any decision for that operation with decision RELEASE or RELEASE_WITH_DEVIATION. It does not select the latest decision or require the latest decision to remain a release.
 
@@ -2618,7 +2618,7 @@ Document registration checks the shape of a supplied SHA-256, not actual bytes. 
 - [ ] Require downstream release to revalidate the current linked inspection, open NCR/CAPA state, deviation conditions and exact operation/route revision.
 - [ ] Add tests for RELEASE → HOLD, RELEASE → REJECT, RELEASE → REINSPECT, a subsequent authorized re-release, concurrent release/hold decisions and retry/replay.
 
-### 32.3 PASS_WITH_DEVIATION is derived from a caller-supplied boolean, not a verified deviation approval
+### 34.3 PASS_WITH_DEVIATION is derived from a caller-supplied boolean, not a verified deviation approval
 
 **Finding:** QualityController.submitInspectionResult() accepts deviation_approved as a client boolean. QualityControlService.submitInspectionResult() sets the inspection result to PASS_WITH_DEVIATION when that boolean is true, without loading a linked deviation/waiver record, approved concession, risk assessment, expiry, affected quantity or authorized approver. reviewInspection() can subsequently ACCEPT the PASS_WITH_DEVIATION result, and decideOperationRelease() accepts either PASS or PASS_WITH_DEVIATION as the basis for RELEASE as well as RELEASE_WITH_DEVIATION. Thus the client-supplied boolean can influence a controlled quality state without a distinct deviation authorization record.
 
@@ -2637,7 +2637,7 @@ Document registration checks the shape of a supplied SHA-256, not actual bytes. 
 - [ ] At operation/material/finished-goods/shipment release, require RELEASE_WITH_DEVIATION where a deviation is present and verify all stated conditions; do not allow a generic RELEASE to erase the deviation context.
 - [ ] Test forged boolean, missing/expired/revoked approval, wrong style/customer/operation/lot, quantity over approved scope, approval by creator/inspector and deviation amendment after release.
 
-### 32.4 BLOCK events can alter completed or skipped operations
+### 34.4 BLOCK events can alter completed or skipped operations
 
 **Finding:** in ManufacturingExecutionService.recordOperationEvent(), the BLOCK branch updates the operation status to BLOCKED without validating its prior state. The same event endpoint can therefore move a COMPLETED, SKIPPED or QUEUED operation to BLOCKED. UNBLOCK then changes any BLOCKED operation to IN_PROGRESS without restoring or verifying its prior state. The database status constraint permits the resulting values and does not encode a legal transition graph.
 
@@ -2655,7 +2655,7 @@ Document registration checks the shape of a supplied SHA-256, not actual bytes. 
 - [ ] Require appropriate supervisor/quality authority for block/unblock and keep actor/reason/condition evidence in the event.
 - [ ] Add tests for block from every status, unblock from every block origin, completed/skipped immutability, concurrent block/unblock, event replay and order-completion consistency.
 
-### 32.5 WP-08/WP-10/WP-11 integration acceptance sequence
+### 34.5 WP-08/WP-10/WP-11 integration acceptance sequence
 
 1. Implement route effective-date and supersession resolution with a forward migration and exact route-version resolver.
 2. Implement the latest-effective quality release decision contract and use it at every predecessor/operation/finished-goods/shipment gate.
