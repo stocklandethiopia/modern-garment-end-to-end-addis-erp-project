@@ -36,7 +36,7 @@ A legal source record must be independently reviewed and applicable to the exact
 ### 2.1 Official links
 
 - Proclamation 1395/2025: https://www.mofed.gov.et/media/filer_public/7f/72/7f720781-022a-4b90-a9e7-b4724c1f3002/income_tax_amendment_proc_no_1395-2017_compressed.pdf
-- Proclamation 979/2016 Technical Notes from the Ministry of Revenue (interpretive, explicitly non-binding): https://www.mor.gov.et/documents/49818/172549/Technical%2BNote-%2BIncome%2BTax%2BProclamation%2B%2BNo.%2B979-2016.pdf/c08d7d30-903c-70f2-044a-846a5413a2a9?download=true&t=1628061616844
+- Proclamation 979/2016 Technical Notes from the Ministry of Revenue (interpretive, explicitly non-binding): https://www.mor.gov.et/documents/49818/172549/Technical%2BNote-%2BIncome%2BTax%2BProclamation%2B%2BNo.%2B979-2016.pdf/c08d7d30-903c-70f2-044a-846a5413a2a9?download=true&t=1628061616844 (Article 10 discussion, PDF pp. 51–52; non-binding introduction, PDF p. 4)
 - Regulation 597/2026: https://justice.gov.et/wp-content/uploads/2026/11/%E1%8B%B0%E1%8A%95%E1%89%A5-%E1%89%81%E1%8C%A5%E1%88%AD-597-2019.pdf
 - Pension Proclamation 1268/2022: https://www.ffic.gov.et/Portals/0/______1268.pdf
 - Pension Proclamation 1268/2022 (Ministry of Justice sector listing): https://justice.gov.et/am/sector/social-security-pensions/
@@ -83,7 +83,7 @@ Difference in PAYE and net pay: ETB 735.00.
 
 ### 4.1 Legal signal and unresolved point
 
-Proclamation 979/2016 Article 10 is described in the Ministry of Revenue's Technical Notes as applying the monthly rate to total employment income received and disallowing deduction of expenses incurred in deriving employment income. The Notes explain that this results in a gross employment-income basis. However, the Technical Notes expressly state they are not legally binding.
+Proclamation 979/2016 Article 10 is described in the Ministry of Revenue's Technical Notes (PDF pp. 51–52) as applying the Article 11 rates to total employment income received for the calendar month and disallowing deduction of expenditure incurred in deriving employment income. The Notes say the tax is imposed on the gross amount of employment income received. Their introduction expressly says the explanatory notes are not legally binding and directs users to the Proclamation and related laws and regulations for binding information.
 
 Separately, Pension Proclamation 1268/2022 defines pension salary as the monthly salary for regular working hours without deduction for income tax or any other matter. That provision defines the pension contribution salary basis; it does not, by itself, conclusively determine the PAYE base.
 
@@ -153,6 +153,7 @@ The supplied legal matrix identifies the following federal Labour Proclamation 1
 | Overtime authorization | Articles 66–67 | Permitted grounds, express employer instruction, actual time evidence; maximum 4 hours/day and 12 hours/week | A roster or planned schedule does not itself authorize overtime |
 | Overtime premium | Article 68 | 1.5× day (06:00–22:00); 1.75× night (22:00–06:00); 2× weekly rest day; 2.5× public-holiday overtime | Record the category and ordinary hourly basis |
 | Public holiday | Article 75 | 2× hourly wage for each hour worked on a public holiday | Do not automatically stack with Article 68's 2.5× public-holiday overtime category; obtain legal interpretation |
+| Young workers | Article 91 | Young workers are not to be employed at night, for overtime, on weekly rest days or public holidays | Age is a restricted HR attribute; enforce age-aware shift and assignment controls without exposing age in broad production dashboards |
 | Annual leave | Articles 76–77 | 16 working days in the first year, then +1 working day for each additional 2 years; pay as if the worker continued working; qualifying unused leave is paid on termination | Carry forward statutory/contractual entitlement as dated movements, not an overwritten balance |
 | Sick leave | Articles 85–86 | Up to 6 months within a rolling 12-month period: first month 100%, next 2 months 50%, following 3 months unpaid, subject to conditions and medical evidence | Track first sickness date and consumed leave across the rolling period |
 | Maternity | Article 88(3) | 30 consecutive days paid prenatal and 90 consecutive days paid postnatal | A later clause's “working days” wording requires controlling Amharic/legal reconciliation for unusual delivery timing |
