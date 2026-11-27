@@ -177,6 +177,8 @@ The candidate implementation lives in the canonical Laravel application:
 - `backend/app/Services/Payroll/EthiopiaPayrollCalculator.php`: exact-decimal server-side calculation, two candidate PAYE methods, explicit taxable/pensionable component treatment, pension coverage, deduction evidence, exemption evidence, non-standard pensionable salary rationale, progressive bands and a source snapshot hash.
 - `backend/app/Services/Integration/DocumentIntegrationService.php`: re-reads a tenant-owned private document from configured storage and verifies its SHA-256 before it is accepted as statutory evidence.
 - `backend/database/migrations/2026_11_27_000033_require_stored_statutory_source_document.php`: adds the source-document reference to the statutory rule record and enforces a tenant-scoped reference to the existing document-assets registry.
+- `backend/database/migrations/2026_11_27_000034_require_payroll_line_evidence_hash.php`: requires a SHA-256 digest on every newly validated payroll line.
+- `backend/app/Services/Finance/FinanceControlService.php`: canonicalizes payroll line evidence, persists its JSON snapshot and stores the matching digest.
 - `backend/app/Services/Finance/FinanceControlService.php`: freezes all selected rule-source fields and payload for the entire payroll period; calls the calculator server-side for draft-line calculation; stores the calculation breakdown and evidence.
 - `backend/app/Http/Controllers/Finance/FinanceControlController.php`: accepts the calculation inputs, not client-computed gross/tax/net totals; monetary values are decimal strings.
 - `backend/config/payroll.php`: both Ethiopia activation flags are hard-coded default `false` until the remaining HR/legal release gates have been separately accepted.
