@@ -1,6 +1,6 @@
 <?php
 
-namespace App\\Services\\Payroll;
+namespace App\Services\Payroll;
 
 use InvalidArgumentException;
 
@@ -605,7 +605,7 @@ final class EthiopiaPayrollCalculator
 
     private function isDate(string $value): bool
     {
-        $date = \\DateTimeImmutable::createFromFormat('!Y-m-d', $value);
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $value);
 
         return $date !== false && $date->format('Y-m-d') === $value;
     }
@@ -617,10 +617,10 @@ final class EthiopiaPayrollCalculator
         }
 
         try {
-            new \\DateTimeImmutable($value);
+            new \DateTimeImmutable($value);
 
             return true;
-        } catch (\\Throwable) {
+        } catch (\Throwable) {
             return false;
         }
     }
@@ -631,7 +631,7 @@ final class EthiopiaPayrollCalculator
     private static function toMinor(mixed $value, string $field): int
     {
         $raw = is_string($value) || is_int($value) ? trim((string) $value) : '';
-        if (! preg_match('/^(?:0|[1-9][0-9]*)(?:\\.([0-9]{1,2}))?$/D', $raw, $matches)) {
+        if (! preg_match('/^(?:0|[1-9][0-9]*)(?:\.([0-9]{1,2}))?$/D', $raw, $matches)) {
             throw new InvalidArgumentException("{$field} must be a non-negative decimal amount with at most two fractional digits.");
         }
 
