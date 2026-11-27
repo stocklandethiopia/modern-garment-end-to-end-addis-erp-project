@@ -8,12 +8,13 @@ use App\Http\Controllers\Controller;
 use App\Services\PlatformAdministrationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class PlatformOperatorGrantController extends Controller
 {
-    public function index(PlatformAdministrationService $platform): JsonResponse
+    public function index(Request $request, PlatformAdministrationService $platform): JsonResponse
     {
-        return response()->json(['data' => $platform->operatorGrants()]);
+        return response()->json(['data' => $platform->operatorGrants((string) $request->user()->getAuthIdentifier())]);
     }
 
     public function store(Request $request, PlatformAdministrationService $platform): JsonResponse
@@ -28,6 +29,7 @@ class PlatformOperatorGrantController extends Controller
 
         return response()->json([
             'data' => $platform->requestOperatorGrant(
+                (string) $request->user()->getAuthIdentifier(),
                 mb_strtolower(trim($data['user_email'])),
                 $data['role_code'],
                 $data['valid_from'],
@@ -42,12 +44,13 @@ class PlatformOperatorGrantController extends Controller
         string $grantId,
         PlatformAdministrationService $platform,
     ): JsonResponse {
+        abort_unless(Str::isUuid($grantId), 404);
         $data = $request->validate([
             'reason' => ['required', 'string', 'min:10', 'max:500'],
         ]);
 
         return response()->json([
-            'data' => $platform->approveOperatorGrant($grantId, trim($data['reason'])),
+            'data' => $platform->approveOperatorGrant((string) $request->user()->getAuthIdentifier(), $grantId, trim($data['reason'])),
         ]);
     }
 
@@ -61,7 +64,7 @@ class PlatformOperatorGrantController extends Controller
         ]);
 
         return response()->json([
-            'data' => $platform->revokeOperatorGrant($grantId, trim($data['reason'])),
+            'data' => $platform->revokeOperatorGrant((string) $request->user()->getAuthIdentifier(), $grantId, trim($data['reason'])),
         ]);
     }
 }
