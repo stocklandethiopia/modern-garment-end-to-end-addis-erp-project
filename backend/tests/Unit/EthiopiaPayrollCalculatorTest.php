@@ -130,6 +130,15 @@ class EthiopiaPayrollCalculatorTest extends TestCase
         $this->calculator->calculateCandidate($this->standardEmployeeInput(), $rule, $this->pensionRule());
     }
 
+    public function test_missing_rounding_method_is_not_silently_defaulted(): void
+    {
+        $tax = $this->incomeTaxRule(EthiopiaPayrollCalculator::TAX_BASE_GROSS);
+        unset($tax['rounding_method']);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->calculator->calculateCandidate($this->standardEmployeeInput(), $tax, $this->pensionRule());
+    }
+
     public function test_production_calculation_is_blocked_without_independent_tax_base_opinion(): void
     {
         $tax = $this->incomeTaxRule(EthiopiaPayrollCalculator::TAX_BASE_GROSS_LESS_EMPLOYEE_PENSION);
@@ -230,6 +239,7 @@ class EthiopiaPayrollCalculatorTest extends TestCase
     {
         return [
             'tax_base_method' => $method,
+            'rounding_method' => 'HALF_UP',
             'monthly_tax_bands' => [
                 ['lower' => '0.00', 'upper' => '2000.00', 'rate_basis_points' => 0],
                 ['lower' => '2000.00', 'upper' => '4000.00', 'rate_basis_points' => 1500],
@@ -256,6 +266,7 @@ class EthiopiaPayrollCalculatorTest extends TestCase
     {
         return [
             'salary_basis' => 'REGULAR_HOURS_MONTHLY_SALARY',
+            'rounding_method' => 'HALF_UP',
             'employee_rate_basis_points' => 700,
             'employer_rate_basis_points' => 1100,
             'supporting_sources' => [
