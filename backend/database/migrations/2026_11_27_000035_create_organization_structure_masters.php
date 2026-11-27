@@ -148,7 +148,7 @@ BEGIN
     END LOOP;
 END $$;
 
-GRANT SELECT, INSERT, UPDATE ON public.org_units, public.job_positions,
+GRANT SELECT, INSERT ON public.org_units, public.job_positions,
     public.org_unit_manager_assignments, public.position_reporting_relations TO app_runtime;
 SQL);
     }
