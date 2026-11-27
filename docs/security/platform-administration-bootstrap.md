@@ -48,7 +48,7 @@ INSERT INTO public.platform_operator_grants (
 COMMIT;
 ```
 
-Do not execute this example with placeholder values. Confirm the two target operator IDs are distinct; all four granting/approving officer identities are active and independently authorized; neither officer pair shares an identity; each target has a signed appointment; and both grants are current. Verify two active administrators exist before enabling the platform workbench. Do not use the example SQL for routine grants after the two-administrator bootstrap has been completed.
+Do not execute this example with placeholder values. Confirm the two target operator IDs are distinct; for each row, the granting and approving officers are different, active and independently authorized; neither target approves their own grant; each target has a signed appointment; and both grants are current. The same authorized two-officer pair may process both appointments where the approved bootstrap procedure permits it. Verify two active administrators exist before enabling the platform workbench. Do not use the example SQL for routine grants after the two-administrator bootstrap has been completed.
 
 
 ## 2.1 Routine two-person operator-grant lifecycle
