@@ -2339,3 +2339,140 @@ The current OTB scenario can reference a forecast_run_id, but its calculation re
 ### 22.7 WP-04 test coverage extension
 
 Existing DemandOtbPricingWorkflowTest covers the happy paths for forecast runs, adjustment approval, OTB policy/period/scenario and price list/promotion approval, plus basic validation. BrandRangeWorkflowTest covers selected brand/range/assortment and scoped range-freeze behavior. The next test increment must add the specific same-tenant scope-bypass, forecast dimension, effective-forecast materialization, DoA-threshold, promotion margin/overlap and OTB source-lineage scenarios above. Tests must execute under the non-owner application database role and be run on the exact candidate SHA.
+
+
+---
+
+## 29. WP-13 finance and canonical payroll-review source audit
+
+### 29.1 Existing journal maker-checker and posting controls are integrated
+
+The existing finance foundation already has:
+- legal-entity scoped accounting periods with open/close/lock statuses;
+- legal-entity chart accounts, account classes, normal balance, base-only/multi-currency policy and maker-checker active approval columns;
+- journal and line records with legal-entity and period references;
+- per-line debit/credit exclusivity and positive base-currency side checks;
+- PostgreSQL trigger enforcing at least two journal lines and balanced positive base-currency totals before review/approval;
+- journal creator/submitter separation from approver;
+- required approval/rejection reason;
+- posting rechecks period remains OPEN and approval is separate from posting actor;
+- one posting row per journal and one unique tenant posting number;
+- database trigger from migration 000022 preventing journal-line INSERT/UPDATE/DELETE after the parent leaves DRAFT.
+
+These controls are meaningful foundations and should be retained. The posting record is a separate immutable table; the current journal status constraint does not have a POSTED state. The posting relationship must therefore remain the authoritative evidence of whether a journal has posted.
+
+### 29.2 Finance periods and chart of accounts are defined in schema but lack application administration workflows
+
+**Finding:** finance_periods and finance_accounts are created by migration 000020 and the finance service reads them. FinanceControlController exposes journal and payroll draft actions but no period creation/open/close/lock workflow and no chart-account create/review/activate/block/archive workflow. The inspected service has no corresponding methods, and the delivery tree contains no database seeder/factory package that initializes a production chart or period catalogue.
+
+The journal service therefore depends on externally/manual-populated active accounts and open periods before the application can create useful postings.
+
+**Required implementation**
+- [ ] Implement legal-entity finance period create/open/closing/close/lock/reopen-by-controlled-correction lifecycle with maker-checker and audit events.
+- [ ] Prevent overlapping active periods for the same legal entity unless the approved accounting calendar explicitly models adjustments.
+- [ ] Implement chart-of-accounts create/parent/approve/activate/block/archive, account code/version and control-account mapping.
+- [ ] Enforce parent account belongs to the same tenant and legal entity; migration 000020 currently constrains the parent by tenant but does not bind parent legal_entity_id to the child's legal_entity_id.
+- [ ] Seed only approved, versioned statutory/base reference data through a controlled tenant/legal-entity initialization path; never insert fabricated finance transactions.
+- [ ] Add clean-install, opening-balance, period-close and chart migration/reconciliation tests.
+
+### 29.3 Currency and exchange-rate values are supplied by the journal caller
+
+**Finding:** createJournalDraft() validates that each account is ACTIVE and belongs to the selected tenant/legal entity. It accepts line currency, debit/credit and base debit/credit amounts directly from the request, and stores exchange_rate_reference as optional text. It does not enforce the account's BASE_ONLY versus MULTI currency policy, require a consistent line/journal currency model or resolve the rate from an approved effective-dated FX source.
+
+The PostgreSQL balance gate proves base debit equals base credit. It does not prove the caller-supplied base conversion is consistent with the source-currency amount and approved rate.
+
+**Required implementation**
+- [ ] Enforce account currency_policy against each journal line's transaction currency.
+- [ ] Resolve transaction/base currency and legal-entity base currency from approved legal-entity configuration.
+- [ ] Implement effective-dated FX rate records with provider/source reference, publication time, bid/ask/approved rate, quotation direction, date/time zone, approval and immutable version.
+- [ ] Calculate base amounts server-side with the approved precision and rounding method; require independent override approval for permitted manual rates.
+- [ ] Verify line currency compatibility, base amount and rate reference before submission and posting.
+- [ ] Add foreign-currency, BASE_ONLY account, stale rate, missing rate, wrong direction and tampered base amount tests.
+
+### 29.4 Journal/account/legal-entity relationships are only partly constrained at database level
+
+**Finding:** finance_journal_lines has composite tenant FKs to its journal and account, while the service separately checks that the account belongs to the journal's selected legal entity. The migration does not include a composite FK/trigger tying finance_journal_lines.account_id to finance_journals.legal_entity_id. A different runtime path writing the permitted line table could therefore attach an account from another legal entity within the same tenant.
+
+Similarly, finance_accounts.parent_account_id is constrained by tenant but not by legal entity.
+
+**Required implementation**
+- [ ] Add a database-enforced account/legal-entity relationship for journal lines.
+- [ ] Add a database-enforced parent-account/legal-entity relationship or a trigger with immutable hierarchy checks.
+- [ ] Preserve cross-entity intercompany postings only as explicit balanced paired journals with authorized counterparty/legal-entity references and reconciliation.
+- [ ] Add adversarial PostgreSQL tests that attempt same-tenant cross-entity account and parent references using the app_runtime role.
+
+### 29.5 Payroll draft approval does not require validated calculation lines or control totals
+
+**Finding:** the canonical finance/payroll foundation correctly labels its payroll rows as drafts and uses a professional review gate, but the approval service does not require calculation_status = VALIDATED on each payroll_run_line, a completed control_totals calculation or a non-empty verified calculation output hash.
+
+addPayrollDraftLine() accepts caller-supplied gross_amount, total_deductions and component/evidence JSON, calculates only net = gross minus deductions and inserts the line with calculation_status = DRAFT. submitPayrollForProfessionalReview() checks only that at least one line exists. applyProfessionalPayrollDecision() checks that the reviewer differs from the preparer and that a reference/reason exist; it does not aggregate/validate each line or reject DRAFT/HELD/REJECTED calculations before setting the run to APPROVED_FOR_PAYROLL.
+
+This is a review foundation, not a calculated statutory payroll workflow. A manually entered draft line could pass the run-level professional approval operation while its calculation_status remains DRAFT.
+
+**Required implementation**
+- [ ] Require every run line to be VALIDATED, with exact calculator version, input hash, rule/source snapshot and calculation result hash before submission.
+- [ ] Calculate and persist control totals by currency, earning/deduction category, employee count and statutory component; verify them again at review.
+- [ ] Reject or hold the whole run if any line is DRAFT, HELD, REJECTED, source-invalid or fails the calculator's rule/evidence gate.
+- [ ] Verify every payroll line resolves to an actual WP-14 employee/worker identity, active legal-employer assignment and in-period contract/status; worker_reference is currently a free string.
+- [ ] Bind statutory rule versions to the legal employer, worker classification, jurisdiction and full payroll period, not only a rule effective on period_end.
+- [ ] Verify source document bytes/hash and professional authority before status can change to APPROVED_FOR_PAYROLL.
+- [ ] Add payroll run tests for draft line, held line, invalid evidence, missing employee, duplicate worker, control-total mismatch, mid-period legal change and maker-checker.
+
+### 29.6 Payroll rule-set snapshot can include a null source hash
+
+Migration 000020 permits statutory_rule_versions.source_sha256 to be NULL. The PROFESSIONAL_APPROVED check requires reviewer identity/time and approval reference, but not a retained source artifact hash or source document reference. createPayrollDraft() serializes the selected rule IDs and their source_sha256 values into statutory_rule_set, so it can freeze a null hash.
+
+**Required implementation**
+- [ ] Require a verified source artifact ID/version and exact SHA-256 of retained bytes before PROFESSIONAL_APPROVED.
+- [ ] Recompute the SHA from the retained bytes and bind the professional approval to the exact artifact and provision/article.
+- [ ] Reject payroll run creation if any selected rule has missing or invalid source identity, even if a legacy row is marked professionally approved.
+- [ ] Add a controlled forward migration to tighten rule approval once legacy evidence is reconciled; do not rewrite historical rule snapshots without provenance.
+
+### 29.7 Reversal is schema-only and the current table models only an already approved reversal
+
+Migration 000025 creates finance_journal_reversals with original posting, reversal journal, reason, requested_by, approved_by and approved_at. It enforces a different requester and approver and a unique reversal per original posting. The inspected service/controller have no reversal request/approval/posting methods or routes.
+
+The schema currently requires approved_by and approved_at at insertion, so it represents a completed approval record rather than an unapproved reversal request. It also allows only one reversal record per original posting, which implies a full, single reversal rather than partial/serial reversals.
+
+**Required implementation**
+- [ ] Define explicit reversal request, independent review, approval and posting states; persist unapproved requests separately from approved records.
+- [ ] Generate inverse journal lines from immutable original posting lines; do not accept caller-created arbitrary reversals.
+- [ ] Define whether accounting policy allows full-only or partial/multiple reversals and model remaining reversible balance accordingly.
+- [ ] Require same legal entity and approved open period, and preserve source posting and original line hashes.
+- [ ] Add request/approve/post/duplicate/concurrent/partial/full/closed-period tests.
+- [ ] Add controller/API and finance operator UI paths.
+
+### 29.8 Journal source documents and subledgers are not connected
+
+**Finding:** createJournalDraft() accepts optional source_document_type and source_document_id as request fields and stores them without verifying a corresponding source record. Journal lines accept arbitrary source_reference JSON. The current finance API is manually journal-centric and does not expose accounts receivable, accounts payable, cash/bank, inventory valuation, manufacturing cost, customer billing, supplier invoice, payment, bank statement or reconciliation subledger services.
+
+**Required implementation**
+- [ ] Define typed, tenant/legal-entity-scoped source-document references and verify the source record exists in its owning bounded context.
+- [ ] Add transactional posting adapters from WP-07 receipt/invoice/three-way match, WP-09/10 WIP and production, WP-11 quality/scrap, WP-12 order/dispatch/return/payment and WP-14 payroll.
+- [ ] Implement AP, AR, customer collections, supplier settlements, bank/cash, inventory valuation, WIP/COGS, landed cost, tax/withholding and fixed asset/depreciation subledgers.
+- [ ] Ensure source transaction and outbox event commit atomically with the accounting handoff; use stable source event identity and payload hash.
+- [ ] Reconcile every subledger control account to GL by entity, currency, period and source category.
+- [ ] Add end-to-end procurement-to-AP, order-to-AR, factory-to-WIP/COGS, return-to-credit and payroll-to-GL journeys.
+
+### 29.9 Finance user-facing and automated verification are absent from the current tree
+
+The inspected Angular feature tree has no dedicated finance/treasury/accounts-payable/accounts-receivable feature. The backend has no finance/payroll-specific PHPUnit Feature suite. There are no current application routes for periods, accounts, subledgers, bank reconciliations, close, reversals or payment execution.
+
+**Required implementation**
+- [ ] Build finance operator views for periods, chart of accounts, journal drafts, approvals, posting, reversals, subledger queues, reconciliation and close.
+- [ ] Build payroll review views separately from calculator/employee processing and display source/legal holds clearly.
+- [ ] Add role/position-based separation for preparer, reviewer, approver, poster, period controller and auditor.
+- [ ] Add API contract and PostgreSQL Feature tests for all finance lifecycle operations and RLS.
+- [ ] Add trial balance, account reconciliation, subledger/GL and period-close E2E evidence.
+
+---
+
+## 30. WP-13 implementation sequence
+
+1. Complete period and chart-of-accounts administration with database-level legal-entity hierarchy.
+2. Implement approved FX and currency policy resolution.
+3. Strengthen source-document and subledger linkage for all operational posting events.
+4. Complete payroll line validation/control totals and source-byte verified legal rule set; integrate WP-14 calculator only after its evidence/tests are complete.
+5. Implement the reversal workflow and full/partial policy explicitly.
+6. Build AP, AR, treasury, inventory/WIP/COGS, landed-cost and tax subledgers with idempotent transaction-to-GL handoffs.
+7. Build finance/treasury/payroll operator UI and full database/API/E2E test suites.
