@@ -219,6 +219,16 @@ class ScopedAccessMutationSecurityTest extends TestCase
         ], 'pgsql_test_admin');
     }
 
+    public function test_scope_security_migration_cannot_be_rolled_back_to_restore_direct_runtime_writes(): void
+    {
+        $migration = require database_path('migrations/2026_11_27_000034_secure_tenant_access_scope_mutations.php');
+
+        $this->expectException(\\RuntimeException::class);
+        $this->expectExceptionMessage('Security migration 000034 is forward-only');
+
+        $migration->down();
+    }
+
     public function test_non_admin_cannot_call_the_security_definer_scope_mode_function_directly(): void
     {
         $runtime = DB::connection('pgsql');
