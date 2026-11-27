@@ -1,4 +1,4 @@
-name: ERP WP-01–WP-16 completion verification
+name: ERP component and WP-01 package verification
 
 on:
   push:
@@ -158,7 +158,7 @@ jobs:
               'integration_outbox_events','agent_run_audits','agent_action_proposals',
               'agent_approval_decisions','agent_action_events','device_scan_events',
               'receipt_line_material_lots','finished_goods_lots','finished_goods_transactions',
-              'finished_goods_reservations','finance_journal_postings','finance_journal_reversals','customer_credit_decisions','tenant_domain_role_assignments'
+              'finished_goods_reservations','finance_journal_postings','finance_journal_reversals','customer_credit_decisions','tenant_domain_role_assignments', 'platform_operator_grants', 'platform_tenant_entitlements', 'platform_audit_events', 'platform_operator_grants', 'platform_tenant_entitlements', 'platform_audit_events'
             ] LOOP
               IF NOT EXISTS (
                 SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
@@ -238,7 +238,7 @@ jobs:
           node scripts/audit-quality.mjs --strict --markdown docs/WP01_AUDIT_RESULT_CI.md
 
   combined-release-candidate:
-    name: Assemble combined ERP repository candidate
+    name: Assemble verified ERP component source archive
     needs: [backend-postgresql, frontend-angular, wp01-source-package]
     runs-on: ubuntu-latest
     if: success()
@@ -251,8 +251,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist
-          git archive --format=tar.gz --prefix=modern-garment-addis-erp/ HEAD > dist/modern-garment-addis-erp-wp01-wp16-candidate.tar.gz
-          sha256sum dist/modern-garment-addis-erp-wp01-wp16-candidate.tar.gz > dist/SHA256SUMS.txt
+          git archive --format=tar.gz --prefix=modern-garment-addis-erp/ HEAD > dist/modern-garment-addis-erp-component-candidate.tar.gz
+          sha256sum dist/modern-garment-addis-erp-component-candidate.tar.gz > dist/SHA256SUMS.txt
           {
             echo "# Combined ERP candidate build"
             echo
@@ -260,7 +260,7 @@ jobs:
             echo "Branch/ref: ${GITHUB_REF}"
             echo "Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
             echo
-            echo "All required backend, frontend and WP-01 source-package jobs succeeded."
+            echo "All required component checks and WP-01 source-package checks succeeded."
             echo "This artifact is a review candidate; production deployment and professional sign-offs remain separate gates."
           } > dist/BUILD-VERIFICATION.md
 
