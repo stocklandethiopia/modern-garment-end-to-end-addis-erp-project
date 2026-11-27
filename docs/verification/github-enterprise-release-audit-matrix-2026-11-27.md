@@ -52,3 +52,12 @@ A GitHub administrator must confirm the organisation's Enterprise Cloud/Code Sec
 6. Production deployment remains a separate approved operation, followed by smoke tests, monitoring and rollback readiness.
 
 **No release certificate or production deployment is claimed by this matrix.**
+
+
+## WP-03 scope mutation hardening evidence — 27 November 2026
+
+The candidate adds a database-owned mutation boundary for tenant scoped access. Migration `2026_11_27_000034_secure_tenant_access_scope_mutations.php` revokes direct runtime DML on `tenant_access_scope_modes` and `tenant_access_scopes`; `app_runtime` retains SELECT and EXECUTE only on three SECURITY DEFINER functions with fixed search paths. These functions revalidate actor and target membership and persist audit events atomically. Feature tests assert table privilege boundaries, permitted function execution, normal owner/admin mutations, duplicate-grant rejection and non-admin denial.
+
+**Evidence status: source implemented; PostgreSQL execution and exact-head CI NOT VERIFIED.** The last inspected PR run on prior head `0e38ff2496597cb9dd559bcde7d4ae7022e588b8` showed backend and frontend jobs with `runner_id: 0`, blank runner names and zero executed steps; this head predates the final migration/service/test edits. The current branch head must still pass ERP CI and combined WP verification before this candidate increment is accepted.
+
+This hardening does not make scoped authorization complete. The scope vocabulary remains BRAND/SITE/MARKET, and domain capabilities remain denied for SCOPED members until each controller action checks the actual target entity/site/department/warehouse/channel record. Do not count this as a pass for full identity/tenant-isolation acceptance or as closure of WP-03.
