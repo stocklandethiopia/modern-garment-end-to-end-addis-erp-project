@@ -2768,3 +2768,152 @@ InventoryLedgerService supports generic ISSUE, CONSUMPTION, TRANSFER and SCRAP m
 7. Run tenant/site boundary, stock shortage, concurrent issue, payload replay and full roll/trim-to-finished-goods genealogy tests on the same exact candidate SHA.
 
 No production or inventory runtime source/migration was changed by this audit section; it records the missing cross-domain transaction path and its forward build sequence.
+
+
+---
+
+## 37. WP-11 quality disposition and final-route gate — additional source validation
+
+### 37.1 Defect catalogue lifecycle flags are not enforced on inspection submission
+
+**Finding:** submitInspectionResult() loads a selected quality_defect_catalog row by tenant and ID, then uses its default_severity only as a default. It does not require active = true, and it does not evaluate the catalogue's requires_containment flag. The submitted request's containment_confirmed boolean controls both the inspection result (CONTAINED versus FAIL) and the nonconformance containment_status.
+
+An inactive defect code can therefore still be recorded on a new inspection. A defect code configured to require containment is not independently enforced by the service; the client boolean is treated as proof of containment.
+
+**Source**
+- backend/app/Services/Quality/QualityControlService.php, submitInspectionResult().
+- backend/database/migrations/2026_11_26_000017_create_quality_capa_and_release_gates.php, quality_defect_catalog.active and requires_containment.
+- backend/app/Http/Controllers/Quality/QualityController.php, request fields containment_confirmed and defects.*.defect_catalog_id.
+
+**Required implementation**
+- [ ] Require selected defect-catalog entries to be active and effective for the inspection's site/process/product scope.
+- [ ] Enforce requires_containment using an actual containment record with affected item/quantity/location, responsible owner, timestamp, action and evidence; never accept a boolean as evidence.
+- [ ] Keep severity and criticality derived from the approved catalog/quality plan; an override must have a reason and authorized reviewer.
+- [ ] Add inactive-code, required-containment, partial-containment, wrong-quantity and unauthorized-severity-override tests.
+
+### 37.2 Operation-release service requires a passing inspection even for HOLD, REJECT or REINSPECT decisions
+
+**Finding:** QualityController.releaseProductionOperation() accepts RELEASE, RELEASE_WITH_DEVIATION, HOLD, REJECT and REINSPECT. However, QualityControlService.decideOperationRelease() first loads the inspection with result_status restricted to PASS or PASS_WITH_DEVIATION for every one of those decisions. A failed or contained inspection cannot be linked to a HOLD/REJECT/REINSPECT decision, despite those being exposed API choices. The current state model cannot faithfully record the natural rejection/hold decision against a failed inspection.
+
+**Source**
+- backend/app/Http/Controllers/Quality/QualityController.php, releaseProductionOperation().
+- backend/app/Services/Quality/QualityControlService.php, decideOperationRelease().
+- backend/database/migrations/2026_11_26_000017_create_quality_capa_and_release_gates.php, inspection result states and release-decision vocabulary.
+
+**Required implementation**
+- [ ] Define which inspection states may support each release decision: passing reviewed inspection for RELEASE; valid linked failure/contained/NCR evidence for HOLD/REJECT/REINSPECT.
+- [ ] Keep RELEASE and RELEASE_WITH_DEVIATION gated by independent passing review, approved deviation record, no open blocking NCR and required authority.
+- [ ] Allow HOLD/REJECT/REINSPECT only to increase restriction; do not require a passing result merely to record a stop/rejection.
+- [ ] Add full transition tests for PASS/FAIL/CONTAINED × RELEASE/HOLD/REJECT/REINSPECT and confirm only valid combinations are accepted.
+
+### 37.3 A final route-step quality gate is not evaluated before production-order completion
+
+**Finding:** ManufacturingExecutionService.recordOperationEvent() checks a predecessor step's quality_gate when a subsequent operation receives START. The gate check is therefore exercised only when there is a downstream operation starting. The COMPLETE branch for the current operation checks only that its status is IN_PROGRESS and good plus defective output equals planned quantity. Once no operation remains outside COMPLETED/SKIPPED, the service marks the production order COMPLETED.
+
+For a final route operation flagged quality_gate, there is no subsequent operation to trigger the predecessor check. That final route-step gate can therefore be omitted from the completion transition. A separate final production-order inspection is required before finished-goods receipt, but that does not prove that the route's own final-step gate was enforced.
+
+**Source**
+- backend/app/Services/Manufacturing/ManufacturingExecutionService.php, recordOperationEvent() START predecessor gate, COMPLETE branch and order-completion test.
+- backend/database/migrations/2026_11_26_000016_create_route_and_manufacturing_execution.php, process_route_steps.quality_gate.
+- backend/app/Services/Quality/QualityControlService.php, decideOperationRelease().
+
+**Required implementation**
+- [ ] Evaluate a current effective release decision before completing any quality-gated operation, including the last route step.
+- [ ] Separate operation output complete from operation quality released and production order complete; final order completion must reconcile all required quality gates.
+- [ ] Require the exact operation, inspection, approved deviation/conditions and absence of blocking NCRs for every gate.
+- [ ] Add tests for a quality-gated middle step, final step, later HOLD after release, open NCR after release and concurrent final release/order completion.
+
+---
+
+## 38. WP-15 integration/document and agent governance — database runtime permission and workflow audit
+
+### 38.1 Least-privilege database grants do not permit the agent and device services to perform their updates
+
+**Finding:** migration 2026_11_26_000021_create_documents_integrations_and_agent_controls.php explicitly revokes all grants from app_runtime on agent and device tables, then grants:
+
+- SELECT, INSERT, UPDATE on document_assets, document_extraction_runs, integration_endpoint_registry and integration_outbox_events;
+- SELECT, INSERT only on agent_run_audits, agent_action_proposals, agent_approval_decisions, agent_action_events and device_scan_events.
+
+The service code requires UPDATE on three of those read/insert-only tables:
+- AgentGovernanceService.finishRun() updates agent_run_audits;
+- AgentGovernanceService.decideAction() and executeApprovedDraft() update agent_action_proposals;
+- DeviceScanResolutionService.resolve() updates device_scan_events to RESOLVED, AMBIGUOUS or REJECTED.
+
+The later canonical migrations 000022–000032 do not add the missing table/column update grants. Under the repository's intended app_runtime application role, run finalization, proposal decision/execution and scan resolution will fail at the database permission boundary even when the application Gate authorizes the caller. A test suite connected as a schema owner can mask this deployment failure.
+
+**Source**
+- backend/database/migrations/2026_11_26_000021_create_documents_integrations_and_agent_controls.php, final GRANT statements.
+- backend/app/Services/Agents/AgentGovernanceService.php, finishRun(), decideAction() and executeApprovedDraft().
+- backend/app/Services/Integration/DeviceScanResolutionService.php, resolve().
+- Migrations 000022–000032 contain no subsequent GRANT UPDATE for these tables.
+
+**Required implementation**
+- [ ] Add least-privilege column-level UPDATE grants for only the transition fields required by each service, or use narrowly scoped security-definer transition functions with verified actor/tenant context.
+- [ ] Do not broadly grant UPDATE to immutable event/approval tables: agent_approval_decisions and agent_action_events should remain append-only.
+- [ ] Add migration-upgrade tests which connect as app_runtime, execute run completion, proposal decision/execution and scan resolution, and prove unrelated columns/rows remain immutable.
+- [ ] Include a deployment smoke test against the same non-owner role used by production, not only the migration/schema owner.
+
+### 38.2 A0/A1 agent proposals have no reachable execution transition
+
+**Finding:** proposeAction() creates A0/A1 proposals with status PROPOSED. decideAction() explicitly rejects A0/A1 because they do not enter the material-action approval path. executeApprovedDraft() accepts only status APPROVED. There is no separate direct, bounded A0/A1 draft-execution transition or explicit finalization state. Therefore any A0/A1 proposal created through the current endpoint remains PROPOSED and cannot be executed; A2/A3 follow the human approval route.
+
+The design note says A0/A1 read/draft actions should not enter the material-action approval path, but the service does not define the corresponding safe completion path for an allow-listed draft action.
+
+**Required implementation**
+- [ ] Define the precise A0/A1 capability boundary and its authorization policy.
+- [ ] For approved low-risk draft-only capabilities, add an explicit non-material execution state and capability-specific validation; do not silently promote arbitrary A0/A1 payloads.
+- [ ] Keep A2/A3 human maker-checker approval and keep A4 outside autonomous execution.
+- [ ] Add tests proving permitted low-risk draft creation reaches a traceable terminal state and all non-allow-listed or material actions remain blocked.
+
+### 38.3 Document extraction can start before storage integrity and document classification are verified
+
+**Finding:** beginExtraction() rejects only a missing document or a document whose classification_status is REJECTED. It does not require checksum_verified_at to be populated, and it does not require an accepted classification state before creating a QUEUED extraction run. document_assets.checksum_verified_at defaults to NULL and is not set by registerDocument() or storeUploadedFile() in the inspected source.
+
+A caller can therefore create an extraction run against a document whose stored bytes have not been read back and verified and whose classification remains PENDING. This is inconsistent with the intended quarantine/classify/verify-before-extraction sequence.
+
+**Required implementation**
+- [ ] Require actual stored-object checksum/size verification and approved file classification before extraction can be queued.
+- [ ] Add malware scanning/quarantine status and enforce it as a precondition for retrieval or extraction.
+- [ ] Re-check object version/hash at worker claim and before import; fail closed if the object changed or is missing.
+- [ ] Add unverified, pending, rejected, restricted, altered-object and verified-document extraction tests.
+
+### 38.4 Document extraction approval does not enforce independent reviewer separation
+
+**Finding:** reviewExtraction() receives reviewerId and stores it as reviewed_by, but it does not compare reviewerId with document_extraction_runs.created_by or with an authenticated extraction worker identity. The same user who queued an extraction can approve its values for import. The controller's documents.approve-import Gate is a useful capability check, but the service itself does not enforce the maker-checker boundary.
+
+**Required implementation**
+- [ ] Require a reviewer distinct from the document/extraction requester and distinct from the authenticated extraction service principal.
+- [ ] Bind reviewer authority to document classification, target domain, access class and import risk.
+- [ ] Keep source worker identity separate from the human reviewer; store provider/model/version/request correlation and output hash.
+- [ ] Add same-actor, shared-account, provider-identity, unauthorized-domain and cross-tenant tests.
+
+### 38.5 Outbox enqueue does not enforce endpoint activation or event allow-list
+
+**Finding:** enqueueDomainEvent() inserts endpoint_id as nullable and does not load integration_endpoint_registry to verify that the endpoint exists, is ACTIVE, is OUTBOUND/BIDIRECTIONAL, and explicitly allows the requested event_type. The endpoint table contains status, direction, granted_scopes and allowed_event_types, but the enqueue path does not apply those controls. A row can therefore be queued with no endpoint or an inactive/unapproved endpoint; the delivery worker cannot safely infer permission from the event record alone.
+
+**Required implementation**
+- [ ] Require a non-null endpoint for outbound delivery events and resolve it under tenant/legal-entity scope.
+- [ ] Verify ACTIVE status, direction, approved scopes and event-type allow-list at enqueue and again immediately before delivery.
+- [ ] Record the exact endpoint configuration version/secret reference and event contract version used for each event.
+- [ ] Reject suspended/retired endpoint, wrong direction, disallowed event and scope mismatch.
+- [ ] Keep endpoint suspension effective for pending events and provide a reasoned reactivation/replay workflow.
+
+### 38.6 Agent/device and document controls need a final runtime-role E2E suite
+
+- [ ] Execute full agent run → proposal → approval → execution under app_runtime; include A0/A1 and A2/A3 pathways, same-actor denial, request changes/revision and output attribution.
+- [ ] Execute scan insert → resolve as app_runtime; confirm the scan's resolver actor/time and result are retained.
+- [ ] Execute document upload → object read-back checksum → classification → extraction worker → independent review → typed domain import under separate service identities.
+- [ ] Execute outbox enqueue → endpoint approval → lease claim → adapter success/retry/dead-letter/reclaim under app_runtime.
+- [ ] Include least-privilege denial tests for direct mutation of immutable approval, ledger, audit and event tables.
+
+---
+
+## 39. WP-11 / WP-15 follow-on implementation sequence
+
+1. Enforce defect-catalog activity and real containment evidence.
+2. Correct operation release decision/state compatibility and final route-step quality-gate evaluation.
+3. Apply narrow runtime UPDATE grants or audited transition functions for agent/proposal/device state changes.
+4. Define and implement the safe A0/A1 agent draft lifecycle without weakening A2/A3/A4 controls.
+5. Block document extraction until private-object integrity and classification are verified; add independent reviewer separation.
+6. Enforce endpoint activation/direction/event scope at enqueue and delivery.
+7. Run the relevant PostgreSQL, API and end-to-end suites as app_runtime on an exact candidate SHA and record the actual runner evidence.
