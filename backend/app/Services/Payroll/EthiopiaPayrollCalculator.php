@@ -53,6 +53,12 @@ final class EthiopiaPayrollCalculator
         $this->assertApprovedRuleRecord($taxRecord, $periodStart, $periodEnd, $preparedBy);
         $this->assertApprovedRuleRecord($pensionRecord, $periodStart, $periodEnd, $preparedBy);
 
+        if (strtoupper((string) ($taxRecord['jurisdiction_code'] ?? '')) !== 'ETH'
+            || strtoupper((string) ($pensionRecord['jurisdiction_code'] ?? '')) !== 'ETH'
+        ) {
+            throw new InvalidArgumentException('Ethiopia payroll requires both the income-tax and pension rules to be explicitly registered for ETH.');
+        }
+
         $taxPayload = $this->decodeRulePayload($taxRecord);
         $pensionPayload = $this->decodeRulePayload($pensionRecord);
         $taxRule = $taxPayload['payroll'] ?? null;
@@ -72,6 +78,7 @@ final class EthiopiaPayrollCalculator
             || (string) $decision['reviewer_user_id'] === $preparedBy
             || trim((string) ($decision['reviewer_registration_reference'] ?? '')) === ''
             || trim((string) ($decision['opinion_document_reference'] ?? '')) === ''
+            || trim((string) ($decision['opinion_document_storage_reference'] ?? '')) === ''
             || ! preg_match('/^[a-f0-9]{64}$/Di', (string) ($decision['opinion_sha256'] ?? ''))
             || empty($decision['independence_confirmed'])
             || ! $this->isTimestamp((string) ($decision['reviewed_at'] ?? ''))
@@ -221,6 +228,7 @@ final class EthiopiaPayrollCalculator
             $this->assertIndependentDecision($coverage, $preparedBy, 'pension_coverage');
             if (! preg_match('/^[a-f0-9]{64}$/Di', (string) ($coverage['source_sha256'] ?? ''))
                 || ! $this->isOfficialEthiopianHost(strtolower((string) parse_url((string) ($coverage['source_url'] ?? ''), PHP_URL_HOST)))
+                || trim((string) ($coverage['source_document_reference'] ?? '')) === ''
                 || trim((string) ($coverage['article_reference'] ?? '')) === ''
             ) {
                 throw new InvalidArgumentException('The pension coverage decision requires the official source URL, article and SHA-256.');
@@ -352,6 +360,7 @@ final class EthiopiaPayrollCalculator
 
         if (trim((string) ($record['source_title'] ?? '')) === ''
             || trim((string) ($record['source_authority'] ?? '')) === ''
+            || trim((string) ($record['source_document_reference'] ?? '')) === ''
             || ! $this->isDate((string) ($record['publication_date'] ?? ''))
         ) {
             throw new InvalidArgumentException('The statutory source record is missing its title, authority or publication date.');
@@ -398,6 +407,7 @@ final class EthiopiaPayrollCalculator
             || trim((string) ($evidence['legal_basis'] ?? '')) === ''
             || trim((string) ($evidence['article_reference'] ?? '')) === ''
             || trim((string) ($evidence['evidence_reference'] ?? '')) === ''
+            || trim((string) ($evidence['document_storage_reference'] ?? '')) === ''
         ) {
             throw new InvalidArgumentException("{$field} must identify the legal basis, article and evidence.");
         }
@@ -425,6 +435,7 @@ final class EthiopiaPayrollCalculator
             || trim((string) ($rationale['contract_reference'] ?? '')) === ''
             || trim((string) ($rationale['legal_basis'] ?? '')) === ''
             || trim((string) ($rationale['evidence_reference'] ?? '')) === ''
+            || trim((string) ($rationale['document_storage_reference'] ?? '')) === ''
         ) {
             throw new InvalidArgumentException('A non-standard pensionable salary requires a reason, contract reference, legal basis and supporting evidence.');
         }
@@ -452,6 +463,8 @@ final class EthiopiaPayrollCalculator
         }
 
         if ($approver === '' || $preparedBy === null || $approver === $preparedBy
+            || trim((string) ($decision['reviewer_qualification'] ?? '')) === ''
+            || trim((string) ($decision['reviewer_registration_reference'] ?? '')) === ''
             || ! $this->isTimestamp((string) ($decision['approved_at'] ?? $decision['reviewed_at'] ?? ''))
             || trim((string) ($decision['approval_reference'] ?? $decision['evidence_reference'] ?? '')) === ''
         ) {
@@ -564,6 +577,9 @@ final class EthiopiaPayrollCalculator
                 || trim((string) ($source['source_authority'] ?? '')) === ''
                 || trim((string) ($source['source_title'] ?? '')) === ''
                 || trim((string) ($source['article_references'] ?? '')) === ''
+                || trim((string) ($source['document_storage_reference'] ?? '')) === ''
+                || trim((string) ($source['reviewer_qualification'] ?? '')) === ''
+                || trim((string) ($source['reviewer_registration_reference'] ?? '')) === ''
                 || ! $this->isDate((string) ($source['publication_date'] ?? ''))
                 || ! $this->isDate((string) ($source['effective_from'] ?? ''))
                 || ! preg_match('/^[a-f0-9]{64}$/Di', (string) ($source['source_sha256'] ?? ''))
@@ -600,6 +616,7 @@ final class EthiopiaPayrollCalculator
             'source_authority' => (string) ($record['source_authority'] ?? ''),
             'source_title' => (string) ($record['source_title'] ?? ''),
             'source_reference' => (string) ($record['source_reference'] ?? ''),
+            'source_document_reference' => (string) ($record['source_document_reference'] ?? ''),
             'source_sha256' => strtolower((string) ($record['source_sha256'] ?? '')),
             'publication_date' => (string) ($record['publication_date'] ?? ''),
             'effective_from' => (string) ($record['effective_from'] ?? ''),
