@@ -26,6 +26,8 @@
         <env name="DB_PASSWORD" value="local-runtime-password"/>
         <env name="MIGRATION_DB_USERNAME" value="erp_migrator"/>
         <env name="MIGRATION_DB_PASSWORD" value="local-migrator-password"/>
+        <env name="CONTROL_DB_USERNAME" value="app_control"/>
+        <env name="CONTROL_DB_PASSWORD" value="local-control-password"/>
         <env name="TEST_DB_ADMIN_USERNAME" value="erp_test_admin"/>
         <env name="TEST_DB_ADMIN_PASSWORD" value="local-test-admin-password"/>
         <env name="REDIS_CLIENT" value="predis"/>
