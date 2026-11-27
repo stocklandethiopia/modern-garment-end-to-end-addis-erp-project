@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Services\Quality\QualityControlService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Group;
