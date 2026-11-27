@@ -1030,3 +1030,201 @@ The immediate source-to-build sequence is now:
 8. Advance the same verified source through WP-16 system scenarios, image provenance, staging/UAT, recovery and final deployment authorization.
 
 No source change to runtime behavior is made by this audit addendum. These items extend the existing implementation backlog with new, file- and behavior-specific evidence from the audited delivery SHA.
+
+
+---
+
+## 13. Deep domain-service audit — transaction, ledger, approval and event controls
+
+This pass inspected Laravel service implementations, controllers and PostgreSQL constraints at delivery SHA fc01eced62b97c4ec27f0075264fc8ba0fb11851. Findings below are based on source and schema inspection. They are not described as executed reproductions because current GitHub workflow attempts at the audited head had not allocated a runner.
+
+### 13.1 Finished goods can be received cumulatively above completed production output
+
+**Finding:** The finished-goods receipt guard checks the quantity of each individual receipt against the last completed operation's good_quantity, but does not reconcile previously received finished-goods lots or transactions for that production order.
+
+**Source**
+- backend/app/Services/Distribution/FinishedGoodsService.php, receiveCompletedProduction() (starts at line 12).
+- backend/database/migrations/2026_11_26_000023_create_finished_goods_inventory_and_reservations.php.
+- The migration creates finished_goods_order_idx on (tenant_id, production_order_id, status) but does not impose a unique source receipt or cumulative receipt constraint on a production order.
+
+The service locks the production order, which serializes concurrent receipt calls, but it generates a new finished-goods lot ID and a new receipt transaction ID for every call. Its receipt idempotency key includes that newly generated lot ID. It has no caller idempotency key and does not sum earlier receipt quantities before accepting another split lot.
+
+**Example requiring a regression test:** A production order has final good output of 100 pieces. Two requests of 80 pieces each can each satisfy the per-request finished_quantity <= finalGood test. The service has no cumulative 160-versus-100 check.
+
+**Required implementation**
+- [ ] Permit legitimate split lots while capping the sum of all posted finished-goods receipts against the authoritative completed production quantity.
+- [ ] Add source receipt identity/idempotency tied to the production order and production completion/output reference, not a random newly generated lot identifier.
+- [ ] Lock the production order while calculating and posting cumulative receipts; add database enforcement where appropriate.
+- [ ] Define explicit treatment for partial output, recut/rework/regrade, cancelled/reversed output and approved output variance.
+- [ ] Add tests for exact receipt, multiple valid split lots, cumulative over-receipt, same-key retry, different-payload same-key conflict and two concurrent receipts.
+
+### 13.2 Finished-goods release lacks the release-person separation present in other quality paths
+
+**Finding:** FinishedGoodsService::releaseLot() checks that the linked final inspection passed review and that there are no open nonconformances. It does not compare the release actor to quality_inspections.inspected_by or reviewed_by.
+
+The material-release and production-operation release paths in QualityControlService do explicitly prevent the inspector/reviewer from making the release decision. The finished-goods path should have equivalent control.
+
+**Source**
+- backend/app/Services/Distribution/FinishedGoodsService.php, releaseLot() (begins around line 99).
+- backend/app/Http/Controllers/Distribution/FinishedGoodsController.php, releaseLot() authorizes quality.release-finished-goods and obtains the current actor.
+- backend/app/Services/Quality/QualityControlService.php, decideMaterialRelease() and decideOperationRelease() contain explicit inspector/reviewer separation checks.
+
+**Required implementation**
+- [ ] Reject finished-goods release when actor equals the inspector or independent inspection reviewer.
+- [ ] Resolve release authority using the approved role/position and legal-entity/site scope; a Gate name alone is not proof of segregation.
+- [ ] Persist decision and actor evidence atomically with the inventory movement.
+- [ ] Add positive and negative tests for each combination of inspector, reviewer and releaser identities, including cross-tenant and unauthorized location cases.
+
+### 13.3 Customer-order header and line creation is not atomic
+
+**Finding:** FinishedGoodsService::createCustomerOrder() inserts a customer-order header and then inserts its lines in a loop without wrapping the complete operation in a single database transaction.
+
+The header can remain with zero or only some of its lines if a later line insertion fails. The customer_orders migration has a unique (tenant_id, order_number) constraint, but a retried request after a response loss is not explicitly reconciled to the original order.
+
+**Source**
+- backend/app/Services/Distribution/FinishedGoodsService.php, createCustomerOrder() (starts around line 172).
+- backend/database/migrations/2026_11_26_000018_create_distribution_order_fulfilment.php, unique tenant/order number constraint.
+
+**Required implementation**
+- [ ] Put header and every line insert in one transaction.
+- [ ] Add a client request idempotency key or a verified tenant/order-number replay rule that returns the original result only when the payload fingerprint matches.
+- [ ] Reject same-key or same-order-number requests with a conflicting payload rather than silently returning different business data.
+- [ ] Test failure on the second/later line and confirm the transaction leaves no header or orphan lines; test same-payload and conflicting-payload retries.
+
+### 13.4 Reservation idempotency is not implemented at the service boundary
+
+**Finding:** reserveCustomerOrderLine() receives reservation_key and the database enforces a unique (tenant_id, reservation_key), but the service does not first resolve an existing reservation by that key. A client retry after a successful operation may see the reservation already counted in active reserved quantities and then receive a validation/unique-constraint error rather than the original reservation result.
+
+**Source**
+- backend/app/Services/Distribution/FinishedGoodsService.php, reserveCustomerOrderLine() (starts around line 319).
+- backend/database/migrations/2026_11_26_000023_create_finished_goods_inventory_and_reservations.php, unique reservation-key constraint.
+
+**Required implementation**
+- [ ] Resolve an existing reservation key before recalculating available stock.
+- [ ] Compare a canonical request fingerprint including order line, lot, location and quantity.
+- [ ] Return the original reservation on an identical retry; reject a conflicting retry without creating a second reservation.
+- [ ] Add timeout/response-loss, duplicate scan, concurrent reservation and conflict tests.
+
+### 13.5 Inventory idempotency does not detect a conflicting payload
+
+**Finding:** InventoryLedgerService::postMovement() correctly checks the idempotency key before and after the material-lot lock. If a matching key already exists, it returns that movement without comparing the new request's lot, roll/trim, locations, movement type, quantity, unit or source reference.
+
+This prevents duplicate ledger inserts for a repeated key, but does not distinguish an identical retry from a conflicting request that accidentally reuses the same key. The caller may be told an old, different movement was accepted.
+
+**Source**
+- backend/app/Services/Inventory/InventoryLedgerService.php, postMovement() (starts at line 15).
+- backend/database/migrations/2026_11_26_000015_create_sourcing_material_traceability.php, inventory_transactions stores a unique tenant/idempotency key but no request fingerprint.
+
+**Required implementation**
+- [ ] Canonicalize and hash all material movement identity fields, amount, unit, locations, reason/source identity and actor-relevant context.
+- [ ] Return the existing row only when the payload fingerprint is identical.
+- [ ] Reject conflicting replays with a stable idempotency-conflict error and audit event.
+- [ ] Preserve the existing lot lock, post-lock recheck and append-only ledger design.
+- [ ] Test identical retry, conflicting same-key retry and two concurrent identical requests.
+
+### 13.6 Invalid inventory decimal handling resolves the wrong exception class
+
+**Finding:** InventoryLedgerService is in the App\Services\Inventory namespace and decimalUnits() throws new RuntimeException(...) but does not import RuntimeException or use the global class. An invalid value reaching this path can therefore resolve as App\Services\Inventory\RuntimeException rather than the global exception intended by the code.
+
+**Source:** backend/app/Services/Inventory/InventoryLedgerService.php, line 214; imports at file head contain DB, Str and ValidationException only.
+
+**Required implementation**
+- [ ] Use an explicit global exception class or, preferably, a domain/validation exception consistent with the service contract.
+- [ ] Ensure HTTP validation and database constraints prevent invalid values reaching ledger conversion.
+- [ ] Add unit tests for malformed decimal, negative quantity, more than six fractional digits and maximum supported precision; assert a stable validation response rather than a class-resolution error.
+
+### 13.7 Deviation approval is represented by a caller-supplied boolean
+
+**Finding:** The quality inspection result controller accepts deviation_approved as a boolean. QualityControlService::submitInspectionResult() turns that flag into PASS_WITH_DEVIATION without requiring a linked, independently approved deviation record or approval reference.
+
+The later inspection review is independent, which is a useful control, but the record does not establish who approved the deviation, against which standard/requirement, under what conditions, and with what effective scope.
+
+**Source**
+- backend/app/Http/Controllers/Quality/QualityController.php, submitInspectionResult() validation.
+- backend/app/Services/Quality/QualityControlService.php, lines around 73–74.
+
+**Required implementation**
+- [ ] Replace the free boolean with a tenant-scoped deviation/waiver record and an independent approval decision.
+- [ ] Store the linked deviation ID, standard/revision, affected quantity/lot/order/operation, reason, conditions, expiry/effective period and approving actor.
+- [ ] Validate that the deviation covers the exact inspection subject, standard and affected quantity before setting PASS_WITH_DEVIATION.
+- [ ] Keep the inspector, deviation approver, inspection reviewer and final releaser distinct where required by the quality authority matrix.
+- [ ] Add tests proving an unapproved, expired, wrong-subject or wrong-revision deviation cannot produce a releasable passing result.
+
+### 13.8 CAPA creation is a multi-write operation without a transaction
+
+**Finding:** QualityControlService::createCorrectiveAction() inserts a corrective-action record and then separately updates the related nonconformance status to CAPA_REQUIRED. The pair is not wrapped in one database transaction, and the nonconformance is not locked before the decision.
+
+A failure between writes may leave an action created while the source nonconformance remains in its previous status.
+
+**Source:** backend/app/Services/Quality/QualityControlService.php, createCorrectiveAction() (starts around line 168).
+
+**Required implementation**
+- [ ] Lock the nonconformance and validate its current state.
+- [ ] Insert the action and update the nonconformance in one transaction.
+- [ ] Add an idempotency/action-code replay rule and concurrency handling.
+- [ ] Test mid-operation rollback, duplicate action creation, closed/resolved NC and concurrent CAPA creation.
+
+### 13.9 Agent-run finalization is not bound to the initiating actor or trusted worker
+
+**Finding:** AgentGovernanceController::finishRun() authorizes agent.propose-action but does not pass the current actor identity to the service. AgentGovernanceService::finishRun() selects any STARTED run within the current tenant by run ID and updates its terminal status, output hash, token usage and tool trace. It does not require the caller to be the run starter or a separately authorized runtime service identity.
+
+The tenant filter protects cross-tenant isolation, but it does not protect attribution and run integrity within the tenant.
+
+**Source**
+- backend/app/Http/Controllers/Agents/AgentGovernanceController.php, finishRun() (around line 44).
+- backend/app/Services/Agents/AgentGovernanceService.php, finishRun() (around line 39).
+- backend/database/migrations/2026_11_26_000021_create_documents_integrations_and_agent_controls.php, agent_run_audits.started_by.
+
+**Required implementation**
+- [ ] Pass authenticated actor/service identity into finalization.
+- [ ] Permit only the initiating actor or an authenticated, specifically authorized agent-runtime service principal to finalize the run.
+- [ ] Record provider execution reference, runner identity, started/finished times, terminal reason and immutable tool trace.
+- [ ] Make finalization idempotent for an identical terminal payload and reject conflicting second finalization.
+- [ ] Add a test where one tenant member tries to finalize another member's run, including changing its output hash/tool trace.
+
+### 13.10 Agent REQUEST_CHANGES is misrepresented and has no resubmission path
+
+**Finding:** decideAction() accepts REQUEST_CHANGES and writes that decision to agent_approval_decisions. It then resets the proposal status to PROPOSED, but the agent_action_events record is written as REJECTED for every decision other than APPROVE. The event key is fixed as agent-approval:{proposalId}. The existing API exposes propose, decide and execute; no revise/resubmit operation is exposed for the same proposal.
+
+The database event-type constraint also does not include REQUEST_CHANGES, so the service currently cannot record that distinct event type.
+
+**Source**
+- backend/app/Services/Agents/AgentGovernanceService.php, decideAction() (around lines 100–145).
+- backend/app/Http/Controllers/Agents/AgentGovernanceController.php.
+- backend/database/migrations/2026_11_26_000021_create_documents_integrations_and_agent_controls.php, agent_action_events.event_type and unique tenant/event key.
+
+**Required implementation**
+- [ ] Add proposal revision number and a controlled revise/resubmit transition with precondition revalidation.
+- [ ] Preserve each decision and proposal revision in the audit trail.
+- [ ] Add REQUEST_CHANGES to the supported event vocabulary in a forward migration.
+- [ ] Use a per-decision or per-revision event key, not one immutable key for every approval attempt.
+- [ ] Add API/UI support for author changes, resubmission, reapproval and expiry; test the complete cycle through execution.
+
+### 13.11 Agent expected preconditions are stored but not evaluated
+
+**Finding:** Proposals persist expected_preconditions, but executeApprovedDraft() does not evaluate that object before invoking the allow-listed domain service. Domain services do enforce some of their own current business invariants, but the proposal's explicitly approved precondition snapshot itself is unused.
+
+**Source:** backend/app/Services/Agents/AgentGovernanceService.php, proposeAction() and executeApprovedDraft().
+
+**Required implementation**
+- [ ] Define typed precondition contracts for each capability.
+- [ ] Re-read relevant records and compare the approved expected version/state immediately before execution.
+- [ ] Reject stale proposals and require a new proposal/approval when assumptions have changed.
+- [ ] Persist evaluated facts and a result hash in the execution event.
+- [ ] Test stale supplier approval, changed order/inventory/quality state, expired source and concurrent modification.
+
+---
+
+## 14. Deep-service implementation and regression order
+
+The source findings above should be addressed in this dependency order:
+
+1. Inventory ledger exception resolution and idempotency fingerprint.
+2. Finished-goods cumulative production-output reconciliation, release separation and reservation idempotency.
+3. Customer-order atomic creation and replay semantics.
+4. Quality deviation approval records, CAPA atomicity and release authority consistency.
+5. Agent run attribution, proposal revision/REQUEST_CHANGES and precondition evaluation.
+6. Add dedicated service, PostgreSQL feature and API tests for sourcing, manufacturing, quality, inventory, distribution, finance and agent workflows.
+7. Run the PostgreSQL test suite on an actual exact source SHA; keep the source-level findings marked as inspected but unexecuted until the relevant tests have run.
+
+No application service or database migration has been modified by this audit addendum. It adds exact code-path and acceptance-test work to the existing canonical implementation programme.
