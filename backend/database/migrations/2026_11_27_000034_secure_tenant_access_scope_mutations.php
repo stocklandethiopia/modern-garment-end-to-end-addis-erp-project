@@ -259,7 +259,7 @@ BEGIN
                 USING ERRCODE = '22023';
         END IF;
     ELSE
-        IF requested_scope_id IS NOT NULL OR normalized_code IS NULL THEN
+        IF requested_scope_id IS NOT NULL OR normalized_code IS NULL OR char_length(normalized_code) > 160 THEN
             RAISE EXCEPTION 'Market scope requires a market code and no scope ID.'
                 USING ERRCODE = '22023';
         END IF;
