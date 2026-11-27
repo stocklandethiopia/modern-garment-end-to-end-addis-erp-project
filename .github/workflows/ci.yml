@@ -8,8 +8,16 @@ on:
   pull_request:
     branches:
       - main
-      - delivery/autonomous-wp-01-16
   workflow_dispatch:
+    inputs:
+      execution_runner:
+        description: "Choose GitHub-hosted by default, or the dedicated ERP Linux runner for a trusted manual verification."
+        type: choice
+        required: true
+        default: github-hosted
+        options:
+          - github-hosted
+          - self-hosted-linux-x64
 
 permissions:
   contents: read
@@ -21,7 +29,7 @@ concurrency:
 jobs:
   backend:
     name: Laravel 13 and PostgreSQL tenant security
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.execution_runner == 'self-hosted-linux-x64' && fromJSON('["self-hosted","linux","x64","erp-ci"]') || 'ubuntu-latest' }}
     services:
       postgres:
         image: postgres:18-alpine
@@ -118,7 +126,7 @@ jobs:
 
   frontend:
     name: Angular 22 frontend
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.execution_runner == 'self-hosted-linux-x64' && fromJSON('["self-hosted","linux","x64","erp-ci"]') || 'ubuntu-latest' }}
     defaults:
       run:
         working-directory: frontend
