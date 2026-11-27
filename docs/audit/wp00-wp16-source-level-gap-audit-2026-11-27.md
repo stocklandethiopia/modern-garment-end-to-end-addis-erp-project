@@ -3598,3 +3598,80 @@ The operation event stores good and defective quantities at the operation level.
 5. Enforce time/sequence rules and explicit correction/reversal events.
 6. Add bundle/piece/size genealogy and connect the production event stream to material issue/consumption and quality dispositions.
 7. Run non-owner PostgreSQL/RLS, authorization, event replay, concurrency, offline-device and full factory E2E suites on the exact candidate SHA.
+
+
+---
+
+## 53. WP-08/WP-10 route authoring and production-order transition audit
+
+### 53.1 Route-step authorship is not captured by the service or schema
+
+**Finding:** createRouteVersion() records created_by on the route header. addRouteSteps() accepts only tenant ID, route ID and a step array; its controller does not pass the authenticated actor. process_route_steps has no created_by, updated_by, submitted/approved evidence or source revision columns. The step rows are inserted in a transaction, but no audit_events row or transactional outbox event is written for the route-step set. The route-level submit/decision captures actor identity, but it does not prove who authored or changed each instruction/condition.
+
+**Effect:** the approved route version has a route author and approver, but no immutable line-level author/revision attribution for the ordered work instructions, conditional steps, skill requirements, subcontract flag or quality gates.
+
+**Required implementation**
+- [ ] Pass the authenticated route author into route-step creation and persist actor, timestamp and step revision identity.
+- [ ] Keep route-step sets immutable after submission; corrections require a new route version or controlled revision, not in-place mutation.
+- [ ] Write a route-step-set audit event with a canonical hash over ordered step definitions, conditions, predecessor links, quality gates, work instruction and required skill references.
+- [ ] Persist the submitted and approved route manifest hashes on the route header; approval must bind to the exact hash that is later copied to production orders.
+- [ ] Add tests proving a change to any step field changes the route manifest hash and cannot alter an already-submitted or order-pinned route.
+
+### 53.2 Work-instruction references are strings, not controlled operational document versions
+
+**Finding:** process_route_steps.work_instruction_reference is a nullable varchar. The route API accepts a caller-supplied string, and the manufacturing service stores it without resolving a document asset, controlled revision, effective date, access classification, worker acknowledgement or hash. There is no route step → document asset FK or query in the inspected route lifecycle.
+
+**Effect:** the route can name a work instruction but cannot prove the instruction exists, is the current approved revision, belongs to the correct style/process/site or was available to the operator at execution. This is particularly important for subcontract, special process, safety and quality-gated work.
+
+**Required implementation**
+- [ ] Link each mandatory work instruction to a verified private WP-15 document asset and immutable document version/hash.
+- [ ] Capture instruction owner, revision, language, site/process/operation applicability, effective period and approval state.
+- [ ] Require acknowledgement/training evidence for roles/processes where the SOP or safety policy demands it; record the exact instruction version acknowledged.
+- [ ] Revalidate current instruction applicability at route approval, production-order release and operation start; do not rewrite the order's historical pinned instruction snapshot.
+- [ ] Add tests for missing, rejected, expired, wrong-style, wrong-process, altered-object and unacknowledged mandatory instruction.
+
+### 53.3 Production-order start has no authenticated actor attribution in the domain service
+
+**Finding:** ManufacturingController.startProductionOrder() authorizes manufacturing.start-production-order but calls ManufacturingExecutionService.startProductionOrder(tenantId, orderId) without passing the current actor. The service changes status to IN_PROGRESS and writes started_at only. production_orders has released_by/released_at and created_by, but no started_by field or separate order-start event. The operation-level START event later records recorded_by, but it is a distinct action and does not establish who initiated the order-level start.
+
+**Effect:** the system cannot trace the authenticated actor who changed the production order from RELEASED to IN_PROGRESS. An order-level start can be attributed only indirectly through later operation events, which may be recorded by a different worker/supervisor/device.
+
+**Required implementation**
+- [ ] Pass the authenticated actor or registered device/service identity to startProductionOrder().
+- [ ] Persist started_by and a separate immutable production-order transition event with source status, target status, actor, site/work centre, timestamp and correlation.
+- [ ] Keep order-start identity separate from operator/worker identity and operation event recorder identity.
+- [ ] Define role/position authorization for order start and verify current legal entity/site authorization, released tech-pack/route/IE/quality/material readiness and pre-production checks.
+- [ ] Add tests for missing actor, unauthorized site, expired/revoked role, repeated start, start after cancel/hold/complete and order-level actor versus later operation worker identity.
+
+### 53.4 Production-order release does not enforce creator/releaser separation
+
+**Finding:** releaseProductionOrder() requires a DRAFT order and approved route/technical-pack status, then updates released_by/released_at using the caller actor. It does not compare released_by with created_by and there is no separate submitted/awaiting-release state. Whether the same person may create and release a production order is therefore controlled only by the broad Gate ability, not by the service-level segregation check seen in route and journal approval paths.
+
+**Required implementation**
+- [ ] Resolve the production order release maker-checker rule from the approved WP-03 delegated-authority/segregation matrix.
+- [ ] Where release is a controlled approval, introduce submitter and independent releaser fields/events and reject same-person release.
+- [ ] Bind the release decision to the immutable product passport, route manifest, IE standard, quality plan, material availability/issue snapshot, site/legal authorization and effective instruction versions.
+- [ ] Preserve a distinct, bounded sample/prototype release policy where bulk-production controls differ; never treat an ordinary tenant-admin Gate as proof of business release authority.
+- [ ] Add positive/negative maker-checker tests, stale dependency tests and site/entity scope tests.
+
+### 53.5 WP-08/WP-10 route and production-order tests are absent
+
+The inspected backend test tree contains no dedicated route/manufacturing/production-order lifecycle feature suite. This means route version approval, step immutability, production order create/release/start, operation state transitions, worker assignment and quality gate integration have no package-specific executed PostgreSQL acceptance suite in this baseline.
+
+**Required implementation**
+- [ ] Add ManufacturingRouteLifecycleTest for route author/step manifest, route effective dates, approval segregation, SOP links and supersession.
+- [ ] Add ProductionOrderLifecycleTest for product passport, legal entity/site pairing, order release/start actors, pre-production dependencies and history.
+- [ ] Add ProductionExecutionEventTest for each event type, operator/device authority, timestamp policy, payload-aware idempotency, quantity bounds and immutable correction.
+- [ ] Run all tests as app_runtime with forced RLS; include cross-tenant and same-tenant cross-site/entity denial.
+- [ ] Add browser E2E from approved technical release through route/IE/quality/material readiness, order release, skilled operator assignment, line execution, quality release and finished-goods receipt.
+
+---
+
+## 54. WP-08/WP-10 route and production transition implementation order
+
+1. Add immutable route-step author and manifest evidence.
+2. Link route instructions to verified WP-15 documents and acknowledgement rules.
+3. Persist production-order start actor and order transition history.
+4. Implement release maker-checker from the approved WP-03 authority matrix.
+5. Bind production-order release/start to effective product, route, IE, material, quality and legal/site dependency snapshots.
+6. Add package-specific PostgreSQL feature suites and full manufacturing E2E; report exact SHA and actual test execution.
