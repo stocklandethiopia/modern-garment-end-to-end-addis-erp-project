@@ -18,6 +18,8 @@ Three different concerns must stay separate:
 
 A tenant membership role such as `OWNER`, `ADMIN` or `MEMBER` is an identity/tenant administration concept. It does not automatically make a person the CEO, CFO, Procurement Director, Factory Manager or purchase-order approver. Likewise, the project collaboration term **Product Owner** is not an ERP job title.
 
+Where requirements or workflow records use labels such as **Business Owner**, **Process Owner**, **Procurement Owner** or **Platform Owner**, they describe domain accountability or stewardship unless the customer maps them to an approved company position. They do not grant line-management authority, system permissions or purchase-order approval. The ERP must resolve actual positions and active incumbents, then apply the separate DoA policy.
+
 **Approval rule:** a transaction is approved by the authorized incumbent or valid delegate for the applicable position/authority under the effective Delegation of Authority (DoA) policy. There is no universal person or job title that approves every purchase order.
 
 ## 2. Configurable company governance and executive structure
