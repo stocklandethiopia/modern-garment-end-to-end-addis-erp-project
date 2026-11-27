@@ -3290,3 +3290,43 @@ Remaining work:
 - [ ] Complete payroll-to-journal/GL, payslip, payment-file, bank reconciliation, statutory remittance and reporting only after WP-13/WP-14 interfaces and human approvals are complete.
 - [ ] Run the exact current WP-14 candidate SHA against PostgreSQL and record unit, feature, API and migration-upgrade results. No CI pass is claimed here.
 
+
+
+---
+
+## 43. Exact-head GitHub workflow evidence — PR #18, #20 and #21
+
+The current PR heads and workflow conclusions were queried after the candidate code updates. These are repository workflow records, not locally executed test results.
+
+| PR | Exact head | Workflow | Run | Conclusion |
+|---|---|---|---:|---|
+| #18 audit/agreement | d525fa5edbc212b7075c045090854fbdeef05dbf | ERP Continuous Integration | 46014618036 | FAILURE |
+| #18 audit/agreement | d525fa5edbc212b7075c045090854fbdeef05dbf | WP-01–WP-16 completion verification | 46014618024 | FAILURE |
+| #20 WP-14 payroll | 77177899e59a1606134b8d70e21104efdb7f03d1 | ERP Continuous Integration | 46014254978 | FAILURE |
+| #20 WP-14 payroll | 77177899e59a1606134b8d70e21104efdb7f03d1 | WP-01–WP-16 completion verification | 46014254854 | FAILURE |
+| #21 WP-03 organization | f9aebe855a05dec30f0b1f4bc5f1acbd741f385b | ERP Continuous Integration | 46013596367 | FAILURE |
+| #21 WP-03 organization | f9aebe855a05dec30f0b1f4bc5f1acbd741f385b | WP-01–WP-16 completion verification | 46013595997 | FAILURE |
+
+### 43.1 Job-level evidence available
+
+For all three heads, the workflow-run job endpoint reports the relevant Angular and Laravel/PostgreSQL jobs as FAILURE. The job-step endpoint returns an empty step list for the inspected jobs. Their job records have no log URL. The combined ERP candidate/source-archive assembly jobs are skipped after the preceding job failures.
+
+The available records do not expose a failing command, assertion, stack trace or provisioning error. Therefore the correct classification is:
+
+- Workflow conclusion: FAILURE.
+- Executed test-step evidence: NOT AVAILABLE from the returned job records.
+- Root cause: UNVERIFIED.
+- Application code test result: NOT ESTABLISHED.
+- Pass/acceptance claim: NOT MADE.
+
+Do not attribute these failures specifically to billing, runner allocation, PostgreSQL, Angular compilation or application source without a job log or an independently reproduced result.
+
+### 43.2 Required CI continuity action
+
+- [ ] Use the owner-controlled GitHub Actions settings and run-history UI to retrieve the raw workflow logs and setup diagnostics for the exact run IDs above.
+- [ ] Determine whether a runner was assigned and whether checkout/setup began before any job failed.
+- [ ] Re-run both workflows on each frozen candidate head after the cause is known; preserve runner identity, step results, logs, test counts and artifact digests.
+- [ ] If a separate trusted self-hosted runner is introduced, keep all existing checks and exact-SHA requirements; do not weaken or skip the suite.
+- [ ] Re-run the same checks again on the canonical integration SHA after any accepted merge.
+
+The workflow summaries are retained as failure evidence, but they are not sufficient to diagnose a code failure or an infrastructure cause.
