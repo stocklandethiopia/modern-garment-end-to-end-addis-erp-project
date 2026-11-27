@@ -34,9 +34,8 @@ SHAREHOLDERS / GENERAL MEETING (where the legal form provides for it)
         ├── Board Directors / Non-Executive Directors
         ├── Audit & Risk Committee (where appropriate)
         ├── Governance, Nomination & Remuneration Committee (optional)
-        └── Strategy, Investment & Sustainability Committee (optional)
-              │
-              └── CEO / Managing Director / Executive President
+        ├── Strategy, Investment & Sustainability Committee (optional)
+        └── CEO / Managing Director / Executive President
                     ├── COO / Chief Manufacturing & Operations Officer
                     ├── CFO / Finance Director
                     ├── CHRO / People & Culture Director
