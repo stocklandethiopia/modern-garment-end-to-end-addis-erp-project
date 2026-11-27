@@ -184,6 +184,24 @@ class PlatformAdministrationTest extends TestCase
         ])->assertNotFound();
     }
 
+    public function test_platform_administration_routes_reject_malformed_tenant_ids(): void
+    {
+        $this->actAs($this->platformAdminId);
+
+        $this->patchJson('/api/v1/platform/tenants/not-a-uuid/lifecycle', [
+            'status' => 'SUSPENDED',
+            'reason' => 'Reject invalid tenant identity before any database cast or mutation.',
+        ])->assertNotFound();
+
+        $this->putJson('/api/v1/platform/tenants/not-a-uuid/entitlements', [
+            'plan_code' => 'BUSINESS',
+            'status' => 'ACTIVE',
+            'feature_flags' => [],
+            'limits' => [],
+            'reason' => 'Reject invalid tenant identity before any database cast or mutation.',
+        ])->assertNotFound();
+    }
+
     public function test_new_tenant_receives_unassigned_review_required_entitlement_by_default(): void
     {
         $this->actAs($this->tenantOwnerId);
@@ -353,6 +371,9 @@ class PlatformAdministrationTest extends TestCase
         $this->assertFalse((bool) $runtime->scalar("SELECT has_table_privilege('app_runtime', 'platform_tenant_entitlements', 'DELETE')"));
         $this->assertFalse((bool) $runtime->scalar("SELECT has_table_privilege('app_runtime', 'platform_audit_events', 'SELECT')"));
         $control = DB::connection('pgsql_control');
+        $this->assertSame('app_control', (string) $control->scalar('SELECT current_user'));
+        $this->assertFalse((bool) $control->scalar("SELECT has_schema_privilege('app_control', 'public', 'CREATE')"));
+        $this->assertFalse((bool) $control->scalar("SELECT rolsuper OR rolcreaterole OR rolbypassrls FROM pg_roles WHERE rolname = 'app_control'"));
         $controlFunctions = [
             'public.platform_list_tenants()',
             'public.platform_change_tenant_status(uuid,text,text)',
