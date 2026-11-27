@@ -64,7 +64,7 @@ class PlatformAdministrationService
         return $this->call($actorId, null,
             'SELECT * FROM public.platform_request_operator_grant(?, ?, ?::date, ?::date, ?)',
             [$userEmail, $roleCode, $validFrom, $validTo, $reason],
-        ), 3);
+        );
     }
 
     public function approveOperatorGrant(string $actorId, string $grantId, string $reason): object
@@ -72,7 +72,7 @@ class PlatformAdministrationService
         return $this->call($actorId, null,
             'SELECT * FROM public.platform_approve_operator_grant(?::uuid, ?)',
             [$grantId, $reason],
-        ), 3);
+        );
     }
 
     public function revokeOperatorGrant(string $actorId, string $grantId, string $reason): object
@@ -80,10 +80,10 @@ class PlatformAdministrationService
         return $this->call($actorId, null,
             'SELECT * FROM public.platform_revoke_operator_grant(?::uuid, ?)',
             [$grantId, $reason],
-        ), 3);
+        );
     }
 
-    public function changeTenantStatus(string $tenantId, string $status, string $reason): object
+    public function changeTenantStatus(string $actorId, string $tenantId, string $status, string $reason): object
     {
         return $this->call(
             $actorId,
