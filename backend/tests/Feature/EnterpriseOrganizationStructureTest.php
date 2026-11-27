@@ -447,6 +447,114 @@ class EnterpriseOrganizationStructureTest extends TestCase
         ], 'pgsql_test_admin');
     }
 
+    public function test_organization_registers_support_tenant_scoped_search_and_pagination(): void
+    {
+        $this->actAs($this->ownerA, $this->tenantA);
+
+        $unitA = $this->createUnit('PAGE-UNIT-A');
+        $unitB = $this->createUnit('PAGE-UNIT-B');
+        $unitC = $this->createUnit('PAGE-UNIT-C');
+
+        $firstPage = $this->getJson('/api/v1/enterprise/organization-units?per_page=2&page=1')
+            ->assertOk()
+            ->assertJsonPath('current_page', 1)
+            ->assertJsonPath('last_page', 2)
+            ->assertJsonPath('total', 3);
+        $firstIds = collect($firstPage->json('data'))->pluck('id')->all();
+
+        $secondPage = $this->getJson('/api/v1/enterprise/organization-units?per_page=2&page=2')
+            ->assertOk()
+            ->assertJsonPath('current_page', 2)
+            ->assertJsonPath('last_page', 2)
+            ->assertJsonPath('total', 3);
+        $secondIds = collect($secondPage->json('data'))->pluck('id')->all();
+        $this->assertCount(1, $secondIds);
+        $this->assertSame(3, count(array_unique(array_merge($firstIds, $secondIds))));
+        $this->assertContains($unitA, array_merge($firstIds, $secondIds));
+        $this->assertContains($unitB, array_merge($firstIds, $secondIds));
+        $this->assertContains($unitC, array_merge($firstIds, $secondIds));
+
+        $this->getJson('/api/v1/enterprise/organization-units?q=PAGE-UNIT-C&per_page=2')
+            ->assertOk()
+            ->assertJsonPath('total', 1)
+            ->assertJsonFragment(['id' => $unitC]);
+
+        $positionA = $this->createPosition($unitA, 'PAGE-POS-A');
+        $positionB = $this->createPosition($unitA, 'PAGE-POS-B');
+        $positionC = $this->createPosition($unitA, 'PAGE-POS-C');
+
+        $this->getJson('/api/v1/enterprise/job-positions?org_unit_id='.$unitA.'&per_page=2&page=2')
+            ->assertOk()
+            ->assertJsonPath('current_page', 2)
+            ->assertJsonPath('last_page', 2)
+            ->assertJsonPath('total', 3)
+            ->assertJsonFragment(['id' => $positionC]);
+
+        $this->getJson('/api/v1/enterprise/job-positions?org_unit_id='.$unitA.'&q=PAGE-POS-B')
+            ->assertOk()
+            ->assertJsonPath('total', 1)
+            ->assertJsonFragment(['id' => $positionB]);
+
+        $this->getJson('/api/v1/enterprise/job-positions?org_unit_id='.$unitB.'&per_page=101')
+            ->assertUnprocessable();
+
+        $this->postJson('/api/v1/enterprise/organization-units/'.$unitA.'/manager-assignments', [
+            'manager_position_id' => $positionA,
+            'valid_from' => '2026-01-01',
+            'valid_to' => '2026-06-30',
+            'reason' => 'Assign the first effective-dated manager position.',
+        ])->assertCreated();
+        $this->postJson('/api/v1/enterprise/organization-units/'.$unitA.'/manager-assignments', [
+            'manager_position_id' => $positionB,
+            'valid_from' => '2026-07-01',
+            'valid_to' => '2026-12-31',
+            'reason' => 'Assign the successor manager position.',
+        ])->assertCreated();
+
+        $this->getJson('/api/v1/enterprise/organization-units/'.$unitA.'/manager-assignments?per_page=1&page=2')
+            ->assertOk()
+            ->assertJsonPath('current_page', 2)
+            ->assertJsonPath('last_page', 2)
+            ->assertJsonPath('total', 2);
+
+        $subjectB = $this->createPosition($unitB, 'PAGE-SUBJECT-B');
+        $subjectC = $this->createPosition($unitC, 'PAGE-SUBJECT-C');
+        $this->createReportingRelationForTest($positionA, $positionB, 'FUNCTIONAL');
+        $this->createReportingRelationForTest($subjectB, $positionC, 'FUNCTIONAL');
+        $this->createReportingRelationForTest($subjectC, $positionA, 'FUNCTIONAL');
+
+        $this->getJson('/api/v1/enterprise/position-reporting-relations?per_page=2&page=2')
+            ->assertOk()
+            ->assertJsonPath('current_page', 2)
+            ->assertJsonPath('last_page', 2)
+            ->assertJsonPath('total', 3);
+
+        $this->getJson('/api/v1/enterprise/position-reporting-relations?q=PAGE-SUBJECT-C')
+            ->assertOk()
+            ->assertJsonPath('total', 1)
+            ->assertJsonFragment(['subject_position_id' => $subjectC]);
+
+        $this->actAs($this->ownerB, $this->tenantB);
+        $this->getJson('/api/v1/enterprise/organization-units?q=PAGE-UNIT-A')
+            ->assertOk()
+            ->assertJsonPath('total', 0);
+        $this->getJson('/api/v1/enterprise/job-positions?q=PAGE-POS-A')
+            ->assertOk()
+            ->assertJsonPath('total', 0);
+    }
+
+    private function createReportingRelationForTest(string $subjectPositionId, string $managerPositionId, string $type): void
+    {
+        $this->postJson('/api/v1/enterprise/position-reporting-relations', [
+            'subject_position_id' => $subjectPositionId,
+            'manager_position_id' => $managerPositionId,
+            'reporting_type' => $type,
+            'valid_from' => '2026-01-01',
+            'valid_to' => '2026-12-31',
+            'reason' => 'Record an effective-dated functional reporting relationship.',
+        ])->assertCreated();
+    }
+
     public function test_runtime_table_privileges_and_forced_rls_are_restricted(): void
     {
         $runtime = DB::connection('pgsql');
