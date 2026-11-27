@@ -83,6 +83,7 @@ class AccessScopeController extends Controller
         TenantContext $tenantContext,
         ScopedAccessService $scopes,
     ): JsonResponse {
+        abort_unless(Str::isUuid($userId), 404);
         abort_unless($tenantContext->canAdministerTenant(), 403, 'Tenant administrator permission is required.');
 
         $data = $request->validate([
