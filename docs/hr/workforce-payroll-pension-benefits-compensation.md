@@ -118,6 +118,20 @@ Differentiate:
 
 Where actual relationship or Article 22(3) digital creator business test is ambiguous, mark REVIEW REQUIRED and route to qualified legal/tax reviewer. A payment label cannot determine legal status.
 
+### 7.1 Ethiopia payroll source and engineering release controls
+
+The implementation-specific Ethiopian legal source basis, candidate PAYE-base comparison, source snapshot requirements and default-off engineering release gate are maintained in:
+- docs/localization/ethiopia-payroll-localization-2026-11-27.md
+- docs/localization/ethiopia-payroll-engineering-release-gate.md
+- docs/localization/fixtures/ethiopia-payroll-tax-base-candidate-regression.csv
+- docs/localization/templates/ethiopia-payroll-rule-payload-template.json
+
+The new ERP does not inherit a sample product version, fixed statutory rule identifier, customer-specific schema or historic payroll table. Each payroll run freezes the official source documents, exact legal references, effective dates, source hashes, reviewed parameters and approvals. A deterministic source snapshot hash provides reproducibility without relying on an arbitrary legacy rule-version string.
+
+The two ETB 30,000 calculations are comparison regressions only. A qualified Ethiopian tax opinion must approve the PAYE base and exact controlling provisions before statutory activation. Exemption evidence, non-standard pensionable-salary rationale, explicit rounding, independent pension coverage review and RETAINER_SERVICE exclusion remain required. The two payroll activation flags remain false until the employee master and statutory release gate pass.
+
+The detailed cross-package build sequence, target source map, DoA dependency, Angular workbenches and WP-15 agent safety integration are defined in docs/work-packages/wp03-wp14-organogram-payroll-implementation-plan.md. WP-14 must consume the approved WP-03 position/appointment and DoA services; it must not create a separate HR-only approval hierarchy.
+
 ## 8. Production incentives, sales commissions and fair compensation
 
 Manufacturing incentive is separate from store/wholesale commission:
