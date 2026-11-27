@@ -14,7 +14,9 @@ Both settings in `backend/config/payroll.php` remain `false`:
 - `ethiopia.employee_master_release_ready`
 - `ethiopia.statutory_activation_enabled`
 
-The payroll line, payroll submission and professional-decision methods fail closed while either is false. There is no environment-variable shortcut. Enabling either setting requires a separate reviewed source change after this gate and the WP-14 / WP-16 criteria below pass.
+The payroll line-calculation, payroll-submission and professional-decision methods are required to fail closed while either setting is false. There is no environment-variable shortcut. Enabling either setting requires a separate reviewed source change after this gate and the WP-14 / WP-16 criteria below pass.
+
+**Runtime evidence boundary:** this document-only plan branch does not itself contain `backend/config/payroll.php` or the payroll service implementation. The separate WP-14 candidate is PR #20 at source SHA `db1847c64abbff8b04bc70790b122e082f5d81dd`; that candidate includes both default-false settings and checks the gate before adding calculation lines, submitting a run or recording professional approval. Creating a metadata-only DRAFT header is distinct from calculating or submitting payroll. The canonical delivery branch does not receive this runtime protection until the candidate is integrated. Treat this document as the required release contract, not proof that the code is already deployed or accepted.
 
 No real payroll, posted transaction, payment, tax filing or pension remittance is performed by this package.
 
