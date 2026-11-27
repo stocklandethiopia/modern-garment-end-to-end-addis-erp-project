@@ -71,7 +71,8 @@ describe('OrganizationStructureComponent', () => {
 
     http.expectOne((request) => request.url === '/api/v1/enterprise/job-positions'
       && request.params.get('page') === '1'
-      && request.params.get('per_page') === '100').flush(page([position]));
+      && request.params.get('per_page') === '100'
+      && request.params.get('status') === 'ACTIVE').flush(page([position]));
 
     http.expectOne('/api/v1/enterprise/legal-entities').flush(page([]));
     http.expectOne('/api/v1/enterprise/sites').flush(page([]));
@@ -204,7 +205,8 @@ describe('OrganizationStructureComponent', () => {
     component.searchReportingPositions();
     http.expectOne((request) => request.url === '/api/v1/enterprise/job-positions'
       && request.params.get('q') === 'GENERAL MANAGER'
-      && request.params.get('per_page') === '100').flush(page([position]));
+      && request.params.get('per_page') === '100'
+      && request.params.get('status') === 'ACTIVE').flush(page([position]));
 
     fixture.detectChanges();
     expect(component.positionPage()?.total).toBe(1);
