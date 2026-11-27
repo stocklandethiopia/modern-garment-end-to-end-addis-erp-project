@@ -27,7 +27,7 @@ CREATE OR REPLACE FUNCTION public.set_tenant_member_scope_mode(
     requested_mode text,
     change_reason text
 )
-RETURNS TABLE (user_id uuid, scope_mode varchar)
+RETURNS TABLE (result_user_id uuid, result_scope_mode varchar)
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = pg_catalog, public
