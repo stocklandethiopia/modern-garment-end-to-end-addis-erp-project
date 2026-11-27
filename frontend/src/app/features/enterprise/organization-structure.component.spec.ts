@@ -8,8 +8,8 @@ import { AuthSessionService } from '../../core/auth/auth-session.service';
 import { OrganizationStructureComponent } from './organization-structure.component';
 import { JobPosition, OrganizationUnit } from './enterprise-organization.service';
 
-function page<T>(data: T[]) {
-  return { data, current_page: 1, last_page: 1, total: data.length };
+function page<T>(data: T[], currentPage = 1, lastPage = 1, total = data.length) {
+  return { data, current_page: currentPage, last_page: lastPage, total };
 }
 
 const unit: OrganizationUnit = {
@@ -52,12 +52,29 @@ describe('OrganizationStructureComponent', () => {
   });
 
   function flushInitial(fixture: ComponentFixture<OrganizationStructureComponent>): void {
-    http.expectOne('/api/v1/enterprise/organization-units').flush(page([unit]));
-    http.expectOne('/api/v1/enterprise/job-positions').flush(page([position]));
-    http.expectOne('/api/v1/enterprise/position-reporting-relations').flush(page([]));
+    http.expectOne((request) => request.url === '/api/v1/enterprise/organization-units'
+      && request.params.get('page') === '1'
+      && request.params.get('per_page') === '25').flush(page([unit]));
+
+    http.expectOne((request) => request.url === '/api/v1/enterprise/job-positions'
+      && request.params.get('page') === '1'
+      && request.params.get('per_page') === '25'
+      && request.params.get('org_unit_id') === 'unit-1').flush(page([position]));
+
+    http.expectOne((request) => request.url === '/api/v1/enterprise/organization-units/unit-1/manager-assignments'
+      && request.params.get('page') === '1'
+      && request.params.get('per_page') === '25').flush(page([]));
+
+    http.expectOne((request) => request.url === '/api/v1/enterprise/position-reporting-relations'
+      && request.params.get('page') === '1'
+      && request.params.get('per_page') === '25').flush(page([]));
+
+    http.expectOne((request) => request.url === '/api/v1/enterprise/job-positions'
+      && request.params.get('page') === '1'
+      && request.params.get('per_page') === '100').flush(page([position]));
+
     http.expectOne('/api/v1/enterprise/legal-entities').flush(page([]));
     http.expectOne('/api/v1/enterprise/sites').flush(page([]));
-    http.expectOne('/api/v1/enterprise/organization-units/unit-1/manager-assignments').flush(page([]));
     fixture.detectChanges();
   }
 
@@ -127,13 +144,71 @@ describe('OrganizationStructureComponent', () => {
     };
     request.flush({ data: created });
 
-    const managers = http.expectOne('/api/v1/enterprise/organization-units/unit-2/manager-assignments');
+    const unitReload = http.expectOne((candidate) => candidate.url === '/api/v1/enterprise/organization-units'
+      && candidate.params.get('page') === '1'
+      && candidate.params.get('per_page') === '25'
+      && candidate.params.get('q') === 'QUALITY');
+    unitReload.flush(page([created]));
+
+    const positions = http.expectOne((candidate) => candidate.url === '/api/v1/enterprise/job-positions'
+      && candidate.params.get('org_unit_id') === 'unit-2');
+    positions.flush(page([]));
+
+    const managers = http.expectOne((candidate) => candidate.url === '/api/v1/enterprise/organization-units/unit-2/manager-assignments');
     expect(managers.request.method).toBe('GET');
     managers.flush(page([]));
 
     fixture.detectChanges();
     expect(component.units().some((item) => item.id === 'unit-2')).toBe(true);
     expect(fixture.nativeElement.textContent).toContain('Organizational unit created');
+  });
+
+  it('requests later pages and applies tenant-scoped search filters to all organization registers', () => {
+    const fixture = TestBed.createComponent(OrganizationStructureComponent);
+    fixture.detectChanges();
+    flushInitial(fixture);
+
+    const component = fixture.componentInstance;
+    component.changeUnitPage(2);
+    const unitPageTwo = http.expectOne((request) => request.url === '/api/v1/enterprise/organization-units'
+      && request.params.get('page') === '2'
+      && request.params.get('per_page') === '25');
+    unitPageTwo.flush(page([], 2, 2, 26));
+    expect(component.unitPage()?.total).toBe(26);
+
+    component.selectUnit('unit-1');
+    const positionPage = http.expectOne((request) => request.url === '/api/v1/enterprise/job-positions'
+      && request.params.get('org_unit_id') === 'unit-1');
+    positionPage.flush(page([position]));
+
+    const managerPage = http.expectOne((request) => request.url === '/api/v1/enterprise/organization-units/unit-1/manager-assignments');
+    managerPage.flush(page([]));
+
+    component.positionSearch.setValue('CUTTING');
+    component.searchPositions();
+    http.expectOne((request) => request.url === '/api/v1/enterprise/job-positions'
+      && request.params.get('q') === 'CUTTING'
+      && request.params.get('org_unit_id') === 'unit-1').flush(page([position], 1, 1, 1));
+
+    component.managerSearch.setValue('UNIT HEAD');
+    component.searchManagers();
+    http.expectOne((request) => request.url === '/api/v1/enterprise/organization-units/unit-1/manager-assignments'
+      && request.params.get('q') === 'UNIT HEAD').flush(page([], 1, 1, 0));
+
+    component.reportingSearch.setValue('FACTORY');
+    component.searchReporting();
+    http.expectOne((request) => request.url === '/api/v1/enterprise/position-reporting-relations'
+      && request.params.get('q') === 'FACTORY').flush(page([], 1, 1, 0));
+
+    component.reportingPositionSearch.setValue('GENERAL MANAGER');
+    component.searchReportingPositions();
+    http.expectOne((request) => request.url === '/api/v1/enterprise/job-positions'
+      && request.params.get('q') === 'GENERAL MANAGER'
+      && request.params.get('per_page') === '100').flush(page([position]));
+
+    fixture.detectChanges();
+    expect(component.positionPage()?.total).toBe(1);
+    expect(component.reportingPositionChoices()).toHaveLength(1);
   });
 
   it('does not expose organization configuration controls to an ordinary tenant member', () => {
