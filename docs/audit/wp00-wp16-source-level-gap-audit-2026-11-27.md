@@ -3358,3 +3358,53 @@ The retried job IDs also return empty step lists. The retried jobs have no log U
 - Test pass claim: NOT MADE.
 
 The project must not keep retrying the same opaque job record indefinitely. The next CI action is to inspect GitHub Actions run details/settings through the repository owner's authenticated GitHub interface (runner allocation, service/setup diagnostics, workflow permissions and run logs), or run the identical workflow on a securely configured trusted runner while retaining every existing gate. Once logs exist, diagnose and fix the exact failure; no source test may be marked passed from this record alone.
+
+
+---
+
+## 45. WP-14 professional identity and durable source-tamper evidence — final pre-activation controls
+
+### 45.1 PAYE-base opinion reviewer identity is not bound to a controlled professional registry
+
+**Verified source:** the Ethiopia calculator requires the nested tax_base_decision object to contain status APPROVED, approved_method matching the selected tax_base_method, an opinion reference, reviewer qualification text, reviewer_user_id, reviewer registration reference, opinion document storage UUID, SHA-256, independence confirmation, review timestamp and article references. The opinion document is re-read from tenant-private storage during payroll draft creation and its document type/hash is checked.
+
+**Remaining identity gap:** the calculator only checks that reviewer_user_id is non-empty and differs from the payroll preparer. It does not check that this reviewer ID is the same as the statutory rule record's verified_by, a real tenant user, an active qualified professional profile or a valid professional registration record. reviewer_qualification and reviewer_registration_reference are free-text values in the nested JSON payload. The generic payroll.professional-approval Gate on the later run decision verifies application permission, but does not by itself prove Ethiopian tax-professional qualification or the specific credential/registration cited in the opinion.
+
+This is not a reason to remove the default-off payroll release gate. It is an explicit control to complete before any statutory activation.
+
+**Required implementation**
+- [ ] Create a controlled professional credential/authority registry with user identity, profession/qualification, registration number, issuing authority, jurisdiction/scope, effective/expiry dates, status, source evidence and verifier.
+- [ ] Bind the PAYE-base opinion reviewer_user_id to an existing active credential record and to the exact tax-base opinion document/artifact version.
+- [ ] Require independent reviewer authority appropriate to Ethiopian tax interpretation; store the opinion signatory, qualification/registration evidence, cited provisions and source revision hash.
+- [ ] Ensure the person who authored/prepared the legal rule cannot approve the tax-base interpretation or their own statutory source package.
+- [ ] Bind professional payroll decision authorization to the qualified reviewer/role and retain the distinct review evidence; keep run preparer, rule verifier, legal opinion reviewer and final payroll approver separate according to the approved authority matrix.
+- [ ] Add tests for unknown reviewer UUID, inactive/expired registration, wrong professional scope, wrong jurisdiction, reviewer equals preparer/rule author, credential revocation and altered opinion document.
+
+### 45.2 Stored-document tamper rejection is not durable when verification is nested in a payroll transaction
+
+**Finding:** DocumentIntegrationService.verifyStoredDocumentChecksum() updates document_assets.classification_status to REJECTED when the stored SHA-256 differs, then throws ValidationException. WP-14 calls this method from createPayrollDraft() and addPayrollDraftLine() within an outer DB::transaction. The exception rolls back the entire transaction, including the attempted REJECTED/checksum_verified_at reset update. A byte-count mismatch is detected earlier and also throws without setting a durable rejection record.
+
+The caller safely fails closed: no payroll draft or payroll line is committed from the failed transaction. The issue is security/audit durability: after the transaction rolls back, the document can remain in its prior PENDING/accepted state and the tamper incident may not be visible in the asset state or durable security audit trail.
+
+**Required implementation**
+- [ ] Separate verification from the business transaction or return a typed integrity failure that the outer service catches only after rollback; then write a durable tamper/quarantine state and immutable security event in a separate committed transaction.
+- [ ] Record the document ID, tenant, storage disk/object version, expected and observed byte count, expected and observed SHA-256, verification time, actor/service identity, payroll run/line context, correlation ID and disposition.
+- [ ] Ensure the audit/tamper event cannot be rolled back with the payroll transaction and cannot overwrite the original registered hash.
+- [ ] Quarantine the object and prevent subsequent extraction, payroll calculation or statutory use until an authorized re-verification/replacement workflow completes.
+- [ ] Add PostgreSQL feature tests for altered bytes and byte-count mismatch inside a payroll transaction; assert the payroll operation rolls back while the separate tamper/quarantine event persists.
+- [ ] Preserve the first failed verification event and all later re-verification attempts as append-only history.
+
+### 45.3 Re-check legal-source objects at the final professional review boundary
+
+The createPayrollDraft operation verifies the frozen statutory rule source documents and the PAYE opinion object; addPayrollDraftLine verifies the line-specific supporting documents. The candidate's professional run decision revalidates calculation evidence and run totals but does not re-read every underlying statutory/opinion/supporting object before changing the run to APPROVED_FOR_PAYROLL.
+
+A stored source object can be replaced, deleted or become inaccessible between line calculation and final professional decision. The line evidence hash proves what the calculation snapshot recorded, but it does not prove the currently retained source object remains retrievable and byte-identical at the final approval moment.
+
+**Required implementation**
+- [ ] Persist the exact document asset IDs, storage object version IDs, byte counts and hashes for the tax rule, pension rule, PAYE opinion, coverage decision and every line exemption/deduction/pension rationale.
+- [ ] Re-read and verify all those exact object versions immediately before final professional approval, or enforce immutable object version retention plus a verifiable storage policy.
+- [ ] Reject final approval if any source object is missing, changed, rejected, expired or no longer within its effective/legal scope.
+- [ ] Ensure any failed final source check produces the durable tamper record described in 45.2.
+- [ ] Add object deletion/replacement, expired source, revoked legal rule and stale opinion tests.
+
+**Activation boundary retained:** the WP-14 candidate still has employee_master_release_ready=false and statutory_activation_enabled=false. These engineering requirements do not authorize legal interpretation, payroll activation, payment, remittance or GL posting.
