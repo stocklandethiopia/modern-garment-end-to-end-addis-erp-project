@@ -50,6 +50,37 @@ class DomainRlsSecurityTest extends TestCase
         }
     }
 
+    public function test_every_tenant_owned_table_has_forced_rls(): void
+    {
+        if (DB::connection()->getDriverName() !== 'pgsql') {
+            $this->markTestSkipped('PostgreSQL RLS inventory verification requires PostgreSQL.');
+        }
+
+        $tables = DB::connection('pgsql_test_admin')->select(<<<'SQL'
+SELECT c.relname, c.relrowsecurity, c.relforcerowsecurity
+  FROM pg_class c
+  JOIN pg_namespace n ON n.oid = c.relnamespace
+ WHERE n.nspname = 'public'
+   AND c.relkind IN ('r', 'p')
+   AND EXISTS (
+       SELECT 1
+         FROM pg_attribute a
+        WHERE a.attrelid = c.oid
+          AND a.attname = 'tenant_id'
+          AND a.attnum > 0
+          AND NOT a.attisdropped
+   )
+ ORDER BY c.relname
+SQL);
+
+        self::assertNotEmpty($tables, 'The database must contain tenant-owned tables for the RLS inventory.');
+
+        foreach ($tables as $table) {
+            self::assertTrue((bool) $table->relrowsecurity, $table->relname.' must enable RLS.');
+            self::assertTrue((bool) $table->relforcerowsecurity, $table->relname.' must force RLS.');
+        }
+    }
+
     public function test_runtime_role_cannot_mutate_append_only_inventory_or_finished_goods_ledgers(): void
     {
         if (DB::connection()->getDriverName() !== 'pgsql') {
