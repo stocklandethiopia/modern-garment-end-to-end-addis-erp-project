@@ -71,7 +71,7 @@ final class EthiopiaPayrollCalculator
             || trim((string) ($decision['reviewer_user_id'] ?? '')) === ''
             || (string) $decision['reviewer_user_id'] === $preparedBy
             || empty($decision['independence_confirmed'])
-            || ! $this->isDate((string) ($decision['reviewed_at'] ?? ''))
+            || ! $this->isTimestamp((string) ($decision['reviewed_at'] ?? ''))
             || empty($decision['article_references'])
         ) {
             throw new InvalidArgumentException('A separate, clause-specific Ethiopian tax opinion must explicitly approve the PAYE base method before payroll calculation.');
@@ -80,6 +80,9 @@ final class EthiopiaPayrollCalculator
         if (($pensionRule['salary_basis'] ?? null) !== 'REGULAR_HOURS_MONTHLY_SALARY') {
             throw new InvalidArgumentException('The pension rule must explicitly identify the legally supported regular-hours monthly salary basis.');
         }
+
+        $this->assertSupportingSources($taxRule['supporting_sources'] ?? null, $preparedBy, 'income-tax');
+        $this->assertSupportingSources($pensionRule['supporting_sources'] ?? null, $preparedBy, 'pension');
 
         $result = $this->calculate($input, $taxRule, $pensionRule, true, $preparedBy);
         $result['calculation_status'] = 'CALCULATED_DRAFT_NOT_POSTED';
@@ -320,7 +323,7 @@ final class EthiopiaPayrollCalculator
 
         if (trim((string) ($record['verified_by'] ?? '')) === ''
             || (string) $record['verified_by'] === $preparedBy
-            || ! $this->isDate((string) ($record['verified_at'] ?? ''))
+            || ! $this->isTimestamp((string) ($record['verified_at'] ?? ''))
         ) {
             throw new InvalidArgumentException('A statutory rule record requires a separate reviewer and verification date.');
         }
@@ -438,7 +441,7 @@ final class EthiopiaPayrollCalculator
         }
 
         if ($approver === '' || $preparedBy === null || $approver === $preparedBy
-            || ! $this->isDate((string) ($decision['approved_at'] ?? $decision['reviewed_at'] ?? ''))
+            || ! $this->isTimestamp((string) ($decision['approved_at'] ?? $decision['reviewed_at'] ?? ''))
             || trim((string) ($decision['approval_reference'] ?? $decision['evidence_reference'] ?? '')) === ''
         ) {
             throw new InvalidArgumentException("{$field} requires a separate approver, approval date and approval/evidence reference.");
@@ -531,6 +534,47 @@ final class EthiopiaPayrollCalculator
     }
 
     /**
+     * Each supporting Ethiopian instrument is stored as reviewed source evidence.
+     *
+     * @param mixed $sources
+     */
+    private function assertSupportingSources(mixed $sources, string $preparedBy, string $domain): void
+    {
+        if (! is_array($sources) || $sources === []) {
+            throw new InvalidArgumentException("The {$domain} rule must include its supporting official instruments and directives.");
+        }
+
+        foreach ($sources as $index => $source) {
+            if (! is_array($source)
+                || trim((string) ($source['instrument_number'] ?? '')) === ''
+                || trim((string) ($source['source_authority'] ?? '')) === ''
+                || trim((string) ($source['source_title'] ?? '')) === ''
+                || trim((string) ($source['article_references'] ?? '')) === ''
+                || ! $this->isDate((string) ($source['publication_date'] ?? ''))
+                || ! $this->isDate((string) ($source['effective_from'] ?? ''))
+                || ! preg_match('/^[a-f0-9]{64}$/Di', (string) ($source['source_sha256'] ?? ''))
+            ) {
+                throw new InvalidArgumentException("{$domain} supporting source {$index} is incomplete or has no verified source hash.");
+            }
+
+            $url = trim((string) ($source['source_url'] ?? ''));
+            $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+            if (! str_starts_with($url, 'https://') || ! $this->isOfficialEthiopianHost($host)) {
+                throw new InvalidArgumentException("{$domain} supporting source {$index} must be an official Ethiopian authority URL.");
+            }
+
+            if (strtoupper((string) ($source['review_status'] ?? '')) !== 'PROFESSIONALLY_APPROVED'
+                || trim((string) ($source['reviewer_user_id'] ?? '')) === ''
+                || (string) $source['reviewer_user_id'] === $preparedBy
+                || ! $this->isTimestamp((string) ($source['reviewed_at'] ?? ''))
+                || trim((string) ($source['review_reference'] ?? '')) === ''
+            ) {
+                throw new InvalidArgumentException("{$domain} supporting source {$index} has not passed independent professional review.");
+            }
+        }
+    }
+
+    /**
      * @param array<string, mixed> $record
      * @return array<string, mixed>
      */
@@ -564,6 +608,21 @@ final class EthiopiaPayrollCalculator
         $date = \\DateTimeImmutable::createFromFormat('!Y-m-d', $value);
 
         return $date !== false && $date->format('Y-m-d') === $value;
+    }
+
+    private function isTimestamp(string $value): bool
+    {
+        if (trim($value) === '') {
+            return false;
+        }
+
+        try {
+            new \\DateTimeImmutable($value);
+
+            return true;
+        } catch (\\Throwable) {
+            return false;
+        }
     }
 
     /**
