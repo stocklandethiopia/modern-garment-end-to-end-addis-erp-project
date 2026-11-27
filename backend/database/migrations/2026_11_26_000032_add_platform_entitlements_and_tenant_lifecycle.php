@@ -519,9 +519,9 @@ BEFORE UPDATE OR DELETE ON public.platform_audit_events
 FOR EACH ROW EXECUTE FUNCTION public.prevent_platform_audit_mutation();
 
 REVOKE ALL ON FUNCTION public.create_default_platform_entitlement() FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.platform_list_tenants() FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.platform_change_tenant_status(uuid, text, text) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.platform_set_tenant_entitlements(uuid, text, text, jsonb, jsonb, date, date, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.platform_list_tenants() FROM PUBLIC, app_runtime;
+REVOKE ALL ON FUNCTION public.platform_change_tenant_status(uuid, text, text) FROM PUBLIC, app_runtime;
+REVOKE ALL ON FUNCTION public.platform_set_tenant_entitlements(uuid, text, text, jsonb, jsonb, date, date, text) FROM PUBLIC, app_runtime;
 REVOKE ALL ON FUNCTION public.platform_get_current_entitlement(uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.prevent_platform_audit_mutation() FROM PUBLIC;
 
