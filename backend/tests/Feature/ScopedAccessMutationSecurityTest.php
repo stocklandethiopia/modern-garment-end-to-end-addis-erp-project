@@ -255,7 +255,7 @@ class ScopedAccessMutationSecurityTest extends TestCase
 
         $this->assertDatabaseMissing('tenant_access_scope_modes', [
             'tenant_id' => $this->tenantId,
-            'user_id' => $this->memberId,
+            'user_id' => $this->adminId,
         ], 'pgsql_test_admin');
     }
 }
