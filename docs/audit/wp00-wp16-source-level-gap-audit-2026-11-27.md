@@ -3404,3 +3404,115 @@ The added feature-test method checks that each required transition column is upd
 **Evidence classification:** source implementation candidate with local syntax verification. No PostgreSQL or CI pass is claimed. PR #23 is open as a draft; the workflow query returned no run for its head at the time of this audit update.
 
 **Scope deliberately not included:** this patch does not resolve agent run starter/finisher attribution, A0/A1 proposal completion, REQUEST_CHANGES revision history, outbox delivery workers/leases or device authentication. Those remain separate source tasks under Sections 32 and 38.
+
+
+---
+
+## 49. WP-02 legal entity, site, registration and licence activation — cross-package enforcement audit
+
+### 49.1 The enterprise identity schema is present, but legal/entity activation is not an executable lifecycle
+
+**Verified source foundation**
+- backend/database/migrations/2026_11_22_000001_create_enterprise_foundation_tables.php creates legal_entities, business_sites, operational_nodes, branch_registrations and inventory_locations, with tenant-composite keys, forced RLS and explicit application grants.
+- backend/database/migrations/2026_11_22_000003_create_licensing_evidence_tables.php creates entity_licences with tenant/entity/site binding, effective dates, review-required status, forced RLS and SELECT/INSERT-only runtime grants.
+- backend/app/Http/Controllers/Enterprise/LegalEntityController.php exposes index() and store(). store() creates a DRAFT entity and records an audit event in the same transaction.
+- backend/app/Http/Controllers/Enterprise/BusinessSiteController.php exposes index(), store(), nodes() and storeNode(). Site, operational-node and inventory-location creation are draft operations.
+- backend/app/Http/Controllers/Enterprise/LicensingEvidenceController.php exposes branch-registration and licence evidence listing/creation. Branch registration and entity licence records are created with REVIEW_REQUIRED.
+- backend/routes/api.php registers legal-entity/site/node/location and branch/licence GET/POST endpoints. The registered route list contains no approval, rejection, activation, suspension, expiry, renewal or reactivation command for these records.
+- The current Angular enterprise feature tree contains legal-entity and business-site components/services, but no licensing/branch-registration review workbench.
+
+This is a useful greenfield tenant/entity/site foundation. It is not yet a complete legally controlled organization activation workflow.
+
+### 49.2 Downstream commands accept a tenant-owned entity without proving activation or licence scope
+
+**Finding A — sourcing:** SourcingService::createPurchaseOrder() verifies the selected legal entity exists in the current tenant. It does not require an active entity, an approved/effective registration, an applicable purchasing activity or an approved operating/delivery site.
+
+**Finding B — manufacturing:** ManufacturingExecutionService::createProductionOrder() inserts the supplied legal_entity_id and site_id into production order fields using independent tenant-scoped references. It does not resolve an active entity/site authorization or an effective manufacturing licence/activity record. The separate site/entity mismatch is already recorded in Section 17.2; this section records the additional activation/legal-scope bypass.
+
+**Finding C — commerce:** FinishedGoodsService::createCustomerOrder() stores a caller-supplied tenant entity ID and the channel code. It does not resolve the selling legal entity's approved/effective activity, channel authorization, site/fulfilment scope or tax registration before creating the order draft.
+
+**Finding D — finance/payroll:** FinanceControlService::createPayrollDraft() checks only that the legal entity exists. Journal creation verifies an OPEN period for the selected entity, but the source path does not prove the entity's legal registration/licence state before accepting financial or payroll preparation.
+
+**Effect:** a DRAFT or legally unverified entity may be used as a reference by downstream sourcing, production, commerce or payroll commands. RLS and composite tenant foreign keys prevent cross-tenant identity substitution, but they do not prove that the entity is legally enabled for a particular activity, site, channel, employment or transaction.
+
+**Required implementation**
+- [ ] Define one authoritative LegalEntityActivationService/policy contract with explicit entity lifecycle: DRAFT → EVIDENCE_PENDING → UNDER_REVIEW → ACTIVE, plus REJECTED, SUSPENDED, EXPIRED and controlled reactivation states.
+- [ ] Create scoped site lifecycle and approval: DRAFT → EVIDENCE_PENDING → UNDER_REVIEW → ACTIVE, with suspension/closure and historical effective dates.
+- [ ] Add independent registration/licence evidence review/decision commands and persist reviewer authority, source artifact, exact source hash, decision reason, effective period, activity code, legal entity, optional site and jurisdiction.
+- [ ] Link branch-registration and licence evidence to immutable WP-15 document assets; a free-text reference or unverified document code is not proof of the retained source.
+- [ ] Define an effective-dated activity authorization resolver keyed by legal entity, site, activity, jurisdiction, channel, transaction/process type and transaction date.
+- [ ] Require the resolver in the relevant downstream commands: purchase-order creation/approval, supplier delivery/receipt, production-order release/start, customer-order confirmation/dispatch, finance-period activation and payroll preparation.
+- [ ] Distinguish a draft/preparatory action from an operational commitment. Permit appropriate draft planning where policy allows, but prevent approval, release, stock movement, sale, production or regulated transaction while the required authorization is missing, expired, suspended or out of scope.
+- [ ] Preserve an explicit professional-review/exception path for uncertain or special cases; do not hard-code legal activity interpretations or assume one federal record covers all regional/municipal requirements.
+- [ ] Ensure the policy is cached only with a bounded freshness/version and revalidated at high-impact state transitions; a licence suspended after draft creation must block subsequent release.
+- [ ] Add an immutable decision snapshot to orders/production records showing the entity, site, activity, source registration/licence IDs and versions, applicability date, reviewer/authority and outcome.
+
+### 49.3 Entity/site relationships need stronger operational invariants
+
+The schema already gives operational_nodes a composite foreign key to (tenant_id, business_site_id, legal_entity_id) on business_sites, and branch_registrations and entity_licences have composite site/entity references. These are good foundations and should be retained.
+
+Remaining inconsistencies:
+- business_sites.legal_entity_id is nullable, and site creation does not require an entity. That may be useful for an initial location draft, but no node or operating capability should be enabled until ownership is resolved.
+- production_orders currently has separate tenant/entity and tenant/site foreign keys rather than a composite constraint tying the selected site to the same legal entity.
+- Procurement receipt destinations, finished-goods quarantine/release locations and customer fulfilment locations are checked for tenant and coarse location type/capability, but are not consistently resolved back to the authorized production/PO/customer legal entity and operating site.
+- Entity licence and branch-register activity records are free-standing evidence rows. No activation service binds their exact activity/date/site applicability to the operating node capability or downstream transaction.
+
+**Required implementation**
+- [ ] Require entity ownership before a business site can activate; retain unassigned site drafts only as non-operational onboarding records.
+- [ ] Enforce a database relationship for production order (tenant_id, site_id, legal_entity_id) to the same business-site/entity pair, with a separately authorized and explicitly modelled shared-site/inter-entity arrangement if required.
+- [ ] Bind operational node capability to the approved entity/site profile; stock_holding_enabled, PRODUCTION, RETAIL, WHOLESALE or SUBCONTRACTING flags must not independently confer legal permission.
+- [ ] Resolve inventory location → operational node → business site → legal entity for material receipt/issue, production, finished goods, dispatch, returns and transfer.
+- [ ] Require an explicitly approved inter-site or inter-entity transfer when the source and destination legal scopes differ; retain custody, tax and accounting consequences.
+- [ ] Add adversarial same-tenant cross-entity and cross-site tests in addition to existing cross-tenant RLS tests.
+
+### 49.4 Legal source evidence is not yet connected to entity/licence records
+
+docs/localization/ethiopia-legal-regulatory-register.md establishes a sound Ethiopia source hierarchy: Gazette/MoJ publication, competent issuing authority, official implementing directive/notice, regional/city requirements as applicable, then qualified local professional review. It also states that a rule must not become executable until its current text, applicability, effective date and professional approval have been captured.
+
+The current enterprise licensing controller does not yet enforce that evidence discipline. It accepts an evidence_reference string (nullable) and persists licence identity/issuer/activity/effective dates. Branch-registration evidence similarly stores a commercial register reference and activity code array. Neither operation binds the retained source bytes, source authority record, document ID/hash or professional reviewer approval.
+
+**Required implementation**
+- [ ] Create a canonical legal-source asset relationship for every entity registration, branch registration and licence decision.
+- [ ] Require source issuer/authority, instrument/record type and reference, publication/issue date, effective interval, jurisdiction, exact applicable activity and retained source artifact.
+- [ ] Recompute SHA-256 from stored source bytes and verify the object/version before professional review and activation.
+- [ ] Record the qualified reviewer identity/role/registration, decision date, opinion/approval reference, applicability scope and conditions.
+- [ ] Track source change, expiry, revocation, renewal and superseding records. A new document must not silently rewrite a historical approval or already-authorized transaction snapshot.
+- [ ] Keep statutory tax, payroll, customs, FX, labour and environmental rules in their owning WP-02/WP-13/WP-14/operational domain; the entity/site registry stores applicability/evidence and delegates exact calculations to the relevant approved rule engine.
+
+### 49.5 Reference-data validation should be centralized, not inferred from string shape
+
+Legal entity creation currently validates country_code as two uppercase letters and base_currency as three uppercase letters. Business-site creation validates timezone shape against PHP's timezone list. Those are useful syntax checks, but a two-/three-letter string is not proof of a valid, supported, effective country/currency or tax jurisdiction.
+
+**Required implementation**
+- [ ] Add controlled country, currency, language, timezone, region and unit reference catalogues with source, version and active dates.
+- [ ] Validate legal country and base currency against the approved reference catalogue; do not assume every tenant is Ethiopian or every legal entity uses ETB.
+- [ ] Resolve regional/city authority applicability from the entity/site address and registration evidence; never infer a regional licence from a tenant default.
+- [ ] Preserve the entity's base currency and historical currency policy; changes must be separately approved and effective-dated.
+
+### 49.6 WP-02 frontend, API and automated acceptance work
+
+The current UI allows the tenant administrator to create draft legal entities and sites, nodes and stock locations. It does not provide an operator workflow for legal evidence review, independent entity/site activation, licence renewal/suspension, activity-scope decisions or the affected downstream holds. There are no dedicated backend feature tests for the legal-entity/site/licensing lifecycle in the inspected test tree.
+
+**Required implementation**
+- [ ] Build a legal-entity and site evidence workbench with clear distinction between draft, evidence pending, professional review, active, suspended, expired and rejected.
+- [ ] Build reviewer queues for branch registrations, entity licences, site activity and source renewal; show exact entity/site/activity/jurisdiction scope and source document integrity.
+- [ ] Display downstream blocked/preparatory states without allowing a hidden UI bypass; all authorization must be repeated server-side.
+- [ ] Add list/detail/search, effective-date history, source document viewer and immutable decision/audit history.
+- [ ] Add PostgreSQL feature tests for every state transition, same-tenant unauthorized entity/site, wrong activity, wrong site, missing/expired/suspended evidence, source hash tampering and role segregation.
+- [ ] Add API contract and E2E journeys: entity draft → registration evidence → legal review/activation → site → branch/licence → operating node/capability → inventory location → PO/production/sales command authorization.
+- [ ] Run these tests as the non-owner app_runtime role and record the exact Git SHA; no WP-02 feature-test pass is claimed by source inspection.
+
+---
+
+## 50. WP-02 implementation sequence and cross-package release dependency
+
+1. Implement the versioned legal entity/site/licence evidence lifecycle and reviewer authority.
+2. Bind all legal/registration/licence source records to verified private WP-15 document assets and exact hashes.
+3. Implement a central effective-dated entity/site/activity authorization resolver.
+4. Enforce site/entity identity at database level for production, receiving, inventory and fulfilment records.
+5. Integrate authorization resolution into sourcing, manufacturing, sales/distribution, finance and payroll commands at their appropriate approval/release boundaries.
+6. Build legal evidence review, renewal and suspension UI/API and operational hold queues.
+7. Add PostgreSQL/RLS, cross-entity/site and exact-source E2E tests under app_runtime.
+8. Keep legal, tax, payroll, customs, FX and regulated activity calculations disabled until their separate current primary-source and professional approval evidence is complete.
+
+**Dependency rule:** WP-02 legal/entity/site activation is a shared prerequisite for operational WP-07/09/10/12/13/14 transactions. A tenant-scoped UUID or a DRAFT entity record is not itself authorization to purchase, manufacture, sell, employ, pay or post a regulated transaction. This gate must be enforced centrally and by the owning domain at the exact state transition, not by one UI warning.
