@@ -817,3 +817,216 @@ For every requirement accepted as implemented, preserve:
 7. Business/legal/security/operator decision where the requirement requires it.
 
 **The target is one integrated, customer-neutral, production-grade garment ERP with end-to-end traceability from initiative and design through sourcing, factory execution, quality, warehouse, customer fulfilment, finance, people and controlled intelligence—not a set of disconnected CRUD modules or documentation-only completion claims.**
+
+
+---
+
+## 9. Master installer and clean-install source audit
+
+The approved platform and deployment standards explicitly call for multi-stage application containers, immutable images, non-root runtime, service health checks, separate API/worker/scheduler/specialist processes, reproducible setup, dependency and supply-chain checks, and safe upgrade/recovery. The current repository has useful developer infrastructure, but the inspected tree does not yet include the complete master installer or deployable application image set.
+
+### 9.1 Verified foundation already available
+
+| Source | Verified capability |
+|---|---|
+| .nvmrc | Pins Node.js 26.13.1 |
+| .php-version | Pins PHP 8.5 |
+| .python-version | Pins Python 3.15.2 |
+| backend/composer.json and backend/composer.lock | Laravel 13 dependencies and PHP lockfile |
+| frontend/package.json and frontend/package-lock.json | Angular 22 / TypeScript 6 frontend dependencies |
+| docker-compose.yml | Local PostgreSQL 18 and Redis 8.2 infrastructure |
+| docker/postgres/init/010-create-roles.sql | Local PostgreSQL migration/runtime role bootstrap |
+| backend/.env.example | Backend environment template with non-routable example origins and required host placeholders |
+| backend/app/Console/Commands/ProvisionTenantOwner.php | Interactive, controlled first-tenant/owner provisioning command |
+| Makefile | Individual developer targets for infrastructure, dependency installation, key generation, migrations, API/frontend serving, lint and tests |
+| docs/development/local-development.md | Manual clean developer setup steps |
+| .github/workflows/ci.yml | Backend/PostgreSQL and frontend build/test/dependency-audit jobs |
+| .github/workflows/wp01-16-completion-verification.yml | Candidate backend/frontend/WP-01 source verification and source archive assembly |
+
+The Makefile targets are infra-up, infra-down, api-install, api-key, api-migrate, api-test, api-lint, api-serve, web-install, web-test, web-build, web-serve, check-no-loopback-defaults and test. This is a helpful command layer, not yet an idempotent installer that configures and starts the complete ERP.
+
+The existing Compose file is intentionally a local developer dependency stack. It starts only PostgreSQL and Redis; it uses disposable local passwords and publishes its ports on IPv6 loopback. It must remain distinct from a production topology. It does not build or run the Laravel API, Angular web app, queue worker, scheduler or Python service.
+
+### 9.2 Master installer elements not present in the inspected delivery tree
+
+The recursive tree at delivery SHA fc01eced62b97c4ec27f0075264fc8ba0fb11851 contains no:
+- backend/API Dockerfile;
+- frontend/web Dockerfile;
+- separate worker, scheduler or Python specialist Dockerfile;
+- .dockerignore;
+- .devcontainer/devcontainer.json;
+- production Compose file or environment overlay;
+- Helm/Kubernetes/Kustomize, Terraform or other production deployment manifest;
+- application image build/publish/release workflow;
+- container SBOM, image signature/provenance or digest-promotion workflow;
+- Python application package, pyproject.toml, locked Python dependency file or specialist worker entry point;
+- application bootstrap/installer executable or single orchestrated clean-install command;
+- dedicated install/upgrade/doctor/preflight/recovery script set.
+
+The Python runtime version is pinned, but no Python implementation/service is in the tree. The platform standard reserves Python for specialist optimization, forecast, document-intelligence and AI workloads; those capabilities must be delivered as bounded services and not as a competing ERP transaction API.
+
+The work-packages/ tree contains the WP-01 R3 package and source archive parts. It does not contain equivalent individually packaged implementation/evidence bundles for WP-02 through WP-16.
+
+### 9.3 Runtime process and asynchronous execution gap
+
+- backend/.env.example defaults to CACHE_STORE=file, QUEUE_CONNECTION=sync and SESSION_DRIVER=file.
+- backend/config/queue.php defines sync, database and Redis queue connections, but the inspected source tree has no backend/app/Jobs/, backend/app/Events/ or backend/app/Listeners/ package and no worker/supervisor process definition.
+- backend/routes/console.php contains only about:erp; the discovered application console command is the interactive platform:provision-tenant-owner. There are no scheduled application tasks defined there.
+- IntegrationOutboxService has claimBatch, markDelivered and markFailed methods, including retry/dead-letter state handling, but no discovered consumer job/command/worker invokes a connector adapter and drives the batch to an external endpoint.
+- DocumentIntegrationService::beginExtraction creates a QUEUED extraction run and stageExtractionResult accepts a staged result; no extraction worker/provider runtime is present in the inspected source tree.
+- These services and schema are therefore control/data foundations. They must be connected to idempotent queue workers, scheduler, connector adapters, health/lag monitoring and recovery procedures before being represented as continuously operating integrations.
+
+### 9.4 Installer-specific functional source issue
+
+The canonical backend/config/filesystems.php defines local and public disks only. It does not define filesystems.private_documents_disk or an s3 disk. The canonical DocumentIntegrationService::storeUploadedFile nevertheless resolves:
+
+config('filesystems.private_documents_disk', 's3')
+
+Therefore the default document-upload path selects an undefined disk on a clean install. The same method throws RuntimeException without importing it into the App\Services\Integration namespace. This is a second confirmation of the provider-neutral storage defect recorded in Section 4.1. It must be corrected in the canonical delivery branch, with a clean-install upload test, private object permissions, checksum read-back and orphan cleanup on failed metadata persistence.
+
+### 9.5 Single master-installer implementation checklist
+
+**Package/build metadata**
+- [ ] Preserve and validate all lockfiles and pinned runtime versions; test supported patch versions.
+- [ ] Add exact build contexts and .dockerignore policies for backend, frontend, queue/scheduler and future specialist service.
+- [ ] Build multi-stage API and Angular images with production dependencies only, non-root users, read-only runtime where practicable, health checks and graceful termination.
+- [ ] Produce immutable image tags/digests, SBOM, vulnerability/license scan and signed provenance linked to exact Git SHA.
+- [ ] Keep the local developer dependency Compose file separate from production and staging deployment definitions.
+
+**Environment preflight and secrets**
+- [ ] Create a versioned environment schema with required/optional variables, types, allowed formats, secret classification and safe defaults.
+- [ ] Validate DB/Redis/mail/object-storage/API/frontend origins, TLS, DNS, clock, storage permissions, disk capacity and supported runtime before any migration.
+- [ ] Reject loopback and .invalid placeholders in production profiles; do not place passwords, tokens, private keys or database credentials into committed files or image layers.
+- [ ] Integrate the approved secret manager/environment injection mechanism and rotation process.
+- [ ] Validate CORS, Sanctum stateful domains, cookie/session domains, mail sending, storage, tenant URL and frontend runtime configuration together.
+
+**Database provisioning and migration**
+- [ ] Automate least-privilege database/role/bootstrap preparation without exposing migrator credentials to the application container.
+- [ ] Validate RLS role assumptions, forced policies, schema privileges and tenant-table inventory.
+- [ ] Run ordered migrations as the migration identity exactly once, record migration version and source/image SHA, and fail atomically on drift.
+- [ ] Separate production reference-data initialization from developer/test fixtures; keep fake customers, employees, orders and statutory records out of production.
+- [ ] Add tested clean-install, in-place upgrade, retry, interrupted-migration, forward-repair and schema-compatibility procedures.
+- [ ] Implement the first platform-owner bootstrap as a controlled one-time process, with idempotency and safe recovery; never expose a reusable default owner password.
+
+**Service orchestration**
+- [ ] Start PostgreSQL and Redis or validate approved managed service endpoints.
+- [ ] Start API and Angular/web service behind the selected reverse proxy/TLS termination.
+- [ ] Start outbox/integration worker, document extraction worker, notification/mail worker, queue worker and scheduler under separate least-privilege process identities.
+- [ ] Add Python specialist worker only when its service contract, locked dependencies, API boundary and operational need are implemented.
+- [ ] Configure queue retry/backoff/dead-letter, idempotency, graceful shutdown, concurrency limits, schedule locking and worker restart policy.
+- [ ] Add readiness/liveness endpoints that check the real dependencies needed by the service without exposing secrets or tenant data.
+- [ ] Wait for dependency health and migrations before promoting the API/web processes to ready.
+
+**Installation, upgrade and recovery UX**
+- [ ] Create a single documented install/bootstrap entry point for clean installation; support interactive operator use and non-interactive secure automation.
+- [ ] Add doctor/preflight and status commands that validate configuration, images, database schema, queue, storage, mail and service health.
+- [ ] Add an explicit upgrade command that takes backup/restore evidence, checks compatibility, drains or coordinates workers, runs approved migrations and performs smoke/reconciliation checks.
+- [ ] Add safe rollback/forward-fix rules, backup/PITR and object/attachment integrity verification, queue replay and recovery runbooks.
+- [ ] Emit a machine-readable installation manifest with product version, exact commit, image digests, schema version, dependency versions, configuration schema version and health result.
+- [ ] Test from an empty isolated host and from the prior supported version; independently verify that a second run is idempotent and does not duplicate initial identities/data.
+- [ ] Package an installable release bundle, not merely a Git source archive. The current combined CI tarball is explicitly a source/review artifact.
+
+**Installer acceptance**
+- [ ] One clean environment can be provisioned from the released bundle using only documented prerequisites and external secrets.
+- [ ] Every service reaches healthy/ready state; app and worker identities have least privilege.
+- [ ] First tenant bootstrap, login, tenant selection, core navigation and database health work.
+- [ ] Storage upload plus hash retrieval works on the selected private storage provider.
+- [ ] A queued outbox event is processed once, retried safely on transient failure and enters a visible dead-letter state on terminal failure.
+- [ ] A queued document-extraction job runs through the provider adapter and stops at the required human review gate.
+- [ ] A real application update preserves business data and produces a verified migration record.
+- [ ] Restore rehearsal recovers database, private objects, application configuration references and pending outbox work within measured recovery objectives.
+- [ ] Final bundle and every promoted image are tied to the same exact source commit and dependency lockfiles.
+
+---
+
+## 10. API, user-interface and test coverage reconciliation
+
+### 10.1 Backend implementation inventory at the audited delivery SHA
+
+The tracked tree contains 36 HTTP controller files, 26 service files, 4 Eloquent model files, 33 numbered migration files, 13 backend test files and 7 Angular spec files. There are no database seeder or model-factory files in the inspected tree.
+
+Controllers and services exist for enterprise, merchandising, product development, sourcing, planning/industrial engineering, manufacturing, quality, distribution, finance, documents/integrations and agent governance. This confirms that the later work packages are not merely empty design documents: there are real source slices to extend and integrate.
+
+### 10.2 Route registration and read-side completeness
+
+backend/bootstrap/app.php registers backend/routes/api.php. At the bottom of api.php, the application explicitly requires domain-api.php; therefore, the domain routes are registered through the active API route file and should not be incorrectly treated as unreachable.
+
+However, in domain-api.php, the sourcing, quality, manufacturing, planning/workforce, distribution, finance, documents/devices and agent groups are predominantly POST command endpoints. List/read/search/detail, operational dashboard, queue inspection and reconciliation endpoints are sparse or absent for these domains. Some existing endpoints do include reads for tenant/platform entitlements, platform tenant listing and domain-role assignments; the gap is not that every domain has no read capability, but that the operational domain read models and user tasks are incomplete.
+
+Required follow-up:
+- [ ] Add paginated list/detail/search/read contracts for every domain-owned aggregate, respecting tenant/entity/site/department/warehouse scope.
+- [ ] Add dashboards and queues for approvals, exceptions, holds, shortages, late orders, WIP, capacity, quality and finance reconciliation.
+- [ ] Add API schema/version/error/idempotency/authorization contract tests for commands and queries.
+- [ ] Add audit history and source-document retrieval under the same resource authorization checks.
+- [ ] Ensure frontend read models use API contracts instead of direct database or duplicated business calculations.
+
+### 10.3 Angular user-facing domain coverage
+
+The current Angular route registry and feature tree are concentrated in:
+- features/auth/;
+- features/enterprise/;
+- features/merchandising/;
+- features/product-development/;
+- shared overview/core API/auth components.
+
+There are no current feature route groups for sourcing/procurement, industrial engineering, manufacturing execution, quality, distribution/WMS, sales channels/POS, finance/treasury, HR/payroll, document operations, integration administration, devices or agent work/approval. The domain services/controllers are therefore ahead of the corresponding operator-facing workflows.
+
+Required follow-up:
+- [ ] Add role-specific domain navigation and route guards driven by server-side entitlements/permissions.
+- [ ] Build list/search/detail, command forms, exception queues, approval inboxes and audit history for each domain.
+- [ ] Build factory/tablet/mobile/scan task surfaces and offline reconciliation only with the device identity/event controls.
+- [ ] Build finance, payroll, document, integration and agent administration interfaces with maker-checker and visibility of holds.
+- [ ] Add accessible keyboard, screen-reader, focus, contrast and responsive workflows; test on supported browser sizes/devices.
+- [ ] Keep domain logic on the server; do not treat hidden UI buttons as authorization.
+
+### 10.4 Verified backend test distribution
+
+The backend test inventory contains 93 test methods across 13 PHP test files. The strongest current coverage is around tenant provisioning, membership/roles, invitation, isolation/RLS, platform administration and merchandising/brand/range/demand/pricing. A decimal-quantity unit suite exists. The Angular test inventory contains seven spec files, concentrated in shared API connection state, merchandising and product development.
+
+At this delivery SHA there are no dedicated backend feature-test files for sourcing, industrial engineering, manufacturing execution, quality/CAPA, finished-goods distribution, finance journal lifecycle, documents/integration outbox, agent action execution or the WP-14 Ethiopia payroll candidate. The WP-14 candidate has its own separate unmerged calculator unit suite, which still needs API/database/tenant/security feature coverage.
+
+Required follow-up:
+- [ ] Add one domain test suite per bounded context and test both valid and invalid lifecycle transitions.
+- [ ] Cover authorization, tenant/entity/site/warehouse cross-scope denial, append-only audit and database constraints.
+- [ ] Cover duplicate event, retry, partial failure, concurrency/locking, reversal and reconciliation.
+- [ ] Add contract tests and full vertical tests that execute through the same HTTP/API/database path as the UI.
+- [ ] Add browser E2E journeys and factory/user acceptance evidence, not only isolated service tests.
+- [ ] Ensure every test report records the exact commit it actually tested.
+
+---
+
+## 11. Documentation synchronization and source-of-truth drift
+
+Three current documentation areas have content that predates the present implementation and should be reconciled after the source baseline is stabilized:
+
+1. **README.md — implementation checkpoint drift.** It names delivery commit bd41c83e141835db3c0f03ac8d711096728a07b4 as the latest integrated commit and describes the PR #9 checkpoint as current. The audited delivery branch head is now fc01eced62b97c4ec27f0075264fc8ba0fb11851 and contains later migrations 000010–000032, controllers, services, APIs and domain tests. The README should identify the current delivery head/checkpoint and make clear which later candidate changes are not integrated.
+2. **docs/development/local-development.md — capability drift.** Its final limitation section still describes only the initial platform foundation and says WP-04–WP-15 domain workflows are not implemented. The current source tree contains executable domain slices and the loaded domain-api.php routes. Update it to describe what can actually be started and exercised today, while keeping missing UI/worker/installer capabilities explicit.
+3. **docs/release/end-to-end-acceptance-security-deployment.md — historical snapshot wording.** It says no application scaffold/migrations/test/CI had been proven “at the point this specification is authored.” Preserve the historic decision, but attach its original date/source checkpoint and add a current evidence pointer so the historical paragraph is not mistaken for the current source state.
+
+The deployment standard is ahead of the executable installer implementation: it already specifies multi-stage images, .dockerignore, non-root runtime, worker/scheduler/Python separation, CI static analysis and supply-chain controls, and a future .devcontainer. These requirements should be implemented rather than weakened to match the existing developer-only Compose file.
+
+### Documentation synchronization checklist
+
+- [ ] Refresh README's delivery head, merged PRs, workflow links, artifact type and next implementation checkpoint.
+- [ ] Update the local development guide with present API routes, actual frontend feature areas, existing commands and known missing processes.
+- [ ] Date/annotate historical statements in the WP-16 release standard and link to the current evidence register.
+- [ ] Keep the application-folder/code map synchronized with every new backend/frontend/worker/installer file.
+- [ ] Add a machine-readable feature/route/requirement/test mapping so progress is derived from evidence rather than manually repeated prose.
+- [ ] Keep the WP-00–WP-16 handover register, source package folders and audit findings synchronized with actual merged commits.
+
+---
+
+## 12. Next executable audit/build order
+
+The immediate source-to-build sequence is now:
+
+1. Reconcile storage upload path (private_documents_disk, local/provider adapter, RuntimeException import, metadata failure cleanup) and add exact clean-install tests.
+2. Complete the WP-03 candidate rebase and security review as a separate bounded increment.
+3. Create the WP-14 payroll PR and integrate only after source/evidence/hash/arithmetic/API/security tests pass; maintain the existing statutory hold.
+4. Implement a canonical master-installer skeleton: pinned build inputs, environment schema/preflight, image build contexts, app/worker/scheduler topology, reproducible local clean-install and machine-readable manifest.
+5. Implement the durable outbox/extraction worker path before claiming integrations are operational.
+6. Build the missing domain read APIs and Angular user journeys in the approved WP dependency order.
+7. Complete per-domain automated coverage and synchronize README/local-development/release evidence with the actual source head.
+8. Advance the same verified source through WP-16 system scenarios, image provenance, staging/UAT, recovery and final deployment authorization.
+
+No source change to runtime behavior is made by this audit addendum. These items extend the existing implementation backlog with new, file- and behavior-specific evidence from the audited delivery SHA.
