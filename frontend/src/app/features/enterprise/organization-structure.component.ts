@@ -428,4 +428,14 @@ export class OrganizationStructureComponent {
     const position = this.positions().find((item) => item.id === positionId);
     return position ? position.title + ' (' + position.position_code + ')' : 'Unknown position';
   }
+
+  entityName(entityId: string | null): string {
+    if (!entityId) return 'Not assigned';
+    return this.legalEntities().find((entity) => entity.id === entityId)?.legal_name ?? 'Assigned';
+  }
+
+  siteName(siteId: string | null): string {
+    if (!siteId) return 'Not assigned';
+    return this.sites().find((site) => site.id === siteId)?.name ?? 'Assigned';
+  }
 }
