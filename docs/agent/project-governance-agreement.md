@@ -228,3 +228,38 @@ The Product Owner authorizes read-only consultation of the accessible Stockland 
 After each WP release or verified integration increment, provide the Product Owner a local reconciliation report covering the complete task list, task totals, completed/partial/blocked/failed/not-run counts, evidence, exact commits and workflows, defects, remaining actions and recommendations. Do not create a form or request an acceptance response. Raise a question only where a concrete decision is genuinely outside the standing authorization or required from an external accountable person.
 
 **Decision recorded:** routine WP handover acceptance gates are superseded by this standing delivery authorization. The WP-00–WP-16 sequence, product scope and quality standards remain unchanged.
+
+
+---
+
+## Owner standing amendment — 27 November 2026: production-build focus and evidence-based audit reporting
+
+**Authority:** The Product Owner's explicit instruction in the ERP project conversation on 27 November 2026. This amendment adds operating guidance to the 22 November WP-00 agreement and 26 November continuous-delivery amendment. It does not amend the approved product scope, WP sequence, architecture, legal standards, security boundaries or definition of done.
+
+### A. Production objective remains the governing target
+
+1. The project objective remains to bring the complete, canonical, customer-neutral garment ERP and reproducible master installer into effect under the approved WP-00 through WP-16 plan.
+2. Audit work exists to identify and close the source, data, system, integration, quality and installer work required by that plan. A discovered gap is an engineering action to resolve, not a reason to redefine the product target or divert the project.
+3. Continue from the current canonical integration branch and preserve the existing repository branch/release process. Reconcile existing source and commits before creating duplicate implementations.
+4. Treat the master installer as a first-class system deliverable. Its readiness must be evidenced by reproducible clean installation, migration/seed integrity, configured services, secure environment handling, health checks, upgrade/recovery behavior and end-to-end verification—not by a Docker Compose file or a generated archive alone.
+
+### B. Audit and progress-reporting discipline
+
+1. Reports must focus on concrete WP-00–WP-16 findings: what exists, exact source paths and commit, what is integrated, what is tested, what remains to implement, dependencies and the next executable action.
+2. Do not use blanket project headings or summaries such as **"Production release: NO-GO"** or **"Canonical delivery: partial"** as substitutes for the task-level evidence report. State the project's production objective positively and identify precise remaining engineering work.
+3. Do not hide, soften or misstate a real defect, missing feature, failed test or unrun check. Use the existing task-level evidence vocabulary from the 26 November amendment (PASS, PARTIAL, BLOCKED, FAIL, NOT RUN, NOT APPLICABLE, PENDING OWNER APPROVAL) with exact requirement/task IDs and source SHA.
+4. Distinguish a component/source increment, an integrated WP increment, a verified installer, a WP-complete handover and a fully qualified production deployment. Do not infer one from another.
+5. Keep the audit within the assigned project and approved boundaries. Do not introduce unrelated services, competing architecture, new product scope or unnecessary advisory requests.
+
+### C. Autonomous continuation
+
+1. Under the existing owner delegation, continue auditing and implementing in-scope work without asking routine questions, requesting package-by-package acceptance, or pausing for ordinary engineering decisions.
+2. Choose the next action from verified source evidence and dependency order. Prefer completing an existing in-scope implementation or reconciling an existing branch/commit over producing another planning document.
+3. Record material technical decisions, changed files, exact commits, executable tests and remaining dependencies in GitHub. Continue with independent safe work when an external professional or operational gate applies to one bounded action.
+4. Do not ask the Product Owner to repeat approved project goals, scope, standards or decisions already present in this agreement and linked baseline.
+
+### D. Boundaries retained
+
+This amendment does not waive the controls in Sections 1, 3, 4, 6, 7 and the 26 November amendment. In particular, no guessed legal interpretation or statutory activation, unverified financial/payroll transaction, secret disclosure, weakening of tenant/security controls, destructive production-data action, unlicensed code reuse or live production deployment without the required accountable authorization is permitted. These controls are not grounds to stop independent non-production engineering, tests, documentation, staging preparation or installer development.
+
+**Decision recorded:** maintain the agreed production objective; report evidence at requirement/task/WP level; continue autonomous auditing and canonical ERP/master-installer implementation within the existing delegation and change-control boundary.
