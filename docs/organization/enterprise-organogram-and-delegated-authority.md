@@ -341,6 +341,28 @@ The same engine must support, with their own position matrix and control rules:
 
 Consequential HR decisions, statutory activations and financial actions have their own professional/human safeguards as defined by the existing security and legal standards.
 
+## 8.4 Baseline runtime audit — existing PO authorization is not yet full DoA
+
+A source inspection of the canonical `delivery/autonomous-wp-01-16` baseline on 27 November 2026 confirms that purchase-order authorization is a **partial control foundation**, not the full position-based DoA design specified above.
+
+Observed implementation:
+
+- `backend/app/Services/Authorization/DomainCapabilityAuthorizer.php` maps `sourcing.approve-purchase-order` to the tenant domain-role codes `PROCUREMENT_APPROVER` and `PROCUREMENT_MANAGER`. The present gate confirms an active tenant membership and active role grant; its current release is tenant-wide and explicitly denies members in `SCOPED` access mode.
+- `backend/app/Http/Controllers/Sourcing/SourcingController.php` invokes that Gate for the decision endpoint.
+- `backend/app/Services/Sourcing/SourcingService.php` serializes the PO decision with a row lock, blocks the `created_by` and `submitted_by` actors from approving their own PO, requires a reason and records the final `approved_by`/time. This is useful baseline maker-checker protection.
+- The current decision writes the PO's single status/approver fields. The inspected migrations do not yet provide the versioned DoA policy/rule, active position-assignment resolver, approval-step/decision chain, authority amount/cumulative limit, approved budget, department/site/cost-centre scope or acting-delegation evidence described in this document.
+
+**Therefore:** a user with a granted `PROCUREMENT_APPROVER` or `PROCUREMENT_MANAGER` role may satisfy the current capability gate, but that alone is not proof that the person is the proper company approver for that exact entity, site, department, budget, transaction amount or risk. The current code does not make a generic `OWNER` the PO approver; the `OWNER`-only ability in the authorizer is confined to tenant domain-role approval. Neither that tenant capability nor the present Procurement role matrix may be represented as the final corporate DoA.
+
+Required corrective delivery:
+1. WP-03: deliver company org units, job positions, reporting relations, person/position assignments, functional-line scopes and effective-dated identity-to-position mapping; retain tenant OWNER strictly as SaaS tenancy administration.
+2. WP-03: deliver the effective-dated DoA policy/rule and delegation foundation with policy-version approval, legal-entity/site/department/cost-centre scope and immutable decision evidence.
+3. WP-07: integrate PR, sourcing award and PO approval to server-resolved position-based DoA, total/currency basis, budget, cumulative limits, risk exceptions, material PO revision reapproval and controlled supplier award.
+4. WP-13: integrate financial budget checks, AP three-way match, accounting and treasury/bank-mandate separation.
+5. WP-16: run end-to-end positive and negative tests for wrong position/scope, limit exceedance, budget, conflict, delegation expiry, concurrency/replay, policy revision and prohibited incompatible duties.
+
+Until those packages pass their applicable tests, describe PO approval as **tenant-domain-role gated with creator/submitter self-approval protection — PARTIAL**, not as fully delegated corporate approval. Do not route live commitments using this partial gate as a substitute for the customer's approved DoA.
+
 ## 9. Board-reserved matters and executive delegation
 
 The Board/General Meeting reserved-matters schedule is configurable and should cover, where applicable:
