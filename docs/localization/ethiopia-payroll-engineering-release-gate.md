@@ -9,14 +9,14 @@
 
 The calculation component and candidate regression are in source control. This does **not** mean Ethiopia payroll is ready for live use.
 
-Both settings in `backend/config/payroll.php` remain `false`:
+The separate WP-14 implementation candidate in PR #20 contains both activation settings in `backend/config/payroll.php`, defaulted to `false`:
 
 - `ethiopia.employee_master_release_ready`
 - `ethiopia.statutory_activation_enabled`
 
-The payroll line-calculation, payroll-submission and professional-decision methods are required to fail closed while either setting is false. There is no environment-variable shortcut. Enabling either setting requires a separate reviewed source change after this gate and the WP-14 / WP-16 criteria below pass.
+In that PR #20 candidate, the Laravel service methods for adding a payroll calculation line, submitting for professional review and recording the professional decision call the server-side release-gate assertion before doing those actions. There is no environment-variable shortcut. Enabling either setting requires a separately reviewed source change after this gate and the WP-14 / WP-16 criteria below pass.
 
-**Runtime evidence boundary:** this document-only plan branch does not itself contain `backend/config/payroll.php` or the payroll service implementation. The separate WP-14 candidate is PR #20 at source SHA `db1847c64abbff8b04bc70790b122e082f5d81dd`; that candidate includes both default-false settings and checks the gate before adding calculation lines, submitting a run or recording professional approval. Creating a metadata-only DRAFT header is distinct from calculating or submitting payroll. The canonical delivery branch does not receive this runtime protection until the candidate is integrated. Treat this document as the required release contract, not proof that the code is already deployed or accepted.
+**Branch and runtime evidence boundary:** PR #19 is a documentation/plan branch. It does not contain `backend/config/payroll.php` or the payroll service implementation, and therefore does not itself enforce the settings. The separate WP-14 source candidate is PR #20, currently at a different branch and SHA; its exact code must be reviewed and tested independently. The canonical delivery branch does not receive the PR #20 runtime protection until that source candidate is integrated. Creating a metadata-only DRAFT header is distinct from calculating or submitting payroll. This document is the required release contract; it is not proof that the payroll gate has been deployed, accepted or enabled.
 
 No real payroll, posted transaction, payment, tax filing or pension remittance is performed by this package.
 
