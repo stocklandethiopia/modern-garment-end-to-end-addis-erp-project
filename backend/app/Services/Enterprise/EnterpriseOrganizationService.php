@@ -12,45 +12,95 @@ use RuntimeException;
 
 class EnterpriseOrganizationService
 {
-    public function units(string $tenantId): LengthAwarePaginator
+    public function units(string $tenantId, array $filters = []): LengthAwarePaginator
     {
-        return DB::table('org_units')
-            ->where('tenant_id', $tenantId)
-            ->orderBy('unit_code')
-            ->paginate(100);
+        $query = DB::table('org_units')->where('tenant_id', $tenantId);
+        if (! empty($filters['q'])) {
+            $term = '%'.trim((string) $filters['q']).'%';
+            $query->where(function ($builder) use ($term): void {
+                $builder->where('unit_code', 'ilike', $term)
+                    ->orWhere('unit_name', 'ilike', $term);
+            });
+        }
+        foreach (['unit_type', 'status', 'legal_entity_id', 'business_site_id', 'parent_id'] as $field) {
+            if (! empty($filters[$field])) {
+                $query->where($field, $filters[$field]);
+            }
+        }
+        $this->applyEffectiveDateFilter($query, $filters['valid_on'] ?? null);
+        return $query->orderBy('unit_code')->orderBy('id')
+            ->paginate($this->pageSize($filters), ['*'], 'page', (int) ($filters['page'] ?? 1));
     }
 
-    public function positions(string $tenantId): LengthAwarePaginator
+    public function positions(string $tenantId, array $filters = []): LengthAwarePaginator
     {
-        return DB::table('job_positions')
+        $query = DB::table('job_positions')
             ->join('org_units', function ($join): void {
                 $join->on('org_units.id', '=', 'job_positions.org_unit_id')
                     ->on('org_units.tenant_id', '=', 'job_positions.tenant_id');
             })
-            ->where('job_positions.tenant_id', $tenantId)
-            ->orderBy('job_positions.position_code')
-            ->paginate(100, [
+            ->where('job_positions.tenant_id', $tenantId);
+        if (! empty($filters['q'])) {
+            $term = '%'.trim((string) $filters['q']).'%';
+            $query->where(function ($builder) use ($term): void {
+                $builder->where('job_positions.position_code', 'ilike', $term)
+                    ->orWhere('job_positions.title', 'ilike', $term)
+                    ->orWhere('job_positions.job_family', 'ilike', $term)
+                    ->orWhere('job_positions.grade', 'ilike', $term)
+                    ->orWhere('org_units.unit_code', 'ilike', $term)
+                    ->orWhere('org_units.unit_name', 'ilike', $term);
+            });
+        }
+        foreach (['org_unit_id' => 'job_positions.org_unit_id', 'status' => 'job_positions.status', 'position_class' => 'job_positions.position_class'] as $field => $column) {
+            if (! empty($filters[$field])) {
+                $query->where($column, $filters[$field]);
+            }
+        }
+        if (! empty($filters['valid_on'])) {
+            $query->whereDate('job_positions.valid_from', '<=', $filters['valid_on'])
+                ->where(function ($builder) use ($filters): void {
+                    $builder->whereNull('job_positions.valid_to')
+                        ->orWhereDate('job_positions.valid_to', '>=', $filters['valid_on']);
+                });
+        }
+        return $query->orderBy('job_positions.position_code')->orderBy('job_positions.id')
+            ->paginate($this->pageSize($filters), [
                 'job_positions.*',
                 'org_units.unit_code',
                 'org_units.unit_name',
-            ]);
+            ], 'page', (int) ($filters['page'] ?? 1));
     }
 
-    public function managerAssignments(string $tenantId, string $orgUnitId): LengthAwarePaginator
+    public function managerAssignments(string $tenantId, string $orgUnitId, array $filters = []): LengthAwarePaginator
     {
-        return DB::table('org_unit_manager_assignments')
+        $query = DB::table('org_unit_manager_assignments')
             ->join('job_positions as manager', function ($join): void {
                 $join->on('manager.id', '=', 'org_unit_manager_assignments.manager_position_id')
                     ->on('manager.tenant_id', '=', 'org_unit_manager_assignments.tenant_id');
             })
             ->where('org_unit_manager_assignments.tenant_id', $tenantId)
-            ->where('org_unit_manager_assignments.org_unit_id', $orgUnitId)
-            ->orderBy('org_unit_manager_assignments.valid_from', 'desc')
-            ->paginate(100, [
+            ->where('org_unit_manager_assignments.org_unit_id', $orgUnitId);
+        if (! empty($filters['q'])) {
+            $term = '%'.trim((string) $filters['q']).'%';
+            $query->where(function ($builder) use ($term): void {
+                $builder->where('manager.position_code', 'ilike', $term)
+                    ->orWhere('manager.title', 'ilike', $term);
+            });
+        }
+        if (! empty($filters['valid_on'])) {
+            $query->whereDate('org_unit_manager_assignments.valid_from', '<=', $filters['valid_on'])
+                ->where(function ($builder) use ($filters): void {
+                    $builder->whereNull('org_unit_manager_assignments.valid_to')
+                        ->orWhereDate('org_unit_manager_assignments.valid_to', '>=', $filters['valid_on']);
+                });
+        }
+        return $query->orderByDesc('org_unit_manager_assignments.valid_from')
+            ->orderByDesc('org_unit_manager_assignments.id')
+            ->paginate($this->pageSize($filters), [
                 'org_unit_manager_assignments.*',
                 'manager.position_code as manager_position_code',
                 'manager.title as manager_position_title',
-            ]);
+            ], 'page', (int) ($filters['page'] ?? 1));
     }
 
     public function assignUnitManager(string $tenantId, string $actorId, string $orgUnitId, array $data): object
@@ -161,9 +211,9 @@ class EnterpriseOrganizationService
         }, 3);
     }
 
-    public function reportingRelations(string $tenantId): LengthAwarePaginator
+    public function reportingRelations(string $tenantId, array $filters = []): LengthAwarePaginator
     {
-        return DB::table('position_reporting_relations')
+        $query = DB::table('position_reporting_relations')
             ->join('job_positions as subject', function ($join): void {
                 $join->on('subject.id', '=', 'position_reporting_relations.subject_position_id')
                     ->on('subject.tenant_id', '=', 'position_reporting_relations.tenant_id');
@@ -172,15 +222,41 @@ class EnterpriseOrganizationService
                 $join->on('manager.id', '=', 'position_reporting_relations.manager_position_id')
                     ->on('manager.tenant_id', '=', 'position_reporting_relations.tenant_id');
             })
-            ->where('position_reporting_relations.tenant_id', $tenantId)
-            ->orderBy('position_reporting_relations.valid_from', 'desc')
-            ->paginate(100, [
+            ->where('position_reporting_relations.tenant_id', $tenantId);
+        if (! empty($filters['q'])) {
+            $term = '%'.trim((string) $filters['q']).'%';
+            $query->where(function ($builder) use ($term): void {
+                $builder->where('subject.position_code', 'ilike', $term)
+                    ->orWhere('subject.title', 'ilike', $term)
+                    ->orWhere('manager.position_code', 'ilike', $term)
+                    ->orWhere('manager.title', 'ilike', $term);
+            });
+        }
+        if (! empty($filters['reporting_type'])) {
+            $query->where('position_reporting_relations.reporting_type', $filters['reporting_type']);
+        }
+        if (! empty($filters['position_id'])) {
+            $query->where(function ($builder) use ($filters): void {
+                $builder->where('position_reporting_relations.subject_position_id', $filters['position_id'])
+                    ->orWhere('position_reporting_relations.manager_position_id', $filters['position_id']);
+            });
+        }
+        if (! empty($filters['valid_on'])) {
+            $query->whereDate('position_reporting_relations.valid_from', '<=', $filters['valid_on'])
+                ->where(function ($builder) use ($filters): void {
+                    $builder->whereNull('position_reporting_relations.valid_to')
+                        ->orWhereDate('position_reporting_relations.valid_to', '>=', $filters['valid_on']);
+                });
+        }
+        return $query->orderByDesc('position_reporting_relations.valid_from')
+            ->orderByDesc('position_reporting_relations.id')
+            ->paginate($this->pageSize($filters), [
                 'position_reporting_relations.*',
                 'subject.position_code as subject_position_code',
                 'subject.title as subject_position_title',
                 'manager.position_code as manager_position_code',
                 'manager.title as manager_position_title',
-            ]);
+            ], 'page', (int) ($filters['page'] ?? 1));
     }
 
     public function createUnit(string $tenantId, string $actorId, array $data): object
@@ -451,6 +527,22 @@ class EnterpriseOrganizationService
                 ->first()
                 ?? throw new RuntimeException('The reporting relationship was created but could not be reloaded.');
         }, 3);
+    }
+
+    private function pageSize(array $filters): int
+    {
+        return min(100, max(1, (int) ($filters['per_page'] ?? 25)));
+    }
+
+    private function applyEffectiveDateFilter($query, ?string $date): void
+    {
+        if ($date === null || $date === '') {
+            return;
+        }
+        $query->whereDate('valid_from', '<=', $date)
+            ->where(function ($builder) use ($date): void {
+                $builder->whereNull('valid_to')->orWhereDate('valid_to', '>=', $date);
+            });
     }
 
     private function assertEntityAndSite(string $tenantId, ?string $legalEntityId, ?string $businessSiteId): void
