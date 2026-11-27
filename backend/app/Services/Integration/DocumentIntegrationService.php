@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
+use Throwable;
 
 class DocumentIntegrationService
 {
@@ -78,20 +80,31 @@ class DocumentIntegrationService
             throw new RuntimeException('Private document storage did not confirm the upload.');
         }
 
-        return $this->registerDocument($tenantId, $actorId, [
-            'document_code' => $data['document_code'],
-            'document_type' => $data['document_type'],
-            'original_filename' => $file->getClientOriginalName(),
-            'media_type' => $mimeType,
-            'byte_size' => $file->getSize(),
-            'sha256' => $sha256,
-            'object_storage_reference' => $disk.':'.$objectReference,
-            'source_channel' => $data['source_channel'] ?? 'UPLOAD',
-            'source_record_type' => $data['source_record_type'] ?? null,
-            'source_record_id' => $data['source_record_id'] ?? null,
-            'access_classification' => $data['access_classification'] ?? 'BUSINESS',
-            'retention_until' => $data['retention_until'] ?? null,
-        ]);
+        try {
+            return $this->registerDocument($tenantId, $actorId, [
+                'document_code' => $data['document_code'],
+                'document_type' => $data['document_type'],
+                'original_filename' => $file->getClientOriginalName(),
+                'media_type' => $mimeType,
+                'byte_size' => $file->getSize(),
+                'sha256' => $sha256,
+                'object_storage_reference' => $disk.':'.$objectReference,
+                'source_channel' => $data['source_channel'] ?? 'UPLOAD',
+                'source_record_type' => $data['source_record_type'] ?? null,
+                'source_record_id' => $data['source_record_id'] ?? null,
+                'access_classification' => $data['access_classification'] ?? 'BUSINESS',
+                'retention_until' => $data['retention_until'] ?? null,
+            ]);
+        } catch (Throwable $exception) {
+            // Remove an uploaded object if metadata registration fails.
+            try {
+                Storage::disk($disk)->delete($objectReference);
+            } catch (Throwable $cleanupException) {
+                report($cleanupException);
+            }
+
+            throw $exception;
+        }
     }
 
     /**
@@ -137,8 +150,9 @@ class DocumentIntegrationService
 
         try {
             $context = hash_init('sha256');
-            if (! hash_update_stream($context, $stream)) {
-                throw ValidationException::withMessages(['document_id' => 'The legal source document stream could not be hashed.']);
+            $hashedBytes = hash_update_stream($context, $stream);
+            if ($hashedBytes === false || (int) $hashedBytes !== (int) $document->byte_size) {
+                throw ValidationException::withMessages(['document_id' => 'The stored legal source byte count does not match its registered size.']);
             }
             $actualSha256 = hash_final($context);
         } finally {
