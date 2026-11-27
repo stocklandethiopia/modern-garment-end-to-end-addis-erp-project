@@ -323,9 +323,50 @@ class FinanceControlService
                 throw ValidationException::withMessages(['statutory_rule_set' => 'The payroll run has no valid frozen statutory rule snapshot.']);
             }
 
+            $input = $data['calculation_input'];
+            $coverageEvidence = $input['pension_coverage'] ?? [];
+            $this->verifyPayrollLegalDocument(
+                $tenantId,
+                (string) ($coverageEvidence['source_document_reference'] ?? ''),
+                (string) ($coverageEvidence['source_sha256'] ?? ''),
+                'STATUTORY_SOURCE'
+            );
+
+            foreach (($input['earning_components'] ?? []) as $component) {
+                if (strtoupper((string) ($component['tax_treatment'] ?? '')) === 'EXEMPT') {
+                    $exemption = $component['exemption_evidence'] ?? [];
+                    $this->verifyPayrollLegalDocument(
+                        $tenantId,
+                        (string) ($exemption['document_storage_reference'] ?? ''),
+                        (string) ($exemption['source_sha256'] ?? ''),
+                        'STATUTORY_SOURCE'
+                    );
+                }
+            }
+
+            $pensionableRationale = $input['pensionable_salary_rationale'] ?? null;
+            if (is_array($pensionableRationale)) {
+                $this->verifyPayrollLegalDocument(
+                    $tenantId,
+                    (string) ($pensionableRationale['document_storage_reference'] ?? ''),
+                    (string) ($pensionableRationale['source_sha256'] ?? ''),
+                    'STATUTORY_SOURCE'
+                );
+            }
+
+            foreach (($input['other_deductions'] ?? []) as $deduction) {
+                $authorization = $deduction['authorization_evidence'] ?? [];
+                $this->verifyPayrollLegalDocument(
+                    $tenantId,
+                    (string) ($authorization['document_storage_reference'] ?? ''),
+                    (string) ($authorization['source_sha256'] ?? ''),
+                    'EMPLOYEE_AUTHORIZATION'
+                );
+            }
+
             try {
                 $calculation = app(EthiopiaPayrollCalculator::class)->calculateApproved(
-                    $data['calculation_input'],
+                    $input,
                     $ruleRecords,
                     (string) $run->period_start,
                     (string) $run->period_end,
@@ -339,7 +380,6 @@ class FinanceControlService
                 throw ValidationException::withMessages(['calculation_input' => 'The payroll calculation did not pass the approved-rule gate.']);
             }
 
-            $input = $data['calculation_input'];
             $deductionComponents = [
                 ['code' => 'PAYE', 'amount' => $calculation['paye']],
                 ['code' => 'EMPLOYEE_PENSION', 'amount' => $calculation['employee_pension']],
