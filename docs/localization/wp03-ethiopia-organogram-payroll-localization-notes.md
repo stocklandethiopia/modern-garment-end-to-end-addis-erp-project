@@ -118,7 +118,7 @@ The supplied/repository legal register identifies the following Article 22 issue
 The official Federal Negarit Gazette copy is titled **Proclamation No. 1395/2025**, Federal Negarit Gazette 31st Year No. 64, Addis Ababa, 1 September 2025, starting at page 19136. The parallel Amharic identifier is 1395/2017 E.C.
 
 Official source:
-- [Ministry of Revenue — Federal Negarit Gazette, Proclamation No. 1395/2025 (Amharic identifier 1395/2017 E.C.)](https://www.mor.gov.et/DomesticProclamations/1786970364007-582645424-pdf-%C3%A1%C2%8A%C2%A0%C3%A1%C2%8B%C2%8B%C3%A1%C2%8C%C2%85-%C3%A1%C2%89%C2%81%C3%A1%C2%8C%C2%A5-%C3%A1%C2%88%C2%AD-1395-2017.pdf)
+- [Ministry of Revenue — Federal Negarit Gazette, Proclamation No. 1395/2025 (Amharic identifier 1395/2017 E.C.)](https://www.mor.gov.et/DomesticProclamations/1786970364007-582645424-pdf-%C3%A1%C2%8A%C2%A0%C3%A1%C2%8B%C2%8B%C3%A1%C2%8C%C2%85-%C3%A1%C2%89%C2%81%C3%A1%C2%8C%C2%A5%C3%A1%C2%88%C2%AD-1395-2017.pdf)
 
 The Gazette's amended Article 11 gives monthly employment-income brackets:
 
