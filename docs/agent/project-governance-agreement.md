@@ -269,6 +269,8 @@ This amendment does not waive the controls in Sections 1, 3, 4, 6, 7 and the 26 
 
 ## Owner standing direction — production execution plan and strict scope enforcement
 
+**Controlling task register:** [Production Execution Plan — WP-00 to WP-16](../work-packages/production-execution-plan-wp00-wp16.md). The 125 PROD task IDs in that plan must be mapped to the existing approved GAR/AT/requirement IDs and handover evidence; they do not replace or narrow them.
+
 **Authority:** Product Owner's direction of 27 November 2026. This clarification operationalizes the existing WP-00–WP-16 delegation; it does not create a new package, remove a requirement, or change an approved technical/legal/security standard.
 
 ### 1. The approved production scope is mandatory
