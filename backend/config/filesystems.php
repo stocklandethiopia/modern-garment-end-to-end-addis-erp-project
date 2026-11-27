@@ -2,6 +2,11 @@
 
 return [
     'default' => env('FILESYSTEM_DISK', 'local'),
+
+    // Tenant-private ERP attachments use the private local disk for clean
+    // development installs. Production must set PRIVATE_DOCUMENTS_DISK to an
+    // approved private object-storage provider during installer preflight.
+    'private_documents_disk' => env('PRIVATE_DOCUMENTS_DISK', 'local'),
     'disks' => [
         'local' => [
             'driver' => 'local',
