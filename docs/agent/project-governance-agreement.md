@@ -263,3 +263,35 @@ After each WP release or verified integration increment, provide the Product Own
 This amendment does not waive the controls in Sections 1, 3, 4, 6, 7 and the 26 November amendment. In particular, no guessed legal interpretation or statutory activation, unverified financial/payroll transaction, secret disclosure, weakening of tenant/security controls, destructive production-data action, unlicensed code reuse or live production deployment without the required accountable authorization is permitted. These controls are not grounds to stop independent non-production engineering, tests, documentation, staging preparation or installer development.
 
 **Decision recorded:** maintain the agreed production objective; report evidence at requirement/task/WP level; continue autonomous auditing and canonical ERP/master-installer implementation within the existing delegation and change-control boundary.
+
+
+---
+
+## Owner standing direction — production execution plan and strict scope enforcement
+
+**Authority:** Product Owner's direction of 27 November 2026. This clarification operationalizes the existing WP-00–WP-16 delegation; it does not create a new package, remove a requirement, or change an approved technical/legal/security standard.
+
+### 1. The approved production scope is mandatory
+
+1. Execute the complete approved WP-00–WP-16 product scope in the fixed sequence. The objective is the integrated, customer-neutral garment ERP and reproducible master installer, not a reduced demonstration, sample application, documentation-only outcome or collection of disconnected CRUD modules.
+2. Maintain one detailed, version-controlled execution plan. Every task must have a stable task ID, its approved requirement/GAR/AT references, exact intended source/output, predecessor dependencies, acceptance criteria, required evidence and task-level status.
+3. A work package is not complete because a design, schema, controller, isolated screen, unit test, generated artifact or partial workflow exists. Completion is determined by the package's approved end-to-end definition of done and exact-source evidence.
+4. Do not silently defer, replace, omit or reduce an approved requirement. A real dependency must become a named task with an owner/work package, predecessor, resolution route and acceptance proof.
+
+### 2. Treatment of constraints and limitations
+
+1. Tool availability, runner allocation, session time, local compute, free-tier quotas, workspace access, network restrictions and similar delivery constraints are execution-continuity problems. They do not amend the product scope, quality standard, task list or expected outcome.
+2. When one execution route is unavailable, use an approved alternative within the same architecture and repository workflow: another eligible runner, a reproducible local/remote command, a separate safe work branch, an isolated test, a queued exact-SHA check or another supported verification route. Record the exact command and evidence.
+3. Never bypass a quality/security/legal gate, invent a passing result, label an unexecuted check as passed, or use a weaker substitute test. A check that genuinely could not run remains NOT RUN with its exact cause and a concrete next verification action; independent tasks continue.
+4. A genuine external legal, professional, customer, credential or accountable production approval may hold only the specific activation, transaction or deployment action that requires it. It must not be used to suspend unrelated design, engineering, migration authoring, tests, non-production verification, installer construction or preparation.
+5. A constraint is not a scope decision. Only the Product Owner may approve a change to product scope through the existing change-control process. No agent or contributor may unilaterally narrow the target to fit a tool, runner or time limit.
+
+### 3. Strict task execution and acceptance
+
+1. Work in the fixed WP-00–WP-16 order and the required dedicated branch/PR workflow. Reconcile the current canonical source and parallel commits before creating a new implementation.
+2. For each task, implement the complete bounded workflow: business actors and authority, state transitions, validations, data constraints, tenancy/site/legal-entity scope, audit/event records, exceptions, user-facing behavior, automated tests and operational documentation as applicable.
+3. Every task must pass the shared project quality gates and its domain-specific acceptance scenarios. Add exact requirement IDs and acceptance evidence to the handover register and application folder/code map.
+4. Promote verified increments through the approved integration branch without routine owner pauses. Keep unresolved tasks visible and continue with the next safe in-scope task in dependency order.
+5. Production deployment, statutory activation, real payroll/payment/bank execution, destructive production-data operations and other human-only high-impact actions remain subject to their specific accountable authorization. These narrow action gates do not reduce the engineering objective or the non-production work that can proceed.
+
+**Decision recorded:** pursue the complete approved production scope through a detailed WP-00–WP-16 task register; treat delivery constraints as problems to solve without weakening the agreed architecture, quality, security, legal or acceptance standards.
