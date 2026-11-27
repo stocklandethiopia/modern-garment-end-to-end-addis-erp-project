@@ -3341,7 +3341,7 @@ These records are an infrastructure execution failure, not acceptance. Work that
 
 **Candidate:** PR #21 — https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/pull/21
 
-**Exact candidate head inspected:** 346950a9b5aaef4504161b1d8ba6a9bebedd4178
+**Initial tested candidate head:** 346950a9b5aaef4504161b1d8ba6a9bebedd4178. **Latest inspected candidate head:** 76871d46bc2728e49bfb33310a4ee8a7a5e4f1ab.
 
 **Backend source changed**
 - backend/app/Services/Enterprise/EnterpriseOrganizationService.php: paginated search/filter implementations for units, positions, managerAssignments and reportingRelations; stable ordering; default page size 25, hard maximum 100; effective-date and tenant filters.
@@ -3351,7 +3351,7 @@ These records are an infrastructure execution failure, not acceptance. Work that
 **Frontend source changed**
 - frontend/src/app/features/enterprise/enterprise-organization.service.ts: typed OrganizationListQuery/ApiPage contracts and HttpParams-based requests for all four registers.
 - frontend/src/app/features/enterprise/organization-structure.component.ts/html/css: accessible search, first/previous/next/last navigation, server total labels, request-sequence and tenant checks, selected-unit preservation, visited-record caches, active manager/reporting position choices and refreshed page state after creation.
-- Parent-unit choices use discovered tenant units; manager-position choices require an active position belonging to the selected unit; reporting position choices use tenant-scoped active-position search.
+- Parent-unit choices use discovered ACTIVE tenant units; manager-position choices require an ACTIVE position belonging to the selected unit; reporting position choices use tenant-scoped ACTIVE-position search.
 - Empty search results are distinguished from an empty tenant register. Child-unit counts are labelled as counts on the currently loaded page, not tenant totals.
 
 **Test/documentation source changed**
@@ -3369,6 +3369,15 @@ For candidate head 346950a9b5aaef4504161b1d8ba6a9bebedd4178:
 - These are workflow failures before execution. No PHPUnit/PostgreSQL, Angular build/Vitest or browser E2E step ran on this candidate head. Application test result is NOT RUN; no code-test failure or pass is inferred.
 - The same runner-allocation pattern is present on several intermediate PR #21 heads and the delivery/PR #13/PR #18/PR #20/PR #22 candidates recorded in Section 46. The exact underlying account/organization/repository/GitHub-service cause remains unknown pending owner/admin diagnostics.
 - PR #22 is a preparatory manual dedicated-runner route; no evidence shows a dedicated self-hosted runner is registered or has executed a workflow.
+
+### 47.3.1 Latest candidate head confirmation
+
+For latest candidate head 76871d46bc2728e49bfb33310a4ee8a7a5e4f1ab:
+
+- ERP CI run #46018149774: the Laravel/PostgreSQL and Angular jobs each have runner_id 0, blank runner name and zero steps; dependency-lockfile commit was skipped.
+- Combined WP verification run #46018149715: Laravel/PostgreSQL, Angular and WP-01 jobs each have runner_id 0, blank runner name and zero steps; artifact assembly was skipped.
+- This exact newer head still has no executed application test steps. Test result remains NOT RUN.
+- The latest source change adds the rule that parent-unit selectors expose only active tenant units. Existing active-only manager/reporting position selection remains in effect.
 
 ### 47.4 Required final acceptance before integration
 
