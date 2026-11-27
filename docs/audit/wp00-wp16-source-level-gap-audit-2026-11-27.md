@@ -1228,3 +1228,138 @@ The source findings above should be addressed in this dependency order:
 7. Run the PostgreSQL test suite on an actual exact source SHA; keep the source-level findings marked as inspected but unexecuted until the relevant tests have run.
 
 No application service or database migration has been modified by this audit addendum. It adds exact code-path and acceptance-test work to the existing canonical implementation programme.
+
+
+---
+
+## 15. Finance and industrial-engineering control audit
+
+### 15.1 Approved finance journal lines remain writable
+
+**Finding:** The database balance trigger validates journal lines when the journal transitions to UNDER_REVIEW or APPROVED. It is defined as a trigger on finance_journals only. The migration grants app_runtime INSERT and UPDATE on finance_journal_lines, but does not add a trigger that blocks line mutation when the parent journal has left DRAFT.
+
+The posting service recomputes balanced base totals before posting. This catches an unbalanced edit, but it does not prove the lines posted are the lines the approver reviewed: an account allocation or line description/source reference can be changed after approval while keeping the debit/credit totals balanced.
+
+**Source**
+- backend/database/migrations/2026_11_26_000020_create_finance_and_payroll_review_foundation.php: finance_journal_lines, enforce_balanced_finance_journal(), journal balance trigger and app_runtime grants.
+- backend/app/Services/Finance/FinanceControlService.php: createJournalDraft(), submitJournal(), decideJournal() and postApprovedJournal().
+
+**Required implementation**
+- [ ] Freeze journal line INSERT/UPDATE/DELETE once the parent journal leaves DRAFT.
+- [ ] Enforce the same immutability in PostgreSQL, not only by omitting an application endpoint.
+- [ ] If correction is required, return the journal through a controlled revision/resubmission workflow or create a replacement journal; never silently change approved lines.
+- [ ] Bind approval evidence to a canonical journal/line snapshot hash and verify it again at posting.
+- [ ] Enforce that each line account belongs to the same legal entity as the parent journal at database level as well as service level.
+- [ ] Add adversarial tests that change account, amount, currency, cost centre or source reference after submission/approval; the database must reject the mutation and the original approved snapshot must remain unchanged.
+
+### 15.2 Statutory rule approval does not require retained source-byte identity
+
+**Finding:** statutory_rule_versions.source_sha256 is nullable. The database check for PROFESSIONAL_APPROVED requires verified_by, verified_at and professional_approval_reference, but it does not require a source hash or a retained source asset identity. A rule can therefore be marked PROFESSIONAL_APPROVED while its source_sha256 is NULL.
+
+The WP-14 canonical payroll-draft selector also checks that a rule is effective on period_end. It does not prove that the selected rule covers the whole payroll period or create separate rule segments when a legal change takes effect during the period.
+
+**Source**
+- backend/database/migrations/2026_11_26_000020_create_finance_and_payroll_review_foundation.php: statutory_rule_versions definition and PROFESSIONAL_APPROVED check.
+- backend/app/Services/Finance/FinanceControlService.php: createPayrollDraft() effective-date query and statutory-rule snapshot.
+
+**Required implementation**
+- [ ] Require an immutable source document/asset reference, SHA-256 of retained bytes, authority identity, exact provision/article reference, publication/effective dates and approval metadata before a rule may become PROFESSIONAL_APPROVED.
+- [ ] Verify the actual retained source bytes and recompute the hash; a 64-character value or government URL alone is not proof of source authenticity.
+- [ ] Define whole-period applicability. Either require a single rule version to cover period_start through period_end or split payroll into effective-date segments with an explicit transition method.
+- [ ] Bind each payroll draft to immutable rule IDs, human-readable version IDs and source artifact hashes.
+- [ ] Add tests for a rule that starts on period_end, expires before period_start, changes mid-period, has missing hash, has altered source bytes, or belongs to a mismatched jurisdiction/legal employer.
+
+### 15.3 Finance reversal schema exists without an implemented service workflow
+
+**Finding:** migration 000025 creates finance_journal_reversals with unique original-posting reversal and separate requester/approver identities. The inspected FinanceControlService, FinanceControlController and registered finance command routes do not expose a reversal-request/reversal-approval/reversal-posting workflow.
+
+**Required implementation**
+- [ ] Implement reversal draft creation linked to one immutable original posting.
+- [ ] Validate same legal entity, currency/base-currency policy and an open reversal accounting period.
+- [ ] Generate exact inverse lines from the immutable posted snapshot rather than accepting arbitrary client lines.
+- [ ] Enforce separate requester/approver and a separate posting actor.
+- [ ] Link the reversal journal, reversal posting and original posting with immutable provenance.
+- [ ] Test partial and full reversals only where the approved accounting design explicitly allows them, duplicate reversal, concurrency and closed periods.
+
+### 15.4 Finance domain lacks dedicated automated feature-test coverage
+
+The delivery tree has FinanceControlService and FinanceControlController plus migrations 000020 and 000025, but no finance/payroll-specific PHP test file. The existing test inventory therefore does not prove journal maker-checker, balance trigger, immutable post, reversal, period close, statutory rule source verification or payroll-draft lifecycle end-to-end.
+
+**Required implementation**
+- [ ] Add PostgreSQL feature suites for journal create/submit/approve/post, line immutability, account/entity alignment, period closure, duplicate posting, reversal and tenant/entity boundary.
+- [ ] Add statutory rule source-evidence and whole-period applicability tests.
+- [ ] Add payroll draft rule snapshot, duplicate worker line, preparation/review separation, hold and source-hash tests.
+- [ ] Reconcile AP/AR/inventory/costing/payroll source documents to journals and posted totals.
+
+### 15.5 IE production planning can schedule an operation more than once or above its order quantity
+
+**Finding:** IndustrialEngineeringService.addPlanLine() checks that an operation exists, belongs to the selected production order and is QUEUED or READY. It checks slot capacity and minimum planned minutes against approved standard minutes. It does not lock the operation, total existing production_plan_lines for that operation, or cap aggregate planned_quantity against the production_order_operations.planned_quantity.
+
+The schema gives production_plan_lines a unique plan sequence, but no uniqueness or cumulative quantity invariant for an operation across plan versions. The same queued operation may therefore be scheduled repeatedly, including across separate plan versions, and planned quantity may exceed the authoritative operation quantity.
+
+**Source**
+- backend/app/Services/Planning/IndustrialEngineeringService.php, addPlanLine() (approximately lines 135–230).
+- backend/database/migrations/2026_11_26_000019_create_ie_capacity_and_workforce_controls.php, production_plan_lines constraints and indexes.
+
+**Required implementation**
+- [ ] Lock the production operation while checking and recording planned quantity.
+- [ ] Calculate active/scheduled quantity across plan versions with explicit treatment for superseded/cancelled plans.
+- [ ] Reject cumulative scheduled quantity greater than remaining operation quantity.
+- [ ] Add database enforcement or a serialized allocation record so concurrent planners cannot both reserve the same remaining quantity.
+- [ ] Define replan, supersession and release of previously reserved capacity.
+- [ ] Test same-plan duplicate, cross-plan duplicate, superseded plan, partial replan and concurrent planning.
+
+### 15.6 Production plan and workforce assignment do not fully bind work-centre site to production-order site
+
+**Finding:** addPlanLine() verifies the work-centre/capacity-slot relationship and verifies that the operation belongs to the selected production order. It does not compare the work centre's site_id to the production order's site_id.
+
+assignWorkerToOperation() verifies that the chosen work centre and shift belong to the same site, but it does not load the production order and confirm that this site is the one assigned to the production order.
+
+The same-tenant filters prevent cross-tenant lookup, but they do not prevent an intra-tenant cross-site production assignment.
+
+**Required implementation**
+- [ ] Resolve the production order's authorized site from its legal entity/order record.
+- [ ] Require the work centre, capacity slot, shift and production-order site to match unless an explicit approved inter-site/subcontract transfer exists.
+- [ ] Bind the production operation and assignment to site and legal entity in database constraints where feasible.
+- [ ] Add positive same-site and negative cross-site tests for plan lines, workforce assignment, operation start and subcontract transfer.
+
+### 15.7 Worker skill scope is stored but not enforced during assignment
+
+**Finding:** workforce_skill_records stores authorized_operation_scope as JSONB. assignWorkerToOperation() validates that the worker has an active, competent and date-valid skill record and that skill_code matches the route step. The method does not evaluate authorized_operation_scope.
+
+This means the record has a field intended to constrain where/how the worker may apply the skill, but the assignment source path currently uses only the skill code and validity dates.
+
+**Required implementation**
+- [ ] Define typed, versioned authorized-operation scope semantics (site, department, work centre, machine family, operation/process type, style/category and any mandatory safety qualification).
+- [ ] Evaluate the full scope in worker assignment and again when the operation starts.
+- [ ] Require a human-approved assessment/qualification source for restricted or safety-critical operations.
+- [ ] Add scope-positive/scope-negative, expired qualification and changed-role tests.
+
+### 15.8 Workforce overlap is not revalidated at confirmation
+
+**Finding:** assignWorkerToOperation() takes a tenant/worker advisory transaction lock but searches overlaps only in CONFIRMED and STARTED assignments. Newly created assignments are PLANNED, so more than one overlapping planned assignment can be inserted. confirmWorkerAssignment() locks the individual assignment, checks it is PLANNED and that the confirmer differs from the creator, but it does not take the same worker advisory lock or recheck overlapping assignments before changing status to CONFIRMED.
+
+Two overlapping PLANNED assignments may therefore both be independently confirmed unless an external constraint prevents it; the inspected migration contains no PostgreSQL exclusion constraint over worker time ranges.
+
+**Required implementation**
+- [ ] Take the same worker-level advisory lock during confirmation.
+- [ ] Recheck overlapping CONFIRMED/STARTED assignments within the transaction immediately before status transition.
+- [ ] Define whether overlapping PLANNED assignments are allowed as tentative alternatives; only one compatible allocation may become confirmed.
+- [ ] Add a database range/exclusion or serialized invariant appropriate to PostgreSQL.
+- [ ] Test two concurrent confirmations for overlapping work, shift boundary, overnight shift, partial cancellation and worker reallocation.
+
+---
+
+## 16. Finance and IE regression sequence
+
+1. Add the finance journal-line immutable-after-submit trigger and approval snapshot hash.
+2. Add statutory source-byte identity and whole-period applicability/version segmentation.
+3. Implement the reversal request/approval/posting workflow.
+4. Add complete finance PostgreSQL feature suites.
+5. Add cumulative operation quantity allocation and plan version reservation/release behavior.
+6. Enforce production-order/work-centre/shift site identity.
+7. Enforce authorized-operation scope for worker skill records.
+8. Serialize worker confirmation and prevent overlapping active assignments.
+9. Add IE plan, capacity and workforce concurrency tests and run them against PostgreSQL on an exact commit SHA.
+
+No finance, IE or runtime source has been modified by this audit section. It extends the canonical work queue with concrete data-integrity and workflow controls.
