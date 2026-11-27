@@ -99,13 +99,18 @@ Every line stores amount, currency, basis, period, earning/deduction code, formu
 All legal parameters are effective-dated and source-linked by WP-02. No rate is hard-coded in service logic. Rule activation is gated by exact instrument/clauses, applicability, effective and transition dates, local professional approval and independent test vectors.
 
 ### Employment income tax
-Proclamation 1395/2025 Gazette employment bands are recorded in the legal-source register. Progressive calculation, taxable base/deductions, withholding mechanics, transition, worker category and tax period must be validated from the full law and current directive. A table row is not a complete payroll algorithm; do not activate from a copied table or old ERP example.
+Proclamation 1395/2025 Article 11 publishes monthly marginal bands, but the table alone is not a complete PAYE algorithm. The Ministry of Revenue Technical Notes to Proclamation 979/2016 describe Article 10 as taxing total monthly employment income without deduction for expenditure incurred in deriving it; those Notes are expressly non-binding. Whether mandatory employee pension is deductible from the PAYE base remains a clause-specific question for qualified Ethiopian tax advice. Preserve the two candidate calculations but do not activate either method before a signed opinion approves the exact method.
 
 ### Private organization pension
-Proclamation 1268/2022 official POESSA text identifies 45-day employee coverage, employer 11% and employee 7% contributions on the statutory salary base, and monthly remittance obligations. The implementation directives 1085/2025, 1086/2025 and 1087/2025, salary base, worker exemptions, amendments and procedures must be validated by POESSA/local payroll specialist. No pension formula is activated merely by repeating headline rates in this design.
+Proclamation 1268/2022 provides the 45-day employee definition, but Article 3 limits coverage by worker/employer categories and exceptions. Article 2(7) defines pension salary by monthly salary for regular working hours before deductions; Article 10 provides employer 11% and employee 7%; Article 6 covers registration changes and Article 12 monthly remittance within 30 days. Do not infer coverage from payroll status, nationality, job title or contract label. Capture the eligibility facts and independently reviewed decision; obtain full Directives 1085/2025, 1086/2025 and 1087/2025 and POESSA/legal review before activation.
 
 ### Labour and employment
-Labour Proclamation 1156/2019 and subsequent directives, labour authority guidance, regional/city rules, contracts and actual worker relationship define working time, overtime, leave, wages, termination, dispute, OSH and related controls. Legal rule catalogue must retain source and reviewer.
+Labour Proclamation 1156/2019 and subsequent directives, labour authority guidance, regional/city rules, contracts and actual worker relationship define working time, overtime, leave, wages, termination, dispute, OSH and related controls. Legal rule catalogue must retain source and reviewer. The localized requirements matrix records the provisions identified for Article 59–61, 66–68, 75–77, 85–86 and 88, alongside final wage and severance controls; exact clause applicability, current amendments and worker-category exceptions remain a qualified review gate.
+
+### Ethiopia payroll runtime and release status
+The current code candidate uses Laravel server-side calculation, a frozen source snapshot, controlled private legal documents and SHA-256 re-verification. It retains both ETB 30,000 PAYE methods, exemption evidence, non-standard pensionable salary rationale and the `RETAINER_SERVICE` exclusion. It does not use a legacy product identifier, old sample database schema or browser-side tax calculation. Both production flags remain default-off pending employee master/contract/assignment resolution and professional legal activation.
+
+See `docs/localization/ethiopia-payroll-localization-2026-11-27.md`, `docs/localization/ethiopia-payroll-engineering-release-gate.md`, and `docs/localization/ethiopia-payroll-legal-requirements-matrix.csv`.
 
 ### Creator / reseller / supplier / subcontractor classification
 Differentiate:
@@ -221,9 +226,9 @@ Payroll approval creates a finance posting/payment proposal, not bank settlement
 
 ## 14. WP-14 handover
 
-**Completed:** workforce lifecycle, identity/employment separation, workforce planning/time/attendance, leave/benefits, payroll, statutory review gates, differentiated external/employee compensation, skill/training, HSE, grievance/privacy, data model, event boundaries and 16 acceptance scenarios.
+**Design baseline documented; runtime partial:** workforce lifecycle, identity/employment separation, workforce planning/time/attendance, leave/benefits, statutory and external/employee compensation boundaries, skill/training, HSE, grievance/privacy, data ownership and 16 acceptance scenarios. The current payroll calculation candidate is now server-side and source-backed, but complete employee master/contracts/assignments, operational profile resolution, payroll posting subledger, statutory remittance and live legal activation are not yet accepted.
 
-**Not claimed:** no real employee personal data, salary, leave balance, tax/pension deduction, bank details, remittance, employment contract or statutory report has been processed. No Ethiopian customer payroll or legal interpretation is activated from this design.
+**Not claimed:** no real employee personal data, salary, leave balance, PAYE or pension deduction, bank details, remittance, employment contract or statutory report has been processed. No Ethiopian customer payroll or legal interpretation is activated. The new candidate is a source-controlled, unposted calculation only; both activation flags remain false.
 
 **Dependencies:** WP-02 law and legal holds; WP-03 tenant/identity/privacy; WP-06 capacity; WP-09 operation/output; WP-10 skills/incentive source; WP-11 HSE; WP-13 payroll posting and finance.
 

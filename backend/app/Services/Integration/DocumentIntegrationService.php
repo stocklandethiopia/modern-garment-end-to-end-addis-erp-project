@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
+use Throwable;
 
 class DocumentIntegrationService
 {
@@ -78,20 +80,101 @@ class DocumentIntegrationService
             throw new RuntimeException('Private document storage did not confirm the upload.');
         }
 
-        return $this->registerDocument($tenantId, $actorId, [
-            'document_code' => $data['document_code'],
-            'document_type' => $data['document_type'],
-            'original_filename' => $file->getClientOriginalName(),
-            'media_type' => $mimeType,
-            'byte_size' => $file->getSize(),
-            'sha256' => $sha256,
-            'object_storage_reference' => $disk.':'.$objectReference,
-            'source_channel' => $data['source_channel'] ?? 'UPLOAD',
-            'source_record_type' => $data['source_record_type'] ?? null,
-            'source_record_id' => $data['source_record_id'] ?? null,
-            'access_classification' => $data['access_classification'] ?? 'BUSINESS',
-            'retention_until' => $data['retention_until'] ?? null,
+        try {
+            return $this->registerDocument($tenantId, $actorId, [
+                'document_code' => $data['document_code'],
+                'document_type' => $data['document_type'],
+                'original_filename' => $file->getClientOriginalName(),
+                'media_type' => $mimeType,
+                'byte_size' => $file->getSize(),
+                'sha256' => $sha256,
+                'object_storage_reference' => $disk.':'.$objectReference,
+                'source_channel' => $data['source_channel'] ?? 'UPLOAD',
+                'source_record_type' => $data['source_record_type'] ?? null,
+                'source_record_id' => $data['source_record_id'] ?? null,
+                'access_classification' => $data['access_classification'] ?? 'BUSINESS',
+                'retention_until' => $data['retention_until'] ?? null,
+            ]);
+        } catch (Throwable $exception) {
+            // Remove an uploaded object if metadata registration fails.
+            try {
+                Storage::disk($disk)->delete($objectReference);
+            } catch (Throwable $cleanupException) {
+                report($cleanupException);
+            }
+
+            throw $exception;
+        }
+    }
+
+    /**
+     * Re-read a tenant-owned private document and compare its current bytes with
+     * the registered SHA-256 before it can support a statutory rule.
+     */
+    public function verifyStoredDocumentChecksum(string $tenantId, string $documentId): object
+    {
+        $document = DB::table('document_assets')
+            ->where('tenant_id', $tenantId)
+            ->where('id', $documentId)
+            ->lockForUpdate()
+            ->first();
+
+        if ($document === null || $document->classification_status === 'REJECTED') {
+            throw ValidationException::withMessages(['document_id' => 'The legal source document is missing or rejected.']);
+        }
+
+        $reference = (string) $document->object_storage_reference;
+        $parts = explode(':', $reference, 2);
+        $diskName = $parts[0] ?? '';
+        $objectPath = $parts[1] ?? '';
+        $configuredDisks = config('filesystems.disks', []);
+        $privateDisk = (string) config('filesystems.private_documents_disk', 's3');
+        $tenantDocumentPrefix = 'tenants/'.$tenantId.'/documents/';
+
+        if ($diskName === ''
+            || $diskName !== $privateDisk
+            || $objectPath === ''
+            || ! str_starts_with($objectPath, $tenantDocumentPrefix)
+            || str_contains($objectPath, '/../')
+            || str_ends_with($objectPath, '/..')
+            || ! is_array($configuredDisks)
+            || ! array_key_exists($diskName, $configuredDisks)
+        ) {
+            throw ValidationException::withMessages(['document_id' => 'The legal source must be stored on the configured private document disk under this tenant document namespace.']);
+        }
+
+        $stream = Storage::disk($diskName)->readStream($objectPath);
+        if (! is_resource($stream)) {
+            throw ValidationException::withMessages(['document_id' => 'The stored legal source document could not be retrieved for checksum verification.']);
+        }
+
+        try {
+            $context = hash_init('sha256');
+            $hashedBytes = hash_update_stream($context, $stream);
+            if ($hashedBytes === false || (int) $hashedBytes !== (int) $document->byte_size) {
+                throw ValidationException::withMessages(['document_id' => 'The stored legal source byte count does not match its registered size.']);
+            }
+            $actualSha256 = hash_final($context);
+        } finally {
+            fclose($stream);
+        }
+
+        if (! hash_equals(strtolower((string) $document->sha256), strtolower($actualSha256))) {
+            DB::table('document_assets')->where('tenant_id', $tenantId)->where('id', $documentId)->update([
+                'classification_status' => 'REJECTED',
+                'checksum_verified_at' => null,
+                'updated_at' => now(),
+            ]);
+
+            throw ValidationException::withMessages(['document_id' => 'The stored legal source bytes do not match their registered SHA-256; the document was rejected.']);
+        }
+
+        DB::table('document_assets')->where('tenant_id', $tenantId)->where('id', $documentId)->update([
+            'checksum_verified_at' => now(),
+            'updated_at' => now(),
         ]);
+
+        return DB::table('document_assets')->where('tenant_id', $tenantId)->where('id', $documentId)->first();
     }
 
     public function beginExtraction(string $tenantId, string $actorId, string $documentId, array $data): object

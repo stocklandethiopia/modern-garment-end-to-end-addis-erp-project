@@ -43,7 +43,10 @@ Exact supported patch versions are recorded in the platform standard and must be
 12. Ethiopia localization and statutory controls: docs/localization/ethiopia.md
 13. Ethiopia legal and regulatory source register: docs/localization/ethiopia-legal-regulatory-register.md
 14. Payroll and differentiated variable-compensation schemes: docs/hr/payroll-and-variable-compensation.md
-15. Approved reference repository review: docs/references/reference-repositories.md
+15. Ethiopia payroll localization and official-law analysis: docs/localization/ethiopia-payroll-localization-2026-11-27.md
+16. Ethiopia payroll engineering release gate: docs/localization/ethiopia-payroll-engineering-release-gate.md
+17. Ethiopia payroll legal requirements matrix: docs/localization/ethiopia-payroll-legal-requirements-matrix.csv
+18. Approved reference repository review: docs/references/reference-repositories.md
 
 ## Application foundation and verified integration delivery
 

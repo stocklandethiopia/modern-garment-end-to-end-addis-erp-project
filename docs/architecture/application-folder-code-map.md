@@ -389,3 +389,33 @@ Backend and frontend domain boundaries must match. A new Laravel controller/serv
 - `docs/security/platform-administration-bootstrap.md`: controlled two-person operator-grant provisioning and lifecycle/entitlement security boundary.
 - Route registration: `backend/routes/domain-api.php`; `/api/v1/platform/*` uses global identity context, while `/api/v1/tenant/entitlements` uses tenant context.
 - Integrated status: platform lifecycle/entitlement API and migration 000032 are exact-head CI verified and merged in PR #9. The current continuation branch adds immutable auditing for authorized platform tenant-register reads; its exact-head CI is pending. Controlled platform operator appointment, full feature-gate enforcement, retention/legal hold/export/recovery and platform Angular UI remain open.
+
+
+## WP-14 Ethiopia payroll localization — candidate source extension
+
+The following files are additions on `work/wp14-ethiopia-payroll-localization-2026-11-27`. They are not integrated into the canonical delivery branch until the candidate PR and its exact-head checks are accepted.
+
+| Concern | Exact source path | Responsibility / state |
+|---|---|---|
+| Ethiopia payroll calculator | `backend/app/Services/Payroll/EthiopiaPayrollCalculator.php` | Server-side exact-decimal candidate calculation; two PAYE-base methods are testable; statutory production calculation requires frozen approved rules, legal opinion, component evidence and stored source document checks |
+| Payroll API boundary | `backend/app/Http/Controllers/Finance/FinanceControlController.php` | Validates ETB/ETH and decimal-string calculation inputs; does not accept frontend gross, PAYE, pension or net totals |
+| Payroll domain orchestration | `backend/app/Services/Finance/FinanceControlService.php` | Freezes effective-dated statutory rules, verifies source documents, invokes the server calculator, stores line evidence hashes and reconciled run control totals, and fails closed while release flags remain false |
+| Official legal-document verification | `backend/app/Services/Integration/DocumentIntegrationService.php` | Uses the configured tenant-private disk, re-reads stored bytes, checks byte count and SHA-256, and removes an uploaded object if metadata registration fails |
+| Default-off activation settings | `backend/config/payroll.php` | Requires employee-master readiness and statutory activation to be separately accepted; both flags default false |
+| Stored statutory source relationship | `backend/database/migrations/2026_11_27_000033_require_stored_statutory_source_document.php` | Adds UUID legal-source document reference and tenant-leading FK to the existing `document_assets` records |
+| Payroll-line evidence digest | `backend/database/migrations/2026_11_27_000034_require_payroll_line_evidence_hash.php` | Adds a SHA-256 digest for canonical payroll-line evidence and database gate for new `VALIDATED` payroll lines |
+| Payroll-line write-once guard | `backend/database/migrations/2026_11_27_000036_protect_payroll_run_line_evidence.php` | Allows line insertion only while the parent run is DRAFT, rejects UPDATE/DELETE and revokes runtime mutation privileges |
+| Candidate unit regression | `backend/tests/Unit/EthiopiaPayrollCalculatorTest.php` | Candidate calculations and negative guards; synthetic legal evidence is test fixture only, never production legal approval |
+| Payroll line runtime integrity | `backend/tests/Feature/PayrollRunLineIntegrityTest.php` | Checks app_runtime SELECT/INSERT-only privileges and presence of draft-only insert/immutability triggers |
+| Legal localization | `docs/localization/ethiopia-payroll-localization-2026-11-27.md` | Ethiopia source basis, PAYE ambiguity, pension scope, labour payroll requirements and runtime boundaries |
+| Legal release gate | `docs/localization/ethiopia-payroll-engineering-release-gate.md` | Official source acquisition, qualified approval, employee master, calculation and WP-16 acceptance gate |
+| Legal requirements crosswalk | `docs/localization/ethiopia-payroll-legal-requirements-matrix.csv` | Clause-to-control crosswalk for employment tax, private pension, labour and individual payee tax documentation |
+| Calculation fixtures / rule template | `docs/localization/fixtures/`; `docs/localization/templates/ethiopia-payroll-rule-payload-template.json` | Isolated candidate vectors and blank non-active rule payload template; no legacy fixed rule identifier |
+
+### Payroll implementation boundary
+
+The localized API is Laravel server-side only. It consumes verified rule records and employee/component facts, and stores a frozen calculation snapshot. The frontend is a display/workflow client, not an alternative tax calculator. The ETB 30,000 pension-first result remains a candidate regression until a qualified Ethiopian legal opinion approves it; posted payroll and historical transactions are outside this change. Both payroll activation settings are default-off.
+
+### Migration sequence extension
+
+The candidate adds migrations 000033 (stored statutory source relationship), 000034 (validated payroll-line evidence digest) and 000036 (payroll-line write-once protection) after the current delivery migration 000032. Migration 000033 depends on the pre-existing document_assets relation from migration 000021; 000034 adds the validated-line digest gate; 000036 depends on payroll_run_drafts/payroll_run_lines from migration 000020 and the digest column from 000034. WP-03 migration 000035 is a separate open candidate in PR #21; reconcile both candidate sequences before integration. Do not backdate, reorder or rename existing migrations.
