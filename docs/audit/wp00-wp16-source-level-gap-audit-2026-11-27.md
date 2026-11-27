@@ -3769,3 +3769,38 @@ Both runs completed with failure before any job step executed. Every required jo
 - [ ] Merge only after exact-head PostgreSQL and CI evidence passes; keep legal deviation approval and release authority as separate controls.
 
 This candidate does not approve a deviation, override an NCR, authorize a material/production/finished-goods release or remove the human reviewer requirement.
+
+
+---
+
+## 56. WP-03 organization structure — tenant-wide read visibility policy is not explicit
+
+### 56.1 Current source behavior
+
+**Finding:** the organization master GET endpoints execute with authenticated user and tenant context, and PostgreSQL RLS ensures the data belongs to that tenant. The GET methods for organizational units, job positions, unit manager assignments and position reporting relationships do not call an organization-specific Gate or DomainCapabilityAuthorizer. The create endpoints call the controller's tenant-administrator check. The Angular organization route is directly routable and included in general navigation; the component's canManage predicate hides write forms for non-administrators but loadAll() still fetches the registers.
+
+**Current behavior:** an active tenant member with the normal tenant-context API route can read the tenant's full organization registers; only OWNER/ADMIN can create the current organization masters. This is not evidence of cross-tenant access or an RLS bypass. It is a tenant-wide, read-only visibility policy that is currently implicit in the implementation rather than represented as an approved read capability/visibility matrix.
+
+**Sensitive data context:** organization unit hierarchy, job titles/families/grades, manager assignments and reporting relationships can be business-sensitive. Future employee/incumbent, acting appointment and HR-linked views are more sensitive and must not inherit the same read access automatically.
+
+**Source**
+- backend/routes/domain-api.php: enterprise organization GET routes share authenticated tenant context and do not add a distinct organization-read capability middleware.
+- backend/app/Http/Controllers/Enterprise/EnterpriseOrganizationController.php: units(), positions(), managerAssignments() and reportingRelations() rely on tenant context; storeUnit(), storePosition(), assignUnitManager() and storeReportingRelation() call assertTenantAdministrator().
+- backend/app/Services/Authorization/DomainCapabilityAuthorizer.php: no explicit organization-structure read capability exists in the role matrix.
+- frontend/src/app/app.component.ts and app.routes.ts: organization structure navigation/route is available without a separate organization-view guard.
+- frontend/src/app/features/enterprise/organization-structure.component.ts: canManage hides write operations, while tenant initialization still calls the list endpoints for read display.
+- backend/database/migrations/2026_11_27_000035_create_organization_structure_masters.php: forced tenant RLS prevents cross-tenant rows but does not express a same-tenant role/field visibility policy.
+
+### 56.2 Required implementation under PROD-WP03-005
+
+- [ ] Reconcile the approved GAR-ENT and enterprise identity requirements to an explicit organization visibility matrix for MEMBER, line manager, HR, tenant OWNER/ADMIN and platform support.
+- [ ] Separate organization directory read from organization administration writes; do not assume tenant setup authority is the correct role for every read, and do not assume all tenant members may read all structures.
+- [ ] Identify permitted fields and scope by actor: unit names/hierarchy, position title/family/grade, manager history, solid-line/functional relationships, entity/site/department boundaries and any restricted organizational metadata.
+- [ ] If ordinary employees are intended to see a directory, implement that as an explicit read capability with least-data projection and any site/department/manager scope; keep employee personal/contract/payroll data out of this endpoint.
+- [ ] If a register or field is restricted, apply a fail-closed read capability and query-level filtering to every list/detail endpoint, not only Angular navigation or button visibility.
+- [ ] Reuse the canonical capability/scope resolver and avoid a competing local role system; make same-tenant scoped-member behavior explicit.
+- [ ] Add API/RLS tests for each approved role/scope combination, list totals and search leakage, direct URL/API access, platform support purpose, tenant switch and restricted-field omission.
+- [ ] Add Angular route/navigation/empty/denied states that mirror the server authorization result; the API remains authoritative.
+- [ ] Confirm the final access policy against the existing privacy, HR and data-retention requirements before exposing future person/incumbent and acting appointment fields.
+
+**Acceptance boundary:** retain current tenant RLS and the existing administrator-only write boundary. Do not broaden reads or break legitimate employee directory behavior until the approved requirement-to-actor matrix is reconciled. The access policy and negative tests must be complete before WP-03 is accepted.
