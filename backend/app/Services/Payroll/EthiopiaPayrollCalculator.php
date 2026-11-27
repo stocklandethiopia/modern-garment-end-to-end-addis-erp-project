@@ -78,7 +78,7 @@ final class EthiopiaPayrollCalculator
             || (string) $decision['reviewer_user_id'] === $preparedBy
             || trim((string) ($decision['reviewer_registration_reference'] ?? '')) === ''
             || trim((string) ($decision['opinion_document_reference'] ?? '')) === ''
-            || trim((string) ($decision['opinion_document_storage_reference'] ?? '')) === ''
+            || ! $this->isUuid((string) ($decision['opinion_document_storage_reference'] ?? ''))
             || ! preg_match('/^[a-f0-9]{64}$/Di', (string) ($decision['opinion_sha256'] ?? ''))
             || empty($decision['independence_confirmed'])
             || ! $this->isTimestamp((string) ($decision['reviewed_at'] ?? ''))
@@ -228,7 +228,7 @@ final class EthiopiaPayrollCalculator
             $this->assertIndependentDecision($coverage, $preparedBy, 'pension_coverage');
             if (! preg_match('/^[a-f0-9]{64}$/Di', (string) ($coverage['source_sha256'] ?? ''))
                 || ! $this->isOfficialEthiopianHost(strtolower((string) parse_url((string) ($coverage['source_url'] ?? ''), PHP_URL_HOST)))
-                || trim((string) ($coverage['source_document_reference'] ?? '')) === ''
+                || ! $this->isUuid((string) ($coverage['source_document_reference'] ?? ''))
                 || trim((string) ($coverage['article_reference'] ?? '')) === ''
             ) {
                 throw new InvalidArgumentException('The pension coverage decision requires the official source URL, article and SHA-256.');
@@ -360,7 +360,7 @@ final class EthiopiaPayrollCalculator
 
         if (trim((string) ($record['source_title'] ?? '')) === ''
             || trim((string) ($record['source_authority'] ?? '')) === ''
-            || trim((string) ($record['source_document_reference'] ?? '')) === ''
+            || ! $this->isUuid((string) ($record['source_document_reference'] ?? ''))
             || ! $this->isDate((string) ($record['publication_date'] ?? ''))
         ) {
             throw new InvalidArgumentException('The statutory source record is missing its title, authority or publication date.');
@@ -407,7 +407,7 @@ final class EthiopiaPayrollCalculator
             || trim((string) ($evidence['legal_basis'] ?? '')) === ''
             || trim((string) ($evidence['article_reference'] ?? '')) === ''
             || trim((string) ($evidence['evidence_reference'] ?? '')) === ''
-            || trim((string) ($evidence['document_storage_reference'] ?? '')) === ''
+            || ! $this->isUuid((string) ($evidence['document_storage_reference'] ?? ''))
         ) {
             throw new InvalidArgumentException("{$field} must identify the legal basis, article and evidence.");
         }
@@ -435,7 +435,7 @@ final class EthiopiaPayrollCalculator
             || trim((string) ($rationale['contract_reference'] ?? '')) === ''
             || trim((string) ($rationale['legal_basis'] ?? '')) === ''
             || trim((string) ($rationale['evidence_reference'] ?? '')) === ''
-            || trim((string) ($rationale['document_storage_reference'] ?? '')) === ''
+            || ! $this->isUuid((string) ($rationale['document_storage_reference'] ?? ''))
         ) {
             throw new InvalidArgumentException('A non-standard pensionable salary requires a reason, contract reference, legal basis and supporting evidence.');
         }
@@ -577,7 +577,7 @@ final class EthiopiaPayrollCalculator
                 || trim((string) ($source['source_authority'] ?? '')) === ''
                 || trim((string) ($source['source_title'] ?? '')) === ''
                 || trim((string) ($source['article_references'] ?? '')) === ''
-                || trim((string) ($source['document_storage_reference'] ?? '')) === ''
+                || ! $this->isUuid((string) ($source['document_storage_reference'] ?? ''))
                 || trim((string) ($source['reviewer_qualification'] ?? '')) === ''
                 || trim((string) ($source['reviewer_registration_reference'] ?? '')) === ''
                 || ! $this->isDate((string) ($source['publication_date'] ?? ''))
@@ -632,6 +632,11 @@ final class EthiopiaPayrollCalculator
     private function isOfficialEthiopianHost(string $host): bool
     {
         return $host === 'gov.et' || str_ends_with($host, '.gov.et');
+    }
+
+    private function isUuid(string $value): bool
+    {
+        return (bool) preg_match('/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/Di', $value);
     }
 
     private function isDate(string $value): bool
