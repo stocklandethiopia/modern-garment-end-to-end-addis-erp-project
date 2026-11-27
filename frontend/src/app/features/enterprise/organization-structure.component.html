@@ -82,7 +82,7 @@
           <label for="unit-parent">Parent unit</label>
           <select id="unit-parent" formControlName="parent_id">
             <option value="">No parent / top level</option>
-            @for (unit of units(); track unit.id) {
+            @for (unit of parentUnitOptions(); track unit.id) {
               <option [value]="unit.id">{{ unit.unit_name }} · {{ unit.unit_code }}</option>
             }
           </select>
@@ -126,6 +126,12 @@
 
   @if (loading()) {
     <div class="loading-state" role="status">Loading organization structure…</div>
+  } @else if (units().length === 0 && unitSearch.value.trim() !== '') {
+    <div class="empty-state">
+      <strong>No organizational units match this search</strong>
+      <p>Clear the search to return to the current tenant register.</p>
+      <button type="button" class="secondary-button" (click)="unitSearch.setValue(''); searchUnits()">Clear search</button>
+    </div>
   } @else if (units().length === 0) {
     <div class="empty-state">
       <strong>No organizational units configured</strong>
@@ -267,7 +273,9 @@
             </form>
           }
 
-          @if (positionsInSelectedUnit().length === 0) {
+          @if (positionsInSelectedUnit().length === 0 && positionSearch.value.trim() !== '') {
+            <div class="empty-state compact"><strong>No positions match this search</strong><button type="button" class="text-button" (click)="positionSearch.setValue(''); searchPositions()">Clear search</button></div>
+          } @else if (positionsInSelectedUnit().length === 0) {
             <div class="empty-state compact"><strong>No positions registered</strong><p>Add job slots for the selected unit. Appointments and incumbents are handled by the authoritative People & Payroll model.</p></div>
           } @else {
             <div class="table-wrap">
@@ -275,7 +283,7 @@
                 <caption class="sr-only">Job positions in the selected organizational unit</caption>
                 <thead><tr><th>Position</th><th>Class</th><th>Grade</th><th>Effective</th></tr></thead>
                 <tbody>
-                  @for (position of positionsInSelectedUnit(); track position.id) {
+                  @for (position of managerPositionChoices(); track position.id) {
                     <tr>
                       <td><strong>{{ position.title }}</strong><small>{{ position.position_code }} · {{ position.job_family || 'No job family' }}</small></td>
                       <td>{{ position.position_class }}</td>
@@ -302,7 +310,7 @@
               <h4>Unit manager position</h4>
               <span>Position slot assigned to lead this unit</span>
             </div>
-            @if (canManage() && positionsInSelectedUnit().length > 0) {
+            @if (canManage() && managerPositionChoices().length > 0) {
               <button type="button" class="text-button" (click)="showManagerForm.set(!showManagerForm())">
                 {{ showManagerForm() ? 'Close' : 'Assign manager position' }}
               </button>
@@ -336,6 +344,8 @@
 
           @if (loadingManagers()) {
             <div class="loading-state" role="status">Loading manager-position assignments…</div>
+          } @else if (managerAssignments().length === 0 && managerSearch.value.trim() !== '') {
+            <p class="subtle-empty">No manager assignments match this search.</p>
           } @else if (managerAssignments().length === 0) {
             <p class="subtle-empty">No unit manager position assigned for this unit.</p>
           } @else {
@@ -375,7 +385,7 @@
         <h2 id="reporting-heading">Position reporting relationships</h2>
         <p>Solid-line and functional reporting are recorded separately and by effective period.</p>
       </div>
-      @if (canManage() && reportingPositionChoices().length > 1) {
+      @if (canManage() && reportingPositionOptions().length > 1) {
         <button type="button" class="primary-button" (click)="showReportingForm.set(!showReportingForm())">
           {{ showReportingForm() ? 'Close form' : 'Add reporting relationship' }}
         </button>
@@ -395,7 +405,7 @@
             <label for="report-subject">Subject position</label>
             <select id="report-subject" formControlName="subject_position_id">
               <option value="">Choose position</option>
-              @for (position of reportingPositionChoices(); track position.id) {
+              @for (position of reportingPositionOptions(); track position.id) {
                 <option [value]="position.id">{{ position.title }} · {{ position.position_code }} · {{ unitName(position.org_unit_id) }}</option>
               }
             </select>
@@ -434,7 +444,9 @@
       <input id="reporting-search" type="search" [formControl]="reportingSearch" placeholder="Search subject or manager position">
       <button type="button" class="secondary-button" (click)="searchReporting()">Search</button>
     </div>
-    @if (reportingRelations().length === 0) {
+    @if (reportingRelations().length === 0 && reportingSearch.value.trim() !== '') {
+      <div class="empty-state compact"><strong>No reporting relationships match this search</strong><button type="button" class="text-button" (click)="reportingSearch.setValue(''); searchReporting()">Clear search</button></div>
+    } @else if (reportingRelations().length === 0) {
       <div class="empty-state compact"><strong>No position reporting relationships recorded</strong><p>Configure solid-line and functional reporting only after the relevant position slots exist.</p></div>
     } @else {
       <div class="table-wrap">
