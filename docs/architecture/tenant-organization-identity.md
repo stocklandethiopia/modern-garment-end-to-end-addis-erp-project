@@ -84,7 +84,7 @@ Conventions: PostgreSQL `uuid` primary keys; UTC `timestamptz`; monetary values 
 | legal_entities | tenant_id, registration_number, legal_name, legal_form, tax_id, country, fiscal_calendar_id, base_currency, status | Unique registration number per jurisdiction/tenant; legal entity scoped |
 | entity_identifiers | tenant_id, legal_entity_id, identifier_type, identifier_value, issuer, valid_from/to | Unique entity/type/value; encrypted or restricted where sensitive |
 | business_units | tenant_id, legal_entity_id nullable, code, name, parent_id, responsibility_type | Parent composite FK; does not create legal identity |
-| org_units | tenant_id, code, name, org_type, parent_id, owner_user_id, valid_from/to | No cycles; effective-dated tree; owner membership validation |
+| org_units | tenant_id, code, name, org_type, parent_id, manager_position_id, valid_from/to | No cycles; effective-dated tree; manager position must belong to the applicable tenant/org scope |
 | business_sites | tenant_id, legal_entity_id, code, site_type, address, geo, timezone, active_from/to | Address must be versioned; never infer inventory capability |
 | operational_nodes | tenant_id, legal_entity_id, site_id, node_type, code, name, capabilities_json, status | Node type enum; active site relationship |
 | node_relationships | tenant_id, from_node_id, to_node_id, relation_type, valid_from/to | No invalid cycles; typed directed relation |
@@ -145,6 +145,16 @@ These are downstream context-owned tables; WP-03 establishes their tenant/entity
 | WP-13 | charts_of_accounts, fiscal_periods, ledgers, journals/lines, AP/AR invoices, allocations, payment proposals, bank statements, tax transactions/returns, cost_layers, WIP valuations, FX exposure, reconciliations |
 | WP-14 | people, employment, contracts, assignments, time events, rosters, leave, payroll runs, payslips, statutory rule applications, pension contributions, benefits, training, grievances |
 | WP-15 | KPI definitions, semantic models, forecasts, recommendations, model versions/evaluations, integration events, reconciliation queues, alerts, SLAs, control-tower cases |
+
+## 5.2 Company organization and delegated authority
+
+The company organization chart and approval authority are separate from tenant administration and login identity. Use effective-dated organizational units, job positions, position reporting relations, person/employee records, position assignments and resource-scoped domain roles. The organization chart is built from positions and incumbent assignments, not hard-coded user IDs.
+
+The earlier `org_units.owner_user_id` sketch is superseded by `manager_position_id`. A position may be vacant; an incumbent may change; acting assignments and functional/matrix reporting must be explicit and time-bounded. A tenant membership `OWNER` role is not a company job title or automatic transaction approver.
+
+Purchase orders and other controlled transactions must use a versioned Delegation of Authority (DoA) policy. The policy resolves the authorized incumbent/delegate from the applicable legal entity, department/site, cost centre, transaction type, amount/currency, budget state, risk and effective date. It enforces maker-checker, incompatible-duty restrictions, immutable approval evidence and fail-closed behavior. There is no generic Owner-as-approver rule or universal hard-coded PO threshold.
+
+The reference hierarchy, head-office and factory/store/DC structures, PO-to-payment controls, Ethiopia legal-form considerations, target entities and acceptance tests are specified in [Enterprise Organogram and Delegated Authority Framework](../organization/enterprise-organogram-and-delegated-authority.md). This is the authoritative cross-domain business-organization design for WP-03 and approval controls consumed by WP-04–WP-16.
 
 ## 6. Tenant enforcement model
 
