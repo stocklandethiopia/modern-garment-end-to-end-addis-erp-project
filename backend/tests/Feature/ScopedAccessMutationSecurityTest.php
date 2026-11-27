@@ -119,18 +119,37 @@ class ScopedAccessMutationSecurityTest extends TestCase
             "SELECT has_table_privilege('app_runtime', 'public.tenant_access_scopes', 'SELECT')",
         ));
 
+        $control = DB::connection('pgsql_control');
         foreach ([
             'public.set_tenant_member_scope_mode(uuid,text,text)',
             'public.grant_tenant_access_scope(uuid,text,uuid,text,text,date,date,text)',
             'public.revoke_tenant_access_scope(uuid,text)',
         ] as $function) {
-            $this->assertTrue(
+            $this->assertFalse(
                 (bool) $runtime->scalar(
                     "SELECT has_function_privilege('app_runtime', ?, 'EXECUTE')",
                     [$function],
                 ),
-                "app_runtime must have EXECUTE only on the intended mutation API {$function}.",
+                "app_runtime must not execute privileged scope API {$function}.",
             );
+            $this->assertTrue(
+                (bool) $control->scalar(
+                    "SELECT has_function_privilege('app_control', ?, 'EXECUTE')",
+                    [$function],
+                ),
+                "app_control must execute the intended scope API {$function}.",
+            );
+        }
+
+        foreach (['SELECT', 'INSERT', 'UPDATE', 'DELETE'] as $privilege) {
+            $this->assertFalse((bool) $control->scalar(
+                "SELECT has_table_privilege('app_control', 'public.tenant_access_scope_modes', ?)",
+                [$privilege],
+            ));
+            $this->assertFalse((bool) $control->scalar(
+                "SELECT has_table_privilege('app_control', 'public.tenant_access_scopes', ?)",
+                [$privilege],
+            ));
         }
     }
 
@@ -229,7 +248,7 @@ class ScopedAccessMutationSecurityTest extends TestCase
         $migration->down();
     }
 
-    public function test_non_admin_cannot_call_the_security_definer_scope_mode_function_directly(): void
+    public function test_runtime_cannot_spoof_an_admin_guc_and_execute_the_scope_mutation_function(): void
     {
         $runtime = DB::connection('pgsql');
         $runtime->beginTransaction();
@@ -241,7 +260,7 @@ class ScopedAccessMutationSecurityTest extends TestCase
             );
             $runtime->select(
                 "SELECT set_config('app.current_user_id', ?, true)",
-                [$this->memberId],
+                [$this->ownerId],
             );
 
             try {
@@ -253,7 +272,7 @@ class ScopedAccessMutationSecurityTest extends TestCase
                         'Attempt to bypass the tenant administrator scope control.',
                     ],
                 );
-                $this->fail('A regular member must not mutate their scope mode through the database API.');
+                $this->fail('The ordinary app_runtime role must not invoke the privileged mutation API, even with a forged administrator GUC.');
             } catch (QueryException $exception) {
                 $this->assertSame('42501', $exception->errorInfo[0] ?? null);
             }
