@@ -115,9 +115,19 @@ class DocumentIntegrationService
         $diskName = $parts[0] ?? '';
         $objectPath = $parts[1] ?? '';
         $configuredDisks = config('filesystems.disks', []);
+        $privateDisk = (string) config('filesystems.private_documents_disk', 's3');
+        $tenantDocumentPrefix = 'tenants/'.$tenantId.'/documents/';
 
-        if ($diskName === '' || $objectPath === '' || ! is_array($configuredDisks) || ! array_key_exists($diskName, $configuredDisks)) {
-            throw ValidationException::withMessages(['document_id' => 'The source document does not reference a configured private storage disk.']);
+        if ($diskName === ''
+            || $diskName !== $privateDisk
+            || $objectPath === ''
+            || ! str_starts_with($objectPath, $tenantDocumentPrefix)
+            || str_contains($objectPath, '/../')
+            || str_ends_with($objectPath, '/..')
+            || ! is_array($configuredDisks)
+            || ! array_key_exists($diskName, $configuredDisks)
+        ) {
+            throw ValidationException::withMessages(['document_id' => 'The legal source must be stored on the configured private document disk under this tenant document namespace.']);
         }
 
         $stream = Storage::disk($diskName)->readStream($objectPath);
