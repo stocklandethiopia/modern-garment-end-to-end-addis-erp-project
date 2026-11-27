@@ -9,7 +9,12 @@ on:
       - 'frontend/**'
       - 'work-packages/**'
       - 'docs/**'
-      - '.github/workflows/wp01-16-completion-verification.yml'
+      - 'scripts/**'
+      - 'docker/**'
+      - 'docker-compose.yml'
+      - 'Makefile'
+      - '.nvmrc'
+      - '.github/workflows/**'
   pull_request:
     branches:
       - delivery/autonomous-wp-01-16
@@ -18,8 +23,22 @@ on:
       - 'frontend/**'
       - 'work-packages/**'
       - 'docs/**'
-      - '.github/workflows/wp01-16-completion-verification.yml'
+      - 'scripts/**'
+      - 'docker/**'
+      - 'docker-compose.yml'
+      - 'Makefile'
+      - '.nvmrc'
+      - '.github/workflows/**'
   workflow_dispatch:
+    inputs:
+      execution_runner:
+        description: "Choose GitHub-hosted by default, or the dedicated ERP Linux runner for a trusted manual verification."
+        type: choice
+        required: true
+        default: github-hosted
+        options:
+          - github-hosted
+          - self-hosted-linux-x64
 
 permissions:
   contents: read
@@ -31,7 +50,7 @@ concurrency:
 jobs:
   backend-postgresql:
     name: Laravel 13 / PHP 8.5 / PostgreSQL 18 / Redis 8.2
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.execution_runner == 'self-hosted-linux-x64' && fromJSON('["self-hosted","linux","x64","erp-ci"]') || 'ubuntu-latest' }}
     services:
       postgres:
         image: postgres:18
@@ -183,7 +202,7 @@ jobs:
 
   frontend-angular:
     name: Angular 22 / Node 26 build and tests
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.execution_runner == 'self-hosted-linux-x64' && fromJSON('["self-hosted","linux","x64","erp-ci"]') || 'ubuntu-latest' }}
     defaults:
       run:
         working-directory: frontend
@@ -212,7 +231,7 @@ jobs:
 
   wp01-source-package:
     name: WP-01 r3 source integrity and tests
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.execution_runner == 'self-hosted-linux-x64' && fromJSON('["self-hosted","linux","x64","erp-ci"]') || 'ubuntu-latest' }}
     steps:
       - name: Checkout exact commit
         uses: actions/checkout@v4
@@ -240,7 +259,7 @@ jobs:
   combined-release-candidate:
     name: Assemble combined ERP repository candidate
     needs: [backend-postgresql, frontend-angular, wp01-source-package]
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.execution_runner == 'self-hosted-linux-x64' && fromJSON('["self-hosted","linux","x64","erp-ci"]') || 'ubuntu-latest' }}
     if: success()
     steps:
       - name: Checkout exact verified commit
