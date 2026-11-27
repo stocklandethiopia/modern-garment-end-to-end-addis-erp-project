@@ -608,10 +608,21 @@ class BrandRangeWorkflowTest extends TestCase
     {
         $range = $this->createDraftRangePlanForAcceptance();
 
+        $unknownUserId = (string) Str::uuid();
+
         $this->withHeaders($this->tenantHeader())
-            ->putJson('/api/v1/enterprise/members/'.Str::uuid().'/access-scope-mode', [
+            ->putJson('/api/v1/enterprise/members/'.$unknownUserId.'/access-scope-mode', [
                 'scope_mode' => 'SCOPED',
                 'reason' => 'An unrelated non-member must not receive a tenant access profile.',
+            ])
+            ->assertNotFound();
+
+        $this->withHeaders($this->tenantHeader())
+            ->postJson('/api/v1/enterprise/members/'.$unknownUserId.'/access-scopes', [
+                'scope_type' => 'MARKET',
+                'scope_code' => 'ETHIOPIA',
+                'permission_code' => 'READ',
+                'grant_reason' => 'An unrelated non-member must not receive a tenant access grant.',
             ])
             ->assertNotFound();
 
