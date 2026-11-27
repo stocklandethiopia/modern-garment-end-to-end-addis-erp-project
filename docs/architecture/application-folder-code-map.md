@@ -389,3 +389,20 @@ Backend and frontend domain boundaries must match. A new Laravel controller/serv
 - `docs/security/platform-administration-bootstrap.md`: controlled two-person operator-grant provisioning and lifecycle/entitlement security boundary.
 - Route registration: `backend/routes/domain-api.php`; `/api/v1/platform/*` uses global identity context, while `/api/v1/tenant/entitlements` uses tenant context.
 - Integrated status: platform lifecycle/entitlement API and migration 000032 are exact-head CI verified and merged in PR #9. The current continuation branch adds immutable auditing for authorized platform tenant-register reads; its exact-head CI is pending. Controlled platform operator appointment, full feature-gate enforcement, retention/legal hold/export/recovery and platform Angular UI remain open.
+
+
+---
+
+## 2026-11-28 source-intake and work-package map update
+
+**Reconciliation branch:** `work/source-intake-and-wp-mapping-2026-11-28`  
+**Canonical baseline:** `delivery/autonomous-wp-01-16` at `dbdf112272f7f1e0d1ccf933e45061a79cc5e59b`  
+**Intake/map commit:** `8a48b08f9f0dffc4d375ef94d322be12d243a13c`
+
+The source-intake folder previously collected on the `feature/agent-native-erp-foundation-2026-11-25` branch has been preserved under `source-intake/stockland-garment-erp-local-v0.3.0/` on the reconciliation branch (124 exact Git blobs). The original canonical app code was not replaced.
+
+The current WP index and detailed source ownership maps are at `work-packages/README.md` and `work-packages/wp-00-*/SOURCE_MAP.md` through `work-packages/wp-16-*/SOURCE_MAP.md`. They distinguish canonical code already in `backend/` and `frontend/`, source-intake/reference artifacts, unmerged candidate branches, and remaining implementation/verification. These maps are evidence indexes, not a parallel runtime source tree.
+
+See `docs/architecture/source-to-application-path-index-2026-11-28.md` for current domain-to-code ownership and `docs/audit/source-intake-to-wp-disposition-register-2026-11-28.md` for source provenance, runtime compatibility, candidate PR status, migration collisions and database/Memory boundaries.
+
+**Architecture guard:** the collected v0.3.0 application is a Node.js/SQLite reference runtime. The approved canonical SaaS remains Angular 22 + Laravel 13/PHP 8.5 + PostgreSQL 18 + Redis 8.2. Port verified Stockland business behavior into canonical bounded contexts; do not replace the runtime or copy the SQLite schema wholesale. The six-file X POS sample remains a limited, MIT-licensed reference, not a completed POS module.
