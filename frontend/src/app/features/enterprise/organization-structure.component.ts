@@ -35,6 +35,9 @@ export class OrganizationStructureComponent {
   readonly legalEntities = signal<LegalEntity[]>([]);
   readonly sites = signal<BusinessSite[]>([]);
   readonly selectedUnitId = signal<string | null>(null);
+  readonly selectedUnitRecord = signal<OrganizationUnit | null>(null);
+  readonly knownUnits = signal<OrganizationUnit[]>([]);
+  readonly knownPositions = signal<JobPosition[]>([]);
   readonly unitPage = signal<ApiPage<OrganizationUnit> | null>(null);
   readonly positionPage = signal<ApiPage<JobPosition> | null>(null);
   readonly managerPage = signal<ApiPage<OrganizationUnitManagerAssignment> | null>(null);
@@ -74,8 +77,27 @@ export class OrganizationStructureComponent {
   });
 
   readonly selectedUnit = computed(
-    () => this.units().find((unit) => unit.id === this.selectedUnitId()) ?? null,
+    () => this.units().find((unit) => unit.id === this.selectedUnitId())
+      ?? this.selectedUnitRecord(),
   );
+
+  readonly parentUnitOptions = computed(() => {
+    const byId = new Map<string, OrganizationUnit>();
+    for (const unit of [...this.knownUnits(), ...this.units()]) byId.set(unit.id, unit);
+    return [...byId.values()].sort((a, b) => a.unit_code.localeCompare(b.unit_code));
+  });
+
+  readonly managerPositionChoices = computed(() => this.knownPositions()
+    .filter((position) => position.org_unit_id === this.selectedUnitId())
+    .sort((a, b) => a.position_code.localeCompare(b.position_code)));
+
+  readonly reportingPositionOptions = computed(() => {
+    const byId = new Map<string, JobPosition>();
+    for (const position of [...this.knownPositions(), ...this.reportingPositionChoices()]) {
+      byId.set(position.id, position);
+    }
+    return [...byId.values()].sort((a, b) => a.position_code.localeCompare(b.position_code));
+  });
 
   readonly childUnits = computed(
     () => this.units().filter((unit) => unit.parent_id === this.selectedUnitId()),
@@ -97,6 +119,9 @@ export class OrganizationStructureComponent {
     this.legalEntities.set([]);
     this.sites.set([]);
     this.selectedUnitId.set(null);
+    this.selectedUnitRecord.set(null);
+    this.knownUnits.set([]);
+    this.knownPositions.set([]);
     this.unitPage.set(null);
     this.positionPage.set(null);
     this.managerPage.set(null);
@@ -202,12 +227,24 @@ export class OrganizationStructureComponent {
         if (request !== this.unitListSequence || !this.isCurrentTenant(tenantId, tenantSequence)) return;
         this.unitPage.set(response);
         this.units.set(response.data);
+        this.knownUnits.update((current) => {
+          const byId = new Map(current.map((unit) => [unit.id, unit]));
+          for (const unit of response.data) byId.set(unit.id, unit);
+          return [...byId.values()];
+        });
+        const currentSelected = this.selectedUnitRecord();
+        const query = this.unitSearch.value.trim().toLocaleLowerCase();
+        const stillMatches = currentSelected === null || query === ''
+          || currentSelected.unit_code.toLocaleLowerCase().includes(query)
+          || currentSelected.unit_name.toLocaleLowerCase().includes(query);
         const selected = response.data.find((unit) => unit.id === this.selectedUnitId())
-          ?? (this.selectedUnitId() === null ? response.data[0] ?? null : null);
+          ?? (this.selectedUnitId() === null || !stillMatches ? response.data[0] ?? null : currentSelected);
         if (selected) {
           if (selected.id !== this.selectedUnitId()) this.selectUnit(selected.id);
+          else this.selectedUnitRecord.set(selected);
         } else {
           this.selectedUnitId.set(null);
+          this.selectedUnitRecord.set(null);
           this.managerAssignments.set([]);
           this.managerPage.set(null);
           this.positions.set([]);
@@ -237,6 +274,11 @@ export class OrganizationStructureComponent {
           || this.selectedUnitId() !== unitId) return;
         this.positionPage.set(response);
         this.positions.set(response.data);
+        this.knownPositions.update((current) => {
+          const byId = new Map(current.map((position) => [position.id, position]));
+          for (const position of response.data) byId.set(position.id, position);
+          return [...byId.values()];
+        });
       },
       error: () => {
         if (request !== this.positionListSequence || !this.isCurrentTenant(tenantId, tenantSequence)) return;
@@ -297,6 +339,11 @@ export class OrganizationStructureComponent {
       next: (response) => {
         if (request !== this.reportingPositionSequence || !this.isCurrentTenant(tenantId, tenantSequence)) return;
         this.reportingPositionChoices.set(response.data);
+        this.knownPositions.update((current) => {
+          const byId = new Map(current.map((position) => [position.id, position]));
+          for (const position of response.data) byId.set(position.id, position);
+          return [...byId.values()];
+        });
       },
       error: () => {
         if (request !== this.reportingPositionSequence || !this.isCurrentTenant(tenantId, tenantSequence)) return;
@@ -323,6 +370,9 @@ export class OrganizationStructureComponent {
 
   selectUnit(unitId: string): void {
     this.selectedUnitId.set(unitId);
+    this.selectedUnitRecord.set(this.units().find((unit) => unit.id === unitId)
+      ?? this.knownUnits().find((unit) => unit.id === unitId)
+      ?? null);
     this.savingPosition.set(false);
     this.savingManager.set(false);
     this.managerAssignments.set([]);
@@ -436,6 +486,7 @@ export class OrganizationStructureComponent {
         this.showUnitForm.set(false);
         this.unitSearch.setValue(data.unit_code);
         this.selectedUnitId.set(null);
+        this.selectedUnitRecord.set(null);
         this.unitForm.reset({
           parent_id: '',
           legal_entity_id: '',
@@ -589,7 +640,8 @@ export class OrganizationStructureComponent {
   }
 
   unitName(unitId: string): string {
-    const unit = this.units().find((item) => item.id === unitId);
+    const unit = this.units().find((item) => item.id === unitId)
+      ?? this.knownUnits().find((item) => item.id === unitId);
     return unit ? unit.unit_name + ' (' + unit.unit_code + ')' : 'Unknown unit';
   }
 
