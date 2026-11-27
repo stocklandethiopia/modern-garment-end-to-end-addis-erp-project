@@ -40,6 +40,21 @@ Before doing any work in this repository, read:
 - Remove only files/workflows proven obsolete by trigger/consumer inspection. Preserve accepted evidence, checksummed source inputs and historical branches until their disposition has been verified and recorded.
 - Keep `docs/architecture/application-folder-code-map.md` current whenever application files are added, moved or removed. Exact paths, route registration and tests must be updated in the same branch.
 
+## Mandatory PR, review and workflow-finding response
+
+This rule applies to **every pull request, every review cycle, every inline thread (including resolved threads), every conversation comment, every requested change, every GitHub Actions workflow, every CI/check run, every security/dependency finding and every WP branch**.
+
+- Inspect the exact current PR head: review submissions, inline threads, conversation comments, requested changes, check runs, workflow logs, artifacts and changed source. Trace each finding to the actual source, tests, configuration, requirement and downstream dependencies; do not rely only on a summary or bot comment.
+- Maintain a finding register with a unique reference, severity, affected WP/requirement, source path/line, cause, consequence, required correction, owning branch and disposition.
+- **Every actionable in-scope finding requires an engineering response, not report-only closure.** Reproduce or trace it; fix, improve or build the affected source/capability; add or strengthen regression, integration, security and acceptance tests; update dependent migrations, CI role/bootstrap, installer/deployment configuration, API contracts, source maps and operator documentation; then rerun applicable checks.
+- Work on the owning PR's dedicated branch where possible. Keep unrelated work separate. Do not dismiss, suppress, downgrade, close or resolve a finding merely because a comment was posted or code changed. Resolve a thread only after the correction and its required verification evidence pass; otherwise explain the exact outstanding check/dependency in the thread.
+- Documentation-only disposition is allowed only when evidence shows no source/build/test change is required or a genuine external, human-only or legal/professional decision is required. Explain why, preserve evidence, continue independent safe work and state the precise remaining action.
+- For a failed workflow, inspect job and step execution. Distinguish runner/permission/quota/policy allocation failure (no code step ran) from actual build, test, lint, migration, security or artifact failure. Repair workflow/configuration/source defects where possible and retry exact-head checks. A workflow with no execution of the relevant job is NOT RUN, not PASS.
+- Re-run applicable backend, database/migration/RLS, frontend, integration, source-integrity, security, artifact and combined WP verification gates against the **exact final commit SHA**. Record run IDs, job/step outcomes, test/assertion counts and artifact/checksum identifiers where available.
+- Commit review corrections only to the appropriate dedicated work branch. Do not bypass WP-00–WP-16 order, canonical integration branch, technical gates or production controls. Merge only after required exact-SHA gates pass; a verified increment does not imply full WP completion or production approval.
+- Post a factual GitHub response for each finding with the action, files, commits, checks and current disposition. Then report the same finding-by-finding outcome in the project conversation with exact SHAs, run IDs, PASS/FAIL/NOT RUN/BLOCKED status and remaining dependencies.
+- Continue until no actionable in-scope finding remains unaddressed. Where an external permission, runner, legal/professional approval or human-only production action genuinely prevents completion, record the evidence, precise blocker and safe next action; do not turn a temporary constraint into an enduring ERP business rule or product-scope reduction.
+
 ## Required handover format
 
 For each work package report:
