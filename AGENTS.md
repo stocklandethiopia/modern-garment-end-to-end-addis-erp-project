@@ -40,6 +40,21 @@ Before doing any work in this repository, read:
 - Remove only files/workflows proven obsolete by trigger/consumer inspection. Preserve accepted evidence, checksummed source inputs and historical branches until their disposition has been verified and recorded.
 - Keep `docs/architecture/application-folder-code-map.md` current whenever application files are added, moved or removed. Exact paths, route registration and tests must be updated in the same branch.
 
+## Mandatory PR, review and workflow-finding response
+
+This rule applies to **every pull request, every review cycle, every GitHub Actions workflow, every CI/check run, every security or dependency finding, and every project work-package branch**. It is a standing requirement for all future project work.
+
+- Inspect all PR review submissions, inline review threads (including resolved threads), conversation comments, requested changes, check runs, workflow logs, artifacts and changed source at the exact current head SHA. Review the relevant source and tests; do not rely only on a PR title, summary, bot comment or a previous report.
+- Create a finding register with a unique reference, severity, affected WP/requirement, source path and line, cause, consequence, required correction, responsible branch and current disposition.
+- **Every actionable finding requires an engineering response, not report-only closure.** Reproduce or trace it, then fix it, improve the implementation, build the missing capability, strengthen regression/security/acceptance tests, update affected documentation and workflow/configuration, and re-run the relevant checks. Include indirect dependencies such as CI role/bootstrap setup, installer, migration ordering, deployment configuration, source maps, API contracts and operator guidance.
+- Prefer completing the correction on the existing owning PR branch. Keep unrelated work separate. Do not silently close, dismiss, suppress, downgrade, ignore, or mark a finding resolved merely because a comment was posted or code was changed. Resolve the review thread only after the fix is present and the appropriate evidence has passed; otherwise reply with the exact outstanding verification or dependency.
+- A documentation-only disposition is allowed only when evidence shows no source/build/test change is required or a genuine external/human/legal decision is required. Explain why, preserve the source of the decision, continue all independent safe implementation, and identify the exact action that remains.
+- For CI/workflow failures, inspect job and step execution. Distinguish runner/permission/quota/policy allocation failures (no code steps ran) from actual build, test, lint, migration, security or artifact failures. Repair workflow/configuration or source defects when possible; retry exact-head checks after a correction. A run that never executes a relevant job is NOT RUN, not PASS.
+- Re-run checks against the **exact final commit SHA** of each proposed PR update. Require applicable backend, database/migration/RLS, frontend, integration, source-integrity, security and full WP verification gates. Record run IDs, job/step outcomes, test/assertion counts and artifact/checksum identities where available.
+- Commit and push review corrections only to the appropriate dedicated work branch. Do not bypass the numbered WP-00–WP-16 sequence, canonical delivery branch, code review, exact-SHA gates or production controls. Merge only after all required technical gates for that increment pass; a verified increment is not a claim of whole-package or production completion.
+- Post a factual response on the relevant GitHub PR covering each finding, action taken, files/commits, tests and current disposition. Then report the same finding-by-finding outcome in the project conversation, including exact SHAs, run IDs, PASS/FAIL/NOT RUN/BLOCKED status and remaining dependencies.
+- Continue until no actionable in-scope finding remains unaddressed. Where a correction cannot be completed because an external permission, runner, legal/professional approval or human-only production action is genuinely required, record the evidence, precise blocker and safe next action here and in the PR; do not present the blocker as an enduring product limitation or change the approved product goal.
+
 ## Required handover format
 
 For each work package report:
