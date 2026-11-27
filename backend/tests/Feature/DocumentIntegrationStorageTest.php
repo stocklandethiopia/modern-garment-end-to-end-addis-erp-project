@@ -14,6 +14,7 @@ use Tests\TestCase;
 class DocumentIntegrationStorageTest extends TestCase
 {
     private string $tenantId;
+
     private string $actorId;
 
     protected function setUp(): void
