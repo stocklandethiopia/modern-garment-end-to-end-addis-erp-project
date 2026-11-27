@@ -14,7 +14,20 @@ return new class extends Migration
         DB::statement('ALTER TABLE quality_inspections ADD COLUMN submitted_result_status varchar(24)');
 
         DB::unprepared(<<<'SQL'
-DO $$
+DO $
+BEGIN
+    IF EXISTS (
+        SELECT 1
+          FROM public.quality_inspections
+         WHERE (reviewed_by IS NULL) <> (reviewed_at IS NULL)
+    ) THEN
+        RAISE EXCEPTION 'Existing quality inspections contain unmatched reviewer identity/time metadata; reconcile the historical rows before applying this migration.';
+    END IF;
+END $;
+SQL);
+
+        DB::unprepared(<<<'SQL'
+DO $
 DECLARE
     constraint_record record;
 BEGIN
@@ -47,6 +60,7 @@ CHECK (
         'CONTAINED',
         'CANCELLED'
     )
+    AND ((reviewed_by IS NULL) = (reviewed_at IS NULL))
     AND (
         result_status NOT IN ('PASS', 'PASS_WITH_DEVIATION')
         OR (reviewed_by IS NOT NULL AND reviewed_at IS NOT NULL)
