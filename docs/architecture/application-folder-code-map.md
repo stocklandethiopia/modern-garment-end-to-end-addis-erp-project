@@ -355,6 +355,15 @@ Backend and frontend domain boundaries must match. A new Laravel controller/serv
 7. Every new endpoint requires an authorization policy, tenant/RLS tests, a documented API route, a caller/UI or an explicit reason it is system-only, and an entry in the task/traceability register.
 8. When code moves folders or responsibilities change, update this map in the same PR.
 
+## WP-03 enterprise technical design and localization source pack
+
+| Artifact | Exact path | Purpose / status |
+|---|---|---|
+| Enterprise Foundation Engineering LLD | `docs/architecture/wp03-enterprise-foundation-engineering-lld.md` | WP-03 detailed technical design supplement: bounded contexts, target schema, RLS, API/event contracts, organogram/DoA, site/licence controls, agent boundary and acceptance plan. **Design source only; no runtime implementation is implied.** |
+| Ethiopia organogram/payroll localization note | `docs/localization/wp03-ethiopia-organogram-payroll-localization-notes.md` | Source-backed legal/localization analysis for legal form/governance, branch/licence/site, PAYE/pension/labour, data protection and public procurement applicability. **Not a legal opinion; statutory activation remains blocked pending professional review.** |
+| Notion source references | Chief Architect Agent Hub, Project Governance Agreement, Garment Expert Product Goal, Garment ERP Reference Study, Agent-Native Standard and E2E Technology Blueprint | Durable product, scope, reference and architecture sources used to reconcile this LLD. See the LLD's source hierarchy. |
+| Current runtime and acceptance | `docs/architecture/tenant-organization-identity.md`; `docs/verification/WP03-implementation-acceptance-matrix.md`; `docs/work-packages/handover-register.md` | Existing design, exact current runtime source locations, requirement statuses and package handover. The organization-runtime PR #21 remains a separate draft/unmerged candidate and its tests are not run. |
+
 ## 6. Inspected repository hygiene
 
 - `.gitignore` already excludes secrets, `.env`, Composer `vendor/`, npm `node_modules/`, Angular `dist/`, coverage, Python caches, local Docker state and IDE files. Keep it.
