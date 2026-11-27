@@ -40,7 +40,8 @@
           },
           "supporting_sources": []
         }
-      }
+      },
+      "source_document_reference": null
     },
     {
       "rule_domain": "PENSION",
@@ -63,7 +64,8 @@
           "employer_rate_basis_points": null,
           "supporting_sources": []
         }
-      }
+      },
+      "source_document_reference": null
     }
   ],
   "activation": {
