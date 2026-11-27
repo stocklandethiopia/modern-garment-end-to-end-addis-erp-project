@@ -295,6 +295,53 @@ class EnterpriseOrganizationStructureTest extends TestCase
         ], 'pgsql_test_admin');
     }
 
+    public function test_unit_manager_assignment_is_effective_dated_and_position_scoped(): void
+    {
+        $this->actAs($this->ownerA, $this->tenantA);
+        $unitId = $this->createUnit('MANAGED-UNIT');
+        $managerPositionId = $this->createPosition($unitId, 'UNIT-HEAD');
+
+        $response = $this->postJson('/api/v1/enterprise/organization-units/'.$unitId.'/manager-assignments', [
+            'manager_position_id' => $managerPositionId,
+            'valid_from' => '2026-01-01',
+            'valid_to' => '2026-12-31',
+            'reason' => 'Appoint the designated head position for this unit.',
+        ])->assertCreated();
+
+        $assignmentId = $response->json('data.id');
+
+        $this->assertDatabaseHas('org_unit_manager_assignments', [
+            'tenant_id' => $this->tenantA,
+            'id' => $assignmentId,
+            'org_unit_id' => $unitId,
+            'manager_position_id' => $managerPositionId,
+        ], 'pgsql_test_admin');
+
+        $this->assertDatabaseHas('audit_events', [
+            'tenant_id' => $this->tenantA,
+            'action' => 'ORG_UNIT_MANAGER_POSITION_ASSIGNED',
+            'object_id' => $assignmentId,
+        ], 'pgsql_test_admin');
+
+        $this->assertDatabaseHas('integration_outbox_events', [
+            'tenant_id' => $this->tenantA,
+            'event_type' => 'OrganizationUnitManagerAssigned.v1',
+            'aggregate_id' => $assignmentId,
+        ], 'pgsql_test_admin');
+
+        $anotherManager = $this->createPosition($unitId, 'UNIT-HEAD-ALT');
+        $this->postJson('/api/v1/enterprise/organization-units/'.$unitId.'/manager-assignments', [
+            'manager_position_id' => $anotherManager,
+            'valid_from' => '2026-06-01',
+            'valid_to' => '2026-10-31',
+            'reason' => 'Attempt to assign a second manager during the same period.',
+        ])->assertUnprocessable();
+
+        $this->getJson('/api/v1/enterprise/organization-units/'.$unitId.'/manager-assignments')
+            ->assertOk()
+            ->assertJsonFragment(['manager_position_id' => $managerPositionId]);
+    }
+
     public function test_solid_line_reporting_rejects_overlapping_managers_and_cycles(): void
     {
         $this->actAs($this->ownerA, $this->tenantA);
@@ -393,7 +440,7 @@ class EnterpriseOrganizationStructureTest extends TestCase
     {
         $runtime = DB::connection('pgsql');
 
-        foreach (['org_units', 'job_positions', 'position_reporting_relations'] as $table) {
+        foreach (['org_units', 'job_positions', 'org_unit_manager_assignments', 'position_reporting_relations'] as $table) {
             $this->assertTrue((bool) $runtime->scalar(
                 'SELECT has_table_privilege(?, ?, ?)',
                 ['app_runtime', $table, 'SELECT'],
