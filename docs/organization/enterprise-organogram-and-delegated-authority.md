@@ -64,7 +64,7 @@ The Board normally sets policy and delegates operating authority; it should not 
 
 ### 2.2 Executive leadership
 
-The CEO/Managing Director (which may be titled President or Executive President) is accountable for delivery of the approved strategy and enterprise performance. The role coordinates the executive team and exercises only the authority delegated by the Board or governing body.
+The CEO/Managing Director (which may be titled President or Executive President) is accountable for delivery of the approved strategy and enterprise performance. The role coordinates the executive team and exercises only the authority delegated by the Board or governing body. A company may appoint a Deputy CEO or Executive Vice Presidents for Manufacturing/Operations, Finance, People, Procurement/Supply Chain or Commercial. These are configurable posts beneath the CEO; the title President, Vice President or CEA does not itself create statutory status or transaction authority.
 
 Suggested executive accountabilities:
 
@@ -279,7 +279,7 @@ Each authority rule should capture:
 - Policy code, version, effective-from/effective-to and approval status.
 - Legal entity and operating scope; department, site, cost centre, warehouse or channel where relevant.
 - Business activity and transaction type (for example purchase requisition, purchase order, contract, capex, supplier award, credit note, discount, refund, stock adjustment, journal, payroll run).
-- Budget state and budget owner; amount basis, currency, cumulative-period limit and aggregation rule.
+- Budget state and budget holder; amount basis, currency, cumulative-period limit and aggregation rule.
 - Risk/exception flags: related party, sole source, emergency, foreign currency/import, contract duration, restricted material, capex, budget overrun or conflict of interest.
 - Required approver position/authority level, sequence or parallel group, quorum where relevant, minimum reason/evidence and separation-of-duties constraints.
 - Delegated alternate, acting appointment, absence period, scope, expiry and revocation.
@@ -303,7 +303,7 @@ These are responsibility bands. Their transaction limits are set by each company
 
 1. **Need and requisition:** the requesting department records purpose, specification, quantity, required date, destination site, budget/cost centre and any technical requirement. The requester's manager/budget holder validates business need and budget ownership.
 2. **Sourcing:** Procurement checks approved supplier status, sourcing method, quotations/tender requirements, price reasonableness, supplier conflicts, contract terms and category-specific risk. Technical evaluation is performed by the competent user function (for example IE, Product Engineering, Quality, HSE or IT) and recorded separately.
-3. **Commercial recommendation and award:** Procurement prepares a recommendation with comparison evidence and declared exceptions. An authorized award decision is recorded independently of the requester and supplier relationship owner.
+3. **Commercial recommendation and award:** Procurement prepares a recommendation with comparison evidence and declared exceptions. An authorized award decision is recorded independently of the requester and supplier relationship lead.
 4. **PO preparation:** a purchasing officer converts the approved requisition/award into the PO, verifies quantities, specification, price, currency, tax/withholding treatment, delivery terms, budget reservation and supplier identity. The PO is still a draft until all applicable approval steps complete.
 5. **PO authorization:** the workflow resolves the current effective DoA policy and active position holders. It may require sequential or parallel approvals, such as:
    - budget holder / department head;
@@ -357,7 +357,7 @@ An approved annual budget can delegate execution of ordinary purchase orders to 
 ## 10. Ethiopia localization and legal configuration
 
 - The enterprise chart must be configurable by legal form, constitutional documents, shareholder resolutions, registrations, licenses and actual management practice. Do not force a Board, Chairperson, Vice-Chairperson, committees or a specific President/CEO title onto every business.
-- Ethiopia Commercial Code Proclamation No. 1243/2021 contains legal-form-specific company governance provisions. For example, Article 296 addresses the Board of Directors of a share company; implementation must be confirmed against the applicable entity form and the authoritative Amharic Federal Negarit Gazette text where wording differs. Store legal evidence and qualified review rather than treating this template as legal advice. See the [WIPO Lex record](https://www.wipo.int/wipolex/en/legislation/details/21658) and [English text reference](https://ethiodata.et/wp-content/uploads/2023/01/Commercial-Code-of-Ethiopia-English-Proclamation-No.-1243_2021.pdf).
+- Ethiopia Commercial Code Proclamation No. 1243/2021 contains legal-form-specific company governance provisions. For example, Article 296 addresses the Board of Directors of a share company, including a board of 3–13 directors and a restriction that two-thirds of its directors may not take part in day-to-day management; implementation must be confirmed against the applicable entity form and the authoritative Amharic Federal Negarit Gazette text where wording differs. Store legal evidence and qualified review rather than treating this template as legal advice. See the [WIPO Lex record](https://www.wipo.int/wipolex/en/legislation/details/21658) and [English text reference](https://ethiodata.et/wp-content/uploads/2023/01/Commercial-Code-of-Ethiopia-English-Proclamation-No.-1243_2021.pdf).
 - The Federal Public Procurement and Property Administration Proclamation No. 1333/2024 must be activated only for a customer/entity within its legal scope (including relevant federal public bodies and public enterprises as applicable). Do not label the public-procurement law as mandatory for an ordinary private manufacturer solely because it buys fabric. Private companies still use the ERP's internal procurement controls as company policy/best practice. See the [Ministry of Justice source](https://justice.gov.et/en/law/the-federal-public-procurement-and-property-administration-proclamation/).
 - Ethiopian company thresholds, tax, VAT, withholding, pension, labour, customs, FX, licensing, environmental and data-protection rules must come from the existing versioned Ethiopia legal register and qualified professional review. No statutory threshold or formula is to be invented in the DoA.
 - Monetary authority settings are stored per legal entity and currency. Exchange rates, budget conversions, transaction-date treatment and rounding use the approved finance/localization policy.
