@@ -24,6 +24,12 @@ return [
             'username' => env('MIGRATION_DB_USERNAME', 'erp_migrator'),
             'password' => env('MIGRATION_DB_PASSWORD', ''),
         ]),
+        // A separate, narrowly privileged connection for SECURITY DEFINER APIs.
+        // app_runtime deliberately cannot execute identity-sensitive mutation functions.
+        'pgsql_control' => array_merge($pgsql, [
+            'username' => env('CONTROL_DB_USERNAME', 'app_control'),
+            'password' => env('CONTROL_DB_PASSWORD', ''),
+        ]),
     ],
     'migrations' => [
         'table' => 'migrations',
