@@ -435,6 +435,7 @@ export class OrganizationStructureComponent {
         this.savingUnit.set(false);
         this.showUnitForm.set(false);
         this.unitSearch.setValue(data.unit_code);
+        this.selectedUnitId.set(null);
         this.unitForm.reset({
           parent_id: '',
           legal_entity_id: '',
