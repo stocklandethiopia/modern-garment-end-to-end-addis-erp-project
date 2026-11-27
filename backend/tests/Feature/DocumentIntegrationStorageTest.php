@@ -47,6 +47,17 @@ class DocumentIntegrationStorageTest extends TestCase
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
+
+            $admin->table('tenant_memberships')->insert([
+                'id' => (string) Str::uuid(),
+                'tenant_id' => $this->tenantId,
+                'user_id' => $this->actorId,
+                'membership_role' => 'OWNER',
+                'status' => 'ACTIVE',
+                'joined_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
         });
 
         config(['filesystems.private_documents_disk' => 'local']);
