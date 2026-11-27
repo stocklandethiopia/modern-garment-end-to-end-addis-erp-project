@@ -263,6 +263,8 @@ class FinanceControlService
 
     public function addPayrollDraftLine(string $tenantId, string $actorId, string $runId, array $data): object
     {
+        $this->assertEthiopiaPayrollReleaseGate();
+
         return DB::transaction(function () use ($tenantId, $actorId, $runId, $data): object {
             $run = DB::table('payroll_run_drafts')->where('tenant_id', $tenantId)->where('id', $runId)->lockForUpdate()->first();
             if ($run === null || $run->status !== 'DRAFT' || $run->prepared_by !== $actorId) {
@@ -354,6 +356,8 @@ class FinanceControlService
 
     public function submitPayrollForProfessionalReview(string $tenantId, string $actorId, string $runId): object
     {
+        $this->assertEthiopiaPayrollReleaseGate();
+
         return DB::transaction(function () use ($tenantId, $actorId, $runId): object {
             $run = DB::table('payroll_run_drafts')->where('tenant_id', $tenantId)->where('id', $runId)->lockForUpdate()->first();
             if ($run === null || $run->prepared_by !== $actorId || $run->status !== 'DRAFT') {
@@ -373,8 +377,25 @@ class FinanceControlService
         }, 3);
     }
 
+    /**
+     * Do not enable live payroll until authoritative HR employee records and
+     * locally approved statutory rule execution have both passed WP-14 gates.
+     */
+    private function assertEthiopiaPayrollReleaseGate(): void
+    {
+        if (! config('payroll.ethiopia.employee_master_release_ready', false)
+            || ! config('payroll.ethiopia.statutory_activation_enabled', false)
+        ) {
+            throw ValidationException::withMessages([
+                'payroll_release_gate' => 'Ethiopia payroll is held: authoritative employee/contract/assignment profiles and qualified statutory activation evidence are not yet accepted for this release.',
+            ]);
+        }
+    }
+
     public function applyProfessionalPayrollDecision(string $tenantId, string $professionalId, string $runId, bool $approve, string $reference, string $reason): object
     {
+        $this->assertEthiopiaPayrollReleaseGate();
+
         return DB::transaction(function () use ($tenantId, $professionalId, $runId, $approve, $reference, $reason): object {
             $run = DB::table('payroll_run_drafts')->where('tenant_id', $tenantId)->where('id', $runId)->lockForUpdate()->first();
             if ($run === null || $run->status !== 'UNDER_REVIEW' || $run->prepared_by === $professionalId) {
