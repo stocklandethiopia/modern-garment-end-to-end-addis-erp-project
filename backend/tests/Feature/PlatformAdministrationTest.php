@@ -302,14 +302,40 @@ class PlatformAdministrationTest extends TestCase
         $this->assertFalse((bool) $runtime->scalar("SELECT has_table_privilege('app_runtime', 'platform_tenant_entitlements', 'UPDATE')"));
         $this->assertFalse((bool) $runtime->scalar("SELECT has_table_privilege('app_runtime', 'platform_tenant_entitlements', 'DELETE')"));
         $this->assertFalse((bool) $runtime->scalar("SELECT has_table_privilege('app_runtime', 'platform_audit_events', 'SELECT')"));
-        $this->assertTrue((bool) $runtime->scalar("SELECT has_function_privilege('app_runtime', 'public.platform_change_tenant_status(uuid,text,text)', 'EXECUTE')"));
-        $this->assertTrue((bool) $runtime->scalar("SELECT has_function_privilege('app_runtime', 'public.platform_set_tenant_entitlements(uuid,text,text,jsonb,jsonb,date,date,text)', 'EXECUTE')"));
-        $this->assertTrue((bool) $runtime->scalar("SELECT has_function_privilege('app_runtime', 'public.platform_current_operator_roles()', 'EXECUTE')"));
-        $this->assertTrue((bool) $runtime->scalar("SELECT has_function_privilege('app_runtime', 'public.platform_list_operator_grants()', 'EXECUTE')"));
-        $this->assertTrue((bool) $runtime->scalar("SELECT has_function_privilege('app_runtime', 'public.platform_request_operator_grant(text,text,date,date,text)', 'EXECUTE')"));
-        $this->assertTrue((bool) $runtime->scalar("SELECT has_function_privilege('app_runtime', 'public.platform_approve_operator_grant(uuid,text)', 'EXECUTE')"));
-        $this->assertTrue((bool) $runtime->scalar("SELECT has_function_privilege('app_runtime', 'public.platform_revoke_operator_grant(uuid,text)', 'EXECUTE')"));
+        $control = DB::connection('pgsql_control');
+        $controlFunctions = [
+            'public.platform_list_tenants()',
+            'public.platform_change_tenant_status(uuid,text,text)',
+            'public.platform_set_tenant_entitlements(uuid,text,text,jsonb,jsonb,date,date,text)',
+            'public.platform_current_operator_roles()',
+            'public.platform_list_operator_grants()',
+            'public.platform_request_operator_grant(text,text,date,date,text)',
+            'public.platform_approve_operator_grant(uuid,text)',
+            'public.platform_revoke_operator_grant(uuid,text)',
+        ];
+
+        foreach ($controlFunctions as $function) {
+            $this->assertFalse((bool) $runtime->scalar(
+                "SELECT has_function_privilege('app_runtime', ?, 'EXECUTE')",
+                [$function],
+            ), "app_runtime must not execute {$function}.");
+            $this->assertTrue((bool) $control->scalar(
+                "SELECT has_function_privilege('app_control', ?, 'EXECUTE')",
+                [$function],
+            ), "app_control must execute {$function}.");
+        }
+
         $this->assertFalse((bool) $runtime->scalar("SELECT has_function_privilege('app_runtime', 'public.platform_expire_operator_grants(uuid)', 'EXECUTE')"));
+        $this->assertFalse((bool) $control->scalar("SELECT has_function_privilege('app_control', 'public.platform_expire_operator_grants(uuid)', 'EXECUTE')"));
+
+        foreach (['platform_operator_grants', 'platform_tenant_entitlements', 'platform_audit_events'] as $table) {
+            foreach (['SELECT', 'INSERT', 'UPDATE', 'DELETE'] as $privilege) {
+                $this->assertFalse((bool) $control->scalar(
+                    "SELECT has_table_privilege('app_control', ?, ?)",
+                    ['public.'.$table, $privilege],
+                ), "app_control must not have {$privilege} on {$table}.");
+            }
+        }
     }
 
     public function test_platform_tables_have_forced_rls_and_audit_is_not_runtime_readable(): void
