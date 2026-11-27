@@ -2579,7 +2579,7 @@ Document registration checks the shape of a supplied SHA-256, not actual bytes. 
 
 ---
 
-## 32. WP-08 / WP-10 / WP-11 — Route effectiveness, quality release authority and operation-state integrity
+## 34. WP-08 / WP-10 / WP-11 — Route effectiveness, quality release authority and operation-state integrity
 
 ### 34.1 Approved route versions are not resolved against effective dates
 
