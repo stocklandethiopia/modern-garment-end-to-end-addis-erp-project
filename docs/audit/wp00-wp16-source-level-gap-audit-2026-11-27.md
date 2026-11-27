@@ -3852,7 +3852,8 @@ The earlier source defect was confirmed by the existing migration 000017 and `Qu
   2. inspector cannot review their own result;
   3. the release eligibility predicate is false before independent review;
   4. a different reviewer accepts and records identity/time;
-  5. release eligibility becomes true only after review;\n  6. a database check rejects reviewer ID without reviewer timestamp on any inspection state.
+  5. release eligibility becomes true only after review;
+  6. a database check rejects reviewer ID without reviewer timestamp on any inspection state.
 - Existing quality release services continue to require a reviewed passing inspection; this change does not approve deviations or release inventory/production/finished goods.
 
 **Migration ordering:** migration 000038 is deliberately placed after the candidate reconciliation sequence for WP-03 platform migrations 000033/000034, WP-03 organization migration 000035, and WP-14 payroll evidence migrations provisionally sequenced as 000036/000037. This is a planned sequence for candidate integration, not evidence those candidate migrations have been merged. Confirm the final migration tree after rebasing/integration before merging PR #27.
