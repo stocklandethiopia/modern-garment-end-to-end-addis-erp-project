@@ -254,7 +254,7 @@ class QualityInspectionReviewStateTest extends TestCase
                     'review_reason' => 'This must fail because the inspector cannot review their own result.',
                 ]);
                 self::fail('The inspector must not independently review their own inspection.');
-            } catch (\Illuminate\Validation\ValidationException) {
+            } catch (ValidationException) {
                 // Expected: maker-checker separation remains enforced.
             }
 
