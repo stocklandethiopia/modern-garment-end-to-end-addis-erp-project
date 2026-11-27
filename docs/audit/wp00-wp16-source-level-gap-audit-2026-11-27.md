@@ -1933,3 +1933,123 @@ The KPI service is careful not to show fabricated performance indicators. Preser
 5. Complete operational KPI source integrations only as the WP-06/WP-07/WP-12/WP-13 ledgers become authoritative.
 6. Complete the IE capacity-slot site equality check at slot creation, plus operation quantity reservation, plan revalidation and workforce scope/overlap controls.
 7. Add cross-package PostgreSQL feature tests from initiative/range/forecast/OTB/pricing through PO/order/actual/KPI reconciliation.
+
+
+---
+
+## 25. WP-06 industrial engineering and workforce control — additional source/schema findings
+
+### 25.1 Production planning does not require an approved IE standard
+
+**Finding:** In IndustrialEngineeringService.addPlanLine(), the service queries for an approved operation_standard_versions row matching the production order style/revision and route step. It checks planned_minutes against standard_minutes multiplied by planned_quantity only inside a conditional that runs when a standard exists. When no matching approved standard is found, the service proceeds and inserts the plan line without the SAM/SMV lower-bound control.
+
+This means an operation can be added to an approved production plan without an approved IE standard, even though WP-05 technical-pack release readiness identifies IE as a required downstream dependency.
+
+**Source**
+- backend/app/Services/Planning/IndustrialEngineeringService.php, addPlanLine().
+- backend/database/migrations/2026_11_26_000019_create_ie_capacity_and_workforce_controls.php, operation_standard_versions.
+- backend/app/Services/ProductDevelopment/BomTechnicalPackService.php, releaseReadiness() includes INDUSTRIAL_ENGINEERING_NOT_VERIFIED.
+
+**Required implementation**
+- [ ] Require one approved and currently effective IE standard for each production operation before the line can be accepted into a bulk production plan.
+- [ ] Keep sample/prototype planning as a separately typed and bounded path if an IE standard is not yet approved.
+- [ ] Verify the standard's approved status, exact style revision, exact route version/step, effective date, ergonomic review and immutable method/evidence identity.
+- [ ] Fail closed when a mandatory standard is missing, expired, superseded or not applicable; do not silently skip the minutes constraint.
+- [ ] Add negative tests for no standard, wrong style revision, wrong route step, future effective date, superseded standard and rejected ergonomic review.
+
+### 25.2 IE standard effective-date selection uses the plan horizon start, not the operation's scheduled date
+
+**Finding:** The standard lookup filters effective_from against production_plan_versions.horizon_start. It then orders by version_no descending. The line already carries planned_start_at/planned_start_date, but the standard resolver does not use that date.
+
+If a standard becomes effective during the planning horizon, a line scheduled after the new standard's effective date can still resolve against the previous standard because the query is anchored to horizon_start. There is also no effective_to on operation_standard_versions to bound a retired standard's applicability.
+
+**Required implementation**
+- [ ] Resolve the applicable standard at the operation's actual planned execution date.
+- [ ] Add effective_to or a controlled supersession interval and enforce non-overlapping effective versions for the same style/revision/route step.
+- [ ] Resolve and persist the exact standard version ID on each plan line, so later re-approval does not silently change historical planned minutes.
+- [ ] Revalidate the pinned standard at plan approval and order release.
+- [ ] Test a new SAM/SMV effective mid-horizon, overlapping versions, a backdated correction and a line moved across the effective-date boundary.
+
+### 25.3 Capacity-slot creation does not enforce work-centre and shift site equality
+
+**Finding:** createCapacitySlot() checks that the selected work centre and shift are active and tenant-scoped, then inserts the capacity slot. It does not compare work_centres.site_id to work_shift_definitions.site_id. The schema has independent tenant foreign keys to the work centre and shift; it does not constrain them to share the same site.
+
+assignWorkerToOperation() does perform a work-centre/shift site equality check, but the capacity slot can already have been created with mismatched site identities and addPlanLine() does not independently compare those site IDs.
+
+**Required implementation**
+- [ ] Enforce work-centre and shift site equality in createCapacitySlot().
+- [ ] Add a composite database invariant or trigger so the relationship cannot be bypassed by another writer.
+- [ ] Check the production order operating site against the slot's work centre/shift site when adding a plan line.
+- [ ] Add positive same-site and negative cross-site tests, including an approved inter-site subcontract/transfer exception if applicable.
+
+### 25.4 Workforce confirmation does not revalidate skill and overlap state
+
+**Finding:** assignWorkerToOperation() checks that the linked skill record is active, competent and valid across the planned interval and takes a worker-level advisory lock while checking active overlap. It then creates a PLANNED assignment. confirmWorkerAssignment() independently checks only that the assignment is PLANNED and the confirmer differs from the creator; it does not take the same worker advisory lock or recheck the worker's active overlapping assignments and skill status/validity.
+
+Between assignment and confirmation, the skill could be revoked/expire, or another overlapping assignment could become CONFIRMED/STARTED. The confirmation path would still promote the stale assignment.
+
+**Required implementation**
+- [ ] Take the same tenant/worker advisory lock in confirmation and recheck overlaps before promoting PLANNED to CONFIRMED.
+- [ ] Lock and revalidate the skill record, competent assessment, validity period, suspension/revocation and exact route-step skill at confirmation.
+- [ ] Revalidate work centre/shift active state and site/production-order binding.
+- [ ] Add a PostgreSQL exclusion or serialized invariant preventing two overlapping CONFIRMED/STARTED assignments for one worker.
+- [ ] Test revoke/expire-between-plan-and-confirm, two concurrent confirmations, overnight shift, worker change, site transfer and supervisor replay.
+
+### 25.5 Authorized operation scope in skill records is not enforced
+
+**Finding:** workforce_skill_records stores authorized_operation_scope as JSONB and the API allows it to be supplied during skill assessment. assignWorkerToOperation() validates the worker reference, active/competent skill code and date range, then compares required_skill_code to skill_code. It does not evaluate authorized_operation_scope against site, department, work centre, machine family, process or operation.
+
+A skill record may therefore contain a restricted scope that is not considered by the assignment method.
+
+**Required implementation**
+- [ ] Define a typed, versioned scope contract and permitted values for site, legal entity, department, work centre, machine family, operation/process and product category.
+- [ ] Evaluate the scope during assignment, confirmation and operation start.
+- [ ] Resolve restricted/safety-critical qualifications from approved training/assessment evidence rather than free-form client values.
+- [ ] Add scope allow/deny and changed-scope tests.
+
+### 25.6 IE and workforce writes lack package-level automated feature coverage and domain audit records
+
+The current delivery has no dedicated backend Feature test for IE work centres, shifts, capacity, operation standards, plan lines, worker skills, assignments or incentives. The inspected IndustrialEngineeringService methods also do not create corresponding audit_events for work-centre/shift/capacity changes, standard approval, production-plan approval, skill assessment or assignment confirmation. These writes therefore have creator/approver columns in some tables, but no package-level test evidence or explicit immutable action/reason event in the service path.
+
+**Required implementation**
+- [ ] Add PostgreSQL Feature tests for every IE/workforce state transition, RLS, authorization and concurrency invariant.
+- [ ] Emit an immutable audit event in the same transaction as every approval-sensitive or capacity/skill/assignment change.
+- [ ] Include actor, action, object version, reason, previous/new state hashes, site/legal-entity scope and correlation ID.
+- [ ] Ensure failed writes roll back both the business mutation and audit event.
+- [ ] Add factory UAT for time-study, capacity planning, line allocation, skills and worker assignment.
+
+### 25.7 Incentive policy and calculation tables are schema-only in the inspected service/API layer
+
+Migration 000019 creates incentive_policy_versions and incentive_calculation_drafts with eligible roles, measurement basis, quality/safety gates, grievance/appeal rules, effective dates and maker-checker review columns. The inspected IndustrialEngineeringService has no incentive-policy or incentive-calculation methods, and IndustrialEngineeringController/domain-api.php expose no incentive routes.
+
+**Required implementation**
+- [ ] Implement effective-dated incentive policy create/review/approve/supersede/suspend lifecycle.
+- [ ] Bind measurement basis to approved production output/earned minutes, attendance/time and quality acceptance; reject incentives for unaccepted or reworked output until policy permits it.
+- [ ] Define safety, grievance, appeal, wage-floor, tax and payroll handoff controls in conjunction with WP-02/WP-14.
+- [ ] Add calculation source snapshots, versioned formulas, maker-checker and independent appeal review.
+- [ ] Post approved incentive values only through the authorized payroll/finance process, not direct balance mutation.
+- [ ] Add worker consent/privacy, dispute/appeal and source reconciliation tests.
+
+### 25.8 Standard and skill study evidence is stored as caller-supplied JSON without linked evidence verification
+
+**Finding:** createStandardVersion() and recordWorkerSkill() persist study_evidence/assessment_evidence JSON supplied in the request. The methods do not link the contents to verified WP-15 document assets or recalculate hashes of retained evidence. The approval gate does require an accepted ergonomic-risk review, but the stored evidence itself has no source artifact identity or reviewer-verifiable immutable version.
+
+**Required implementation**
+- [ ] Link time-study observations, method sheet, work-measurement equipment calibration and ergonomic assessments to verified retained evidence records.
+- [ ] Link worker skill assessments to approved training, trainer/assessor identity, practical assessment outcome and qualification expiry.
+- [ ] Preserve exact source artifact ID/version/hash and the assessor/approver decision snapshot.
+- [ ] Re-verify evidence integrity and validity at plan/assignment approval.
+- [ ] Add evidence altered/missing/expired and qualification source revocation tests.
+
+---
+
+## 26. WP-06 implementation sequence
+
+1. Make an approved IE standard mandatory for bulk production plan lines.
+2. Correct effective-date resolution and pin the standard to each plan line.
+3. Enforce work-centre/shift/production-order site identity at service and database level.
+4. Revalidate skill and overlap conditions under the worker advisory lock when confirming assignments.
+5. Enforce authorized operation scope at assignment, confirmation and operation start.
+6. Add domain audit events and the WP-06 PostgreSQL test suite.
+7. Implement incentive policy/calculation flows in conjunction with WP-14, using approved output and quality facts.
+8. Link time-study/skills/ergonomic evidence to verified WP-15 assets and add factory UAT.
