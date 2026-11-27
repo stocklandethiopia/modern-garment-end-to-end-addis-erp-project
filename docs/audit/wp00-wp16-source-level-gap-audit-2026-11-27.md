@@ -2429,7 +2429,7 @@ Existing DemandOtbPricingWorkflowTest covers the happy paths for forecast runs, 
 
 ---
 
-## 31. WP-11 quality state machine and WP-15 integration replay audit
+## 32. WP-11 quality state machine and WP-15 integration replay audit
 
 This pass inspected the current QualityControlService, QualityController, migration 000017, ManufacturingExecutionService, IntegrationOutboxService and DocumentIntegrationService at delivery SHA fc01eced62b97c4ec27f0075264fc8ba0fb11851.
 
@@ -2564,7 +2564,7 @@ Document registration checks the shape of a supplied SHA-256, not actual bytes. 
 
 ---
 
-## 32. WP-11 / WP-15 implementation sequence
+## 33. WP-11 / WP-15 implementation sequence
 
 1. Correct inspection submit/review status model using a forward database migration.
 2. Implement linked, versioned deviation and containment approval records; remove request booleans as authority.
