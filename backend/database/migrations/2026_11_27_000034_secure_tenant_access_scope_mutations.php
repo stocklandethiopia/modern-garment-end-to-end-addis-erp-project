@@ -439,4 +439,5 @@ SQL);
         throw new RuntimeException(
             'Security migration 000034 is forward-only; do not restore direct app_runtime scope-table writes.',
         );
-    }};
+    }
+};
