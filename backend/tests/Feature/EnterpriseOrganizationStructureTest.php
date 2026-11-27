@@ -372,7 +372,7 @@ class EnterpriseOrganizationStructureTest extends TestCase
             'reason' => 'Attempt a cyclic solid-line reporting relationship.',
         ])->assertUnprocessable();
 
-        $this->assertDatabaseCount('position_reporting_relations', 2, 'pgsql_test_admin');
+        $this->assertSame(2, DB::connection('pgsql_test_admin')->table('position_reporting_relations')->where('tenant_id', $this->tenantA)->count());
     }
 
     public function test_reporting_relationship_requires_valid_active_positions_and_reason(): void
