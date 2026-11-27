@@ -3329,35 +3329,59 @@ These records are an infrastructure execution failure, not acceptance. Work that
 
 ---
 
-## 47. WP-03 organization workbench — full-register pagination and search are not implemented
+## 47. WP-03 organization workbench — pagination defect and candidate remediation
 
-**Finding:** the Laravel service exposes paginated responses (100 rows per page) for organizational units, job positions, unit-manager assignments and position-reporting relationships. The Angular API service does not accept or pass a page/search/filter parameter; the component calls each list endpoint once with default parameters and stores only response.data. The component discards current_page, last_page and total metadata, and the screen has no page controls or search/filter workflow for these registers.
+### 47.1 Original defect on the inspected canonical delivery baseline
 
-**Source**
-- backend/app/Services/Enterprise/EnterpriseOrganizationService.php: units(), positions(), managerAssignments() and reportingRelations() use paginate(100).
-- backend/app/Http/Controllers/Enterprise/EnterpriseOrganizationController.php: units(), positions(), managerAssignments() and reportingRelations() return paginated responses.
-- frontend/src/app/features/enterprise/enterprise-organization.service.ts: listUnits(), listPositions(), listUnitManagers() and listReportingRelations() do not accept pagination/filter parameters.
-- frontend/src/app/features/enterprise/organization-structure.component.ts: loadAll() and selectUnit() call only the first page and assign response.data, without storing page metadata.
-- frontend/src/app/features/enterprise/organization-structure.component.html: unit register, job positions, manager history and reporting table render only the arrays currently in memory.
+**Finding:** the canonical delivery implementation exposed paginated responses (100 rows per page) for organizational units, job positions, unit-manager assignments and position-reporting relationships. The Angular API service did not accept or pass page/search/filter parameters; the component loaded only the first page and retained response.data without paginator metadata. The screen consequently had no register-level pagination/search and could not show the exact tenant total.
 
-**Effect:** tenants with more than 100 records cannot inspect the complete organization structure from the operator UI. A parent unit may not appear on the currently loaded page; position choices used to assign manager/reporting relationships can omit valid positions; historical manager and reporting records beyond the first page are invisible. Displayed counts describe only the loaded response page and may be mistaken for tenant totals.
+**Effect:** tenants with more than 100 records could not inspect all units, positions, manager history or reporting relationships from the operator workbench. Parent/manager/reporting selectors could silently omit valid records on later pages. A loaded-row count could be mistaken for the full tenant count.
 
-**Required implementation**
-- [ ] Add typed page request/response contracts to the Angular service and pass server-side page, page size and validated search/filter parameters; retain server-side stable ordering.
-- [ ] Add accessible previous/next/first/last navigation and page/total labels for unit, position, manager-assignment and reporting registers; show loading and disabled states while page transitions are pending.
-- [ ] Add tenant-safe search/filter for unit code/name/type/entity/site, position code/title/family/class/unit, manager-position history and reporting subject/manager/type/effective period.
-- [ ] Preserve selected unit and selected position across page changes where the record remains in the filtered result; when a selection leaves the filter, clear dependent state explicitly and announce the change.
-- [ ] Provide a reliable way to resolve a parent unit and position from outside the current page in creation forms; do not populate parent/manager/reporting pickers from only the first 100 rows.
-- [ ] Ensure newly created units/positions/assignments/relations appear on the appropriate sorted page and page totals remain accurate after mutation; do not locally append a row while retaining stale server pagination metadata.
-- [ ] Cancel or ignore stale page responses after tenant switch, filter change, selected-unit change or a newer request; retain the existing request-sequence protections.
-- [ ] Add Angular tests for page 1/2, last page, empty page, query changes, selected-unit preservation, newly created records crossing a page boundary, stale response race and tenant switch.
-- [ ] Add API/PostgreSQL feature tests for page bounds, filter validation, tenant RLS, stable ordering, record visibility and no cross-tenant search leakage.
-- [ ] Add browser E2E with more than 100 units, positions, manager assignments and reporting relations; verify exact totals and that records on later pages remain selectable in relationship forms.
+### 47.2 Candidate remediation implemented on the isolated WP-03 branch
 
-**Acceptance boundary:** the current PR #21 workbench is an initial source-backed implementation candidate, not a complete enterprise organization operator experience. This is a build task under PROD-WP03-008 and must pass the same QG-06, QG-07 and QG-11 gates as every other task.
+**Candidate:** PR #21 — https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/pull/21
 
+**Exact candidate head inspected:** 346950a9b5aaef4504161b1d8ba6a9bebedd4178
 
----
+**Backend source changed**
+- backend/app/Services/Enterprise/EnterpriseOrganizationService.php: paginated search/filter implementations for units, positions, managerAssignments and reportingRelations; stable ordering; default page size 25, hard maximum 100; effective-date and tenant filters.
+- backend/app/Http/Controllers/Enterprise/EnterpriseOrganizationController.php: validated page/per_page/search/filter parameters; tenant-scoped UUID validation for position/unit filters; unit ownership check before manager-history query.
+- backend/database/migrations/2026_11_27_000035_create_organization_structure_masters.php: remains create-only for this increment. app_runtime has SELECT/INSERT only; UPDATE/DELETE are not granted until an explicitly controlled amendment lifecycle exists.
+
+**Frontend source changed**
+- frontend/src/app/features/enterprise/enterprise-organization.service.ts: typed OrganizationListQuery/ApiPage contracts and HttpParams-based requests for all four registers.
+- frontend/src/app/features/enterprise/organization-structure.component.ts/html/css: accessible search, first/previous/next/last navigation, server total labels, request-sequence and tenant checks, selected-unit preservation, visited-record caches, active manager/reporting position choices and refreshed page state after creation.
+- Parent-unit choices use discovered tenant units; manager-position choices require an active position belonging to the selected unit; reporting position choices use tenant-scoped active-position search.
+- Empty search results are distinguished from an empty tenant register. Child-unit counts are labelled as counts on the currently loaded page, not tenant totals.
+
+**Test/documentation source changed**
+- backend/tests/Feature/EnterpriseOrganizationStructureTest.php: unit and position page/search, effective-dated manager-history page/search, reporting relationship page/search, maximum page-size validation and cross-tenant search isolation.
+- frontend/src/app/features/enterprise/organization-structure.component.spec.ts: HTTP query contract, later-page navigation, server totals, position/manager/reporting search and active reporting-position lookup.
+- docs/architecture/application-folder-code-map.md, docs/verification/WP03-implementation-acceptance-matrix.md and docs/work-packages/handover-register.md now map these paths and acceptance requirements.
+- The controlling task is PROD-WP03-008 in docs/work-packages/production-execution-plan-wp00-wp16.md.
+
+### 47.3 Exact-head verification evidence — tests remain NOT RUN
+
+For candidate head 346950a9b5aaef4504161b1d8ba6a9bebedd4178:
+
+- ERP CI run #46017735320: Laravel/PostgreSQL and Angular jobs both have runner_id 0, blank runner name and zero executed steps. The dependency-lockfile commit job was skipped.
+- Combined WP verification run #46017735305: Laravel/PostgreSQL, Angular and WP-01 jobs all have runner_id 0, blank runner name and zero executed steps; final candidate artifact assembly was skipped.
+- These are workflow failures before execution. No PHPUnit/PostgreSQL, Angular build/Vitest or browser E2E step ran on this candidate head. Application test result is NOT RUN; no code-test failure or pass is inferred.
+- The same runner-allocation pattern is present on several intermediate PR #21 heads and the delivery/PR #13/PR #18/PR #20/PR #22 candidates recorded in Section 46. The exact underlying account/organization/repository/GitHub-service cause remains unknown pending owner/admin diagnostics.
+- PR #22 is a preparatory manual dedicated-runner route; no evidence shows a dedicated self-hosted runner is registered or has executed a workflow.
+
+### 47.4 Required final acceptance before integration
+
+- [ ] Execute backend PHPUnit/Pint/syntax and migration/RLS tests on the exact final PR #21 SHA with the restricted app_runtime role.
+- [ ] Execute Angular 22 build and Vitest on the same exact SHA.
+- [ ] Execute browser E2E in an isolated tenant with more than 100 units, more than 100 positions in a unit, more than 100 manager-history records and more than 100 reporting relationships.
+- [ ] Prove page 1/middle/last page, exact totals, search/filter, valid-on dates, parent/manager/reporting pickers for records on later pages, newly created record refresh, selected record retention, empty search state, tenant switch and stale-response race.
+- [ ] Verify inactive manager/reporting positions are not offered for new relationships; server validation remains authoritative.
+- [ ] Confirm no tenant data leakage and no update/delete privilege widening; update remains unavailable until an independently designed amendment lifecycle.
+- [ ] Retain the existing person/employee/incumbent and DoA boundaries. Position title or manager-position mapping does not appoint a person or confer financial/statutory approval authority.
+- [ ] Update the exact-SHA handover and matrix only after required tests pass, independent review is complete and the change is integrated to canonical delivery.
+
+**Current classification:** implementation candidate, PARTIAL / NOT VERIFIED; exact-head tests NOT RUN. This closes the source/UI pagination gap only at candidate-source level. It does not complete WP-03, establish production verification or authorize progression to WP-04.
 
 ## 48. WP-15 runtime grant correction — implementation candidate PR #23
 
