@@ -775,9 +775,11 @@ class InitiativeWorkflowTest extends TestCase
         $this->assertFalse($versionPrivileges->can_delete_evidence_policy);
         $this->assertTrue($versionPrivileges->can_insert_evidence_rule);
         $this->assertTrue($versionPrivileges->can_delete_evidence_rule);
-        $this->assertTrue($versionPrivileges->can_update_scope_mode);
-        $this->assertTrue($versionPrivileges->can_insert_scope);
-        $this->assertTrue($versionPrivileges->can_revoke_scope);
+        // Scope mutations are function-only through app_control. The normal
+        // app_runtime role must not receive direct table or column writes.
+        $this->assertFalse($versionPrivileges->can_update_scope_mode);
+        $this->assertFalse($versionPrivileges->can_insert_scope);
+        $this->assertFalse($versionPrivileges->can_revoke_scope);
         $this->assertFalse($versionPrivileges->can_change_scope_target);
         $this->assertFalse($versionPrivileges->can_delete_scope);
         $this->assertTrue($versionPrivileges->can_insert_event_receipt);
