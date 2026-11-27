@@ -2932,10 +2932,10 @@ A caller can therefore create an extraction run against a document whose stored 
 ## 37. WP-03 organization structure runtime candidate — code review and remaining build
 
 **Candidate branch:** `work/wp03-org-master-runtime-2026-11-27`  
-**Exact head:** `da50b7392288c6cbe0c967f9d7310dff28448e59`  
-**Comparison against delivery:** 39 commits ahead, 0 behind; 15 changed files  
+**Current exact head:** `f9aebe855a05dec30f0b1f4bc5f1acbd741f385b`  
+**Candidate PR:** [#21 WP-03 organization runtime](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/pull/21), draft; 15 changed files. The PR branch is a separate integration candidate, not part of the canonical delivery branch.  
 **Latest commit message:** `a11y(wp03): add visually hidden table captions`  
-**PR status:** no pull request exists for this branch.
+**PR status:** PR #21 is open and remains a draft pending exact-SHA verification and integration review.
 
 This is executable source, not merely the organogram/DoA design document.
 
@@ -2987,17 +2987,17 @@ The Angular feature supplies an operator-facing organization structure screen, A
 - [ ] Update OpenAPI contracts and end-to-end browser workflows; run migrations and tests against PostgreSQL under the restricted runtime role.
 - [ ] Rebase/reconcile against the current delivery after WP-03 migrations 000033/000034 are reviewed, then execute exact candidate and post-integration SHA checks.
 
-**Current CI evidence:** workflow runs #46010970370 and #46010970310 are pre-runner failures (`runner_id: 0`, no runner, zero steps). Therefore the feature tests on this candidate have not been established as executed GitHub CI evidence.
+**CI evidence at the earlier inspected head:** workflow runs #46010970370 and #46010970310 reported no runner/zero steps. The current candidate head has additional commits; its own workflow evidence must be checked separately. Do not treat the earlier run as current-head test evidence.
 
 ---
 
 ## 38. WP-14 Ethiopia payroll candidate — implementation audit and localization release path
 
 **Candidate branch:** `work/wp14-ethiopia-payroll-localization-2026-11-27`  
-**Exact head:** `b6b3fb3094c460e8a09f13283c9b65f75c5469cb`  
-**Comparison against delivery:** 57 commits ahead, 0 behind; 20 changed files  
+**Current exact head:** `77177899e59a1606134b8d70e21104efdb7f03d1`  
+**Candidate PR:** [#20 WP-14 Ethiopia payroll localization](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/pull/20), draft; 24 changed files after the latest storage and payroll-integrity updates.  
 **Latest commit message:** `docs(WP-14): align handover register to latest payroll branch and CI evidence`  
-**PR status:** no pull request exists for this branch.
+**PR status:** PR #20 is open and remains a draft; no payroll activation or production posting is authorized by this candidate.
 
 ### 38.1 Rendered source and target paths
 
@@ -3211,4 +3211,82 @@ The project standards require:
 These standards are written in `docs/engineering/code-quality.md`, `docs/architecture/platform-standard.md`, `docs/security/saas-security.md`, `docs/engineering/development-deployment.md` and the WP-16 release standard. The gap is the missing execution evidence and end-to-end source coverage across all required journeys, plus the installer/runtime topology and complete test families described above.
 
 ---
+
+
+
+---
+
+## 41. WP-03 organization runtime candidate — additional least-privilege hardening
+
+The WP-03 organization candidate was reviewed directly at its service, controller, migration, route and feature-test layer.
+
+### 41.1 Verified implementation characteristics
+
+The current candidate implements tenant-scoped organization-unit and job-position creation/read, effective-dated manager assignments, solid-line and functional position reporting, legal-entity/site validation, unit/position period containment, manager-overlap checks and solid-line cycle detection. The reporting graph operations use a tenant-level PostgreSQL advisory transaction lock. Creation writes an audit event and a transactional outbox event in the same transaction.
+
+The organization schema enables and forces RLS on all four tables. The operator controller prohibits person_id, employee_id, user_id and membership_id when creating a position, correctly separating a job slot from an employee/login identity.
+
+### 41.2 Runtime UPDATE privilege expansion found and corrected in candidate
+
+**Original finding:** migration 000035 granted SELECT, INSERT, UPDATE on org_units, job_positions, org_unit_manager_assignments and position_reporting_relations to app_runtime. The candidate service/controller exposes read and create operations only; it has no controlled update operation that would need this privilege. With table-level UPDATE, another runtime code path could rewrite position titles, effective dates, hierarchy or reporting relationships without using the service's audit/outbox event method.
+
+**Candidate fix committed:**
+- 7503bf13c0f80d4df29c5a32609119d1ac0f78f1 changes migration 000035 to grant only SELECT, INSERT.
+- f9aebe855a05dec30f0b1f4bc5f1acbd741f385b changes the PostgreSQL feature test to assert runtime UPDATE and DELETE are absent, while preserving SELECT, INSERT and forced RLS assertions.
+
+The intent is append-only organization master history for the current create-only API. Future effective-date changes, reorganizations or deactivation must use an explicit versioned command with audit/outbox evidence, not a broad direct UPDATE grant.
+
+### 41.3 Remaining WP-03 acceptance work
+
+- [ ] Keep the position slot separate from its incumbent; implement effective-dated employee/person-to-position and acting assignments only when the WP-14 employee master is authoritative.
+- [ ] Complete position-incumbent changes, vacancy, leave/acting cover, expiry, archival and reorganization snapshots.
+- [ ] Implement a versioned DoA resolver and connect transaction-specific approval authority to positions, incumbents, acting delegates, legal entity/site/department/cost centre, amount/currency, limits and incompatible duties.
+- [ ] Preserve tenant OWNER/ADMIN as platform/tenant administration roles, not automatic business-transaction approvers.
+- [ ] Add database-level validation or controlled write functions for critical manager-overlap and solid-line-cycle invariants if additional application writers are introduced; the current overlap/cycle enforcement is performed by the service under its advisory graph lock.
+- [ ] Add concurrent API tests for two overlapping manager assignments and two simultaneously-created reporting edges that could form a cycle.
+- [ ] Run the current-head feature suite against PostgreSQL under app_runtime; the code change and test assertion have been committed but not yet verified by an executed CI run.
+
+---
+
+## 42. WP-14 Ethiopia payroll candidate — additional source fixes and remaining safeguards
+
+### 42.1 Private document storage now has an explicit clean-install configuration
+
+The WP-14 branch originally used config('filesystems.private_documents_disk', 's3'), but the delivery filesystems config defined only local and public disks and no private-disk key or S3 disk. This prevented a reproducible clean-install document upload/source verification path. storeUploadedFile() also referenced RuntimeException without importing it and could leave a stored object orphaned if document metadata registration failed.
+
+**Candidate fixes committed:**
+- 0960ce05bfc6ce19279e18f7e89133ca965e9b2e adds filesystems.private_documents_disk, with the private local disk as the clean-development default and a production preflight requirement to configure an approved private object-storage provider.
+- d8aa26c2ad725afea21775b5b42217f47beb629a imports RuntimeException/Throwable, compensates for metadata failure by deleting the uploaded private object where possible, and checks stored byte count as well as SHA-256 during source verification.
+- 4a75ec97a88ae56afe94adeb00eb5a98ce20b909 documents PRIVATE_DOCUMENTS_DISK=local in the backend environment example.
+
+The local disk points to the private application storage root and has no public URL. Production acceptance must still verify the configured object-storage driver, private permissions, retention, object versioning, backup and read-back integrity from the actual installer environment.
+
+### 42.2 Payroll calculation line mutation is now guarded at database and service level
+
+**Candidate fixes committed:**
+- f65e298a5db6000fc7678990c4075c532c63f9be adds migration 000036: validated payroll line inserts are allowed only while the parent run is DRAFT; a parent-row FOR UPDATE lock serializes insertion against run submission; UPDATE/DELETE are rejected by a trigger; runtime UPDATE/DELETE privileges are revoked.
+- 2b8a0278362399280e2c5439dc66c55b9ba8043f adds PayrollRunLineIntegrityTest for runtime-role SELECT/INSERT-only privileges and the installed triggers.
+- 77177899e59a1606134b8d70e21104efdb7f03d1 strengthens submission and professional review: recompute each line's canonical evidence SHA-256; verify the calculation status, employee payee type, ETB currency, preparer and period snapshot; compare gross, deductions and net amounts with the embedded server calculation; verify the frozen statutory source snapshot digest; calculate aggregate worker/gross/deduction/net control totals and a line-evidence-set hash at submission; then recompute and compare those totals again before professional decision.
+
+This improves evidence immutability and review integrity. These changes remain on PR #20 and have not yet been executed in the repository's PostgreSQL CI environment.
+
+### 42.3 Release boundaries and remaining WP-14 work
+
+The configuration remains deliberately disabled:
+- employee_master_release_ready = false
+- statutory_activation_enabled = false
+
+The candidate's calculator requires professionally approved, effective-dated rule records and an explicit reviewed PAYE tax-base opinion. It uses integer/minor-unit amounts and explicit rounding, excludes retainer services from employee payroll, and returns a calculated draft—not a payment, statutory remittance or GL posting.
+
+Remaining work:
+- [ ] Replace free-text worker_reference with a tenant/legal-employer-scoped employee/person/contract/assignment identity before any activation. Current candidate configuration must stay disabled until that authoritative HR master exists.
+- [ ] Replace manual boolean readiness flags with an owner-approved release gate backed by actual employee-master, legal-source, professional-review, test and end-to-end evidence; do not enable by configuration alone.
+- [ ] Add full PostgreSQL API/feature tests for source documents, rule snapshots, private-object tamper, per-line hash, frozen totals, reviewer segregation and runtime-role privileges. Current tests are calculator unit tests plus the new payroll line permission/trigger feature test; they do not prove a complete payroll service lifecycle.
+- [ ] Add an executed test proving the insert trigger rejects a line after run submission and the immutable trigger rejects UPDATE/DELETE even when invoked as a privileged test role; the current test checks privileges and trigger installation, not the full trigger behavior.
+- [ ] Re-verify all statutory source-document bytes at the review boundary, not only when the payroll rule or line is first created.
+- [ ] Correct durable tamper recording: verifyStoredDocumentChecksum() currently attempts to mark a mismatched asset REJECTED and then throws. Its callers execute inside an outer DB transaction, so that status update is rolled back with the failed payroll operation. Preserve the rejection/tamper event after the failed transaction through a durable, separately committed security/audit path.
+- [ ] Ensure a production private object-storage driver is installed/configured and validated by WP-16 preflight; the local disk default is for clean development only.
+- [ ] Bind the professional payroll decision to the authorized qualified reviewer profile/registration and retained evidence, in addition to the distinct-from-preparer Gate and approval reference.
+- [ ] Complete payroll-to-journal/GL, payslip, payment-file, bank reconciliation, statutory remittance and reporting only after WP-13/WP-14 interfaces and human approvals are complete.
+- [ ] Run the exact current WP-14 candidate SHA against PostgreSQL and record unit, feature, API and migration-upgrade results. No CI pass is claimed here.
 
