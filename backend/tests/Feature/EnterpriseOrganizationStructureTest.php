@@ -498,24 +498,35 @@ class EnterpriseOrganizationStructureTest extends TestCase
         $this->getJson('/api/v1/enterprise/job-positions?org_unit_id='.$unitB.'&per_page=101')
             ->assertUnprocessable();
 
-        $this->postJson('/api/v1/enterprise/organization-units/'.$unitA.'/manager-assignments', [
+        $managerA = $this->postJson('/api/v1/enterprise/organization-units/'.$unitA.'/manager-assignments', [
             'manager_position_id' => $positionA,
             'valid_from' => '2026-01-01',
             'valid_to' => '2026-06-30',
             'reason' => 'Assign the first effective-dated manager position.',
-        ])->assertCreated();
-        $this->postJson('/api/v1/enterprise/organization-units/'.$unitA.'/manager-assignments', [
+        ])->assertCreated()->json('data.id');
+        $managerB = $this->postJson('/api/v1/enterprise/organization-units/'.$unitA.'/manager-assignments', [
             'manager_position_id' => $positionB,
             'valid_from' => '2026-07-01',
             'valid_to' => '2026-12-31',
             'reason' => 'Assign the successor manager position.',
-        ])->assertCreated();
+        ])->assertCreated()->json('data.id');
 
         $this->getJson('/api/v1/enterprise/organization-units/'.$unitA.'/manager-assignments?per_page=1&page=2')
             ->assertOk()
             ->assertJsonPath('current_page', 2)
             ->assertJsonPath('last_page', 2)
-            ->assertJsonPath('total', 2);
+            ->assertJsonPath('total', 2)
+            ->assertJsonFragment(['id' => $managerA]) // first page sorted newest-first; the older assignment is on page two
+            ->assertJsonMissing(['id' => $managerB]);
+
+        $this->getJson('/api/v1/enterprise/organization-units/'.$unitA.'/manager-assignments?q=PAGE-POS-A&valid_on=2026-05-01')
+            ->assertOk()
+            ->assertJsonPath('total', 1)
+            ->assertJsonFragment(['id' => $managerA]);
+
+        $this->getJson('/api/v1/enterprise/organization-units/'.$unitA.'/manager-assignments?q=PAGE-POS-B&valid_on=2026-05-01')
+            ->assertOk()
+            ->assertJsonPath('total', 0);
 
         $subjectB = $this->createPosition($unitB, 'PAGE-SUBJECT-B');
         $subjectC = $this->createPosition($unitC, 'PAGE-SUBJECT-C');
