@@ -33,7 +33,7 @@ class DomainRlsSecurityTest extends TestCase
             'integration_outbox_events', 'agent_run_audits', 'agent_action_proposals',
             'agent_approval_decisions', 'agent_action_events', 'device_scan_events',
             'receipt_line_material_lots', 'finished_goods_lots', 'finished_goods_transactions',
-            'finished_goods_reservations', 'finance_journal_postings', 'finance_journal_reversals', 'customer_credit_decisions', 'tenant_domain_role_assignments',
+            'finished_goods_reservations', 'finance_journal_postings', 'finance_journal_reversals', 'customer_credit_decisions', 'tenant_domain_role_assignments', 'platform_operator_grants', 'platform_tenant_entitlements', 'platform_audit_events',
         ];
 
         foreach ($tables as $table) {
