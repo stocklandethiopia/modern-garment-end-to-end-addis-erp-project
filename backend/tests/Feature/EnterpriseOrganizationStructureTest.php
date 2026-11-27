@@ -306,7 +306,9 @@ class EnterpriseOrganizationStructureTest extends TestCase
             'valid_from' => '2026-01-01',
             'valid_to' => '2026-12-31',
             'reason' => 'Appoint the designated head position for this unit.',
-        ])->assertCreated();
+        ])->assertCreated()
+            ->assertJsonPath('data.manager_position_code', 'UNIT-HEAD')
+            ->assertJsonPath('data.manager_position_title', 'Position UNIT-HEAD');
 
         $assignmentId = $response->json('data.id');
 
@@ -350,7 +352,16 @@ class EnterpriseOrganizationStructureTest extends TestCase
         $positionB = $this->createPosition($unitId, 'POS-B');
         $positionC = $this->createPosition($unitId, 'POS-C');
 
-        $this->createSolidLine($positionA, $positionB);
+        $firstReporting = $this->postJson('/api/v1/enterprise/position-reporting-relations', [
+            'subject_position_id' => $positionA,
+            'manager_position_id' => $positionB,
+            'reporting_type' => 'SOLID_LINE',
+            'valid_from' => '2026-01-01',
+            'valid_to' => '2026-12-31',
+            'reason' => 'Record the first valid solid-line reporting assignment.',
+        ])->assertCreated()
+            ->assertJsonPath('data.subject_position_code', 'POS-A')
+            ->assertJsonPath('data.manager_position_code', 'POS-B');
 
         $this->postJson('/api/v1/enterprise/position-reporting-relations', [
             'subject_position_id' => $positionA,
