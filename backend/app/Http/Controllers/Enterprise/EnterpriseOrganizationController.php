@@ -152,6 +152,53 @@ class EnterpriseOrganizationController extends Controller
         return response()->json(['data' => $position], 201);
     }
 
+    public function managerAssignments(
+        string $unitId,
+        TenantContext $tenantContext,
+        EnterpriseOrganizationService $organization,
+    ): JsonResponse {
+        $units = $organization->units($tenantContext->tenantId());
+        abort_if(
+            ! $units->getCollection()->contains('id', $unitId),
+            404,
+            'Organizational unit not found.',
+        );
+
+        return response()->json($organization->managerAssignments($tenantContext->tenantId(), $unitId));
+    }
+
+    public function assignUnitManager(
+        Request $request,
+        string $unitId,
+        TenantContext $tenantContext,
+        EnterpriseOrganizationService $organization,
+    ): JsonResponse {
+        $this->assertTenantAdministrator($tenantContext);
+        $tenantId = $tenantContext->tenantId();
+
+        $data = $request->validate([
+            'manager_position_id' => [
+                'required',
+                'uuid',
+                Rule::exists('job_positions', 'id')->where(
+                    fn ($query) => $query->where('tenant_id', $tenantId),
+                ),
+            ],
+            'valid_from' => ['required', 'date_format:Y-m-d'],
+            'valid_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:valid_from'],
+            'reason' => ['required', 'string', 'min:10', 'max:1000'],
+        ]);
+
+        $assignment = $organization->assignUnitManager(
+            $tenantId,
+            (string) $request->user()->getAuthIdentifier(),
+            $unitId,
+            $data,
+        );
+
+        return response()->json(['data' => $assignment], 201);
+    }
+
     public function reportingRelations(
         TenantContext $tenantContext,
         EnterpriseOrganizationService $organization,
