@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -132,6 +133,55 @@ class PlatformAdministrationTest extends TestCase
     private function actAs(string $userId): void
     {
         Sanctum::actingAs(User::query()->findOrFail($userId), ['tenant:select', 'erp:access']);
+    }
+
+    public function test_runtime_cannot_forge_platform_admin_context_and_execute_platform_mutations(): void
+    {
+        $runtime = DB::connection('pgsql');
+        $runtime->beginTransaction();
+
+        try {
+            $runtime->select(
+                "SELECT set_config('app.current_user_id', ?, true)",
+                [$this->platformAdminId],
+            );
+            $runtime->select(
+                "SELECT set_config('app.current_tenant_id', ?, true)",
+                [$this->tenantId],
+            );
+
+            try {
+                $runtime->select(
+                    'SELECT * FROM public.platform_change_tenant_status(?::uuid, ?, ?)',
+                    [$this->tenantId, 'SUSPENDED', 'Attempt privileged change with a forged actor context.'],
+                );
+                $this->fail('app_runtime must not invoke platform administration functions, even with a forged PLATFORM_ADMIN GUC.');
+            } catch (QueryException $exception) {
+                $this->assertSame('42501', $exception->errorInfo[0] ?? null);
+            }
+        } finally {
+            if ($runtime->transactionLevel() > 0) {
+                $runtime->rollBack();
+            }
+        }
+
+        $this->assertDatabaseHas('tenants', [
+            'id' => $this->tenantId,
+            'status' => 'ACTIVE',
+        ], 'pgsql_test_admin');
+    }
+
+    public function test_platform_operator_endpoints_reject_malformed_grant_ids(): void
+    {
+        $this->actAs($this->platformAdminId);
+
+        $this->postJson('/api/v1/platform/operators/grants/not-a-uuid/approve', [
+            'reason' => 'A sufficiently long reason for this invalid grant identifier.',
+        ])->assertNotFound();
+
+        $this->postJson('/api/v1/platform/operators/grants/not-a-uuid/revoke', [
+            'reason' => 'A sufficiently long reason for this invalid grant identifier.',
+        ])->assertNotFound();
     }
 
     public function test_new_tenant_receives_unassigned_review_required_entitlement_by_default(): void
