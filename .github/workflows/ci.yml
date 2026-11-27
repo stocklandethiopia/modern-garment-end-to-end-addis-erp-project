@@ -59,6 +59,8 @@ jobs:
       DB_DATABASE: garment_erp
       DB_USERNAME: app_runtime
       DB_PASSWORD: local-runtime-password
+      CONTROL_DB_USERNAME: app_control
+      CONTROL_DB_PASSWORD: local-control-password
       TEST_DB_ADMIN_USERNAME: erp_test_admin
       TEST_DB_ADMIN_PASSWORD: local-test-admin-password
       MIGRATION_DB_USERNAME: erp_migrator
