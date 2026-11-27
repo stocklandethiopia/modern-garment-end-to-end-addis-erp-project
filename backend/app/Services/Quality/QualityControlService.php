@@ -185,6 +185,9 @@ class QualityControlService
             if ($nonconformance === null) {
                 throw ValidationException::withMessages(['nonconformance' => 'The nonconformance is not available in this tenant.']);
             }
+            if (in_array($nonconformance->status, ['RESOLVED', 'CLOSED'], true)) {
+                throw ValidationException::withMessages(['nonconformance' => 'A resolved or closed nonconformance cannot be reopened by creating another corrective action. Use the controlled reopening workflow.']);
+            }
 
             $id = (string) Str::uuid();
             DB::table('quality_corrective_actions')->insert([
