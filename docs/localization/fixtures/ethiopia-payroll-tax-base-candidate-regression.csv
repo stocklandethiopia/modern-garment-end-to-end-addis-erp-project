@@ -1,0 +1,3 @@
+run_type,payee_type,currency,base_salary,taxable_earnings,exempt_earnings,pensionable_salary,pension_coverage,paye_base_method,paye_base,employee_pension_7_percent,employer_pension_11_percent,paye,other_deductions,net_pay,employer_cost,status
+CANDIDATE_NOT_FOR_PAYROLL,EMPLOYEE,ETB,30000.00,0.00,0.00,30000.00,COVERED,TAXABLE_GROSS,30000.00,2100.00,3300.00,8450.00,0.00,19450.00,33300.00,CANDIDATE_METHOD_LEGAL_OPINION_REQUIRED
+CANDIDATE_NOT_FOR_PAYROLL,EMPLOYEE,ETB,30000.00,0.00,0.00,30000.00,COVERED,TAXABLE_GROSS_LESS_EMPLOYEE_PENSION,27900.00,2100.00,3300.00,7715.00,0.00,20185.00,33300.00,CANDIDATE_METHOD_LEGAL_OPINION_REQUIRED
