@@ -6,7 +6,7 @@ Keep ERP engineering verification available without making the product's test st
 
 The quality gates remain unchanged. Backend/PostgreSQL, tenant RLS, Angular tests/build, dependency audits, WP-01 source integrity, combined packaging and provenance must still execute and pass for the source being verified. No skipped job, earlier green run or local-only result is substituted for exact-head evidence.
 
-## 2. Evidence from 27 November 2026
+## 2. Evidence from 27–28 November 2026
 
 The following runs recorded backend and frontend jobs with `runner_id: 0`, blank runner names and no executed steps:
 
@@ -19,6 +19,37 @@ The combined packaging job was skipped because its required verification jobs di
 Earlier runs #45900565705 and #45900565706 did execute successfully: the ERP CI backend and frontend steps completed, and the combined verification completed backend, frontend, WP-01 integrity and candidate packaging. This confirms that the source and workflow have previously executed on hosted runners; it does not prove the later source SHAs.
 
 The connector does not expose the repository owner's billing usage or the precise Actions policy decision for the later runs. Treat included-compute exhaustion, spending budgets/payment configuration, Actions policy and a temporary GitHub service-capacity condition as investigation paths, not as a confirmed root cause.
+
+### 2.1 Cross-PR retry sweep — 28 November 2026
+
+A repository-wide retry and job-record inspection was completed for the current open PR heads. The following required runs again ended before any job step executed: each backend, Angular and WP-01 integrity job reported `runner_id: 0`, blank runner name and zero steps; dependent artifact/combined-packaging jobs were skipped.
+
+| PR | Candidate area | Retried workflow run IDs | Execution result |
+|---:|---|---|---|
+| 13 | WP-03 platform/scoped-access | #46077281009 | Backend/Angular runner allocation failed; WP-01/package skipped |
+| 18 | WP-00–WP-16 governance/audit | #46077078173, #46077077971 | Backend/Angular/R3 allocation failed; package skipped |
+| 27 | WP-15/WP-16 document storage/RLS | #46024604836, #46024604984 | Backend/Angular allocation failed; dependent package skipped |
+| 19 | WP-03/WP-14 plan and payroll gate docs | #46076772106, #46076772079 | Backend/Angular/R3 allocation failed; package skipped |
+| 20 | WP-14 payroll localization | #46024115391, #46024115411 | Backend/Angular/R3 allocation failed; package skipped |
+| 17 | WP-01 R3 reconciliation | #46022938308, #46022938299 | Backend/Angular/R3 allocation failed; package skipped |
+| 16 | WP-03 organogram/DoA design | #46022932005, #46022932016 | Backend/Angular/R3 allocation failed; package skipped |
+| 21 | WP-03 organization runtime | #46018149774, #46018149715 | Backend/Angular/R3 allocation failed; package skipped |
+| 25 | WP-03 engineering LLD | #46017647171, #46017647142 | Backend/Angular/R3 allocation failed; package skipped |
+| 24 | WP-03 engineering design | #46017389962, #46017390073 | Backend/Angular/R3 allocation failed; package skipped |
+| 23 | WP-15 agent/device least privilege | #46016837226, #46016837218 | Backend/Angular allocation failed; package skipped |
+| 22 | CI runner continuity | #46014760259 | Backend/Angular/R3 allocation failed; package skipped |
+| 14 | Reference-material reconciliation | #45919106528, #45919106597 | Backend/Angular/R3 allocation failed; package skipped |
+| 1 | Delivery foundation PR | #45915273928 | Backend/Angular allocation failed; lockfile job skipped |
+
+These failures do not establish that any source/test assertion failed. They establish that the required checks were **NOT RUN**. PR #3 and PR #2 had no workflow runs associated with their current exact heads in the scan; no CI pass is inferred for them.
+
+The latest PR #13 retry of combined WP verification was #46077281009. Its final retry still returned runner ID 0 for both backend and Angular and skipped WP-01 integrity/packaging. Its exact source head therefore remains unverified.
+
+### 2.2 Alternate runner route — operational handoff
+
+The workflows already contain the safe manual `workflow_dispatch` runner selector. The repository-connected GitHub actions available to this project session can inspect runs and rerun failed jobs, but cannot register a new self-hosted runner or initiate a `workflow_dispatch` with its `execution_runner` input. The controlled fallback therefore requires a repository administrator to perform the documented runner registration on a disposable Linux x64 VM, confirm that the runner is Idle with labels `self-hosted, linux, x64, erp-ci`, then manually dispatch both workflows for a trusted frozen branch/SHA with `execution_runner=self-hosted-linux-x64`.
+
+Do not route automatic pull-request events to a self-hosted machine, do not post or store registration tokens in the repository/chat, and do not broaden runner access across projects. After dispatch, record the run IDs, exact head SHA, runner name, executed steps, test counts and artifact checksums. If the runner is not provisioned, preserve the job state as NOT RUN and continue safe source work.
 
 ## 3. Hosted-compute and policy checks
 
