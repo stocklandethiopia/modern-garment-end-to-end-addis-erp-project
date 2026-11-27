@@ -403,6 +403,7 @@ The following files are additions on `work/wp14-ethiopia-payroll-localization-20
 | Official legal-document verification | `backend/app/Services/Integration/DocumentIntegrationService.php` | Re-reads tenant-owned private legal files and compares current object bytes with registered SHA-256; mismatch marks the document rejected |
 | Default-off activation settings | `backend/config/payroll.php` | Requires employee-master readiness and statutory activation to be separately accepted; both flags default false |
 | Stored statutory source relationship | `backend/database/migrations/2026_11_27_000033_require_stored_statutory_source_document.php` | Adds UUID legal-source document reference and tenant-leading FK to the existing `document_assets` records |
+| Payroll-line evidence digest | `backend/database/migrations/2026_11_27_000034_require_payroll_line_evidence_hash.php` | Adds a SHA-256 digest for canonical payroll-line evidence and database gate for new `VALIDATED` payroll lines |
 | Candidate unit regression | `backend/tests/Unit/EthiopiaPayrollCalculatorTest.php` | Candidate calculations and negative guards; synthetic legal evidence is test fixture only, never production legal approval |
 | Legal localization | `docs/localization/ethiopia-payroll-localization-2026-11-27.md` | Ethiopia source basis, PAYE ambiguity, pension scope, labour payroll requirements and runtime boundaries |
 | Legal release gate | `docs/localization/ethiopia-payroll-engineering-release-gate.md` | Official source acquisition, qualified approval, employee master, calculation and WP-16 acceptance gate |
@@ -415,4 +416,4 @@ The localized API is Laravel server-side only. It consumes verified rule records
 
 ### Migration sequence extension
 
-The candidate adds `2026_11_27_000033_require_stored_statutory_source_document.php` after migration `2026_11_26_000032_add_platform_entitlements_and_tenant_lifecycle.php`. It depends on the pre-existing `document_assets` relation from migration `2026_11_26_000021_create_documents_integrations_and_agent_controls.php`. Do not backdate, reorder or rename existing migrations.
+The candidate adds `2026_11_27_000033_require_stored_statutory_source_document.php` and `2026_11_27_000034_require_payroll_line_evidence_hash.php` after migration `2026_11_26_000032_add_platform_entitlements_and_tenant_lifecycle.php`. Migration 000033 depends on the pre-existing `document_assets` relation from migration `2026_11_26_000021_create_documents_integrations_and_agent_controls.php`; 000034 adds the validated payroll-line digest boundary. Do not backdate, reorder or rename existing migrations.
