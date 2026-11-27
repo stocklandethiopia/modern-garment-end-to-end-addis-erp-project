@@ -35,16 +35,22 @@ class EthiopiaPayrollCalculatorTest extends TestCase
 
     public function test_etb_30000_gross_base_candidate_comparison_is_exact(): void
     {
-        $result = $this->calculator->calculateCandidate(
-            $this->standardEmployeeInput(),
+        $input = $this->standardEmployeeInput();
+        $grossBase = $this->calculator->calculateCandidate(
+            $input,
             $this->incomeTaxRule(EthiopiaPayrollCalculator::TAX_BASE_GROSS),
             $this->pensionRule()
         );
+        $pensionFirst = $this->calculator->calculateCandidate(
+            $input,
+            $this->incomeTaxRule(EthiopiaPayrollCalculator::TAX_BASE_GROSS_LESS_EMPLOYEE_PENSION),
+            $this->pensionRule()
+        );
 
-        self::assertSame('30000.00', $result['taxable_income']);
-        self::assertSame('8450.00', $result['paye']);
-        self::assertSame('19450.00', $result['net_pay']);
-        self::assertSame('735.00', $result['paye'] === '8450.00' ? '735.00' : '0.00');
+        self::assertSame('30000.00', $grossBase['taxable_income']);
+        self::assertSame('8450.00', $grossBase['paye']);
+        self::assertSame('19450.00', $grossBase['net_pay']);
+        self::assertSame(73500, $this->minor($grossBase['paye']) - $this->minor($pensionFirst['paye']));
     }
 
     public function test_employer_pension_is_not_deducted_from_employee_net_pay(): void
@@ -317,6 +323,13 @@ class EthiopiaPayrollCalculatorTest extends TestCase
             'professional_approval_reference' => 'SYNTHETIC-APPROVAL-FIXTURE',
             'rule_payload' => ['payroll' => $payroll],
         ];
+    }
+
+    private function minor(string $amount): int
+    {
+        [$whole, $fraction] = array_pad(explode('.', $amount, 2), 2, '00');
+
+        return ((int) $whole * 100) + (int) str_pad($fraction, 2, '0');
     }
 
     private function supportingSource(string $instrument, string $fileTag): array
