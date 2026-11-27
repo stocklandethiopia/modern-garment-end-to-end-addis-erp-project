@@ -52,7 +52,7 @@ BEGIN
             USING ERRCODE = '42501';
     END IF;
 
-    IF normalized_mode NOT IN ('TENANT_WIDE', 'SCOPED') THEN
+    IF normalized_mode IS NULL OR normalized_mode NOT IN ('TENANT_WIDE', 'SCOPED') THEN
         RAISE EXCEPTION 'Unsupported tenant access scope mode.'
             USING ERRCODE = '22023';
     END IF;
@@ -201,11 +201,6 @@ BEGIN
             USING ERRCODE = '22023';
     END IF;
 
-    IF v_actor_id IS NULL OR v_tenant_id IS NULL THEN
-        RAISE EXCEPTION 'Authenticated tenant and actor context is required.'
-            USING ERRCODE = '42501';
-    END IF;
-
     PERFORM 1 FROM public.tenants
      WHERE id = v_tenant_id AND status = 'ACTIVE';
     IF NOT FOUND THEN
@@ -293,7 +288,7 @@ BEGIN
            AND (existing.valid_to IS NULL OR existing.valid_to >= effective_from)
     ) THEN
         RAISE EXCEPTION 'An overlapping active access grant already exists for this member, scope and permission.'
-            USING ERRCODE = '23505';
+            USING ERRCODE = '22023';
     END IF;
 
     INSERT INTO public.tenant_access_scopes (
