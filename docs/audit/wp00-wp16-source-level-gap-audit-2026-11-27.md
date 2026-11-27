@@ -2152,7 +2152,7 @@ The lot stores style_id/style_revision_no from the order, but its SKU/colour/siz
 
 ---
 
-## 22. WP-03 / WP-04 — Scoped authorization, forecast lineage and commercial guardrails
+## 31. WP-03 / WP-04 — Scoped authorization, forecast lineage and commercial guardrails
 
 ### 29.1 Scoped tenant members can reach merchandising routes that do not evaluate their scope
 
