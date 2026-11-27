@@ -100,3 +100,21 @@ This ledger reconciles the requirements assigned to WP-03 in docs/requirements/r
 7. Complete secret provisioning/rotation, recovery, migration rollback and non-production deployment drills. Execute full GAR-ENT-001..010 and GAR-PLT-001/003/004/005 positive, negative, retry, expiry, concurrency, audit and tenant-crossing acceptance. Reconcile WP-01 R3's 128 records to the 120 visible GAR rows and document the exact eight-record delta.
 
 **WP-03 remains open.** No later work package can be treated as accepted to bypass it. Routine owner acceptance is not required between safe engineering steps; exact technical evidence is.
+
+## Organization structure runtime increment — 27 November 2026
+
+This isolated candidate adds the first backend organization-structure master endpoints. It is evidence of implementation scope, not package acceptance.
+
+| Candidate slice | Evidence added | Evidence state | Remaining acceptance |
+|---|---|---|---|
+| Organizational units | Tenant-owned `org_units`, parent hierarchy, legal-entity/site links, effective-period constraints, tenant RLS/composite FKs | IMPLEMENTED — NOT VERIFIED | Execute migration on restricted PostgreSQL role; test nested hierarchy, parent-period rules, cross-entity/site consistency, cross-tenant denial, concurrency and lifecycle amendments. Tree move/update/cycle guard is not exposed because this slice only creates nodes. |
+| Job positions | Tenant-owned `job_positions` with organization unit, position code, title, family, grade, class and effective period | IMPLEMENTED — NOT VERIFIED | Execute API/schema tests, duplicate code, inactive unit, date containment and tenant isolation; build lifecycle and historical versioning workflow. |
+| Unit manager-position mapping | Effective-dated `org_unit_manager_assignments` linked to position slots | IMPLEMENTED — NOT VERIFIED | Verify one manager position per org unit and overlapping period rejection under concurrent requests; no human incumbent is resolved by this mapping. |
+| Solid-line and functional reporting | `position_reporting_relations`; manager/subject position FKs; solid-line overlap and recursive cycle checks | IMPLEMENTED — NOT VERIFIED | Execute positive/negative tests, concurrent graph mutation tests, future-effective period tests, and matrix/function-line policy review. |
+| Audit and integration events | Audit event and versioned transactional outbox event written in the same service transaction as each master record | IMPLEMENTED — NOT VERIFIED | Verify payload hash, rollback atomicity, tenant RLS, outbox idempotency and dispatcher behavior on exact database/runtime build. |
+| API security | Tenant context, tenant-scoped validation/queries, tenant-admin-only writes, forced RLS and explicit grants | IMPLEMENTED — NOT VERIFIED | Execute ordinary member denial, tenant crossing, app_runtime no-DELETE, forced-RLS and authorization regression tests on exact SHA. Existing domain authorization is unchanged. |
+| Angular / user experience | None in this increment | NOT RUN | Build the organization chart and position-management Angular workbench, accessible forms, effective-date views and UI security tests before accepting user workflow. |
+| Person / employee / incumbent | Not implemented by this increment | BLOCKED BY DOMAIN DEPENDENCY | Resolve the enterprise-person anchor with People & Payroll ownership before position assignments, acting appointments, employment links or authority resolution. Do not attach job slots to users or tenant memberships. |
+| Delegated Authority | No DoA policy or approval engine in this increment | NOT RUN | Implement versioned, scoped policy and approval instances only after positions, human appointment resolution, signed company authority and full conflict/SoD rules exist. No transaction approval is inferred from a manager title or tenant role. |
+
+The test file `backend/tests/Feature/EnterpriseOrganizationStructureTest.php` has been added, but no local Codespace/runtime test execution was available during this source change. Status remains **NOT RUN** until GitHub Actions runs tests against the exact final PR head. A workflow that fails before runner/job steps is infrastructure-blocked and is not evidence of a code pass or code failure.
