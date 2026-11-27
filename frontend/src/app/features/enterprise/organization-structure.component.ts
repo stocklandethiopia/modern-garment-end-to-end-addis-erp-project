@@ -88,7 +88,7 @@ export class OrganizationStructureComponent {
   });
 
   readonly managerPositionChoices = computed(() => this.knownPositions()
-    .filter((position) => position.org_unit_id === this.selectedUnitId())
+    .filter((position) => position.org_unit_id === this.selectedUnitId() && position.status === 'ACTIVE')
     .sort((a, b) => a.position_code.localeCompare(b.position_code)));
 
   readonly reportingPositionOptions = computed(() => {
@@ -96,7 +96,9 @@ export class OrganizationStructureComponent {
     for (const position of [...this.knownPositions(), ...this.reportingPositionChoices()]) {
       byId.set(position.id, position);
     }
-    return [...byId.values()].sort((a, b) => a.position_code.localeCompare(b.position_code));
+    return [...byId.values()]
+      .filter((position) => position.status === 'ACTIVE')
+      .sort((a, b) => a.position_code.localeCompare(b.position_code));
   });
 
   readonly childUnits = computed(
@@ -335,7 +337,7 @@ export class OrganizationStructureComponent {
 
   private loadReportingPositionChoices(tenantId: string, term: string, tenantSequence = this.requestSequence): void {
     const request = ++this.reportingPositionSequence;
-    this.api.listPositions({ page: 1, per_page: 100, q: term.trim() || undefined }).subscribe({
+    this.api.listPositions({ page: 1, per_page: 100, q: term.trim() || undefined, status: 'ACTIVE' }).subscribe({
       next: (response) => {
         if (request !== this.reportingPositionSequence || !this.isCurrentTenant(tenantId, tenantSequence)) return;
         this.reportingPositionChoices.set(response.data);
