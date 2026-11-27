@@ -14,9 +14,10 @@ return new class extends Migration
         }
 
         DB::unprepared(<<<'SQL'
--- The runtime may read scope records, but it must not mutate the scope mode,
--- grant ledger or revocation history directly. All mutations go through the
--- SECURITY DEFINER functions below so authorization and audit are atomic.
+-- The ordinary app_runtime role may read scope records but cannot invoke
+-- SECURITY DEFINER mutation functions. The separate app_control login is used
+-- only by authenticated, parameterized Laravel services and has function-only privileges.
+-- This prevents SQL executed with app_runtime credentials from forging GUCs and calling the privileged API.
 REVOKE ALL ON TABLE public.tenant_access_scope_modes FROM PUBLIC, app_runtime;
 REVOKE ALL ON TABLE public.tenant_access_scopes FROM PUBLIC, app_runtime;
 GRANT SELECT ON TABLE public.tenant_access_scope_modes TO app_runtime;
