@@ -151,8 +151,13 @@ export class OrganizationStructureComponent {
       next: (response) => {
         if (!this.isCurrentTenant(tenantId, sequence)) return;
         this.units.set(response.data);
-        if (response.data.length > 0 && !this.selectedUnitId()) {
-          this.selectUnit(response.data[0]!.id);
+        const currentId = this.selectedUnitId();
+        const selected = response.data.find((unit) => unit.id === currentId) ?? response.data[0] ?? null;
+        if (selected) {
+          this.selectUnit(selected.id);
+        } else {
+          this.selectedUnitId.set(null);
+          this.managerAssignments.set([]);
         }
         this.loading.set(false);
       },
@@ -205,6 +210,8 @@ export class OrganizationStructureComponent {
 
   selectUnit(unitId: string): void {
     this.selectedUnitId.set(unitId);
+    this.savingPosition.set(false);
+    this.savingManager.set(false);
     this.managerAssignments.set([]);
     this.managerRequestSequence += 1;
     const tenantId = this.session.activeTenant()?.id;
