@@ -2425,3 +2425,153 @@ Existing DemandOtbPricingWorkflowTest covers the happy paths for forecast runs, 
 
 
 ---
+
+
+---
+
+## 31. WP-11 quality state machine and WP-15 integration replay audit
+
+This pass inspected the current QualityControlService, QualityController, migration 000017, ManufacturingExecutionService, IntegrationOutboxService and DocumentIntegrationService at delivery SHA fc01eced62b97c4ec27f0075264fc8ba0fb11851.
+
+### 31.1 Quality inspection submission and independent review have an incompatible intermediate database state
+
+**Finding:** The quality inspection schema has a result_status CHECK allowing DRAFT, IN_PROGRESS, PASS, PASS_WITH_DEVIATION, FAIL, CONTAINED and CANCELLED. A second CHECK requires reviewed_by and reviewed_at whenever result_status is PASS or PASS_WITH_DEVIATION.
+
+The intended service sequence is:
+1. Assigned inspector submits a completed result and writes PASS/PASS_WITH_DEVIATION with inspected_at.
+2. A different reviewer calls reviewInspection() and writes reviewed_by/reviewed_at.
+3. Material, operation or finished-goods release can consume the reviewed result.
+
+Step 1 is rejected by the database because the reviewer fields are still NULL. The database therefore blocks the intended two-person flow before the reviewer can perform step 2.
+
+**Source**
+- backend/database/migrations/2026_11_26_000017_create_quality_capa_and_release_gates.php, quality_inspections final CHECK constraints.
+- backend/app/Services/Quality/QualityControlService.php, submitInspectionResult() and reviewInspection().
+- backend/app/Services/Quality/QualityControlService.php, decideMaterialRelease() and decideOperationRelease() require reviewed passing inspections.
+
+**Required implementation**
+- [ ] Introduce an explicit SUBMITTED_PENDING_REVIEW status, or separate inspection-result status and review status.
+- [ ] Allow inspector PASS/PASS_WITH_DEVIATION submission with reviewer fields absent.
+- [ ] Require independent reviewer and reason before the result becomes RELEASEABLE_PASS.
+- [ ] Keep failed/contained results on a separate non-release path.
+- [ ] Add PostgreSQL tests for draft → inspector submits pass → different reviewer accepts → material/operation/finished-goods release can proceed; prove no release is possible before review.
+- [ ] Use a forward-only migration and preserve historical inspection identities; do not change the earlier migration in a way that breaks an installed database.
+
+### 31.2 Deviation and containment approvals are request booleans, not independently evidenced decisions
+
+**Finding A — deviation:** QualityController accepts deviation_approved as a boolean. submitInspectionResult() converts it into PASS_WITH_DEVIATION without a linked waiver/deviation record, applicable standard revision, affected quantity, conditions, expiry, reason or approver identity. The inspection reviewer is still independent, but that reviewer is not a substitute for a distinct deviation authority.
+
+**Finding B — containment:** The controller also accepts containment_confirmed as a boolean. The service writes the nonconformance containment_status as CONTAINED from that flag. It does not require a containment action/evidence record, actual contained quantity/scope, responsible actor or verification. A defect catalog's requires_containment field must not be treated as satisfied merely because a caller supplied true.
+
+**Required implementation**
+- [ ] Replace deviation_approved with a tenant-scoped deviation/waiver decision record linked to exact inspection subject, product/process standard revision, affected quantity, reason, conditions and expiry.
+- [ ] Record a separate authorized approver and approval evidence; validate that the deviation applies to the exact subject and scope.
+- [ ] Replace containment_confirmed with a containment record and evidence, including affected inventory/WIP/shipments, quantity, location, owner, action, timestamp and independent verification where required.
+- [ ] Derive PASS_WITH_DEVIATION or CONTAINED from those recorded decisions, not caller truth values.
+- [ ] Test unapproved, expired, wrong-subject, wrong-standard, wrong-quantity, cross-tenant and altered-evidence cases.
+
+### 31.3 Nonconformance disposition can assert authority containment without an authority event
+
+**Finding:** setNonconformanceDisposition() updates a locked nonconformance record, but its closure does not capture the actorId even though the method accepts it. The update stores disposition, caller-provided containment_status, notes/root cause and status UNDER_REVIEW; it does not record a disposition requester, reviewer, authority, timestamp, or reasoned decision event. QualityController explicitly allows the caller to set containment_status to RELEASED_BY_AUTHORITY.
+
+The current row has opened_by and resolved_by fields, but no separate disposition actor/approver metadata. As a result, a caller with the generic quality.set-disposition permission can assert RELEASED_BY_AUTHORITY without a distinct authority decision record.
+
+**Required implementation**
+- [ ] Persist the initiating actor, request time, reason and exact previous/new state in a nonconformance disposition request.
+- [ ] Add separate authorized disposition decisions for USE_AS_IS, CUSTOMER_CONCESSION, RETURN_TO_SUPPLIER, SCRAP and authority-level containment release where required by policy.
+- [ ] Derive RELEASED_BY_AUTHORITY only from a linked approved authority record; reject direct request values.
+- [ ] Bind approver authority to severity, product/customer requirement, legal entity/site, quantity and risk threshold.
+- [ ] Preserve inspector, disposition requester, approver, CAPA implementer and effectiveness verifier separation where required.
+- [ ] Add authorization, same-actor, changed-scope, expired approval and audit atomicity tests.
+
+### 31.4 CAPA write and verification evidence still need transactional/evidence strengthening
+
+**Finding A — CAPA creation:** createCorrectiveAction() reads the nonconformance, inserts a corrective action and updates the nonconformance status to CAPA_REQUIRED as separate statements without one transaction and without locking the NC. A failure after the insert can leave the action and NC state inconsistent; two concurrent requests can create duplicate actions.
+
+**Finding B — evidence:** implementCorrectiveAction() and verifyCorrectiveActionEffectiveness() store evidence supplied as JSON/string references. The verification path correctly prevents the creator/implementer from verifying their own action, and resolves the NC only when no other open CAPA remains. However, the evidence_reference is not linked to a verified document asset/version/hash; it is concatenated into the effectiveness_result string.
+
+**Required implementation**
+- [ ] Lock the source nonconformance; create action and update NC status in one transaction.
+- [ ] Add action idempotency/correlation and reject duplicate/conflicting CAPA submissions.
+- [ ] Link implementation and effectiveness evidence to retained WP-15 documents with actual-byte hash, version, reviewer and applicable scope.
+- [ ] Retain the existing independent effectiveness verifier and other-open-CAPA check.
+- [ ] Add rollback, duplicate, concurrent, missing/altered evidence and NC-resolution tests.
+
+### 31.5 Inspection standard and sampling-plan references are not verified operational policies
+
+**Finding:** createInspection() stores inspection_standard_reference and sampling_plan_reference as nullable strings. The service accounts for the submitted sample_quantity and requires accepted plus rejected quantity to match it, but no inspected source path resolves the reference to an approved, versioned sampling plan or evaluates AQL/sample size/acceptance-rejection thresholds by inspection lot, risk, customer, defect class or process. The service marks PASS whenever rejected quantity is zero and the defects list is empty; no sampling-policy evaluator runs before that result.
+
+**Required implementation**
+- [ ] Add versioned inspection standards and sampling plans with customer/style/material/process/site/risk applicability and effective dates.
+- [ ] Calculate sample quantity and Ac/Re thresholds from the lot size and approved sampling standard; prevent caller-chosen sample quantities from reducing the required inspection.
+- [ ] Resolve defect criticality, measurement tolerances and required checks from the approved product/customer quality plan.
+- [ ] Store exact standard/plan IDs, revisions and source hashes on the inspection.
+- [ ] Calculate pass/fail/conditional disposition from measured observations and policy thresholds, not only the absence of defect rows.
+- [ ] Add AQL boundary, sample-size manipulation, critical-defect, tolerance and stale-standard tests.
+
+### 31.6 Manufacturing quality-gate integration is present and must be preserved
+
+**Verified positive behavior:** ManufacturingExecutionService.recordOperationEvent() checks the predecessor route step. If that predecessor is marked quality_gate, the service requires a quality_release_decisions row for that exact predecessor operation with decision RELEASE or RELEASE_WITH_DEVIATION before the next operation can start.
+
+QualityControlService.decideOperationRelease() requires the linked inspection to be for the exact production operation, reviewed as passing, and the release actor to differ from the inspector and reviewer. It also blocks release while open nonconformances remain.
+
+**Remaining strengthening**
+- [ ] Add a composite relation/trigger and feature tests proving the release decision's linked inspection belongs to the same tenant and exact operation and remains an accepted/reviewed inspection.
+- [ ] Verify a later REJECT/HOLD/REINSPECT decision or opened new nonconformance cannot be bypassed by an earlier RELEASE decision; model decision supersession/current-effective release status explicitly.
+- [ ] Lock the operation, inspection and open NC set consistently while issuing a release decision and starting the dependent operation, so a concurrent hold cannot race progression.
+- [ ] Ensure final quality gates, including the final operation/finished-goods stage, are enforced by their explicit release service and not inferred from production-order COMPLETED alone.
+- [ ] Test predecessor quality gate, prior release then later hold, concurrent release/hold, opened NC after release, and last-operation final inspection.
+
+### 31.7 Integration outbox claim has no lease expiry or worker fencing
+
+**Finding:** claimBatch() claims only PENDING/RETRY events, moves them to PROCESSING and stores locked_at. markDelivered() and markFailed() require PROCESSING, but no method reclaims PROCESSING events after a worker crash/time-out. A worker that crashes after claim can leave an event permanently PROCESSING. There is no claimed_by worker identity, lease expiry, monotonically increasing claim token/fencing version or compare-and-set guard to stop a stale worker from finalizing a later worker's retry.
+
+**Required implementation**
+- [ ] Add claimed_by, lease_expires_at, and a monotonically increasing claim/fencing token to each delivery attempt.
+- [ ] Reclaim only expired PROCESSING leases; increment attempt count and preserve prior failure/recovery history.
+- [ ] Require matching worker identity and fencing token for markDelivered/markFailed.
+- [ ] Make the remote connector call idempotent using endpoint+event key+payload hash, and reconcile timeout-after-remote-success before resending.
+- [ ] Add tests for worker crash after claim, expired lease, stale worker completion, concurrent reclaimer, remote success with lost response, and dead-letter replay.
+- [ ] Continue using the existing FOR UPDATE SKIP LOCKED batch claim and bounded retry/backoff.
+
+### 31.8 Outbox and scan-event idempotency return existing records without checking payload equality
+
+**Finding A — outbox:** enqueueDomainEvent() validates that payload_sha256 looks like a 64-hex hash, looks up an existing row by tenant/event_key and returns it without comparing the existing payload_sha256 to the incoming hash or comparing canonical event/aggregate identity. Reusing an event key with a different payload is silently treated as an identical retry. There is also a race between the read and insert which can surface as a unique-constraint exception.
+
+**Finding B — device scan:** recordScanEvent() similarly looks up by tenant/event_key and returns the existing scan event without comparing device identity, symbology, scanned value, event context, device timestamp or raw metadata. A conflicting scan-key replay is not distinguished from an identical retry. No canonical scan payload hash is stored.
+
+**Required implementation**
+- [ ] Calculate the payload hash server-side from canonicalized typed fields; do not trust a caller-supplied digest without recomputing it.
+- [ ] On repeated event_key, return the original record only if event type, aggregate, endpoint/device and payload hash are identical.
+- [ ] Raise a stable idempotency conflict on different payload or context.
+- [ ] Resolve the concurrent insert race by serializing or catching unique conflicts and performing the same payload comparison.
+- [ ] Add identical retry, changed-payload same-key, event-key race and cross-device retry tests.
+
+### 31.9 Document extraction and private-object path still lack complete source verification and worker execution
+
+**Finding:** the document service has lifecycle methods for QUEUED, PROCESSING, EXTRACTED, REVIEW_REQUIRED, APPROVED_FOR_IMPORT and REJECTED, but the inspected repository contains no actual extraction worker/provider invocation or typed import adapter. stageExtractionResult() accepts a result while the run is QUEUED or PROCESSING, but it does not require a dedicated worker service principal, provider execution ID, signed result, model/version, input hash or output hash. reviewExtraction() can set APPROVED_FOR_IMPORT, but approval does not create the proposed domain record through its owning service.
+
+Document registration checks the shape of a supplied SHA-256, not actual bytes. Upload hashes the local temporary file but does not read the stored object back; metadata insert failure has no compensating object delete/orphan reconciliation. These are distinct from the separate storage-disk default defect already recorded in Section 4.1/9.4.
+
+**Required implementation**
+- [ ] Add worker identity, job lease, provider request ID, model/version, input artifact ID/hash and output hash to each extraction run.
+- [ ] Process extraction using a bounded provider adapter and retryable worker; do not accept an arbitrary client as an extraction worker.
+- [ ] Verify stored private bytes/size/MIME and recompute SHA before marking checksum_verified_at.
+- [ ] Clean up or reconcile a successfully uploaded object whose metadata insert fails.
+- [ ] Validate extraction output against a versioned domain schema and record source page/coordinate/field confidence.
+- [ ] Import only after human approval through the owning WP service; bind imported record to exact document and approved field snapshot.
+- [ ] Add tests for byte alteration, missing objects, orphan cleanup, worker lease/replay, stale provider results, malformed values and approved import idempotency.
+
+---
+
+## 32. WP-11 / WP-15 implementation sequence
+
+1. Correct inspection submit/review status model using a forward database migration.
+2. Implement linked, versioned deviation and containment approval records; remove request booleans as authority.
+3. Implement nonconformance disposition authority and actor/evidence audit.
+4. Make CAPA creation atomic/idempotent and link implementation/effectiveness evidence to verified documents.
+5. Implement versioned inspection standards/AQL/sample-size and defect/tolerance evaluation.
+6. Preserve the existing predecessor quality-gate enforcement; add locking/current-decision supersession and final-goods gate tests.
+7. Add outbox lease/fencing/reclaim behavior and payload-aware idempotency for outbox/device scans.
+8. Implement extraction workers, verified private-object integrity and approved typed domain import.
+9. Add WP-11/WP-15 PostgreSQL, API, retry/concurrency and browser workflow test suites; record exact tested SHA.
