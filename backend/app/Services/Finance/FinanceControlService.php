@@ -415,6 +415,10 @@ class FinanceControlService
                 'source_snapshot_sha256' => $calculation['source_snapshot_sha256'],
             ];
 
+            $canonicalEvidence = $this->canonicalizePayrollEvidence($evidence);
+            $evidenceJson = json_encode($canonicalEvidence, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+            $evidenceSha256 = hash('sha256', $evidenceJson);
+
             $id = (string) Str::uuid();
             DB::table('payroll_run_lines')->insert([
                 'id' => $id,
@@ -427,7 +431,8 @@ class FinanceControlService
                 'total_deductions' => $calculation['deduction_total'],
                 'net_amount' => $calculation['net_pay'],
                 'currency' => 'ETB',
-                'calculation_evidence' => json_encode($evidence, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+                'calculation_evidence' => $evidenceJson,
+                'calculation_evidence_sha256' => $evidenceSha256,
                 'calculation_status' => 'VALIDATED',
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -469,6 +474,28 @@ class FinanceControlService
 
             return DB::table('payroll_run_drafts')->where('tenant_id', $tenantId)->where('id', $runId)->first();
         }, 3);
+    }
+
+    /**
+     * Canonicalize payroll evidence before persistence so the stored digest is
+     * stable for equivalent JSON payloads regardless of associative key order.
+     *
+     * @param array<string, mixed> $value
+     * @return array<string, mixed>
+     */
+    private function canonicalizePayrollEvidence(array $value): array
+    {
+        foreach ($value as $key => $item) {
+            if (is_array($item)) {
+                $value[$key] = $this->canonicalizePayrollEvidence($item);
+            }
+        }
+
+        if (! array_is_list($value)) {
+            ksort($value);
+        }
+
+        return $value;
     }
 
     /**
