@@ -139,8 +139,12 @@ export class PlatformOperatorsComponent implements OnInit {
           this.notice.set('Platform operator grant approved and recorded in the global audit history.');
           this.refresh();
         },
-        error: (response: { error?: { message?: string } }) => {
-          this.error.set(response.error?.message ?? 'The platform operator grant could not be approved.');
+        error: (response: { error?: { message?: string; errors?: Record<string, string[]> } }) => {
+          this.error.set(
+            response.error?.errors?.['platform']?.[0]
+            ?? response.error?.message
+            ?? 'The platform operator grant could not be approved.',
+          );
         },
       });
   }
@@ -166,8 +170,12 @@ export class PlatformOperatorsComponent implements OnInit {
           this.notice.set('Platform operator grant revoked. Its historical record remains in the global audit history.');
           this.refresh();
         },
-        error: (response: { error?: { message?: string } }) => {
-          this.error.set(response.error?.message ?? 'The platform operator grant could not be revoked.');
+        error: (response: { error?: { message?: string; errors?: Record<string, string[]> } }) => {
+          this.error.set(
+            response.error?.errors?.['platform']?.[0]
+            ?? response.error?.message
+            ?? 'The platform operator grant could not be revoked.',
+          );
         },
       });
   }
