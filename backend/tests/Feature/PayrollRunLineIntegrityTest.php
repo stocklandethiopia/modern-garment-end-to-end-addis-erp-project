@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Tests\\Feature;
+namespace Tests\Feature;
 
-use Illuminate\\Support\\Facades\\DB;
-use Tests\\TestCase;
+use Illuminate\Support\Facades\DB;
+use Tests\TestCase;
 
 class PayrollRunLineIntegrityTest extends TestCase
 {
@@ -35,13 +35,15 @@ class PayrollRunLineIntegrityTest extends TestCase
     {
         $runtime = DB::connection('pgsql');
 
-        $triggers = $runtime->table('pg_trigger')
-            ->where('tgrelid', 'payroll_run_lines' . '::regclass')
-            ->where('NOT tgisinternal')
-            ->pluck('tgname')
-            ->all();
+        $triggers = $runtime->select(
+            "SELECT tgname FROM pg_trigger WHERE tgrelid = 'public.payroll_run_lines'::regclass AND NOT tgisinternal"
+        );
+        $triggerNames = array_map(
+            static fn ($trigger): string => (string) $trigger->tgname,
+            $triggers,
+        );
 
-        $this->assertContains('payroll_run_lines_insert_draft_only', $triggers);
-        $this->assertContains('payroll_run_lines_immutable', $triggers);
+        $this->assertContains('payroll_run_lines_insert_draft_only', $triggerNames);
+        $this->assertContains('payroll_run_lines_immutable', $triggerNames);
     }
 }
