@@ -418,11 +418,11 @@ REVOKE ALL ON FUNCTION public.platform_request_operator_grant(text, text, date, 
 REVOKE ALL ON FUNCTION public.platform_approve_operator_grant(uuid, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.platform_revoke_operator_grant(uuid, text) FROM PUBLIC;
 
-GRANT EXECUTE ON FUNCTION public.platform_current_operator_roles() TO app_runtime;
-GRANT EXECUTE ON FUNCTION public.platform_list_operator_grants() TO app_runtime;
-GRANT EXECUTE ON FUNCTION public.platform_request_operator_grant(text, text, date, date, text) TO app_runtime;
-GRANT EXECUTE ON FUNCTION public.platform_approve_operator_grant(uuid, text) TO app_runtime;
-GRANT EXECUTE ON FUNCTION public.platform_revoke_operator_grant(uuid, text) TO app_runtime;
+GRANT EXECUTE ON FUNCTION public.platform_current_operator_roles() TO app_control;
+GRANT EXECUTE ON FUNCTION public.platform_list_operator_grants() TO app_control;
+GRANT EXECUTE ON FUNCTION public.platform_request_operator_grant(text, text, date, date, text) TO app_control;
+GRANT EXECUTE ON FUNCTION public.platform_approve_operator_grant(uuid, text) TO app_control;
+GRANT EXECUTE ON FUNCTION public.platform_revoke_operator_grant(uuid, text) TO app_control;
 SQL);
     }
 
@@ -433,11 +433,11 @@ SQL);
         }
 
         DB::unprepared(<<<'SQL'
-REVOKE EXECUTE ON FUNCTION public.platform_current_operator_roles() FROM app_runtime;
-REVOKE EXECUTE ON FUNCTION public.platform_list_operator_grants() FROM app_runtime;
-REVOKE EXECUTE ON FUNCTION public.platform_request_operator_grant(text, text, date, date, text) FROM app_runtime;
-REVOKE EXECUTE ON FUNCTION public.platform_approve_operator_grant(uuid, text) FROM app_runtime;
-REVOKE EXECUTE ON FUNCTION public.platform_revoke_operator_grant(uuid, text) FROM app_runtime;
+REVOKE EXECUTE ON FUNCTION public.platform_current_operator_roles() FROM app_control;
+REVOKE EXECUTE ON FUNCTION public.platform_list_operator_grants() FROM app_control;
+REVOKE EXECUTE ON FUNCTION public.platform_request_operator_grant(text, text, date, date, text) FROM app_control;
+REVOKE EXECUTE ON FUNCTION public.platform_approve_operator_grant(uuid, text) FROM app_control;
+REVOKE EXECUTE ON FUNCTION public.platform_revoke_operator_grant(uuid, text) FROM app_control;
 
 DROP FUNCTION IF EXISTS public.platform_revoke_operator_grant(uuid, text);
 DROP FUNCTION IF EXISTS public.platform_approve_operator_grant(uuid, text);
