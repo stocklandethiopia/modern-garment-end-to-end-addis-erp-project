@@ -241,3 +241,13 @@ The ERP must model legal entity + licence category + activity + site/address + b
 Every executable statutory rule must retain its full Gazette/instrument and amendment chain, exact clause and applicability, original wording and controlled interpretation, effective/transition dates, qualified review, approved calculation bases/exceptions/rounding, independent test vectors, parallel reconciliation, accountable customer activation and immutable audit/reversal evidence. Historical posted records are not retroactively rewritten.
 
 **WP-02 conclusion:** the official-source inventory, high-impact 2025/2026 changes, authority mapping and explicit holds are documented. This is an engineering source register, not a blanket legal opinion for every Ethiopian taxpayer, region or facility. The legal-source registry and approval workflow may proceed; unverified statutory calculations remain inactive.
+
+
+## WP-03 / WP-14 focused localization cross-reference — 27 November 2026
+
+The detailed engineering treatment of company legal-form governance, public-procurement applicability, branch/site/activity licensing, employment tax, PAYE base uncertainty, private-organization pension, labour and digital creator/freelance classification is maintained in:
+
+- `docs/localization/ethiopia-organogram-payroll-legal-localization-note-2026-11-27.md`
+- WP-03 architecture and DoA: `docs/architecture/wp03-enterprise-foundation-implementation-lld-2026-11-27.md`
+
+That note records official source URLs, publication/catalogue date distinctions, current evidence and REVIEW REQUIRED issues. It is an engineering source analysis, not a legal opinion. No statutory payroll activation or legal rule activation follows from its publication. Always preserve the complete Gazette/directive bytes, calculate hashes from those bytes and obtain qualified local review for the affected entity, worker/payee, activity and period.

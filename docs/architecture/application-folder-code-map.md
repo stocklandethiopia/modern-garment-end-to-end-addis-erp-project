@@ -389,3 +389,15 @@ Backend and frontend domain boundaries must match. A new Laravel controller/serv
 - `docs/security/platform-administration-bootstrap.md`: controlled two-person operator-grant provisioning and lifecycle/entitlement security boundary.
 - Route registration: `backend/routes/domain-api.php`; `/api/v1/platform/*` uses global identity context, while `/api/v1/tenant/entitlements` uses tenant context.
 - Integrated status: platform lifecycle/entitlement API and migration 000032 are exact-head CI verified and merged in PR #9. The current continuation branch adds immutable auditing for authorized platform tenant-register reads; its exact-head CI is pending. Controlled platform operator appointment, full feature-gate enforcement, retention/legal hold/export/recovery and platform Angular UI remain open.
+
+
+## WP-03 enterprise foundation design-source package — 27 November 2026
+
+| Source | Responsibility | Status / boundary |
+|---|---|---|
+| `docs/architecture/wp03-enterprise-foundation-implementation-lld-2026-11-27.md` | Low-level architecture, bounded-context ownership, canonical entity model, identity/authority resolution, DoA, API/event contracts, security, agent boundary, migration and operations | DESIGN SOURCE — not runtime acceptance |
+| `docs/architecture/wp03-architecture-diagrams-2026-11-27.md` | Mermaid context, trust boundary, logical ER, authority resolution, P2P, lifecycle, agent and legal-source diagrams | DESIGN SOURCE — diagrams are not implementation evidence |
+| `docs/verification/wp03-enterprise-foundation-design-acceptance-matrix-2026-11-27.md` | Design test cases, GAR-ENT/GAR-PLT crosswalk, exact evidence labels and handover gates | TEST SPECIFICATION — not executed test evidence |
+| `docs/localization/ethiopia-organogram-payroll-legal-localization-note-2026-11-27.md` | Ethiopian legal-form/organogram, public-procurement applicability, licensing, PAYE, pension, labour, privacy and creator/payee classification source note | ENGINEERING LEGAL-LOCALIZATION ANALYSIS — not a legal opinion or statutory activation |
+
+**Runtime boundary:** PR #21 on `work/wp03-org-master-runtime-2026-11-27` is a separate unmerged implementation candidate for organizational units, job-position slots, unit manager-position assignments, solid-line/functional reporting and an Angular workbench. Its tests are authored but exact-head CI did not execute job steps/logs; they remain NOT RUN. The new design package does not change that evidence state or merge that PR. Human position appointments, full scoped resource enforcement, central DoA engine and complete GAR-ENT acceptance remain open.
