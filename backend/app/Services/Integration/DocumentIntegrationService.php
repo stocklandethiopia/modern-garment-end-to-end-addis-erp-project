@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
+use Throwable;
 
 class DocumentIntegrationService
 {
@@ -17,29 +19,41 @@ class DocumentIntegrationService
         }
 
         $id = (string) Str::uuid();
-        DB::table('document_assets')->insert([
-            'id' => $id,
-            'tenant_id' => $tenantId,
-            'document_code' => $data['document_code'],
-            'document_type' => $data['document_type'],
-            'original_filename' => $data['original_filename'],
-            'media_type' => strtolower($data['media_type']),
-            'byte_size' => $data['byte_size'],
-            'sha256' => strtolower($data['sha256']),
-            'object_storage_reference' => $data['object_storage_reference'],
-            'source_channel' => $data['source_channel'],
-            'source_record_type' => $data['source_record_type'] ?? null,
-            'source_record_id' => $data['source_record_id'] ?? null,
-            'classification_status' => 'PENDING',
-            'access_classification' => $data['access_classification'] ?? 'BUSINESS',
-            'uploaded_by' => $actorId,
-            'uploaded_at' => now(),
-            'retention_until' => $data['retention_until'] ?? null,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
 
-        return DB::table('document_assets')->where('tenant_id', $tenantId)->where('id', $id)->first();
+        return DB::transaction(function () use ($tenantId, $actorId, $data, $id): object {
+            DB::table('document_assets')->insert([
+                'id' => $id,
+                'tenant_id' => $tenantId,
+                'document_code' => $data['document_code'],
+                'document_type' => $data['document_type'],
+                'original_filename' => $data['original_filename'],
+                'media_type' => strtolower($data['media_type']),
+                'byte_size' => $data['byte_size'],
+                'sha256' => strtolower($data['sha256']),
+                'object_storage_reference' => $data['object_storage_reference'],
+                'source_channel' => $data['source_channel'],
+                'source_record_type' => $data['source_record_type'] ?? null,
+                'source_record_id' => $data['source_record_id'] ?? null,
+                'classification_status' => 'PENDING',
+                'access_classification' => $data['access_classification'] ?? 'BUSINESS',
+                'uploaded_by' => $actorId,
+                'uploaded_at' => now(),
+                'retention_until' => $data['retention_until'] ?? null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $document = DB::table('document_assets')
+                ->where('tenant_id', $tenantId)
+                ->where('id', $id)
+                ->first();
+
+            if ($document === null) {
+                throw new RuntimeException('The uploaded document metadata was not persisted.');
+            }
+
+            return $document;
+        }, 3);
     }
 
     public function storeUploadedFile(string $tenantId, string $actorId, UploadedFile $file, array $data): object
@@ -66,7 +80,7 @@ class DocumentIntegrationService
             throw ValidationException::withMessages(['file' => 'The uploaded file could not be hashed.']);
         }
 
-        $disk = (string) config('filesystems.private_documents_disk', 's3');
+        $disk = (string) config('filesystems.private_documents_disk', 'local');
         $folder = 'tenants/'.$tenantId.'/documents/'.now()->format('Y/m');
         $safeName = Str::uuid().'.'.$file->getClientOriginalExtension();
         $objectReference = Storage::disk($disk)->putFileAs($folder, $file, $safeName, [
@@ -78,20 +92,33 @@ class DocumentIntegrationService
             throw new RuntimeException('Private document storage did not confirm the upload.');
         }
 
-        return $this->registerDocument($tenantId, $actorId, [
-            'document_code' => $data['document_code'],
-            'document_type' => $data['document_type'],
-            'original_filename' => $file->getClientOriginalName(),
-            'media_type' => $mimeType,
-            'byte_size' => $file->getSize(),
-            'sha256' => $sha256,
-            'object_storage_reference' => $disk.':'.$objectReference,
-            'source_channel' => $data['source_channel'] ?? 'UPLOAD',
-            'source_record_type' => $data['source_record_type'] ?? null,
-            'source_record_id' => $data['source_record_id'] ?? null,
-            'access_classification' => $data['access_classification'] ?? 'BUSINESS',
-            'retention_until' => $data['retention_until'] ?? null,
-        ]);
+        try {
+            return $this->registerDocument($tenantId, $actorId, [
+                'document_code' => $data['document_code'],
+                'document_type' => $data['document_type'],
+                'original_filename' => $file->getClientOriginalName(),
+                'media_type' => $mimeType,
+                'byte_size' => $file->getSize(),
+                'sha256' => $sha256,
+                'object_storage_reference' => $disk.':'.$objectReference,
+                'source_channel' => $data['source_channel'] ?? 'UPLOAD',
+                'source_record_type' => $data['source_record_type'] ?? null,
+                'source_record_id' => $data['source_record_id'] ?? null,
+                'access_classification' => $data['access_classification'] ?? 'BUSINESS',
+                'retention_until' => $data['retention_until'] ?? null,
+            ]);
+        } catch (Throwable $exception) {
+            // Compensate the object write when the metadata transaction rolls back.
+            try {
+                if (! Storage::disk($disk)->delete($objectReference)) {
+                    report(new RuntimeException('Private document compensation could not remove the unregistered object.'));
+                }
+            } catch (Throwable $cleanupException) {
+                report($cleanupException);
+            }
+
+            throw $exception;
+        }
     }
 
     public function beginExtraction(string $tenantId, string $actorId, string $documentId, array $data): object
