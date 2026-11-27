@@ -1363,3 +1363,106 @@ Two overlapping PLANNED assignments may therefore both be independently confirme
 9. Add IE plan, capacity and workforce concurrency tests and run them against PostgreSQL on an exact commit SHA.
 
 No finance, IE or runtime source has been modified by this audit section. It extends the canonical work queue with concrete data-integrity and workflow controls.
+
+
+---
+
+## 17. Manufacturing and quality source/schema workflow alignment
+
+### 17.1 A passing inspection cannot be submitted before its separate review
+
+**Finding:** The quality inspection table's database constraint and the service's intended two-person workflow are incompatible.
+
+Migration 000017 defines:
+
+- A result_status CHECK list that permits DRAFT, IN_PROGRESS, PASS, PASS_WITH_DEVIATION, FAIL, CONTAINED and CANCELLED.
+- A second CHECK requiring reviewed_by and reviewed_at whenever result_status is PASS or PASS_WITH_DEVIATION.
+
+QualityControlService.submitInspectionResult() is the inspector's first submission step. It validates the sample quantities and then updates result_status to PASS or PASS_WITH_DEVIATION while setting inspected_at, but it does not and must not supply reviewer fields. QualityControlService.reviewInspection() is the separate subsequent operation that checks the reviewer is not the inspector and then populates reviewed_by/reviewed_at.
+
+Consequently, a clean PostgreSQL database rejects the initial PASS/PASS_WITH_DEVIATION update before reviewInspection() can be called. The table allows a DRAFT inspection; the incompatible point is the intermediate submitted-pass state.
+
+**Source**
+- backend/database/migrations/2026_11_26_000017_create_quality_capa_and_release_gates.php, quality_inspections CHECK constraints around lines 63–64.
+- backend/app/Services/Quality/QualityControlService.php, submitInspectionResult() around lines 42–112 and reviewInspection() around lines 114–160.
+- Material release and finished-goods receipt both require reviewed passing inspection records, so this condition prevents the normal accepted-quality path from completing.
+
+**Required implementation**
+- [ ] Separate inspection-result status from independent review status, or introduce an explicit SUBMITTED_PENDING_REVIEW state.
+- [ ] Permit an inspector to save a completed PASS/PASS_WITH_DEVIATION result with reviewer fields absent.
+- [ ] Require reviewer identity and time only when the independent review decision is recorded.
+- [ ] Keep the transition to releasable PASS gated by the independent reviewer and any applicable deviation approval.
+- [ ] Add a PostgreSQL migration/feature test proving DRAFT → inspector submits PASS → different reviewer accepts → material/operation/finished-goods release checks can consume that reviewed result.
+- [ ] Add negative tests proving the inspector cannot review their own result and no material/finished-goods release can occur before review.
+
+### 17.2 Site and legal-entity identity are independently tenant-scoped, not mutually bound for production orders
+
+**Finding:** production_orders has separate composite tenant foreign keys for legal_entity_id and site_id. The service inserts both supplied IDs but does not load and verify the selected business site belongs to the selected legal entity. business_sites permits a nullable legal_entity_id and its unique composite key supports explicit entity binding, but production_orders does not use a composite foreign key tying its legal_entity_id to the site's legal_entity_id.
+
+A production order can therefore be associated with a tenant legal entity and a different tenant site unless a separate service/approval invariant is added.
+
+**Source**
+- backend/database/migrations/2026_11_22_000001_create_enterprise_foundation_tables.php, business_sites has tenant_id, nullable legal_entity_id and a unique (tenant_id, id, legal_entity_id) key.
+- backend/database/migrations/2026_11_26_000016_create_route_and_manufacturing_execution.php, production_orders has independent tenant/legal-entity and tenant/site foreign keys.
+- backend/app/Services/Manufacturing/ManufacturingExecutionService.php, createProductionOrder() inserts the supplied legal_entity_id and site_id after checking tech pack/route style revision only.
+
+**Required implementation**
+- [ ] Resolve the business site before order creation and require site.legal_entity_id to equal the order legal entity, except for an explicitly defined shared-site model with a separately authorized operating entity.
+- [ ] Prefer a composite database relationship/constraint or trigger so another service cannot create the mismatch.
+- [ ] Apply the same entity/site binding to work centres, production plans, workforce assignments, material locations and finished-goods locations.
+- [ ] Add cross-entity, shared-site and valid entity/site tests.
+
+### 17.3 Route condition expressions are stored but not evaluated
+
+**Finding:** addRouteSteps() requires condition_expression for optional steps and stores it as JSON. recordOperationEvent() checks only whether a route step is optional and whether a skip reason exists. The route execution logic uses a single predecessor_step_no and linear step ordering; it does not evaluate condition_expression to determine applicability, branch selection or whether an optional step may be skipped for the selected style/material/customer/process.
+
+This means the stored condition definition is not yet an executable route policy.
+
+**Required implementation**
+- [ ] Define a typed, versioned condition schema and deterministic evaluator.
+- [ ] Bind condition inputs to immutable production-order facts and approved product/BOM/material/customer/site context.
+- [ ] Evaluate step applicability at route release and again at execution when any relevant precondition could have changed.
+- [ ] Record evaluation inputs, result and policy version in the order/route snapshot.
+- [ ] Require an approved waiver/deviation for bypass of a required or quality-gated operation.
+- [ ] Ensure an optional skipped quality-gate step has an explicit, valid bypass decision before downstream progression.
+- [ ] Add route tests for conditional print, embroidery, wash, special process, subcontract, skip/bypass, stale condition input and quality-gate behavior.
+
+### 17.4 Cutting-bundle tables do not yet have a domain service/controller workflow
+
+**Finding:** migration 000016 creates cutting_bundles and bundle_operation_events with tenant RLS, unique bundle/event keys and roll/order references. The inspected source tree has no dedicated CuttingBundle service or controller; the current ManufacturingExecutionService does not create or manage these records and the registered ManufacturingController exposes route, production-order and production-event commands only.
+
+The schema is a foundation, not a working cutting-room bundle traceability workflow.
+
+**Required implementation**
+- [ ] Implement cutting order/lay/marker/roll allocation and bundle creation.
+- [ ] Bind each bundle to production order, approved style revision, fabric roll, shade/lot, size breakdown, marker/cut plan and cut operator.
+- [ ] Validate fabric-roll issue/balance and panel/yield quantities before committing bundle output.
+- [ ] Implement bundle scan-in, operation completion, defect, rework, transfer, hold and release events with payload-aware idempotency.
+- [ ] Connect bundle genealogy to sewing operation start/output and finished-goods/piece genealogy.
+- [ ] Build cutting-room UI and device/offline scan path.
+- [ ] Add tests for roll depletion, shade separation, duplicate scan, partial bundle, re-cut, rework, loss, tenant/site boundary and full roll-to-bundle-to-finished-lot genealogy.
+
+### 17.5 Manufacturing event replay needs payload-aware idempotency and a post-lock recheck
+
+**Finding:** recordOperationEvent() first looks up event_key and returns an existing event without comparing the incoming payload. It then locks the order and operation but does not repeat the event-key lookup after those locks. The event table has a unique (tenant_id, event_key) constraint, so an identical concurrent replay can cause the second request to hit a uniqueness error after the first commits; a conflicting replay returns the first event without identifying the payload conflict.
+
+**Required implementation**
+- [ ] Add a canonical event payload hash (order, operation, type, quantity, downtime, reason, device, operator and occurred-at context).
+- [ ] Recheck event key after taking serialization locks and return the original event only when the payload hash matches.
+- [ ] Reject conflicting replays with a deterministic idempotency-conflict result.
+- [ ] Make device/offline event replay use the same domain event identity and reconciliation state.
+- [ ] Add concurrent identical retry, conflicting retry, out-of-order event and duplicate scan tests.
+
+---
+
+## 18. Manufacturing/quality implementation sequence
+
+1. Correct quality inspection result/review state design and its PostgreSQL constraint.
+2. Add deviation approval records and keep the reviewer/releaser separation.
+3. Enforce production-order legal-entity/site binding.
+4. Implement the route condition evaluator and approved skip/waiver path.
+5. Implement cutting-bundle service/controller/UI/scan workflow.
+6. Add manufacturing event payload hash, post-lock replay check and deterministic idempotency conflict.
+7. Add complete quality and manufacturing PostgreSQL feature suites and execute them on an exact commit SHA.
+
+No manufacturing/quality runtime source has been changed by this audit update. It records the schema/service corrections and acceptance evidence required to complete the corresponding work packages.
