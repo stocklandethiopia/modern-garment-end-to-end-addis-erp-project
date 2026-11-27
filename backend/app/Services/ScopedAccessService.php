@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\\Services;
+namespace App\Services;
 
-use Illuminate\\Support\\Facades\\DB;
+use Illuminate\Support\Facades\DB;
 
 class ScopedAccessService
 {
@@ -31,7 +31,7 @@ class ScopedAccessService
         );
 
         if ($result === null) {
-            throw new \\RuntimeException('The database did not return the updated tenant member scope mode.');
+            throw new \RuntimeException('The database did not return the updated tenant member scope mode.');
         }
 
         return [
@@ -65,7 +65,7 @@ class ScopedAccessService
         );
 
         if ($result === null) {
-            throw new \\RuntimeException('The database did not return the created tenant access scope.');
+            throw new \RuntimeException('The database did not return the created tenant access scope.');
         }
 
         return $result;
@@ -79,7 +79,7 @@ class ScopedAccessService
         );
 
         if ($result === null) {
-            throw new \\RuntimeException('The database did not return the revoked tenant access scope.');
+            throw new \RuntimeException('The database did not return the revoked tenant access scope.');
         }
 
         return $result;
