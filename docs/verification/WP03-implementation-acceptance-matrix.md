@@ -118,3 +118,19 @@ This isolated candidate adds the first backend organization-structure master end
 | Delegated Authority | No DoA policy or approval engine in this increment | NOT RUN | Implement versioned, scoped policy and approval instances only after positions, human appointment resolution, signed company authority and full conflict/SoD rules exist. No transaction approval is inferred from a manager title or tenant role. |
 
 The backend test file `backend/tests/Feature/EnterpriseOrganizationStructureTest.php` and Angular test file `frontend/src/app/features/enterprise/organization-structure.component.spec.ts` have been added, but neither suite has executed on this candidate head. Status remains **NOT RUN** until GitHub Actions runs both suites against the exact final PR SHA. The latest workflow attempts failed before runner/job steps with empty step lists and no retrievable logs; this is an infrastructure block, not a test pass or code-failure diagnosis.
+
+
+### Organization-register pagination, search and selection acceptance — PROD-WP03-008
+
+| Scenario | Implementation source | Candidate evidence state | Required exact-head acceptance |
+|---|---|---|---|
+| Unit register search/paging | EnterpriseOrganizationController::units; EnterpriseOrganizationService::units; organization-structure.component.ts/html | IMPLEMENTED — NOT VERIFIED | More than 100 units; stable page 1/page 2/last page, exact total, search by code/name, clear search, entity/site/type/status/parent filters, no tenant leakage. |
+| Position register search/paging | Controller::positions; Service::positions; Angular API/workbench | IMPLEMENTED — NOT VERIFIED | More than 100 positions in one unit; search by code/title/family/grade, filter by unit/class/status/effective date, stable order and exact total. |
+| Manager assignment history | Controller::managerAssignments; Service::managerAssignments; Angular history panel | IMPLEMENTED — NOT VERIFIED | More than 100 historical assignments; search manager code/title, effective-date filter, page navigation, overlapping/concurrent assignment rejection and exact history totals. |
+| Position reporting register | Controller::reportingRelations; Service::reportingRelations; Angular reporting table | IMPLEMENTED — NOT VERIFIED | More than 100 relationships; search subject/manager, filter solid-line/functional, filter by position/effective date, stable page and accurate total. |
+| Relationship form position lookup | listPositions endpoint with active-position filter; reportingPositionChoices and knownPositions caches | IMPLEMENTED — NOT VERIFIED | Search by exact code/title for positions beyond the first 100; verify inactive position is excluded, valid selected option persists, stale result cannot overwrite current tenant and server validation remains authoritative. |
+| Selected unit and parent picker | selectedUnitRecord, knownUnits, parentUnitOptions, request sequence guards | IMPLEMENTED — NOT VERIFIED | Selected unit remains visible when it is outside the current page but still matches the active query; search change that excludes it clears selection safely; parent unit discovered on another page/search remains selectable. |
+
+**Exact acceptance data:** create at least 125 units, 125 positions for one unit, 125 manager-history records with non-overlapping effective periods and 125 reporting relationships in an isolated test tenant. Verify page 1, middle page, final page, exact total, search/filter, create followed by refreshed page, position selection from a later page, tenant switch and stale-response race. Run the API/PostgreSQL tests as the restricted app_runtime role and Angular/browser tests against the exact same candidate SHA.
+
+**Evidence rule:** backend and Angular test source is present, but execution remains NOT RUN until the jobs complete on the exact final PR SHA. The candidate must not be promoted to verified based on the presence of test source or a different SHA's successful run.
