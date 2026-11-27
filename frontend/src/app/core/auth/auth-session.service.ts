@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
-import { Observable, catchError, finalize, map, of, switchMap, tap, throwError } from 'rxjs';
+import { Observable, catchError, exhaustMap, filter, finalize, interval, map, of, switchMap, tap, throwError } from 'rxjs';
 
 export interface AuthenticatedUser {
   id: string;
@@ -37,6 +37,15 @@ interface PlatformContextResponse {
 export class AuthSessionService {
   private readonly http = inject(HttpClient);
 
+  constructor() {
+    // Keep global operator capabilities current during long-lived sessions.
+    // PostgreSQL still authorizes every protected API request independently.
+    interval(30_000).pipe(
+      filter(() => this.tokenState() !== null),
+      exhaustMap(() => this.refreshPlatformContext()),
+    ).subscribe();
+  }
+
   private readonly tokenState = signal<string | null>(null);
   readonly accessToken = this.tokenState.asReadonly();
 
@@ -60,6 +69,23 @@ export class AuthSessionService {
     return this.platformRolesState().includes('PLATFORM_ADMIN');
   }
 
+  refreshPlatformContext(): Observable<string[]> {
+    if (!this.tokenState()) {
+      this.platformRolesState.set([]);
+      return of([]);
+    }
+
+    return this.http.get<PlatformContextResponse>('/api/v1/platform/context').pipe(
+      map((context) => context.data.roles ?? []),
+      tap((roles) => this.platformRolesState.set(roles)),
+      catchError(() => {
+        // A context lookup failure must never leave stale privileged UI visible.
+        this.platformRolesState.set([]);
+        return of([] as string[]);
+      }),
+    );
+  }
+
   login(email: string, password: string): Observable<TenantMembership[]> {
     return this.http.post<TokenResponse>('/api/v1/auth/tokens', {
       email: email.trim().toLowerCase(),
@@ -72,9 +98,8 @@ export class AuthSessionService {
       }),
       switchMap(() => this.http.get<TenantListResponse>('/api/v1/tenants')),
       map((response) => response.data),
-      switchMap((memberships) => this.http.get<PlatformContextResponse>('/api/v1/platform/context').pipe(
-        map((context) => ({ memberships, platformRoles: context.data.roles ?? [] })),
-        catchError(() => of({ memberships, platformRoles: [] as string[] })),
+      switchMap((memberships) => this.refreshPlatformContext().pipe(
+        map((platformRoles) => ({ memberships, platformRoles })),
       )),
       map(({ memberships, platformRoles }) => {
         this.platformRolesState.set(platformRoles);
