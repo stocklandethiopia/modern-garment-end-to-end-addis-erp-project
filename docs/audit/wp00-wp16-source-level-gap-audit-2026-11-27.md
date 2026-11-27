@@ -30,7 +30,7 @@ A design document, migration, controller, unit test, green generic CI run or gen
 | WP-00 Governance | Owner-approved scope, autonomous delivery delegation and the 27 November production-build/workflow amendment are recorded in the governance agreement | Keep every increment tied to approved scope, exact source, evidence and downstream dependencies |
 | WP-01 Requirements | R3 package integrity evidence: 128 requirement records, 24 contexts, 45 source-map rows and package tests | Complete the semantic crosswalk to legacy GAR identifiers and map every requirement to code, API/UI, migration, test and handover |
 | WP-02 Ethiopia legal foundation | Ethiopia localization standard and authority/source register with explicit unresolved interpretation points | Retain and hash source bytes, reconcile amendments/effective dates and obtain qualified review for statutory rules |
-| WP-03 Enterprise/SaaS | Tenant, legal entity, membership, invitations, scoped-access foundation, domain roles, ownership succession, entitlements and tenant lifecycle migrations/services | Complete platform-operator grant lifecycle, target-resource scope enforcement, expiry/recovery, SSO/MFA and entitlement enforcement |
+| WP-03 Enterprise/SaaS | Integrated tenant/identity foundation plus an unmerged 39-commit organization-structure runtime candidate (migration 000035, four org tables, Laravel/Angular source and PostgreSQL tests) | Integrate operator-grant/scope hardening, organization runtime, incumbent-to-position assignments, position-based DoA, target-resource authorization, expiry/recovery and SSO/MFA |
 | WP-04 Merchandising | Initiative/market insight, brand/collection/range/assortment, forecast/OTB/pricing and account-term service slices | Complete full commercial lifecycle, channel actuals, downstream reconciliation and domain acceptance coverage |
 | WP-05 Product development | Product briefs/styles/revisions, measurement/pattern/sample-fit, BOM/technical-pack approvals and release-manifest foundations | Resolve the BOM material-verification dead-end, substitution approvals, verified object assets and dynamic cross-domain release gates |
 | WP-06 Industrial engineering | Operation standards, work centres, shifts, capacity slots, plan and workforce-skill/assignment foundations | Enforce operation quantity allocation, site binding, skill scope, worker overlap and calibrated factory planning |
@@ -41,7 +41,7 @@ A design document, migration, controller, unit test, green generic CI run or gen
 | WP-11 Quality/compliance | Inspection, review, material/operation release, nonconformance, corrective-action and effectiveness service slices | Correct submission/review state, linked deviation approvals, NCR/CAPA atomicity, HSE and end-to-end hold enforcement |
 | WP-12 Distribution/commerce | Finished-goods lots/locations/reservations, customer-order, credit-decision and dispatch foundations | Complete allocation/WMS, channels, pick-pack-ship, returns/RMA, delivery integration and sales/stock reconciliation |
 | WP-13 Finance/treasury | Finance periods, journal drafts/decisions/posting, customer credit and payroll-review foundations | Freeze approved journal lines, implement reversals, subledgers, AP/AR, costing, FX, bank reconciliation and close |
-| WP-14 People/payroll | Canonical payroll-review foundation; Ethiopia calculator and legal-engineering evidence exist on a separate candidate branch | Reconcile and review candidate source, complete HR/time/leave/benefits, statutory evidence and payroll-to-GL/remittance paths |
+| WP-14 People/payroll | Canonical payroll-review foundation plus an unmerged 57-commit Ethiopia payroll candidate (calculator, Finance integration, evidence migrations and unit tests); activation flags remain false | Reconcile migration ordering/storage evidence, add API/RLS/concurrency and payroll-to-GL/remittance tests, then build employee, contract, assignment, time, leave, benefits and HR workflows |
 | WP-15 Documents/integrations/agents | Document metadata/upload/extraction records, outbox transitions, device scans and agent proposal/approval controls | Complete provider-neutral object storage, verified extraction/import, workers/adapters, device identity, agent runtime and human approval UI |
 | WP-16 Quality/installer/release | Component CI, local dependency Compose, Make targets, version pins and release engineering standards | Build the reproducible master installer/application images, worker/scheduler topology and full security/E2E/performance/recovery/UAT evidence |
 
@@ -547,43 +547,49 @@ Present sources include document metadata/upload/extraction workflow foundations
 
 ---
 
-## 4. Unmerged, mis-targeted and unapplied source reconciliation
+## 4. Current branch, commit and unapplied-source reconciliation
 
-This section is important because a commit existing in GitHub does not mean it has landed in the correct canonical branch or folder.
+A Git commit is not part of the canonical ERP until it is integrated into `delivery/autonomous-wp-01-16`, its migrations and contracts are reconciled, and the resulting destination SHA passes the required verification. The following inventory was refreshed against the live Git refs on 27 November 2026.
 
-| Item | Branch / PR | Verified state | Action |
-|---|---|---|---|
-| Main executable platform | PR #1, delivery/autonomous-wp-01-16 | Open draft; 813 commits; 290 files; target main | Keep as mainline integration/release decision. Do not call main application-complete until PR is reviewed and release criteria are met. |
-| WP-03 operator lifecycle and scope DB hardening | PR #13, work/wp03-completion-2026-11-27 | Open draft; 77 commits; 33 changed files; 15 commits behind current delivery; includes migrations 000033/000034 | Rebase/reconcile and security-review. Execute exact-head CI before merge. Do not merge stale branch as-is. |
-| WP-14 Ethiopia payroll candidate | work/wp14-ethiopia-payroll-localization-2026-11-27 | 20 commits ahead; 0 behind; 11 files; no PR; no workflow run found | Create PR against current delivery, review arithmetic/evidence/API, add feature tests and execute exact-head CI. Keep activation flags false. |
-| Provider-neutral document storage fix | PR #10 merged into work/wp01-16-completion-2026-11-26 | Merged on an intermediate branch, not on current delivery | Port the relevant fix to delivery: add PRIVATE_DOCUMENTS_DISK config defaulting to local, change service fallback to local, import RuntimeException, add tests, preserve non-loopback environment defaults. |
-| Apparel library sample reconciliation | PR #14 | Open draft; one documentation file | Review/merge as documentation only after exact-head checks execute. Do not treat schemas as live runtime contracts or copy legacy WordPress source. |
-| Company organogram and delegated authority | PR #16 | Open; six commits; three documentation files | Review/merge as architecture documentation only. Then implement position/effective-date/amount/budget/scope/acting-delegation approval model and tests. |
-| WP-01 R3 crosswalk correction | PR #17 | Open; three commits; three documentation files | Review/merge as traceability correction. The semantic crosswalk itself remains open and implementation statuses remain not_started until evidence is supplied. |
-| Agent-native experience/Codex blueprint | PR #3 | Open draft; six commits; 30 changed files; base is corrective-action audit branch, not delivery | Reconcile document direction with current product standard; cherry-pick/rebase documentation only if accepted. Do not claim agents/devices/UI are implemented by the blueprint. |
-| Earlier SHA/Drive corrective-action audit | PR #2 | Open draft against isolated source-intake branch | Keep separate from runtime. Use as provenance/audit record only; do not merge its intake artifacts into application runtime without a specific approved reason. |
-| No-loopback runtime default correction | PR #12 | Closed/merged into delivery as fc01eced | Code change is integrated. Exact merge-SHA CI remains NOT RUN due runner-allocation failure; rerun once Actions runners are available. |
+| Work item | Current branch / PR | Exact head / relationship to delivery | Source already rendered on GitHub | Required disposition |
+|---|---|---|---|---|
+| Main executable platform | PR #1; `delivery/autonomous-wp-01-16` | Delivery `fc01eced62b97c4ec27f0075264fc8ba0fb11851`; 813 commits ahead of `main`; PR #1 open draft, 290 files | Laravel 13, Angular 22, PostgreSQL migrations 000001–000032, domain controllers/services, tests, docs and base tooling | Keep this as the integration line. Review the complete diff against the 18-file `main` scaffold and qualify the actual merge SHA; do not treat commit count as requirement completion. |
+| WP-03 platform operator grant lifecycle and database scope hardening | PR #13; `work/wp03-completion-2026-11-27` | `8ae8536bccfd3924017b12905ea57fce2641fb46`; 77 commits ahead and 15 behind current delivery; PR #13 targets stale base `f948bb85de4194ae18dc8ee8c974c3ad0986623c`; 33 files | Migrations 000033/000034; operator grant controller and Angular screens; authorization/scope service changes; platform administration, PostgreSQL security tests and workflow changes | Rebase onto current delivery; review security-definer functions, grants, actor proof, forced RLS, mutation authorization and migration semantics. Preserve fail-closed scoped access. Add target-resource scope enforcement and expiry/recovery worker. Do not merge the stale head as-is. |
+| WP-03 organization structure runtime | `work/wp03-org-master-runtime-2026-11-27`; no PR opened | `da50b7392288c6cbe0c967f9d7310dff28448e59`; 39 commits ahead, 0 behind current delivery; 15 changed files | Migration 000035; four PostgreSQL organization tables; Laravel service/controller/routes; Angular enterprise organization screens; component spec and PostgreSQL feature tests | This is executable candidate source, not a document-only plan. Review it against WP-03 operator/security changes, then open a focused PR against current delivery. Extend it with incumbent/employee-position assignments and runtime DoA before declaring the organization/approval requirement complete. |
+| WP-14 Ethiopia payroll localization | `work/wp14-ethiopia-payroll-localization-2026-11-27`; no PR opened | `b6b3fb3094c460e8a09f13283c9b65f75c5469cb`; 57 commits ahead, 0 behind delivery; 20 changed files | EthiopiaPayrollCalculator, Finance controller/service integration, payroll configuration, migrations 000033/000034, calculator unit tests, source/legal/release-gate documents and CSV fixtures | Review as a high-risk candidate. Add API/PostgreSQL/RLS/approval/concurrency/payroll-to-GL feature tests; reconcile migration sequence with WP-03 000033–000035; resolve retained-source/storage evidence; retain both activation flags as false until every professional/legal/employee and acceptance gate is satisfied. |
+| Combined WP-03/WP-14 organogram and payroll implementation plan | `work/wp03-wp14-organogram-payroll-plan-2026-11-27`; no PR opened | `0081e4f9ee81e8a213f1b73373ffa9396ca1843c`; 12 commits ahead, 0 behind delivery; 10 documentation files | Org/DoA framework; WP-03/WP-14 implementation sequencing; Ethiopia payroll legal engineering and release-gate docs; payload template and regression fixture | Reconcile as the combined source-of-truth plan. It overlaps PR #16 at `docs/organization/enterprise-organogram-and-delegated-authority.md`; consolidate rather than importing duplicate versions. It contains no runtime implementation. |
+| CI runner continuity | `work/wp03-ci-runner-continuity-2026-11-27`; no PR opened | `659e53f324d0a8c3cebd7ab5695a83e5d48f824b`; 4 commits ahead, 0 behind; 4 changed files | ERP CI / combined verification workflow updates and `docs/engineering/ci-runner-continuity.md` | Review the dispatch-only self-hosted fallback and workflow routing. A runner setup is not proved merely by the workflow definition; verify an actual runner and exact-SHA run. Keep every quality job mandatory. |
+| WP-01 R3 reconciliation | PR #17; `work/wp01-r3-reconciliation-2026-11-27` | `b57c919a2fb547a3c919e1a05e169cf9eee7dbab`; 3 commits ahead, 0 behind delivery; 3 docs files | Corrected status of the legacy GAR matrix, R3 reconciliation and handover changes | Review/merge as a traceability correction after exact-head checks. The semantic crosswalk is still open; 128 R3 implementation statuses remain `not_started` until executable evidence exists. |
+| Enterprise organogram and delegated authority design | PR #16; `work/enterprise-organogram-doa-2026-11-27` | `ad5a5a71e8e46c87081a1f16fb0a723df44c65c0`; 6 commits ahead, 0 behind; 3 docs files | Position-based hierarchy and DoA framework plus architecture navigation/model updates | Keep as design input; reconcile with the combined WP-03/WP-14 plan and WP-03 runtime branch. The design is not a runtime approval engine. |
+| Apparel library sample reconciliation | PR #14; `work/library-apparel-sample-reconciliation-2026-11-27` | `b765460a608dd629920b9d1ef4b3512aa0db1eaa`; 1 commit ahead, 0 behind; 1 docs file | 76-entry workspace sample review, 25 proposed JSON Schemas, changeset and legacy-source boundary analysis | Retain as reference reconciliation. Previous checks record 37/37 JSON files parsed, 25/25 schemas validated, 5/5 registry tests and source-manifest checks; this is not live ERP runtime or factory acceptance. Do not copy old WordPress/PHP/MySQL runtime into the Laravel/Angular/PostgreSQL product. |
+| Agent-native ERP/Codex blueprint | PR #3; `feature/agent-native-erp-foundation-2026-11-25` | `dfdf503b4aae4b0e787ca1cb3826c4fd97171b20`; branch is based on the earlier corrective-action audit, not the current delivery; comparison shows 46 commits ahead and 813 behind delivery | Agent role definitions, agent skills, operating model, technology/experience blueprint and source-intake workflows | Reconcile the approved design and agent policies onto the delivery line selectively. Do not merge the diverged 157-file comparison as a single runtime change and do not claim that agents, device connectors or agent screens are operational. |
+| Provider-neutral private document storage | PR #10 merged to `work/wp01-16-completion-2026-11-26`, not delivery | PR head `2a48f41fc8da8ac5693dffa097056525af6e8236`; its comparison branch is 136 commits behind delivery | Fix candidate defines the private-document disk, switches fallback to local, imports RuntimeException and adds a unit test | Port only the relevant safe changes to current delivery; do not copy the old `.env.example` or loopback runtime defaults. The later WP-14 branch does not resolve this storage defect. |
+| No-loopback runtime-default correction | PR #12 merged into delivery | Merged delivery head `fc01eced62b97c4ec27f0075264fc8ba0fb11851`; source PR head `f138cfbeee9adea99fd0d0a2f98afeb9af016788` | Runtime host defaults are placeholders; checker `scripts/check-no-loopback-defaults.php`, CI and Makefile enforcement are integrated | Preserve this change. Loopback addresses used inside isolated CI service environments or local Compose infrastructure are not application runtime defaults. Exact delivery-head workflow evidence must still be executed. |
+| Earlier source-intake / SHA corrective-action audit | PR #2; isolated source-intake base | `audit/corrective-action-plan-2026-11-24` at `0d005ab32ab6b0e4c24ac87727f2d9ae3fb12024`; base is `audit/stockland-local-source-v0.3.0` | Intake provenance, source archive inspection and corrective-action documentation | Keep separate from executable ERP runtime. Use source material only through the approved greenfield reconciliation process. |
+| This WP-00–WP-16 audit | PR #18; `audit/wp00-wp16-source-gap-audit-2026-11-27` | Current branch head before this amendment: `7260c55a79135f0187ccbb884e34779fe2df346c`; PR targets delivery `fc01eced...`; 26 commits, 2 documentation files | 263 KB source-level gap audit and the workflow agreement amendment | Keep this audit on its separate branch/PR. This amendment updates its branch inventory and adds the newly inspected WP-03, WP-14 and CI source candidates; it does not change ERP runtime code. |
 
-### 4.1 Provider-neutrality defect in current delivery
+### 4.1 Provider-neutrality defect remains in the current delivery and the payroll candidate
 
 Source comparison confirms:
-- Current delivery backend/config/filesystems.php does not define filesystems.private_documents_disk and defines no S3 disk.
-- Current delivery backend/app/Services/Integration/DocumentIntegrationService.php uses config('filesystems.private_documents_disk', 's3').
-- Current delivery service uses RuntimeException in the storage-failure path without importing it.
-- PR #10 contains the missing private_documents_disk setting (default local), local fallback and RuntimeException import; it also adds a unit test and provider-neutral documentation.
-- The PR #10 branch's older .env/config contents contain localhost examples and must not be copied wholesale. Apply the storage fix to the current delivery version, preserving the current no-loopback environment guard.
+- Current delivery `backend/config/filesystems.php` does not define `filesystems.private_documents_disk` and defines no S3 disk.
+- Current delivery `backend/app/Services/Integration/DocumentIntegrationService.php` resolves `config('filesystems.private_documents_disk', 's3')`; the storage failure path constructs `RuntimeException` without importing the global class.
+- PR #10 has a candidate fix: private document disk configuration defaulting to local, local fallback, RuntimeException import and a unit test.
+- WP-14 candidate `b6b3fb3094c460e8a09f13283c9b65f75c5469cb` updates DocumentIntegrationService for legal source-document verification, but its `filesystems.php` still has no `private_documents_disk` entry and the service still falls back to `s3`. It does not port the PR #10 storage correction.
+- The PR #10 branch's old `.env.example` and configuration include loopback examples; do not copy them wholesale. Apply the storage fix to the current delivery version and preserve the no-loopback guard.
+- Add tests for default local storage, configured S3-compatible provider, unavailable provider, upload failure, read-stream/hash mismatch, and compensation/cleanup when object upload succeeds but the database transaction fails.
 
-This is a functional upload-path issue, not just a documentation preference.
+### 4.2 Workflow execution state and exact-source evidence
 
-### 4.2 Workflow execution state
+- Delivery SHA `fc01eced...`: ERP CI runs #45915268942 and #45915273928 failed before steps; raw job records show `runner_id: 0`, no runner name and zero steps.
+- WP-03 operator PR head `8ae8536b...`: run #45915554309 has the same zero-runner/zero-step signature; its combined verification run #45915554192 also failed before tests could execute.
+- WP-03 organization runtime head `da50b739...`: CI #46010970370 and combined verification #46010970310; backend and Angular jobs show `runner_id: 0`, no runner name and zero steps. The combined packaging job was skipped.
+- WP-14 payroll head `b6b3fb30...`: CI #46008205344 and combined verification #46008205340; backend and Angular jobs show `runner_id: 0`, no runner name and zero steps. The combined packaging job was skipped.
+- WP-01 R3 PR head `b57c919a...`: runs #45981018818 and #45981018841 ended as failures; no code-test conclusion is inferred from the status alone.
+- CI runner-continuity branch `659e53f3...` has no workflow run associated with the inspected head.
+- Earlier delivery SHA `f948bb85...` has successful executed test evidence (ERP CI #45901553898/#45901559007). It is useful historical evidence for that SHA only, not for later heads.
+- Earlier source-package checks recorded 128 R3 rows, 24 contexts, 45 source maps, 20 package tests, checksum verification and strict audit. These package-integrity results do not make the 128 application requirements implemented.
 
-- Delivery head fc01eced: ERP CI runs #45915268942 and #45915273928 show both Angular and Laravel jobs completed as failures with runner_id 0, blank runner names and zero steps.
-- WP-03 candidate head 8ae8536b: run #45915554309 likewise has zero-step jobs and runner_id 0.
-- Earlier delivery head f948bb85: ERP CI runs #45901553898 and #45901559007 executed backend migration/RLS/test and Angular test/build steps successfully.
-- PR #14, #16 and #17 also record recent retries that failed before job execution with runner_id 0 and zero steps.
-- WP-14 branch has no run evidence in the inspected workflow-run listing.
-
-**Interpretation:** the most recent failures described above are runner-allocation/pre-job failures, not proof that the code failed tests. Equally, they are not proof the code passed. Restore exact-head executable CI as a prerequisite to merging candidate work.
+**Interpretation:** a zero-runner/zero-step failure is a runner-allocation/pre-job failure, not an application test failure and not a pass. The CI continuity work is a compute-routing option, not permission to waive any test, security or exact-SHA gate.
 
 ---
 
@@ -2917,3 +2923,290 @@ A caller can therefore create an extraction run against a document whose stored 
 5. Block document extraction until private-object integrity and classification are verified; add independent reviewer separation.
 6. Enforce endpoint activation/direction/event scope at enqueue and delivery.
 7. Run the relevant PostgreSQL, API and end-to-end suites as app_runtime on an exact candidate SHA and record the actual runner evidence.
+
+
+---
+
+## 37. WP-03 organization structure runtime candidate — code review and remaining build
+
+**Candidate branch:** `work/wp03-org-master-runtime-2026-11-27`  
+**Exact head:** `da50b7392288c6cbe0c967f9d7310dff28448e59`  
+**Comparison against delivery:** 39 commits ahead, 0 behind; 15 changed files  
+**Latest commit message:** `a11y(wp03): add visually hidden table captions`  
+**PR status:** no pull request exists for this branch.
+
+This is executable source, not merely the organogram/DoA design document.
+
+### 37.1 Rendered source already on the branch
+
+| Path | Purpose |
+|---|---|
+| `backend/database/migrations/2026_11_27_000035_create_organization_structure_masters.php` | Organization schema, indexes, tenant RLS and runtime grants |
+| `backend/app/Services/Enterprise/EnterpriseOrganizationService.php` | Tenant-scoped unit, job-position, manager-assignment and reporting-relation commands/queries |
+| `backend/app/Http/Controllers/Enterprise/EnterpriseOrganizationController.php` | API boundary for organization structure |
+| `backend/routes/domain-api.php` | Organization-unit, position, manager-assignment and reporting routes |
+| `backend/tests/Feature/EnterpriseOrganizationStructureTest.php` | PostgreSQL-backed tenant, role, integrity and RLS test cases |
+| `frontend/src/app/features/enterprise/enterprise-organization.service.ts` | Angular API service |
+| `frontend/src/app/features/enterprise/organization-structure.component.ts` | Organization structure workflow component |
+| `frontend/src/app/features/enterprise/organization-structure.component.html` | Operator screen |
+| `frontend/src/app/features/enterprise/organization-structure.component.css` | Screen styles |
+| `frontend/src/app/features/enterprise/organization-structure.component.spec.ts` | Component tests |
+| `frontend/src/app/app.routes.ts`, `app.component.ts` | Feature route and navigation integration |
+| `docs/architecture/application-folder-code-map.md` | Source-map update |
+| `docs/verification/WP03-implementation-acceptance-matrix.md` | WP-03 acceptance status update |
+| `docs/work-packages/handover-register.md` | Handover update |
+
+### 37.2 What this branch actually implements
+
+Migration 000035 creates four tenant-owned tables:
+- `org_units`: organizational unit hierarchy with legal-entity/site context, parent relationship, status and effective dates.
+- `job_positions`: approved job slots linked to organizational units, with position code/title, status and effective dates.
+- `org_unit_manager_assignments`: effective-dated manager-position assignment to an organizational unit.
+- `position_reporting_relations`: effective-dated position-to-position reporting relationships.
+
+The migration adds indexes, enables and forces row-level security, creates tenant isolation policies and grants constrained table privileges to the runtime role.
+
+The Laravel service exposes organization-unit and position reads/creation, manager assignment/listing and position reporting relation creation/listing. It uses tenant-scoped queries and transactions, checks manager and position membership within the tenant, enforces entity/site consistency, detects overlapping manager/reporting periods and checks solid-line reporting cycles. Writes are accompanied by audit/outbox events.
+
+The feature tests include tenant administrator versus ordinary member access, unit hierarchy/entity/site validation, job positions kept separate from login/employee identity, effective-dated manager assignments, reporting overlap/cycle rejection, cross-tenant list/foreign-key isolation, and runtime table grants/forced RLS.
+
+The Angular feature supplies an operator-facing organization structure screen, API service, route and component test.
+
+### 37.3 What remains before WP-03 organization and DoA acceptance
+
+- [ ] Add effective-dated employee/person-to-position incumbent assignments, including vacancy, acting assignment, multiple permitted assignments, employment status and legal-entity/site/department restrictions. Keep login identity, employee identity, position and domain role separate.
+- [ ] Integrate these assignments with the WP-14 employee/employment master; the job-position slot must not be mistaken for its incumbent.
+- [ ] Complete organization changes, history, archival, reorganization/version snapshots, matrix/functional reporting and effective-date conflict handling.
+- [ ] Implement versioned Delegation of Authority policies: transaction type, legal entity, department, site, cost centre, budget status, currency, amount band, risk, approval count, incompatible duties, escalation and validity dates.
+- [ ] Resolve the active position incumbent and valid acting delegate at each approval step. Store the precise DoA policy/route snapshot and reject a changed, expired or unauthorized approver.
+- [ ] Connect DoA to purchase requisition/PO, supplier award, budget, payment and other controlled transaction workflows; tenant `OWNER` or `ADMIN` must not become an automatic business approver.
+- [ ] Add SSO/MFA and HR lifecycle integration for role changes, leave, separation and delegated access revocation where required by WP-03.
+- [ ] Add negative tests for vacant positions, overlapping incumbent assignments, expired acting authority, same-person maker/checker, wrong legal entity/site/cost centre, changed policy after submission, currency mismatch, budget overrun, position/tenant spoofing and concurrent approvals.
+- [ ] Update OpenAPI contracts and end-to-end browser workflows; run migrations and tests against PostgreSQL under the restricted runtime role.
+- [ ] Rebase/reconcile against the current delivery after WP-03 migrations 000033/000034 are reviewed, then execute exact candidate and post-integration SHA checks.
+
+**Current CI evidence:** workflow runs #46010970370 and #46010970310 are pre-runner failures (`runner_id: 0`, no runner, zero steps). Therefore the feature tests on this candidate have not been established as executed GitHub CI evidence.
+
+---
+
+## 38. WP-14 Ethiopia payroll candidate — implementation audit and localization release path
+
+**Candidate branch:** `work/wp14-ethiopia-payroll-localization-2026-11-27`  
+**Exact head:** `b6b3fb3094c460e8a09f13283c9b65f75c5469cb`  
+**Comparison against delivery:** 57 commits ahead, 0 behind; 20 changed files  
+**Latest commit message:** `docs(WP-14): align handover register to latest payroll branch and CI evidence`  
+**PR status:** no pull request exists for this branch.
+
+### 38.1 Rendered source and target paths
+
+| Path | Current candidate contribution |
+|---|---|
+| `backend/app/Services/Payroll/EthiopiaPayrollCalculator.php` | Ethiopia PAYE/pension candidate calculator, source-backed approved-rule path and calculation evidence |
+| `backend/app/Services/Finance/FinanceControlService.php` | Payroll draft creation, frozen rule snapshot, source-document verification, calculation evidence hash, line validation and professional review |
+| `backend/app/Http/Controllers/Finance/FinanceControlController.php` | Payroll Finance API changes |
+| `backend/config/payroll.php` | Explicit Ethiopia employee-master and statutory activation flags |
+| `backend/database/migrations/2026_11_27_000033_require_stored_statutory_source_document.php` | Adds source document reference and approved-source constraint/FK |
+| `backend/database/migrations/2026_11_27_000034_require_payroll_line_evidence_hash.php` | Adds validated payroll-line calculation evidence hash |
+| `backend/tests/Unit/EthiopiaPayrollCalculatorTest.php` | Calculator unit regression tests |
+| `backend/app/Services/Integration/DocumentIntegrationService.php` | Legal source-document upload/hash and read-back verification extensions |
+| `docs/localization/ethiopia-payroll-engineering-release-gate.md` | Legal/engineering activation gate |
+| `docs/localization/ethiopia-payroll-localization-2026-11-27.md` | Candidate payroll localization design and interpretation record |
+| `docs/localization/ethiopia-payroll-legal-requirements-matrix.csv` | Legal-source/requirement matrix |
+| `docs/localization/fixtures/ethiopia-payroll-candidate-calculations.csv` | Candidate arithmetic scenarios |
+| `docs/localization/fixtures/ethiopia-payroll-tax-base-candidate-regression.csv` | Competing PAYE tax-base regression values |
+| `docs/localization/templates/ethiopia-payroll-rule-payload-template.json` | Rule-payload template |
+| `docs/localization/ethiopia-legal-regulatory-register.md` | Legal register updates |
+| `docs/hr/payroll-and-variable-compensation.md`, `docs/hr/workforce-payroll-pension-benefits-compensation.md` | HR/payroll source alignment |
+| `docs/architecture/application-folder-code-map.md`, `docs/work-packages/handover-register.md`, `README.md` | Architecture, handover and checkpoint references |
+
+### 38.2 What is actually implemented in the candidate
+
+The calculator exposes `calculateCandidate()` and `calculateApproved()`. Its approved path requires exactly one income-tax and one pension rule, Ethiopia jurisdiction, effective-date coverage, approved rule records and a tax-base decision with a separate reviewer/qualification, credentials, reference, article list, review timestamp and opinion hash. It checks supporting source records and employee/component evidence; excludes `RETAINER_SERVICE` from employee payroll; uses integer/minor-unit decimal handling and explicit rounding; produces a source snapshot/hash; and returns a draft result rather than posting money.
+
+The Finance service connects a payroll draft to frozen statutory rule records, reads and hashes the stored source document, computes a payroll line through the calculator, stores canonical calculation evidence and an evidence SHA-256, and requires every line to be `VALIDATED` before professional review submission. It retains a distinct professional-review decision.
+
+The configuration deliberately remains:
+- `employee_master_release_ready = false`
+- `statutory_activation_enabled = false`
+
+These flags must remain false until the complete employee master, contract/assignment classification, competent local legal interpretation, authoritative source verification, payroll regression and end-to-end control gates are met.
+
+### 38.3 Legal and payroll decisions that must not be inferred
+
+The candidate records two competing PAYE bases for a gross ETB 30,000 illustration:
+- TAXABLE_GROSS: PAYE ETB 8,450; employee pension ETB 2,100; net ETB 19,450.
+- TAXABLE_GROSS_LESS_EMPLOYEE_PENSION: PAYE ETB 7,715; employee pension ETB 2,100; net ETB 20,185.
+- Difference in PAYE: ETB 735.
+
+This difference demonstrates why the tax-base interpretation must be established by a qualified Ethiopian tax professional against the actual applicable instrument, amendment, effective date and article. The calculator's ability to run a candidate calculation is not itself a legal determination.
+
+### 38.4 Remaining work before WP-14 acceptance
+
+- [ ] Retain authoritative legal source bytes, instrument metadata, title/number, publication/gazette date, article references, language, amendment chain, effective interval and authority; store a cryptographic hash of the exact bytes.
+- [ ] Strengthen authority trust to an explicit reviewed authority registry and instrument identity. A URL/domain suffix or caller-supplied hash alone is insufficient.
+- [ ] Require actual uploaded-object read-back and SHA-256 equality before a legal source can support an approved rule; reject missing, altered, inaccessible, superseded or wrong-tenant documents.
+- [ ] Fix private document storage default/configuration and the unqualified `RuntimeException` path described in Section 4.1. Add upload/database compensation so a database failure does not leave an orphaned private object.
+- [ ] Backfill or explicitly quarantine legacy statutory rows before validating the `NOT VALID` check/FK constraints introduced by migrations 000033/000034. Add a forward-only validation migration and prove clean-install plus upgrade-from-existing-database behavior.
+- [ ] Re-sequence the WP-14 migrations into the canonical sequence after WP-03 migrations 000033/000034 and organization migration 000035; use 000036/000037 or the next confirmed free canonical sequence. Preserve immutable migration filenames once integrated.
+- [ ] Add employee/person master, legal employer, employment contract, effective-dated assignment/position, worker classification, tax residence, pension coverage, bank/payment instructions, consent/privacy and employee lifecycle workflows.
+- [ ] Add attendance/time capture, shift/roster, overtime, absence, leave, benefits, loan/advance, variable compensation, final settlement and payroll adjustment workflows.
+- [ ] Add payroll run orchestration: pay period, employee population snapshot, earning/deduction component mapping, gross-to-net, statutory employer/employee obligations, control totals, payslips, approval, posting, payment file, remittance and reconciliation.
+- [ ] Add API/PostgreSQL feature tests for tenant RLS, employer/entity scope, contract/assignment coverage, reviewer separation, source-byte hash, rule expiry, exemption/coverage evidence, invalid classifications, altered component metadata, duplicate rule records, concurrency, replay and payroll-to-GL balancing.
+- [ ] Add payroll browser/UI workflow, employee/HR screens, maker-checker exception queues, traceable payslip and statutory reporting/exports.
+- [ ] Add overflow-safe basis-point and percentage arithmetic for every maximum monetary input, and regression tests for boundary/overflow values, rounding, zero/negative/large earnings and deductions.
+- [ ] Complete the independent Ethiopian legal/tax/pension opinion and approve the exact rule/source version before any activation change; retain human legal/financial authorization under the project governance agreement.
+
+**Current CI evidence:** runs #46008205344 and #46008205340 failed before execution (`runner_id: 0`, no runner and zero steps). The 370-line calculator unit test file exists, but no Laravel/PostgreSQL feature suite for the API, tenant/RLS, payroll review, concurrency or GL/remittance flow is included in this candidate. Do not interpret the failed pre-runner workflow as a code-test result.
+
+---
+
+## 39. CI runner-continuity candidate — what it solves and what it does not
+
+**Branch:** `work/wp03-ci-runner-continuity-2026-11-27`  
+**Exact head:** `659e53f324d0a8c3cebd7ab5695a83e5d48f824b`  
+**Comparison against delivery:** 4 commits ahead, 0 behind; 4 changed files; no PR and no workflow run for the inspected head.
+
+Files already rendered:
+- `.github/workflows/ci.yml`
+- `.github/workflows/wp01-16-completion-verification.yml`
+- `docs/engineering/ci-runner-continuity.md`
+- `docs/engineering/development-deployment.md`
+
+The candidate makes GitHub-hosted runners the default, offers an explicit manual `workflow_dispatch` choice for a dedicated self-hosted runner with labels `self-hosted,linux,x64,erp-ci`, keeps PR/push events on the hosted route, and narrows automatic delivery PR verification to the combined workflow to reduce duplicate backend/frontend runs. The associated operating note recommends a single-repository, least-privilege, preferably ephemeral runner with Docker and no production credentials. It correctly states that local verification or an earlier green SHA does not replace exact-head evidence.
+
+Remaining actions:
+- [ ] Confirm hosted runner allocation root cause from the account/repository settings and GitHub service state; the current tool evidence does not reveal billing/account policy as the cause.
+- [ ] Set up and verify a dedicated runner only through the repository owner's secure Settings flow; do not commit runner tokens or production secrets.
+- [ ] Run workflow dispatch against a frozen trusted branch/SHA; retain runner name, job steps, logs, test totals and artifact checksums.
+- [ ] Keep the same test/security gates on hosted and self-hosted runners; no conditional skipping or reduced suite.
+- [ ] Add dynamic RLS inventory verification. The candidate's explicit list still omits the three WP-03 platform tables `platform_operator_grants`, `platform_tenant_entitlements` and `platform_audit_events`, and it does not yet enumerate the organization tables from migration 000035.
+- [ ] Change the combined workflow display name/description so it accurately describes the component checks and WP-01 package verification actually executed; do not imply all WP-00–WP-16 end-to-end scenarios pass.
+- [ ] Add browser E2E, security, concurrency, performance, restore and installer checks to the workflow as the corresponding WP-16 jobs are implemented.
+
+The workflow branch is an infrastructure-continuity candidate; it does not add ERP domain behavior or independently prove the dedicated runner exists.
+
+---
+
+## 40. Consolidated build checklist and canonical source-folder map
+
+This checklist combines existing delivery source, branch-resident candidate source, and the remaining build work. Do not duplicate code into work-package folders: keep runtime code in its domain-owned Laravel/Angular locations and make each WP package folder a traceable manifest of source, requirement IDs, API, migration, UI, tests, evidence and dependencies.
+
+### 40.1 Canonical source locations and domain responsibilities
+
+| WP | Existing source location in delivery | Current candidate/reference source | Main remaining executable build |
+|---|---|---|---|
+| WP-00 Governance | `docs/agent/project-governance-agreement.md`, product charters, architecture and engineering standards | PR #18 audit and WP-03/WP-14 workflow amendments | Trace every change to owner scope, source SHA, requirements, approvals, risks and acceptance evidence. |
+| WP-01 Requirements | `docs/requirements/requirements-traceability.md`, `work-packages/wp-01-requirements-traceability/` | PR #17 and the R3 archive, 128 records/24 contexts/45 source maps | Finish GAR-to-R3 semantic crosswalk; create WP-02–WP-16 package manifests and requirement-to-runtime traceability. |
+| WP-02 Ethiopia legal | `docs/localization/ethiopia.md`, `docs/localization/ethiopia-legal-regulatory-register.md`, HR/payroll rule standards | WP-14 localization/legal-source candidate docs | Legal source byte registry, amendment tracking, applicability/effective-dated rule engine, professionally reviewed interpretations and tests. |
+| WP-03 Enterprise/SaaS | `backend/app/Http/Controllers/Enterprise/`, tenant/platform services, migrations 000001, 000009–000014, 000027–000032; `frontend/src/app/features/enterprise/` | PR #13, org runtime branch `da50b739...`, PR #16 and combined WP-03/WP-14 plan | Secure operator lifecycle and target scope; company org/positions/incumbents; position-based DoA; SSO/MFA and access lifecycle. |
+| WP-04 Merchandising | `backend/app/Http/Controllers/Merchandising/`, `backend/app/Services/Merchandising/`, migrations 000004/000005/000011; `frontend/src/app/features/merchandising/` | Existing demand/OTB/pricing and evidence-policy features | Statistical forecasting, source lineage, effective forecast, OTB reconciliation to actuals, price/promotion resolution and channel integration. |
+| WP-05 Product/PLM | `backend/app/Http/Controllers/ProductDevelopment/`, `backend/app/Services/ProductDevelopment/`, migrations 000006/000007/000009/000012; `frontend/src/app/features/product-development/` | Library apparel contract reconciliation PR #14 | BOM-to-material resolution, substitution state machine, CAD/asset rights and verification, costing, product passport and dynamic release dependencies. |
+| WP-06 IE/capacity | `backend/app/Http/Controllers/Planning/IndustrialEngineeringController.php`, `backend/app/Services/Planning/IndustrialEngineeringService.php`, migration 000019 | Manufacturing/IE standards and WP-03/WP-14 plan | Effective IE standard selection, capacity/site/shift integrity, skill-scope enforcement, workforce concurrency, incentive policy and IE operator UI. |
+| WP-07 Sourcing/procurement | `backend/app/Http/Controllers/Sourcing/SourcingController.php`, `backend/app/Services/Sourcing/SourcingService.php`, inventory ledger, migration 000015 | Procurement/supplier reference standards | RFQ/quotation/award, supplier qualification, PO/receipt correction, service receipts, AP match, supplier claims and returns. |
+| WP-08 Route/SOP | Migration 000016 route/version tables; manufacturing route/SOP/work-instruction documentation | Route framework docs | Effective-date route resolver, conditional/parallel/subcontract/rework edges, approved work instructions and acknowledgements. |
+| WP-09 Materials/WIP | Inventory and sourcing services, migrations 000015/000016/000023/000024 | Manufacturing/bundle schemas and source reconciliation | Typed UOM, fabric roll/trim issue and return, cutting/lay/marker/bundle service, material ledger links and complete WIP genealogy. |
+| WP-10 MES | `backend/app/Http/Controllers/Manufacturing/ManufacturingController.php`, `backend/app/Services/Manufacturing/ManufacturingExecutionService.php`, migrations 000016/000019 | Departmental manufacturing standards | Cutting/printing/embroidery/sewing/wash/finishing/packing workflows, scan/offline events, hourly plan-actual, Andon and labor-minute reconciliation. |
+| WP-11 Quality/HSE | `backend/app/Http/Controllers/Quality/QualityController.php`, `backend/app/Services/Quality/QualityControlService.php`, migration 000017 | Quality/CAPA/HSE standards | Fix inspection submit/review state; evidenced deviation/containment; AQL/sampling; CAPA atomicity; effective release/hold and HSE lifecycle. |
+| WP-12 WMS/commerce | `backend/app/Http/Controllers/Distribution/FinishedGoodsController.php`, `backend/app/Services/Distribution/FinishedGoodsService.php`, migrations 000018/000023/000024/000026 | WMS/channel and order-to-cash charter | Allocation, pick/pack/ship, DC/branch/store, wholesale/POS/e-commerce, delivery proof, RMA/returns/refunds and reconciliation. |
+| WP-13 Finance | `backend/app/Http/Controllers/Finance/FinanceControlController.php`, `backend/app/Services/Finance/FinanceControlService.php`, migrations 000020/000025 | Finance accounting/treasury/tax/costing standard | COA/period administration, subledgers, FX, tax, AP/AR, bank reconciliation, reversals, costing/WIP, close and statements. |
+| WP-14 HR/payroll | Existing payroll-review tables/service in migration 000020 and Finance service | Candidate branch `b6b3fb30...`, payroll calculator/unit suite, legal gate and source matrix | Employee/employment/time/leave/benefits; verified Ethiopia rules; payroll run/control totals; payslips, approvals, GL, remittance and reconciliation. |
+| WP-15 Documents/integrations/agents | Integration controller/services, migration 000021; document metadata, outbox, device scan and agent governance tables | Agent-native blueprint PR #3; provider-neutral storage PR #10 | Verified private storage, extraction workers/import adapters, fenced outbox, connector retries, trusted devices/offline sync, agent runtime and human approval UI. |
+| WP-16 Installer/release | `.github/workflows/`, `Makefile`, `docker-compose.yml`, `docker/postgres/init/`, `scripts/check-no-loopback-defaults.php`, release standards | CI runner-continuity candidate `659e53f3...`; audit Section 9 | Production application/worker/scheduler images, reproducible master installer, clean-install/upgrade, SBOM/signing, E2E/security/load/restore/rollback/UAT and operations handover. |
+
+### 40.2 Ordered implementation actions
+
+**Build sequence 0 — freeze the source-of-truth and traceability**
+- [ ] Keep `delivery/autonomous-wp-01-16` as the integration target and record exact branch/SHA for every candidate.
+- [ ] Complete the 128-record R3 to 120-record legacy GAR semantic crosswalk; map exact requirement → source path → migration/table → API → UI → test → exact SHA → result.
+- [ ] Create `work-packages/wp-00-governance/` and `work-packages/wp-02-legal-localization/` through `work-packages/wp-16-release-installer/` as concise package manifests, each linking to the single canonical domain source rather than duplicating code.
+- [ ] Make the handover register derive status from evidence; separate design, source-rendered, integrated, tested, accepted and release-qualified states.
+- [ ] Reconcile the README checkpoint, code map, architecture index, migration index and handover register to delivery `fc01eced...`.
+
+**Build sequence 1 — restore exact-SHA verification**
+- [ ] Review the runner-continuity branch; keep hosted compute default and manual self-hosted selection restricted to trusted owner-triggered runs.
+- [ ] Investigate actual Actions quota, account/repository policy and service status; do not assume billing exhaustion without evidence.
+- [ ] Execute ERP CI and combined verification on the same frozen candidate SHA and again on the integration SHA after merge.
+- [ ] Add dynamic database inventory tests that enumerate every tenant-owned table, assert RLS enabled and forced, verify runtime role grants and ensure new migrations cannot silently omit RLS coverage.
+- [ ] Keep loopback restrictions on runtime templates/config while allowing explicit isolated CI service endpoints.
+- [ ] Make workflow names and release artifacts accurately describe the executed test scope.
+
+**Build sequence 2 — finish WP-03 secure platform and organization**
+- [ ] Rebase PR #13 onto current delivery; inspect all 000033/000034 SQL functions/grants and prove no caller can forge a platform actor or widen tenant/site/resource scope.
+- [ ] Complete scoped access against actual target records (entity, department, warehouse, channel, site), not only membership/scope metadata; add expiry, revocation and reliable worker processing.
+- [ ] Reconcile and open a PR for org runtime branch `da50b739...`; retain migration 000035 after the operator migration set.
+- [ ] Add position incumbent/acting-assignment records linked to WP-14 employee records.
+- [ ] Implement versioned DoA resolver and integrate real PO/budget/approval workflow with maker-checker and auditable approval snapshots.
+- [ ] Add full WP-03 API, database, tenant, RLS, Angular and browser E2E coverage.
+
+**Build sequence 3 — complete WP-01/WP-02 inputs to statutory and domain workflows**
+- [ ] Approve the requirements crosswalk and acceptance matrix.
+- [ ] Build the authoritative Ethiopian legal-document evidence store and rule-version lifecycle; retain exact source bytes/hashes and qualified professional interpretation records.
+- [ ] Define legal-employer, worker-classification, tax, pension, customs, VAT/withholding and reporting applicability as versioned evidence-backed rules; retain human approval for statutory activation.
+
+**Build sequence 4 — finish WP-04/WP-05 product and commercial passport**
+- [ ] Materialize approved forecast adjustments as an effective immutable forecast; reconcile forecast and OTB scopes to entity/brand/market/channel/currency/period.
+- [ ] Implement forecast model/formula run provenance, price/promotion resolver, discount/margin floor, eligibility intersections and transaction-level price snapshot.
+- [ ] Resolve BOM material references through WP-07 material masters; ensure approved substitutions can reach quality approval or withdrawal.
+- [ ] Repair the technical-pack release state machine and make production-order creation consume a verified released tech-pack/BOM, not a caller-supplied APPROVED flag.
+- [ ] Verify technical assets in WP-15 object storage and pin exact file hashes, rights and revision identity.
+
+**Build sequence 5 — finish WP-06/WP-07/WP-08 planning and sourcing inputs**
+- [ ] Bind IE standards and capacity slots to the exact effective date, work-centre, shift and site; enforce operation quantities and skill scopes at confirmation.
+- [ ] Implement canonical material master and effective UOM conversion; normalize stock ledger in base units and prevent mixed-unit arithmetic.
+- [ ] Complete supplier qualification, RFQ/quote/award, PO approval, goods/service receipt, quality hold/release and three-way AP matching.
+- [ ] Implement route version/effectivity/supersession resolver and conditional route evaluation; version and acknowledge SOP/work instructions.
+- [ ] Add supplier returns, import/customs/duty, landed cost, certificate and claims workflows.
+
+**Build sequence 6 — connect WP-09/WP-10 production material and shop-floor execution**
+- [ ] Create exact production material requirement snapshots from released BOM/version, order sizes/colours/quantity, approved substitute and yield/waste assumptions.
+- [ ] Add warehouse/roll/trim reservation, issue, return, transfer, consumption, scrap and WIP custody commands linked transactionally to inventory movement and production operations/bundles.
+- [ ] Build marker/lay/spread/cut/bundle services, roll-to-bundle genealogy, separate fabric/trim issue and operation-level material reconciliation.
+- [ ] Build department-specific MES and worker/machine/device flows for cutting, printing, embroidery, sewing, optional wash/special process, finishing, pressing and packing.
+- [ ] Support offline event capture with idempotent synchronization, event ordering, device identity and collision handling.
+- [ ] Reconcile planned SAM/SMV minutes, available labor/machine minutes, earned minutes, accepted output, hourly production, WIP, defects, rework and downtime.
+
+**Build sequence 7 — harden WP-11/WP-12 quality and order-to-cash**
+- [ ] Repair the submitted-pending-review quality state; independently evidence deviations and containment; bind NC disposition to the exact inspection/lot/operation.
+- [ ] Implement versioned AQL/sampling plan, measurement tolerances, first-piece/in-line/final/shipment inspection and effective-current release authority.
+- [ ] Make CAPA creation and verification atomic/evidence-linked; prevent historical releases from overriding newer HOLD/REJECT decisions.
+- [ ] Implement location- and unit-aware finished-goods allocation, reservation, pick, pack, dispatch, proof-of-delivery and shipment events.
+- [ ] Implement channel order pricing, credit exposure from WP-13, wholesale/retail/POS/e-commerce/marketplace connectors, returns/refunds/RMA and exactly-once finance/stock reconciliation.
+
+**Build sequence 8 — complete WP-13 finance and WP-14 people/payroll**
+- [ ] Implement finance period and COA administration, source-led subledgers, account/legal-entity constraints, approved FX conversion, payment and bank reconciliation.
+- [ ] Implement balanced immutable journals, posting controls, reversals/adjustments, AP/AR, fixed assets, cost accounting, WIP valuation, tax, close and financial statements.
+- [ ] Reconcile the WP-14 candidate with WP-03 migration sequence; fix private object storage and validate source document hashes.
+- [ ] Complete employee master, employment contracts, position assignment, time, leave, overtime, benefits, loans, training, performance, grievances and separation.
+- [ ] Add payroll API/PostgreSQL/RLS/approval/concurrency tests and full payroll-to-GL, payment, remittance and reconciliation; preserve disabled activation flags until the independent legal and release gates pass.
+
+**Build sequence 9 — operationalize WP-15 agents, documents and integrations**
+- [ ] Make document object upload/read-back/hash verification provider-neutral and transactionally compensated; add malware scanning, retention, access logging and extraction/import review.
+- [ ] Add durable queues, scheduled workers, retry/backoff, dead-letter and reconciliation interfaces; give outbox claims leases, worker identity and fencing tokens.
+- [ ] Make idempotency payload-aware for outbox, document imports, device scans, inventory commands and agent actions.
+- [ ] Implement connector registry/adapters, OAuth/secret rotation, signed webhooks, inbox/outbox, health/status, replay and tenant-scoped reconciliation.
+- [ ] Implement scanner/device provisioning, identity, key rotation, trusted time, offline queue, replay defense and operator UI.
+- [ ] Turn agent design into governed runtime capabilities, tool permission boundaries, scoped context, proposal evaluation, human approval, action execution, trace/audit and rollback; agents must not bypass Laravel transaction rules.
+
+**Build sequence 10 — deliver WP-16 canonical master installer and end-to-end qualification**
+- [ ] Produce pinned backend, frontend/web, worker and scheduler container images with non-root users, health/readiness checks, minimal base images and immutable image digests.
+- [ ] Build a reproducible master installer with validated environment template, secrets bootstrap, PostgreSQL migration/role/RLS setup, Redis/queue, object storage, web/API, worker, scheduler, reverse proxy/TLS and initial platform bootstrap.
+- [ ] Add deterministic clean-install, upgrade, seeded reference data, idempotent re-run, configuration validation, backup/restore, disaster recovery and rollback tests.
+- [ ] Generate SBOMs, dependency/source provenance, image signing and release attestations; scan PHP/npm/Python/OS/container artifacts and prevent secret leakage.
+- [ ] Execute WP-16 AT-REL-001..012 and E2E-001..008 across tenant provisioning → product/BOM release → sourcing/material receipt → inventory issue/cutting → production/QC/CAPA → finished goods → order/dispatch/returns → finance/payroll/reporting.
+- [ ] Execute API contract compatibility, accessibility/WCAG 2.2 AA, tenant penetration/RLS bypass, SAST/DAST/dependency/container checks, load/soak/concurrency, outage/retry, backup/restore, deployment/rollback and operator runbook/UAT.
+- [ ] Produce an exact-SHA signed release manifest, artifact checksums, CI links, acceptance evidence, open risk register, data migration plan and operational handover. Production activation/deployment remains under the existing human approval boundaries.
+
+### 40.3 Non-negotiable technical acceptance standards already defined in the repository
+
+The project standards require:
+- Angular 22, strict TypeScript/templates, feature-owned Angular code, typed API services and server-side authorization; WCAG 2.2 AA, keyboard access, focus visibility, screen-reader support and automated accessibility checks.
+- PHP 8.5/Laravel 13, strict typed boundaries, PSR-12, Composer lockfile/audit, controller/service separation, transactions, queue/outbox for external side effects and no floating-point money.
+- PostgreSQL 18 as system of record, migration-only schema evolution, tenant-scoped foreign keys/checks/indexes, forced RLS on tenant tables and tests using the restricted runtime role.
+- OpenAPI 3.1 versioned REST contracts, stable error envelopes, pagination/correlation IDs and idempotent commands.
+- Redis 8.2 for cache/queue coordination; S3-compatible provider-neutral document storage; isolated Python 3.15 specialist compute that cannot write around Laravel domain rules.
+- Formatting/lint, static/type analysis, unit, integration, tenant/authorization, E2E, migration/recovery review, dependency/secret/container/SAST checks, production build/container build, deployment smoke and health tests.
+
+These standards are written in `docs/engineering/code-quality.md`, `docs/architecture/platform-standard.md`, `docs/security/saas-security.md`, `docs/engineering/development-deployment.md` and the WP-16 release standard. The gap is the missing execution evidence and end-to-end source coverage across all required journeys, plus the installer/runtime topology and complete test families described above.
+
+---
+
