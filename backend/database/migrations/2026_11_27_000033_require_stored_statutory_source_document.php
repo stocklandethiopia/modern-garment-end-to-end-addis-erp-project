@@ -20,7 +20,6 @@ CHECK (
     verification_status <> 'PROFESSIONAL_APPROVED'
     OR (
         source_document_reference IS NOT NULL
-        AND btrim(source_document_reference) <> ''
     )
 ) NOT VALID
 SQL);
