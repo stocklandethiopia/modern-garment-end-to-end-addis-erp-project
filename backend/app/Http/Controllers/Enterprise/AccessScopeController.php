@@ -8,11 +8,13 @@ use App\Support\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
 
 class AccessScopeController extends Controller
 {
-    public function index(string $userId, TenantContext $tenantContext, ScopedAccessService $scopes): JsonResponse
+    public function index(string $userId, Request $request, TenantContext $tenantContext, ScopedAccessService $scopes): JsonResponse
     {
+        abort_unless(Str::isUuid($userId), 404);
         abort_unless($tenantContext->canAdministerTenant(), 403, 'Tenant administrator permission is required.');
 
         return response()->json([
@@ -26,6 +28,7 @@ class AccessScopeController extends Controller
         TenantContext $tenantContext,
         ScopedAccessService $scopes,
     ): JsonResponse {
+        abort_unless(Str::isUuid($userId), 404);
         abort_unless($tenantContext->canAdministerTenant(), 403, 'Tenant administrator permission is required.');
 
         $data = $request->validate([
@@ -35,6 +38,8 @@ class AccessScopeController extends Controller
 
         return response()->json([
             'data' => $scopes->setMode(
+                $tenantContext->tenantId(),
+                (string) $request->user()->getAuthIdentifier(),
                 $userId,
                 $data['scope_mode'],
                 trim($data['reason']),
@@ -48,6 +53,7 @@ class AccessScopeController extends Controller
         TenantContext $tenantContext,
         ScopedAccessService $scopes,
     ): JsonResponse {
+        abort_unless(Str::isUuid($userId), 404);
         abort_unless($tenantContext->canAdministerTenant(), 403, 'Tenant administrator permission is required.');
 
         $data = $request->validate([
@@ -62,6 +68,8 @@ class AccessScopeController extends Controller
 
         return response()->json([
             'data' => $scopes->grant(
+                $tenantContext->tenantId(),
+                (string) $request->user()->getAuthIdentifier(),
                 $userId,
                 $data,
             ),
@@ -81,6 +89,7 @@ class AccessScopeController extends Controller
             'reason' => ['required', 'string', 'min:10', 'max:500'],
         ]);
 
+        abort_unless(Str::isUuid($grantId), 404);
         $grant = $scopes->forMember($tenantContext->tenantId(), $userId)['grants']
             ->firstWhere('id', $grantId);
 
@@ -88,6 +97,8 @@ class AccessScopeController extends Controller
 
         return response()->json([
             'data' => $scopes->revoke(
+                $tenantContext->tenantId(),
+                (string) $request->user()->getAuthIdentifier(),
                 $grantId,
                 trim($data['reason']),
             ),
