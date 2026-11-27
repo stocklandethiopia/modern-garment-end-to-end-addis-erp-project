@@ -11,10 +11,10 @@ use Illuminate\Validation\ValidationException;
 
 class PlatformAdministrationService
 {
-    public function tenants(): array
+    public function tenants(string $actorId): array
     {
         try {
-            return DB::select('SELECT * FROM public.platform_list_tenants() ORDER BY tenant_code');
+            return $this->runControlSelect($actorId, null, 'SELECT * FROM public.platform_list_tenants() ORDER BY tenant_code');
         } catch (QueryException $exception) {
             if (($exception->errorInfo[0] ?? null) === '42501') {
                 throw new AuthorizationException('The authenticated identity does not have the required platform authority.');
@@ -24,12 +24,12 @@ class PlatformAdministrationService
         }
     }
 
-    public function currentOperatorRoles(): array
+    public function currentOperatorRoles(string $actorId): array
     {
         try {
             return array_values(array_map(
                 static fn (object $row): string => (string) $row->role_code,
-                DB::select('SELECT role_code FROM public.platform_current_operator_roles()'),
+                $this->runControlSelect($actorId, null, 'SELECT role_code FROM public.platform_current_operator_roles()'),
             ));
         } catch (QueryException $exception) {
             if (($exception->errorInfo[0] ?? null) === '42501') {
@@ -40,10 +40,10 @@ class PlatformAdministrationService
         }
     }
 
-    public function operatorGrants(): array
+    public function operatorGrants(string $actorId): array
     {
         try {
-            return DB::select('SELECT * FROM public.platform_list_operator_grants()');
+            return $this->runControlSelect($actorId, null, 'SELECT * FROM public.platform_list_operator_grants()');
         } catch (QueryException $exception) {
             if (($exception->errorInfo[0] ?? null) === '42501') {
                 throw new AuthorizationException('An active platform administrator grant is required.');
@@ -54,29 +54,30 @@ class PlatformAdministrationService
     }
 
     public function requestOperatorGrant(
+        string $actorId,
         string $userEmail,
         string $roleCode,
         ?string $validFrom,
         ?string $validTo,
         string $reason,
     ): object {
-        return DB::transaction(fn (): object => $this->call(
+        return $this->call($actorId, null,
             'SELECT * FROM public.platform_request_operator_grant(?, ?, ?::date, ?::date, ?)',
             [$userEmail, $roleCode, $validFrom, $validTo, $reason],
         ), 3);
     }
 
-    public function approveOperatorGrant(string $grantId, string $reason): object
+    public function approveOperatorGrant(string $actorId, string $grantId, string $reason): object
     {
-        return DB::transaction(fn (): object => $this->call(
+        return $this->call($actorId, null,
             'SELECT * FROM public.platform_approve_operator_grant(?::uuid, ?)',
             [$grantId, $reason],
         ), 3);
     }
 
-    public function revokeOperatorGrant(string $grantId, string $reason): object
+    public function revokeOperatorGrant(string $actorId, string $grantId, string $reason): object
     {
-        return DB::transaction(fn (): object => $this->call(
+        return $this->call($actorId, null,
             'SELECT * FROM public.platform_revoke_operator_grant(?::uuid, ?)',
             [$grantId, $reason],
         ), 3);
@@ -84,15 +85,16 @@ class PlatformAdministrationService
 
     public function changeTenantStatus(string $tenantId, string $status, string $reason): object
     {
-        return DB::transaction(function () use ($tenantId, $status, $reason): object {
-            return $this->call(
-                'SELECT * FROM public.platform_change_tenant_status(?::uuid, ?, ?)',
-                [$tenantId, $status, $reason],
-            );
-        }, 3);
+        return $this->call(
+            $actorId,
+            null,
+            'SELECT * FROM public.platform_change_tenant_status(?::uuid, ?, ?)',
+            [$tenantId, $status, $reason],
+        );
     }
 
     public function setTenantEntitlements(
+        string $actorId,
         string $tenantId,
         string $planCode,
         string $status,
@@ -102,32 +104,23 @@ class PlatformAdministrationService
         ?string $validTo,
         string $reason,
     ): object {
-        return DB::transaction(function () use (
-            $tenantId,
-            $planCode,
-            $status,
-            $featureFlags,
-            $limits,
-            $validFrom,
-            $validTo,
-            $reason,
-        ): object {
-            return $this->call(
-                'SELECT * FROM public.platform_set_tenant_entitlements(
-                    ?::uuid, ?, ?, ?::jsonb, ?::jsonb, ?::date, ?::date, ?
-                )',
-                [
-                    $tenantId,
-                    $planCode,
-                    $status,
-                    json_encode($featureFlags, JSON_THROW_ON_ERROR),
-                    json_encode($limits, JSON_THROW_ON_ERROR),
-                    $validFrom,
-                    $validTo,
-                    $reason,
-                ],
-            );
-        }, 3);
+        return $this->call(
+            $actorId,
+            null,
+            'SELECT * FROM public.platform_set_tenant_entitlements(
+                ?::uuid, ?, ?, ?::jsonb, ?::jsonb, ?::date, ?::date, ?
+            )',
+            [
+                $tenantId,
+                $planCode,
+                $status,
+                json_encode($featureFlags, JSON_THROW_ON_ERROR),
+                json_encode($limits, JSON_THROW_ON_ERROR),
+                $validFrom,
+                $validTo,
+                $reason,
+            ],
+        );
     }
 
     public function currentEntitlement(string $tenantId): ?object
@@ -155,10 +148,36 @@ class PlatformAdministrationService
         return $entitlement;
     }
 
-    private function call(string $sql, array $bindings): object
+    /**
+     * Execute a SECURITY DEFINER control API through the isolated app_control
+     * database identity. The ordinary app_runtime role cannot EXECUTE these
+     * functions, even when an injected query sets arbitrary custom GUC values.
+     *
+     * Actor and tenant values come from the authenticated request context.
+     */
+    private function runControlSelect(
+        string $actorId,
+        ?string $tenantId,
+        string $sql,
+        array $bindings = [],
+        bool $single = false,
+    ): array|object|null {
+        $connection = DB::connection('pgsql_control');
+
+        return $connection->transaction(function () use ($connection, $actorId, $tenantId, $sql, $bindings, $single): array|object|null {
+            $connection->select("SELECT set_config('app.current_user_id', ?, true)", [$actorId]);
+            $connection->select("SELECT set_config('app.current_tenant_id', ?, true)", [$tenantId ?? '']);
+
+            return $single
+                ? $connection->selectOne($sql, $bindings)
+                : $connection->select($sql, $bindings);
+        }, 3);
+    }
+
+    private function call(string $actorId, ?string $tenantId, string $sql, array $bindings): object
     {
         try {
-            $result = DB::selectOne($sql, $bindings);
+            $result = $this->runControlSelect($actorId, $tenantId, $sql, $bindings, true);
             if ($result === null) {
                 throw ValidationException::withMessages(['platform' => 'The platform operation returned no result.']);
             }
