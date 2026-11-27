@@ -403,7 +403,7 @@ SQL, [
             $subjectPositionId,
         ]);
 
-        return filter_var($result->cycle ?? false, FILTER_VALIDATE_BOOLEAN);
+        return in_array(strtolower((string) ($result->cycle ?? '')), ['1', 't', 'true'], true);
     }
 
     private function recordChange(
