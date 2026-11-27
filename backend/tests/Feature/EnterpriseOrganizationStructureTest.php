@@ -352,7 +352,7 @@ class EnterpriseOrganizationStructureTest extends TestCase
         $positionB = $this->createPosition($unitId, 'POS-B');
         $positionC = $this->createPosition($unitId, 'POS-C');
 
-        $firstReporting = $this->postJson('/api/v1/enterprise/position-reporting-relations', [
+        $this->postJson('/api/v1/enterprise/position-reporting-relations', [
             'subject_position_id' => $positionA,
             'manager_position_id' => $positionB,
             'reporting_type' => 'SOLID_LINE',
