@@ -2929,7 +2929,7 @@ A caller can therefore create an extraction run against a document whose stored 
 
 ---
 
-## 37. WP-03 organization structure runtime candidate — code review and remaining build
+## 40. WP-03 organization structure runtime candidate — code review and remaining build
 
 **Candidate branch:** `work/wp03-org-master-runtime-2026-11-27`  
 **Current exact head:** `f9aebe855a05dec30f0b1f4bc5f1acbd741f385b`  
@@ -2939,7 +2939,7 @@ A caller can therefore create an extraction run against a document whose stored 
 
 This is executable source, not merely the organogram/DoA design document.
 
-### 37.1 Rendered source already on the branch
+### 40.1 Rendered source already on the branch
 
 | Path | Purpose |
 |---|---|
@@ -2958,7 +2958,7 @@ This is executable source, not merely the organogram/DoA design document.
 | `docs/verification/WP03-implementation-acceptance-matrix.md` | WP-03 acceptance status update |
 | `docs/work-packages/handover-register.md` | Handover update |
 
-### 37.2 What this branch actually implements
+### 40.2 What this branch actually implements
 
 Migration 000035 creates four tenant-owned tables:
 - `org_units`: organizational unit hierarchy with legal-entity/site context, parent relationship, status and effective dates.
@@ -2974,7 +2974,7 @@ The feature tests include tenant administrator versus ordinary member access, un
 
 The Angular feature supplies an operator-facing organization structure screen, API service, route and component test.
 
-### 37.3 What remains before WP-03 organization and DoA acceptance
+### 40.3 What remains before WP-03 organization and DoA acceptance
 
 - [ ] Add effective-dated employee/person-to-position incumbent assignments, including vacancy, acting assignment, multiple permitted assignments, employment status and legal-entity/site/department restrictions. Keep login identity, employee identity, position and domain role separate.
 - [ ] Integrate these assignments with the WP-14 employee/employment master; the job-position slot must not be mistaken for its incumbent.
@@ -2991,7 +2991,7 @@ The Angular feature supplies an operator-facing organization structure screen, A
 
 ---
 
-## 38. WP-14 Ethiopia payroll candidate — implementation audit and localization release path
+## 41. WP-14 Ethiopia payroll candidate — implementation audit and localization release path
 
 **Candidate branch:** `work/wp14-ethiopia-payroll-localization-2026-11-27`  
 **Current exact head:** `77177899e59a1606134b8d70e21104efdb7f03d1`  
@@ -2999,7 +2999,7 @@ The Angular feature supplies an operator-facing organization structure screen, A
 **Latest commit message:** `docs(WP-14): align handover register to latest payroll branch and CI evidence`  
 **PR status:** PR #20 is open and remains a draft; no payroll activation or production posting is authorized by this candidate.
 
-### 38.1 Rendered source and target paths
+### 41.1 Rendered source and target paths
 
 | Path | Current candidate contribution |
 |---|---|
@@ -3021,7 +3021,7 @@ The Angular feature supplies an operator-facing organization structure screen, A
 | `docs/hr/payroll-and-variable-compensation.md`, `docs/hr/workforce-payroll-pension-benefits-compensation.md` | HR/payroll source alignment |
 | `docs/architecture/application-folder-code-map.md`, `docs/work-packages/handover-register.md`, `README.md` | Architecture, handover and checkpoint references |
 
-### 38.2 What is actually implemented in the candidate
+### 41.2 What is actually implemented in the candidate
 
 The calculator exposes `calculateCandidate()` and `calculateApproved()`. Its approved path requires exactly one income-tax and one pension rule, Ethiopia jurisdiction, effective-date coverage, approved rule records and a tax-base decision with a separate reviewer/qualification, credentials, reference, article list, review timestamp and opinion hash. It checks supporting source records and employee/component evidence; excludes `RETAINER_SERVICE` from employee payroll; uses integer/minor-unit decimal handling and explicit rounding; produces a source snapshot/hash; and returns a draft result rather than posting money.
 
@@ -3033,7 +3033,7 @@ The configuration deliberately remains:
 
 These flags must remain false until the complete employee master, contract/assignment classification, competent local legal interpretation, authoritative source verification, payroll regression and end-to-end control gates are met.
 
-### 38.3 Legal and payroll decisions that must not be inferred
+### 41.3 Legal and payroll decisions that must not be inferred
 
 The candidate records two competing PAYE bases for a gross ETB 30,000 illustration:
 - TAXABLE_GROSS: PAYE ETB 8,450; employee pension ETB 2,100; net ETB 19,450.
@@ -3042,7 +3042,7 @@ The candidate records two competing PAYE bases for a gross ETB 30,000 illustrati
 
 This difference demonstrates why the tax-base interpretation must be established by a qualified Ethiopian tax professional against the actual applicable instrument, amendment, effective date and article. The calculator's ability to run a candidate calculation is not itself a legal determination.
 
-### 38.4 Remaining work before WP-14 acceptance
+### 41.4 Remaining work before WP-14 acceptance
 
 - [ ] Retain authoritative legal source bytes, instrument metadata, title/number, publication/gazette date, article references, language, amendment chain, effective interval and authority; store a cryptographic hash of the exact bytes.
 - [ ] Strengthen authority trust to an explicit reviewed authority registry and instrument identity. A URL/domain suffix or caller-supplied hash alone is insufficient.
@@ -3062,11 +3062,11 @@ This difference demonstrates why the tax-base interpretation must be established
 
 ---
 
-## 39. CI runner-continuity candidate — what it solves and what it does not
+## 42. CI runner-continuity candidate — what it solves and what it does not
 
 **Branch:** `work/wp03-ci-runner-continuity-2026-11-27`  
 **Exact head:** `659e53f324d0a8c3cebd7ab5695a83e5d48f824b`  
-**Comparison against delivery:** 4 commits ahead, 0 behind; 4 changed files; no PR and no workflow run for the inspected head.
+**Comparison against delivery:** 4 commits ahead, 0 behind; 4 changed files. **Candidate PR:** #22, open draft. **Exact head:** 659e53f324d0a8c3cebd7ab5695a83e5d48f824b. **Exact-head run:** combined verification #46014760259 failed before execution; each required job had runner_id 0, blank runner name and zero steps.
 
 Files already rendered:
 - `.github/workflows/ci.yml`
@@ -3085,15 +3085,15 @@ Remaining actions:
 - [ ] Change the combined workflow display name/description so it accurately describes the component checks and WP-01 package verification actually executed; do not imply all WP-00–WP-16 end-to-end scenarios pass.
 - [ ] Add browser E2E, security, concurrency, performance, restore and installer checks to the workflow as the corresponding WP-16 jobs are implemented.
 
-The workflow branch is an infrastructure-continuity candidate; it does not add ERP domain behavior or independently prove the dedicated runner exists.
+The workflow branch is an infrastructure-continuity candidate; it does not add ERP domain behavior or independently prove the dedicated runner exists. Run #46014760259 did not select the manual self-hosted route. No evidence confirms that a dedicated runner has been registered or is available.
 
 ---
 
-## 40. Consolidated build checklist and canonical source-folder map
+## 43. Consolidated build checklist and canonical source-folder map
 
 This checklist combines existing delivery source, branch-resident candidate source, and the remaining build work. Do not duplicate code into work-package folders: keep runtime code in its domain-owned Laravel/Angular locations and make each WP package folder a traceable manifest of source, requirement IDs, API, migration, UI, tests, evidence and dependencies.
 
-### 40.1 Canonical source locations and domain responsibilities
+### 43.1 Canonical source locations and domain responsibilities
 
 | WP | Existing source location in delivery | Current candidate/reference source | Main remaining executable build |
 |---|---|---|---|
@@ -3115,7 +3115,7 @@ This checklist combines existing delivery source, branch-resident candidate sour
 | WP-15 Documents/integrations/agents | Integration controller/services, migration 000021; document metadata, outbox, device scan and agent governance tables | Agent-native blueprint PR #3; provider-neutral storage PR #10 | Verified private storage, extraction workers/import adapters, fenced outbox, connector retries, trusted devices/offline sync, agent runtime and human approval UI. |
 | WP-16 Installer/release | `.github/workflows/`, `Makefile`, `docker-compose.yml`, `docker/postgres/init/`, `scripts/check-no-loopback-defaults.php`, release standards | CI runner-continuity candidate `659e53f3...`; audit Section 9 | Production application/worker/scheduler images, reproducible master installer, clean-install/upgrade, SBOM/signing, E2E/security/load/restore/rollback/UAT and operations handover. |
 
-### 40.2 Ordered implementation actions
+### 43.2 Ordered implementation actions
 
 **Build sequence 0 — freeze the source-of-truth and traceability**
 - [ ] Keep `delivery/autonomous-wp-01-16` as the integration target and record exact branch/SHA for every candidate.
@@ -3198,7 +3198,7 @@ This checklist combines existing delivery source, branch-resident candidate sour
 - [ ] Execute API contract compatibility, accessibility/WCAG 2.2 AA, tenant penetration/RLS bypass, SAST/DAST/dependency/container checks, load/soak/concurrency, outage/retry, backup/restore, deployment/rollback and operator runbook/UAT.
 - [ ] Produce an exact-SHA signed release manifest, artifact checksums, CI links, acceptance evidence, open risk register, data migration plan and operational handover. Production activation/deployment remains under the existing human approval boundaries.
 
-### 40.3 Non-negotiable technical acceptance standards already defined in the repository
+### 43.3 Non-negotiable technical acceptance standards already defined in the repository
 
 The project standards require:
 - Angular 22, strict TypeScript/templates, feature-owned Angular code, typed API services and server-side authorization; WCAG 2.2 AA, keyboard access, focus visibility, screen-reader support and automated accessibility checks.
@@ -3216,17 +3216,17 @@ These standards are written in `docs/engineering/code-quality.md`, `docs/archite
 
 ---
 
-## 41. WP-03 organization runtime candidate — additional least-privilege hardening
+## 44. WP-03 organization runtime candidate — additional least-privilege hardening
 
 The WP-03 organization candidate was reviewed directly at its service, controller, migration, route and feature-test layer.
 
-### 41.1 Verified implementation characteristics
+### 44.1 Verified implementation characteristics
 
 The current candidate implements tenant-scoped organization-unit and job-position creation/read, effective-dated manager assignments, solid-line and functional position reporting, legal-entity/site validation, unit/position period containment, manager-overlap checks and solid-line cycle detection. The reporting graph operations use a tenant-level PostgreSQL advisory transaction lock. Creation writes an audit event and a transactional outbox event in the same transaction.
 
 The organization schema enables and forces RLS on all four tables. The operator controller prohibits person_id, employee_id, user_id and membership_id when creating a position, correctly separating a job slot from an employee/login identity.
 
-### 41.2 Runtime UPDATE privilege expansion found and corrected in candidate
+### 44.2 Runtime UPDATE privilege expansion found and corrected in candidate
 
 **Original finding:** migration 000035 granted SELECT, INSERT, UPDATE on org_units, job_positions, org_unit_manager_assignments and position_reporting_relations to app_runtime. The candidate service/controller exposes read and create operations only; it has no controlled update operation that would need this privilege. With table-level UPDATE, another runtime code path could rewrite position titles, effective dates, hierarchy or reporting relationships without using the service's audit/outbox event method.
 
@@ -3236,7 +3236,7 @@ The organization schema enables and forces RLS on all four tables. The operator 
 
 The intent is append-only organization master history for the current create-only API. Future effective-date changes, reorganizations or deactivation must use an explicit versioned command with audit/outbox evidence, not a broad direct UPDATE grant.
 
-### 41.3 Remaining WP-03 acceptance work
+### 44.3 Remaining WP-03 acceptance work
 
 - [ ] Keep the position slot separate from its incumbent; implement effective-dated employee/person-to-position and acting assignments only when the WP-14 employee master is authoritative.
 - [ ] Complete position-incumbent changes, vacancy, leave/acting cover, expiry, archival and reorganization snapshots.
@@ -3248,9 +3248,9 @@ The intent is append-only organization master history for the current create-onl
 
 ---
 
-## 42. WP-14 Ethiopia payroll candidate — additional source fixes and remaining safeguards
+## 45. WP-14 Ethiopia payroll candidate — additional source fixes and remaining safeguards
 
-### 42.1 Private document storage now has an explicit clean-install configuration
+### 45.1 Private document storage now has an explicit clean-install configuration
 
 The WP-14 branch originally used config('filesystems.private_documents_disk', 's3'), but the delivery filesystems config defined only local and public disks and no private-disk key or S3 disk. This prevented a reproducible clean-install document upload/source verification path. storeUploadedFile() also referenced RuntimeException without importing it and could leave a stored object orphaned if document metadata registration failed.
 
@@ -3261,7 +3261,7 @@ The WP-14 branch originally used config('filesystems.private_documents_disk', 's
 
 The local disk points to the private application storage root and has no public URL. Production acceptance must still verify the configured object-storage driver, private permissions, retention, object versioning, backup and read-back integrity from the actual installer environment.
 
-### 42.2 Payroll calculation line mutation is now guarded at database and service level
+### 45.2 Payroll calculation line mutation is now guarded at database and service level
 
 **Candidate fixes committed:**
 - f65e298a5db6000fc7678990c4075c532c63f9be adds migration 000036: validated payroll line inserts are allowed only while the parent run is DRAFT; a parent-row FOR UPDATE lock serializes insertion against run submission; UPDATE/DELETE are rejected by a trigger; runtime UPDATE/DELETE privileges are revoked.
@@ -3270,7 +3270,7 @@ The local disk points to the private application storage root and has no public 
 
 This improves evidence immutability and review integrity. These changes remain on PR #20 and have not yet been executed in the repository's PostgreSQL CI environment.
 
-### 42.3 Release boundaries and remaining WP-14 work
+### 45.3 Release boundaries and remaining WP-14 work
 
 The configuration remains deliberately disabled:
 - employee_master_release_ready = false
@@ -3294,138 +3294,64 @@ Remaining work:
 
 ---
 
-## 43. Exact-head GitHub workflow evidence — PR #18, #20 and #21
+## 46. Exact-head GitHub workflow evidence — runner allocation and execution status
 
-The current PR heads and workflow conclusions were queried after the candidate code updates. These are repository workflow records, not locally executed test results.
+The exact workflow runs below were queried by commit SHA and their raw job records inspected. All listed failed jobs report runner_id = 0, an empty runner_name and an empty steps array. This proves no runner was assigned and no application test step executed. The combined source/archive assembly job was skipped after the required jobs failed.
 
-| PR | Exact head | Workflow | Run | Conclusion |
-|---|---|---|---:|---|
-| #18 audit/agreement | d525fa5edbc212b7075c045090854fbdeef05dbf | ERP Continuous Integration | 46014618036 | FAILURE |
-| #18 audit/agreement | d525fa5edbc212b7075c045090854fbdeef05dbf | WP-01–WP-16 completion verification | 46014618024 | FAILURE |
-| #20 WP-14 payroll | 77177899e59a1606134b8d70e21104efdb7f03d1 | ERP Continuous Integration | 46014254978 | FAILURE |
-| #20 WP-14 payroll | 77177899e59a1606134b8d70e21104efdb7f03d1 | WP-01–WP-16 completion verification | 46014254854 | FAILURE |
-| #21 WP-03 organization | f9aebe855a05dec30f0b1f4bc5f1acbd741f385b | ERP Continuous Integration | 46013596367 | FAILURE |
-| #21 WP-03 organization | f9aebe855a05dec30f0b1f4bc5f1acbd741f385b | WP-01–WP-16 completion verification | 46013595997 | FAILURE |
+| Source | Exact SHA | Workflow run | Job evidence | Classification |
+|---|---|---:|---|---|
+| delivery/autonomous-wp-01-16 | fc01eced62b97c4ec27f0075264fc8ba0fb11851 | #45915273928 (ERP CI) | Backend/frontend jobs runner_id 0, no steps; rerun also failed before execution | NOT RUN |
+| PR #13 platform/scoped-access candidate | 8ae8536bccfd3924017b12905ea57fce2641fb46 | #45915554309 (ERP CI), #45915554192 (combined) | Required jobs runner_id 0, no steps; repeated attempts did not execute | NOT RUN |
+| PR #18 production plan/audit | b9be60c01d77db3275e604c53c31826192d2ff54 | #46014870000 (ERP CI), #46014869903 (combined) | Required jobs runner_id 0, no steps; artifact assembly skipped | NOT RUN |
+| PR #20 payroll candidate | db1847c64abbff8b04bc70790b122e082f5d81dd | #46015026266 (ERP CI), #46015026376 (combined) | Required jobs runner_id 0, no steps; artifact assembly skipped | NOT RUN |
+| PR #21 organization candidate | f9aebe855a05dec30f0b1f4bc5f1acbd741f385b | #46013596367 (ERP CI), #46013595997 (combined) | Required jobs runner_id 0, no steps; artifact assembly skipped | NOT RUN |
+| PR #22 runner-continuity candidate | 659e53f324d0a8c3cebd7ab5695a83e5d48f824b | #46014760259 (combined) | WP-01, Angular and Laravel/PostgreSQL jobs runner_id 0, no steps; artifact assembly skipped | NOT RUN |
 
-### 43.1 Job-level evidence available
+### 46.1 What is proven and what remains unknown
 
-For all three heads, the workflow-run job endpoint reports the relevant Angular and Laravel/PostgreSQL jobs as FAILURE. The job-step endpoint returns an empty step list for the inspected jobs. Their job records have no log URL. The combined ERP candidate/source-archive assembly jobs are skipped after the preceding job failures.
+- Workflow conclusion: GitHub reports FAILURE for each listed run.
+- Runner allocation: PROVEN at the job-record level; runner_id is 0 and no runner name is present.
+- Executed application test result: NOT ESTABLISHED; no test steps ran.
+- Code correctness: NOT ESTABLISHED by these failed runs; do not describe them as Laravel/Angular test failures.
+- Underlying reason no runner was assigned: NOT YET ESTABLISHED. Repository tooling does not expose the owner billing/Actions policy diagnostics or GitHub-hosted runner service diagnostics needed to distinguish account quota, repository policy or service-side provisioning.
+- PR #22 is an open draft preparatory change. Its manual self-hosted runner option was not used by run #46014760259; that run had no assigned runner. No evidence yet confirms a dedicated self-hosted runner exists.
 
-The available records do not expose a failing command, assertion, stack trace or provisioning error. Therefore the correct classification is:
+### 46.2 Required continuity tasks — quality gates remain unchanged
 
-- Workflow conclusion: FAILURE.
-- Executed test-step evidence: NOT AVAILABLE from the returned job records.
-- Root cause: UNVERIFIED.
-- Application code test result: NOT ESTABLISHED.
-- Pass/acceptance claim: NOT MADE.
+- [ ] Repository owner/admin checks Actions enabled status, account spending/usage limit, billing/quota, repository/organization policy and GitHub service diagnostics for the failing time window; retain the actual cause/evidence rather than guessing.
+- [ ] Provision an isolated, repository-scoped Linux x64 ERP runner through GitHub Settings, with the erp-ci label, least-privilege access, a clean/ephemeral workspace, Docker/test dependencies, no production network or secrets and monitored availability.
+- [ ] Review and merge PR #22 only after workflow syntax/security checks pass and the administrator confirms runner configuration; keep GitHub-hosted as default and never send untrusted PR code to self-hosted infrastructure.
+- [ ] Dispatch both required workflows on a frozen trusted branch/SHA using the dedicated runner; record runner identity, step logs, exit codes, test counts and artifact checksums.
+- [ ] Re-run ERP CI and combined verification for each frozen candidate head; then repeat on the canonical delivery SHA after integration.
+- [ ] Keep every backend, PostgreSQL/RLS, frontend, WP-01 integrity, artifact, security and E2E check mandatory; local results or prior green SHAs do not replace exact-head CI.
 
-Do not attribute these failures specifically to billing, runner allocation, PostgreSQL, Angular compilation or application source without a job log or an independently reproduced result.
-
-### 43.2 Required CI continuity action
-
-- [ ] Use the owner-controlled GitHub Actions settings and run-history UI to retrieve the raw workflow logs and setup diagnostics for the exact run IDs above.
-- [ ] Determine whether a runner was assigned and whether checkout/setup began before any job failed.
-- [ ] Re-run both workflows on each frozen candidate head after the cause is known; preserve runner identity, step results, logs, test counts and artifact digests.
-- [ ] If a separate trusted self-hosted runner is introduced, keep all existing checks and exact-SHA requirements; do not weaken or skip the suite.
-- [ ] Re-run the same checks again on the canonical integration SHA after any accepted merge.
-
-The workflow summaries are retained as failure evidence, but they are not sufficient to diagnose a code failure or an infrastructure cause.
-
+These records are an infrastructure execution failure, not acceptance. Work that can be safely implemented and reviewed continues, but no affected candidate is promoted as verified until its exact-head checks execute and pass.
 
 ---
 
-## 44. Exact-head failed-job retry evidence — 27 November 2026
+## 47. WP-03 organization workbench — full-register pagination and search are not implemented
 
-The six failed workflow runs in Section 43 were retried using GitHub's failed-jobs retry action. The retry request was accepted for each run. All retries then completed with the same FAILURE workflow conclusion and the same absence of usable diagnostic steps/logs.
+**Finding:** the Laravel service exposes paginated responses (100 rows per page) for organizational units, job positions, unit-manager assignments and position-reporting relationships. The Angular API service does not accept or pass a page/search/filter parameter; the component calls each list endpoint once with default parameters and stores only response.data. The component discards current_page, last_page and total metadata, and the screen has no page controls or search/filter workflow for these registers.
 
-| PR | Original run | Retry attempt | Retry job records |
-|---|---:|---:|---|
-| #18 | 46014869903 (completion verification) | 2 | Laravel/PostgreSQL, WP-01 R3 and Angular jobs failed; combined assembly skipped |
-| #18 | 46014870000 (ERP CI) | 2 | Angular and Laravel/PostgreSQL jobs failed; lockfile reconciliation skipped |
-| #20 | 46015026376 (completion verification) | 2 | WP-01 R3, Laravel/PostgreSQL and Angular jobs failed; combined assembly skipped |
-| #20 | 46015026266 (ERP CI) | 2 | Angular and Laravel/PostgreSQL jobs failed; lockfile reconciliation skipped |
-| #21 | 46013596367 (ERP CI) | 3 | Angular and Laravel/PostgreSQL jobs failed; lockfile reconciliation skipped |
-| #21 | 46013595997 (completion verification) | 3 | Laravel/PostgreSQL, Angular and WP-01 R3 jobs failed; combined assembly skipped |
+**Source**
+- backend/app/Services/Enterprise/EnterpriseOrganizationService.php: units(), positions(), managerAssignments() and reportingRelations() use paginate(100).
+- backend/app/Http/Controllers/Enterprise/EnterpriseOrganizationController.php: units(), positions(), managerAssignments() and reportingRelations() return paginated responses.
+- frontend/src/app/features/enterprise/enterprise-organization.service.ts: listUnits(), listPositions(), listUnitManagers() and listReportingRelations() do not accept pagination/filter parameters.
+- frontend/src/app/features/enterprise/organization-structure.component.ts: loadAll() and selectUnit() call only the first page and assign response.data, without storing page metadata.
+- frontend/src/app/features/enterprise/organization-structure.component.html: unit register, job positions, manager history and reporting table render only the arrays currently in memory.
 
-The retried job IDs also return empty step lists. The retried jobs have no log URL; a log retrieval attempt for a retried job returned a missing blob response. This confirms that simply retrying these six workflow runs did not yield executable test output.
-
-**Updated evidence classification:**
-- Workflow rerun action accepted: YES.
-- Retry workflow conclusion: FAILURE for all six runs.
-- Failing command/step/stack trace: NOT AVAILABLE.
-- Application test result: NOT ESTABLISHED.
-- Root cause attribution: UNVERIFIED.
-- Test pass claim: NOT MADE.
-
-The project must not keep retrying the same opaque job record indefinitely. The next CI action is to inspect GitHub Actions run details/settings through the repository owner's authenticated GitHub interface (runner allocation, service/setup diagnostics, workflow permissions and run logs), or run the identical workflow on a securely configured trusted runner while retaining every existing gate. Once logs exist, diagnose and fix the exact failure; no source test may be marked passed from this record alone.
-
-
----
-
-## 45. WP-14 professional identity and durable source-tamper evidence — final pre-activation controls
-
-### 45.1 PAYE-base opinion reviewer identity is not bound to a controlled professional registry
-
-**Verified source:** the Ethiopia calculator requires the nested tax_base_decision object to contain status APPROVED, approved_method matching the selected tax_base_method, an opinion reference, reviewer qualification text, reviewer_user_id, reviewer registration reference, opinion document storage UUID, SHA-256, independence confirmation, review timestamp and article references. The opinion document is re-read from tenant-private storage during payroll draft creation and its document type/hash is checked.
-
-**Remaining identity gap:** the calculator only checks that reviewer_user_id is non-empty and differs from the payroll preparer. It does not check that this reviewer ID is the same as the statutory rule record's verified_by, a real tenant user, an active qualified professional profile or a valid professional registration record. reviewer_qualification and reviewer_registration_reference are free-text values in the nested JSON payload. The generic payroll.professional-approval Gate on the later run decision verifies application permission, but does not by itself prove Ethiopian tax-professional qualification or the specific credential/registration cited in the opinion.
-
-This is not a reason to remove the default-off payroll release gate. It is an explicit control to complete before any statutory activation.
+**Effect:** tenants with more than 100 records cannot inspect the complete organization structure from the operator UI. A parent unit may not appear on the currently loaded page; position choices used to assign manager/reporting relationships can omit valid positions; historical manager and reporting records beyond the first page are invisible. Displayed counts describe only the loaded response page and may be mistaken for tenant totals.
 
 **Required implementation**
-- [ ] Create a controlled professional credential/authority registry with user identity, profession/qualification, registration number, issuing authority, jurisdiction/scope, effective/expiry dates, status, source evidence and verifier.
-- [ ] Bind the PAYE-base opinion reviewer_user_id to an existing active credential record and to the exact tax-base opinion document/artifact version.
-- [ ] Require independent reviewer authority appropriate to Ethiopian tax interpretation; store the opinion signatory, qualification/registration evidence, cited provisions and source revision hash.
-- [ ] Ensure the person who authored/prepared the legal rule cannot approve the tax-base interpretation or their own statutory source package.
-- [ ] Bind professional payroll decision authorization to the qualified reviewer/role and retain the distinct review evidence; keep run preparer, rule verifier, legal opinion reviewer and final payroll approver separate according to the approved authority matrix.
-- [ ] Add tests for unknown reviewer UUID, inactive/expired registration, wrong professional scope, wrong jurisdiction, reviewer equals preparer/rule author, credential revocation and altered opinion document.
+- [ ] Add typed page request/response contracts to the Angular service and pass server-side page, page size and validated search/filter parameters; retain server-side stable ordering.
+- [ ] Add accessible previous/next/first/last navigation and page/total labels for unit, position, manager-assignment and reporting registers; show loading and disabled states while page transitions are pending.
+- [ ] Add tenant-safe search/filter for unit code/name/type/entity/site, position code/title/family/class/unit, manager-position history and reporting subject/manager/type/effective period.
+- [ ] Preserve selected unit and selected position across page changes where the record remains in the filtered result; when a selection leaves the filter, clear dependent state explicitly and announce the change.
+- [ ] Provide a reliable way to resolve a parent unit and position from outside the current page in creation forms; do not populate parent/manager/reporting pickers from only the first 100 rows.
+- [ ] Ensure newly created units/positions/assignments/relations appear on the appropriate sorted page and page totals remain accurate after mutation; do not locally append a row while retaining stale server pagination metadata.
+- [ ] Cancel or ignore stale page responses after tenant switch, filter change, selected-unit change or a newer request; retain the existing request-sequence protections.
+- [ ] Add Angular tests for page 1/2, last page, empty page, query changes, selected-unit preservation, newly created records crossing a page boundary, stale response race and tenant switch.
+- [ ] Add API/PostgreSQL feature tests for page bounds, filter validation, tenant RLS, stable ordering, record visibility and no cross-tenant search leakage.
+- [ ] Add browser E2E with more than 100 units, positions, manager assignments and reporting relations; verify exact totals and that records on later pages remain selectable in relationship forms.
 
-### 45.2 Stored-document tamper rejection is not durable when verification is nested in a payroll transaction
-
-**Finding:** DocumentIntegrationService.verifyStoredDocumentChecksum() updates document_assets.classification_status to REJECTED when the stored SHA-256 differs, then throws ValidationException. WP-14 calls this method from createPayrollDraft() and addPayrollDraftLine() within an outer DB::transaction. The exception rolls back the entire transaction, including the attempted REJECTED/checksum_verified_at reset update. A byte-count mismatch is detected earlier and also throws without setting a durable rejection record.
-
-The caller safely fails closed: no payroll draft or payroll line is committed from the failed transaction. The issue is security/audit durability: after the transaction rolls back, the document can remain in its prior PENDING/accepted state and the tamper incident may not be visible in the asset state or durable security audit trail.
-
-**Required implementation**
-- [ ] Separate verification from the business transaction or return a typed integrity failure that the outer service catches only after rollback; then write a durable tamper/quarantine state and immutable security event in a separate committed transaction.
-- [ ] Record the document ID, tenant, storage disk/object version, expected and observed byte count, expected and observed SHA-256, verification time, actor/service identity, payroll run/line context, correlation ID and disposition.
-- [ ] Ensure the audit/tamper event cannot be rolled back with the payroll transaction and cannot overwrite the original registered hash.
-- [ ] Quarantine the object and prevent subsequent extraction, payroll calculation or statutory use until an authorized re-verification/replacement workflow completes.
-- [ ] Add PostgreSQL feature tests for altered bytes and byte-count mismatch inside a payroll transaction; assert the payroll operation rolls back while the separate tamper/quarantine event persists.
-- [ ] Preserve the first failed verification event and all later re-verification attempts as append-only history.
-
-### 45.3 Re-check legal-source objects at the final professional review boundary
-
-The createPayrollDraft operation verifies the frozen statutory rule source documents and the PAYE opinion object; addPayrollDraftLine verifies the line-specific supporting documents. The candidate's professional run decision revalidates calculation evidence and run totals but does not re-read every underlying statutory/opinion/supporting object before changing the run to APPROVED_FOR_PAYROLL.
-
-A stored source object can be replaced, deleted or become inaccessible between line calculation and final professional decision. The line evidence hash proves what the calculation snapshot recorded, but it does not prove the currently retained source object remains retrievable and byte-identical at the final approval moment.
-
-**Required implementation**
-- [ ] Persist the exact document asset IDs, storage object version IDs, byte counts and hashes for the tax rule, pension rule, PAYE opinion, coverage decision and every line exemption/deduction/pension rationale.
-- [ ] Re-read and verify all those exact object versions immediately before final professional approval, or enforce immutable object version retention plus a verifiable storage policy.
-- [ ] Reject final approval if any source object is missing, changed, rejected, expired or no longer within its effective/legal scope.
-- [ ] Ensure any failed final source check produces the durable tamper record described in 45.2.
-- [ ] Add object deletion/replacement, expired source, revoked legal rule and stale opinion tests.
-
-**Activation boundary retained:** the WP-14 candidate still has employee_master_release_ready=false and statutory_activation_enabled=false. These engineering requirements do not authorize legal interpretation, payroll activation, payment, remittance or GL posting.
-
-
----
-
-## 46. Current PR-head and CI state after WP-14 pre-activation audit additions
-
-This section supersedes any earlier statement that the audit/PR head is the same as the preceding CI run.
-
-| PR | Current exact head | Latest associated workflow evidence | Current interpretation |
-|---|---|---|---|
-| #18 audit/agreement | 6e8881b91bff346005154426a4e0071ed6fdada3 | No workflow run returned for this exact head | NOT RUN / no exact-head result available |
-| #20 WP-14 payroll | db1847c64abbff8b04bc70790b122e082f5d81dd | ERP CI 46015026266; WP completion verification 46015026376; retries completed as FAILURE | FAILED workflow; no step/log detail; root cause unverified |
-| #21 WP-03 organization | f9aebe855a05dec30f0b1f4bc5f1acbd741f385b | ERP CI 46013596367; WP completion verification 46013595997; retries completed as FAILURE | FAILED workflow; no step/log detail; root cause unverified |
-
-PR #18's latest exact-head audit-only documentation changes have not yet been verified by an associated workflow run. Do not transfer earlier or later candidate SHA results to it.
-
-PR #20 has two additional evidence requirements from Section 45: a credential-backed professional reviewer identity for the PAYE-base opinion, and durable tamper/source-integrity event recording across outer transaction rollback plus a final source re-verification immediately before professional approval. The employee-master and statutory activation flags remain false.
-
-PR #21 remains an open draft candidate with the reduced SELECT/INSERT-only runtime privilege on organization master records. Its exact-head PostgreSQL feature suite is not established by the failed/no-log workflow records.
-
-**Current delivery boundary:** all three PRs remain open/draft and unmerged into delivery. The canonical ERP and installer work continue under the existing integration branch and owner workflow agreement. No package is reported as CI-passed by this section.
+**Acceptance boundary:** the current PR #21 workbench is an initial source-backed implementation candidate, not a complete enterprise organization operator experience. This is a build task under PROD-WP03-008 and must pass the same QG-06, QG-07 and QG-11 gates as every other task.
