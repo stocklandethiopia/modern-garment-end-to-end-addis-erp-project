@@ -1675,6 +1675,9 @@ The production-order release method also checks that the route and tech pack are
 
 Thus, the state transition from the BOM placeholder/reference to a WP-07-verified material identity is not implemented in the inspected canonical source.
 
+The additional state-machine inspection establishes why this is not just a missing UI action: the migration's guard_style_bom_version_state() trigger only permits DRAFT → PENDING_APPROVAL and PENDING_APPROVAL → APPROVED/REJECTED transitions, and both branches require material_resolution_status to remain unchanged from OLD. There is no authorized DRAFT → DRAFT material-resolution update or dedicated WP-07 verification transition. createBomVersion() always sets UNVERIFIED_WP07; submitBom() requires that same value; releaseReadiness() later requires VERIFIED. A new WP-07 verification record linked to immutable BOM-line snapshots is therefore safer than mutating an engineering BOM after submission. If a status-column transition is retained, it requires a narrow, authorized, audited forward migration with exact old/new predicates, not a weakening of the existing BOM immutability guard.
+
+
 **Required implementation**
 - [ ] Create a material master/reference model and controlled component mapping for every BOM line.
 - [ ] Validate unit of measure, base/issue unit conversion, approved specification/revision, material family, supplier qualification and relevant customer/brand restriction.
@@ -1708,79 +1711,19 @@ The frontend has a product-development service spec, but the inspected backend/t
 
 ---
 
-## 22. WP-05 / WP-10 implementation sequence
 
-1. Implement material master mapping and BOM resolution with WP-07.
-2. Complete stored-object integrity/rights verification with WP-15.
-3. Implement effective IE, route/SOP, quality-plan and costing dependency contracts.
-4. Make technical-pack readiness evidence-based and release only the exact complete product passport.
-5. Require released tech-pack state for bulk production order creation/release; provide an explicit bounded prototype route where needed.
-6. Add WP-05 PostgreSQL feature suites and the complete product passport browser E2E journey.
-7. Add the same exact dependency/hash references to manufacturing order start and finished-goods genealogy.
+### 21.7 BOM substitution candidates cannot reach quality approval or withdrawal
 
-No WP-05 or WP-10 runtime source has been modified by this audit addendum. It extends the canonical source-to-plan implementation register with cross-package release controls and acceptance evidence.
-
-
----
-
-## 21. WP-05 BOM material resolution and technical-release state audit
-
-### 21.1 BOM material verification has no permitted transition to VERIFIED
-
-**Finding:** the current BOM lifecycle creates a permanent mismatch between the WP-07 material-resolution handoff and the WP-05 release-readiness check.
-
-**Source evidence**
-- backend/app/Services/ProductDevelopment/BomTechnicalPackService.php, createBomVersion() line 68, always creates the BOM with material_resolution_status = UNVERIFIED_WP07.
-- The same service's submitBom() around lines 204–246 requires the material-resolution status to still be UNVERIFIED_WP07 at submission.
-- releaseReadiness() around lines 598–655 requires the approved BOM's material-resolution status to be VERIFIED.
-- backend/database/migrations/2026_11_22_000012_create_bom_and_tech_pack_controlled_releases.php, line 26, defines the field default as UNVERIFIED_WP07; lines 248–249 allow only UNVERIFIED_WP07 or VERIFIED.
-- The guard_style_bom_version_state() trigger around lines 297–336 allows only DRAFT → PENDING_APPROVAL and PENDING_APPROVAL → APPROVED/REJECTED transitions, and both transition branches explicitly require NEW.material_resolution_status IS NOT DISTINCT FROM OLD.material_resolution_status.
-- The trigger has no permitted DRAFT → DRAFT material-resolution update or a separate WP-07 verification transition.
-- The inspected SourcingService methods contain supplier, PO and receipt actions but no method that verifies a BOM's material references or writes a controlled resolution record. BomTechnicalPackService also has no material-resolution command.
-
-**Effect:** a BOM created through the current service remains UNVERIFIED_WP07 through submission and approval. The release-readiness method can only pass the material-resolution check if the value becomes VERIFIED, but the service exposes no transition and the database trigger prevents changing it on the existing row. This is a dead-end in the source state machine.
-
-**Required implementation**
-- [ ] Define WP-07's material-resolution contract for every BOM line: approved material master, component identity, UOM conversion, supplier qualification/scope, legal entity/site, effective dates, procurement/stock status, MOQ/lead-time and evidence references.
-- [ ] Prefer a versioned child resolution record (for example, bom_material_resolution_reviews) bound to tenant, BOM version and BOM-line snapshot, rather than mutating the immutable engineering BOM.
-- [ ] Record one decision per BOM revision with resolver, independent reviewer where required, decision time, source evidence IDs/hash, unresolved lines, exceptions and an immutable resolution-manifest hash.
-- [ ] If retaining the status column, use a forward migration to introduce one narrow, authorized, audited state transition with strict old/new predicates; do not edit the already-applied migration or weaken the general BOM immutability trigger.
-- [ ] Make the material-resolution action callable only by the WP-07 service role/capability and bind the resolved material identities to the exact approved BOM line/version.
-- [ ] Recheck resolution freshness when a supplier/material is suspended, a site/entity changes or an effective-date rule changes; invalidate or require a new resolution rather than silently reusing stale approval.
-- [ ] Add PostgreSQL feature tests for unresolved, partially resolved, fully resolved, stale, wrong-tenant, wrong-site/entity, revoked supplier and concurrent resolution attempts.
-- [ ] Add a full WP-05 → WP-07 → WP-11 → WP-08/WP-06 → WP-13 release-readiness test and verify the exact accepted BOM snapshot.
-
-### 21.2 BOM substitution candidates cannot reach quality approval or withdrawal
-
-**Finding:** a substitution candidate is created as PROPOSED with quality_approval_status = PENDING_WP11. Migration 000012 constrains quality_approval_status to exactly PENDING_WP11 (around lines 269–270). proposeSubstitution() is the only exposed substitution method in BomTechnicalPackService; the inspected QualityControlService and QualityController have no substitution-review/approval action. releaseReadiness() counts any candidate whose approval status is not APPROVED, so a proposed substitution becomes a permanent release blocker once material resolution is marked verified. The table status supports WITHDRAWN, but no service/controller action performs that transition either.
+**Finding:** a substitution candidate is created as PROPOSED with quality_approval_status = PENDING_WP11. The migration constraint permits only PENDING_WP11 for that field. proposeSubstitution() is the only exposed substitution method in BomTechnicalPackService; the inspected QualityControlService and QualityController have no substitution-review/approval action. releaseReadiness() blocks every candidate whose approval status is not APPROVED, so a proposed substitution becomes a release blocker. The candidate status contract includes WITHDRAWN, but no service/controller action performs that transition.
 
 **Required implementation**
 - [ ] Add a WP-11 quality review record/decision with reviewer, approved alternative material identity, equivalence/test evidence, affected BOM line/revision, conditions and effective period.
-- [ ] Add forward migration constraints that permit only the real lifecycle states and require decision metadata for APPROVED/REJECTED/WITHDRAWN; preserve maker-checker and immutable decision history.
+- [ ] Add a forward migration allowing the actual decision states and requiring decision metadata for APPROVED/REJECTED/WITHDRAWN; preserve maker-checker and immutable decision history.
 - [ ] Add controlled withdraw/revise/resubmit actions for the proposer or authorized style owner while the BOM is still eligible for revision.
 - [ ] Ensure a substitute is not treated as the selected material merely because a candidate was proposed; the selected line and approved alternative must be explicit.
 - [ ] Test quality approval/rejection, expired approval, wrong BOM version, withdrawn candidate, changed substitute, tenant boundary and release-readiness impact.
 
-### 21.3 Technical-pack release readiness contains permanent placeholder blockers
-
-**Finding:** releaseReadiness() adds the following blockers unconditionally:
-- OBJECT_STORAGE_NOT_VERIFIED (WP-15);
-- INDUSTRIAL_ENGINEERING_NOT_VERIFIED (WP-06);
-- ROUTE_AND_SOP_NOT_VERIFIED (WP-08);
-- QUALITY_RELEASE_NOT_VERIFIED (WP-11);
-- PRODUCT_COSTING_NOT_VERIFIED (WP-13).
-
-This correctly prevents a technical pack from being treated as fully ready while those cross-domain capabilities are not evidenced. However, these entries are static code additions rather than queries to versioned approvals/contracts. Even after the dependent modules are implemented, the method will continue to return release_ready = false until the placeholder logic is replaced.
-
-**Required implementation**
-- [ ] Retain fail-closed behavior while each dependency is absent.
-- [ ] Replace each permanent blocker with a typed readiness adapter and versioned evidence lookup: verified storage manifest; approved IE operation/method/SAM standard; approved manufacturing route/SOP revision; approved quality plan/critical-to-quality checks; approved cost roll-up.
-- [ ] Pin each evidence record to the exact style revision, BOM, measurement, pattern, fit-approved sample, legal entity/site, customer and effective date as applicable.
-- [ ] Snapshot the exact dependency IDs, versions and hashes into the release manifest; re-evaluate immediately before release under transaction locks.
-- [ ] Return actionable blockers with the missing evidence reference and owning WP, not just fixed placeholder strings.
-- [ ] Test that missing evidence blocks release and that adding complete, current, authorized evidence enables it; changing/revoking/superseding any dependency invalidates readiness.
-
-### 21.4 Technical-pack state contract has an unreachable RELEASE_BLOCKED value
+### 21.8 Technical-pack state contract has an unreachable RELEASE_BLOCKED value
 
 **Finding:** migration 000012's tech_pack_versions_decision_chk includes RELEASE_BLOCKED in its branch where decision fields must be null, but tech_pack_versions_status_chk does not include RELEASE_BLOCKED in the allowed status list. The status is therefore not a legal persisted state despite being referenced by another constraint.
 
@@ -1790,17 +1733,20 @@ This correctly prevents a technical pack from being treated as fully ready while
 - [ ] If persisted, add it intentionally to the status constraint and define legal transitions, retry/reassessment, audit and decision-field requirements.
 - [ ] Add migration tests that exercise every allowed status and transition.
 
-### 21.5 WP-05 regression and integration sequence
 
-1. Define and implement the immutable WP-07 BOM material-resolution record and service handoff.
-2. Add the WP-11 substitution approval/withdrawal record and API lifecycle.
-3. Replace fixed technical-pack dependency blockers with versioned readiness adapters, retaining fail-closed behavior.
-4. Correct the RELEASE_BLOCKED constraint mismatch using a forward migration.
-5. Add backend PostgreSQL feature tests for BOM lifecycle, source material verification, substitutions, asset verification and complete release-manifest creation.
-6. Add Angular product-development/BOM/tech-pack workbench tests for line resolution, substitution state, approval queues and readiness blockers.
-7. Execute a cross-domain production-intent journey using the exact release candidate SHA; preserve the complete evidence manifest.
+## 22. WP-05 / WP-10 implementation sequence
 
-No WP-05/WP-07/WP-11 runtime source or database migration has been modified by this audit section. It records the verified state-machine defect and the required forward implementation path.
+1. Implement material master mapping and BOM resolution with WP-07.
+2. Complete stored-object integrity/rights verification with WP-15.
+3. Implement effective IE, route/SOP, quality-plan and costing dependency contracts.
+4. Make technical-pack readiness evidence-based and release only the exact complete product passport.
+5. Require released tech-pack state for bulk production order creation/release; provide an explicit bounded prototype route where needed.
+6. Add WP-05 PostgreSQL feature suites and the complete product passport browser E2E journey.
+7. Add the WP-11 substitution approval/withdrawal lifecycle and its forward migration constraints.
+8. Resolve the RELEASE_BLOCKED status/decision constraint mismatch in a forward migration.
+9. Add the same exact dependency/hash references to manufacturing order start and finished-goods genealogy.
+
+No WP-05 or WP-10 runtime source has been modified by this audit addendum. It extends the canonical source-to-plan implementation register with cross-package release controls and acceptance evidence.
 
 
 ---
@@ -2208,7 +2154,7 @@ The lot stores style_id/style_revision_no from the order, but its SKU/colour/siz
 
 ## 22. WP-03 / WP-04 — Scoped authorization, forecast lineage and commercial guardrails
 
-### 22.1 Scoped tenant members can reach merchandising routes that do not evaluate their scope
+### 29.1 Scoped tenant members can reach merchandising routes that do not evaluate their scope
 
 **Finding:** the tenant middleware does not enforce SCOPED mode itself. ResolveTenantContext::handle() validates an active tenant membership, binds the transaction-local tenant/user context and continues the request. It does not load tenant_access_scope_modes, reject SCOPED members, or call ScopedAccessService or DomainCapabilityAuthorizer.
 
@@ -2239,7 +2185,7 @@ These controllers are routed under the general auth:sanctum, token.ability:erp:a
 - [ ] Add adversarial tests that set a member to SCOPED, grant one brand/site/market, then prove list filtering and read/create/approve actions for other scopes return no data or 403/404 as designed.
 - [ ] Add regression coverage for the currently covered range-freeze path and account-terms scopes so a future route cannot omit the scope boundary.
 
-### 22.2 Demand forecast publication accepts unvalidated dimension JSON
+### 29.2 Demand forecast publication accepts unvalidated dimension JSON
 
 **Finding:** DemandPlanningController::publishRun() validates forecasts.*.dimension_refs only as an array. It does not validate the required key set and value type for each grain, nor verify that referenced style/category/channel/account/store records exist, are active, belong to the tenant, or are consistent with each other. The endpoint rejects duplicate JSON dimension/time combinations but that only prevents identical payload keys; it does not establish that those keys identify valid business objects.
 
@@ -2260,7 +2206,7 @@ The same method writes every supplied run as status = PUBLISHED in one transacti
 - [ ] Add a deliberate draft → validation → publish/approval lifecycle if consensus approval is required by the planning authority; do not silently classify a raw imported payload as a validated model output.
 - [ ] Test each grain schema, cross-tenant dimension, inactive style/store, inconsistent channel/account, unknown reference, duplicate row and source-hash mismatch.
 
-### 22.3 Approved forecast adjustments are not materialized as an effective forecast version
+### 29.3 Approved forecast adjustments are not materialized as an effective forecast version
 
 **Finding:** createAdjustment() creates an append-only forecast_adjustments record. approveAdjustment() inserts an APPROVE_ADJUSTMENT row in merchandising_decisions and an audit event but does not set forecast_adjustments.approved_by. showRun() derives an is_approved flag by joining the decisions table, so the decision history is visible; however, the approved adjustment remains a separate record and does not change or supersede the published forecast. There is no service in the inspected demand-planning path that materializes a new approved forecast version or effective-forecast projection from the accepted adjustments.
 
@@ -2282,7 +2228,7 @@ The current OTB scenario can reference a forecast_run_id, but its calculation re
 - [ ] Allow OTB simulation to pin the effective forecast snapshot, derive sales/receipts by the policy's selected valuation basis and retain an explicit override record where planners change it manually.
 - [ ] Test exact same base forecast, approved override, duplicate approval, multiple adjustments to one forecast row, conflicting edits, immutable history and OTB snapshot reproducibility.
 
-### 22.4 OTB policy approval thresholds are stored but never evaluated
+### 29.4 OTB policy approval thresholds are stored but never evaluated
 
 **Finding:** createPolicy() requires an approval_thresholds array and persists it to otb_policies. activatePolicy() validates the inclusion rule modes, but does not validate or use the threshold structure. approveScenario() only requires a tenant administrator and that the author differs from the approver; it never loads the linked policy's approval_thresholds, computes the relevant amount/variance and routes approvals by threshold.
 
@@ -2300,7 +2246,7 @@ The current OTB scenario can reference a forecast_run_id, but its calculation re
 - [ ] Require every approval step, reject self-approval and re-evaluate effective incumbent/delegation status before each decision.
 - [ ] Test under/over threshold, mixed currencies, changed policy after submission, delegated approver expiry and conflicting concurrent decisions.
 
-### 22.5 Promotion approval does not enforce margin floor or price outcome
+### 29.5 Promotion approval does not enforce margin floor or price outcome
 
 **Finding:** createPromotion() accepts a fixed-amount discount greater than zero without comparing the amount with the linked price-list lines. Only percentage discounts are capped at 100%. It stores optional margin_floor, but approvePromotion() does not evaluate margin_floor, the linked line cost_basis, list/wholesale prices or the post-discount margin. The inspected controller contains no price-resolution method that applies the promotion safely to an order line.
 
@@ -2322,7 +2268,7 @@ The current OTB scenario can reference a forecast_run_id, but its calculation re
 - [ ] Pin the price/promotion resolver inputs, versions, decision and result to every order quote/order line for reproducibility.
 - [ ] Test fixed discount above price, percentage boundary, below-margin outcome, stale cost, cross-type overlap, exclusions, expiry/timezone, currency mismatch, stacking policy and repeat quote calculation.
 
-### 22.6 OTB scenario references are not reconciled to the OTB policy or used as calculation inputs
+### 29.6 OTB scenario references are not reconciled to the OTB policy or used as calculation inputs
 
 **Finding:** simulateScenario() validates that optional range_plan_id and forecast_run_id exist in the tenant (and are frozen/published respectively), but it does not verify their legal-entity, brand, market, channel, currency or period relevance to the otb_period and its otb_policy. The formula is calculated from the OTB period's manually entered amounts plus caller-supplied assumptions. The optional forecast and range references are saved as attribution only and do not change those inputs. The endpoint allows arbitrary extra keys in the assumptions map, though the calculation reads only its fixed known keys.
 
@@ -2336,7 +2282,7 @@ The current OTB scenario can reference a forecast_run_id, but its calculation re
 - [ ] Preserve a calculation manifest containing formula version, currency, valuation basis, input provenance, overrides and resulting available budget.
 - [ ] Add tests for mismatched tenant (already protected), mismatched entity/brand/market/channel/currency/period, stale forecast, unknown assumption and deterministic recomputation.
 
-### 22.7 WP-04 test coverage extension
+### 29.7 WP-04 test coverage extension
 
 Existing DemandOtbPricingWorkflowTest covers the happy paths for forecast runs, adjustment approval, OTB policy/period/scenario and price list/promotion approval, plus basic validation. BrandRangeWorkflowTest covers selected brand/range/assortment and scoped range-freeze behavior. The next test increment must add the specific same-tenant scope-bypass, forecast dimension, effective-forecast materialization, DoA-threshold, promotion margin/overlap and OTB source-lineage scenarios above. Tests must execute under the non-owner application database role and be run on the exact candidate SHA.
 
