@@ -145,8 +145,17 @@ class EnterpriseOrganizationService
             );
 
             return DB::table('org_unit_manager_assignments')
-                ->where('tenant_id', $tenantId)
-                ->where('id', $id)
+                ->join('job_positions as manager', function ($join): void {
+                    $join->on('manager.id', '=', 'org_unit_manager_assignments.manager_position_id')
+                        ->on('manager.tenant_id', '=', 'org_unit_manager_assignments.tenant_id');
+                })
+                ->where('org_unit_manager_assignments.tenant_id', $tenantId)
+                ->where('org_unit_manager_assignments.id', $id)
+                ->select([
+                    'org_unit_manager_assignments.*',
+                    'manager.position_code as manager_position_code',
+                    'manager.title as manager_position_title',
+                ])
                 ->first()
                 ?? throw new RuntimeException('The organizational manager assignment was created but could not be reloaded.');
         }, 3);
@@ -422,8 +431,23 @@ class EnterpriseOrganizationService
             );
 
             return DB::table('position_reporting_relations')
-                ->where('tenant_id', $tenantId)
-                ->where('id', $id)
+                ->join('job_positions as subject', function ($join): void {
+                    $join->on('subject.id', '=', 'position_reporting_relations.subject_position_id')
+                        ->on('subject.tenant_id', '=', 'position_reporting_relations.tenant_id');
+                })
+                ->join('job_positions as manager', function ($join): void {
+                    $join->on('manager.id', '=', 'position_reporting_relations.manager_position_id')
+                        ->on('manager.tenant_id', '=', 'position_reporting_relations.tenant_id');
+                })
+                ->where('position_reporting_relations.tenant_id', $tenantId)
+                ->where('position_reporting_relations.id', $id)
+                ->select([
+                    'position_reporting_relations.*',
+                    'subject.position_code as subject_position_code',
+                    'subject.title as subject_position_title',
+                    'manager.position_code as manager_position_code',
+                    'manager.title as manager_position_title',
+                ])
                 ->first()
                 ?? throw new RuntimeException('The reporting relationship was created but could not be reloaded.');
         }, 3);
