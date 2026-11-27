@@ -135,3 +135,19 @@ This ledger reconciles the requirements assigned to WP-03 in docs/requirements/r
 **Security boundary:** the first real PLATFORM_ADMIN appointment still requires the controlled two-person DBA bootstrap and an actual named identity. The new UI does not self-provision identities, does not seed operator roles, and does not make a tenant OWNER/ADMIN a global administrator. The expiry-date check prevents use after the effective end date; the persisted EXPIRED status/audit sweep runs on a subsequent authorized admin operation, not through a scheduled worker yet.
 
 The fixed WP-00–WP-16 sequence remains in force. All other WP-03 rows above remain PARTIAL/BLOCKED/NOT RUN as previously recorded; this candidate increment does not close tenant retention/legal hold/export/recovery, target-resource scope enforcement, MFA/OIDC/SSO, full installer/operator handover or full WP-03 acceptance.
+
+
+## Tenant scoped-access database mutation boundary — 27 November 2026
+
+**Status: IMPLEMENTED CANDIDATE — exact-head execution pending.** This is a security hardening increment only; it does not complete target-resource scope enforcement.
+
+| Acceptance scenario | Candidate evidence | Current status | Exact remaining proof |
+|---|---|---|---|
+| Runtime cannot directly alter scope modes or scope grants | Migration `2026_11_27_000034_secure_tenant_access_scope_mutations.php` revokes all direct table privileges on both tables from PUBLIC and app_runtime, then grants SELECT only. | IMPLEMENTED CANDIDATE | Execute migration on PostgreSQL 18; assert has_table_privilege returns false for INSERT/UPDATE/DELETE and true for SELECT on both tables. |
+| Only narrow scope mutation APIs are executable | Three fixed-search-path SECURITY DEFINER functions re-check active tenant, actor OWNER/ADMIN and target MEMBER before changing records. | IMPLEMENTED CANDIDATE | Verify function ownership, grants, RLS bypass under the migration role, PUBLIC execute revocation and forbidden direct calls on PostgreSQL. |
+| Mode/grant/revoke mutation and audit are atomic | Each function writes the immutable audit event in the same PostgreSQL transaction; application service no longer writes duplicate audit rows. | IMPLEMENTED CANDIDATE | Run feature tests and induce audit insert failure to prove the associated mutation rolls back. |
+| Concurrent duplicate effective grants are blocked | Transaction advisory lock plus overlap check rejects an active grant for the same member/scope/permission and overlapping validity interval. | IMPLEMENTED CANDIDATE | Execute duplicate and concurrent PostgreSQL regression cases under multiple connections. |
+| Rollback does not silently restore direct runtime writes | Migration 000034 is forward-only; down() explicitly refuses the downgrade. | DOCUMENTED / CANDIDATE | Validate deploy/recovery runbook uses a forward corrective migration and retains the secure privilege boundary. |
+| Target-resource SCOPED authorization | Existing domain Gate remains fail-closed; only BRAND/SITE/MARKET scope grant types exist, and controllers do not yet pass concrete target records into the Gate. | OPEN / FAIL-CLOSED | Implement legal-entity/site/department/warehouse/channel scope identities, pass real target IDs from each action, and prove positive and negative cross-target tests before allowing SCOPED users through any capability. |
+
+**Verification boundary:** PR #13 is still a candidate and is not merged. The latest known runner failure observed on prior head `0e38ff2496597cb9dd559bcde7d4ae7022e588b8` occurred before any Laravel or Angular step executed. It predates migration 000034's final candidate edits. No successful exact-head CI or PostgreSQL run is claimed for this increment.
