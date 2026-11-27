@@ -70,11 +70,14 @@ final class EthiopiaPayrollCalculator
             || trim((string) ($decision['reviewer_qualification'] ?? '')) === ''
             || trim((string) ($decision['reviewer_user_id'] ?? '')) === ''
             || (string) $decision['reviewer_user_id'] === $preparedBy
+            || trim((string) ($decision['reviewer_registration_reference'] ?? '')) === ''
+            || trim((string) ($decision['opinion_document_reference'] ?? '')) === ''
+            || ! preg_match('/^[a-f0-9]{64}$/Di', (string) ($decision['opinion_sha256'] ?? ''))
             || empty($decision['independence_confirmed'])
             || ! $this->isTimestamp((string) ($decision['reviewed_at'] ?? ''))
             || empty($decision['article_references'])
         ) {
-            throw new InvalidArgumentException('A separate, clause-specific Ethiopian tax opinion must explicitly approve the PAYE base method before payroll calculation.');
+            throw new InvalidArgumentException('A separate, signed, clause-specific Ethiopian tax opinion with reviewer credentials and a document hash must explicitly approve the PAYE base method before payroll calculation.');
         }
 
         if (($pensionRule['salary_basis'] ?? null) !== 'REGULAR_HOURS_MONTHLY_SALARY') {
@@ -216,6 +219,12 @@ final class EthiopiaPayrollCalculator
 
         if ($requireApprovedEvidence) {
             $this->assertIndependentDecision($coverage, $preparedBy, 'pension_coverage');
+            if (! preg_match('/^[a-f0-9]{64}$/Di', (string) ($coverage['source_sha256'] ?? ''))
+                || ! $this->isOfficialEthiopianHost(strtolower((string) parse_url((string) ($coverage['source_url'] ?? ''), PHP_URL_HOST)))
+                || trim((string) ($coverage['article_reference'] ?? '')) === ''
+            ) {
+                throw new InvalidArgumentException('The pension coverage decision requires the official source URL, article and SHA-256.');
+            }
         }
 
         $taxBaseMethod = (string) ($incomeTaxRule['tax_base_method'] ?? '');
