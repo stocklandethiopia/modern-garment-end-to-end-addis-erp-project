@@ -177,9 +177,13 @@ Therefore:
 
 ### Internal ERP comparison — what to reuse and what not to reuse
 
-The historical Stockland ERP acceptance runbook provides useful finance/workflow patterns: separate PO, AP supplier invoice, AR customer balance, stock movement, balanced GL journal and audit evidence; independent approval; actual warehouse receipt quantity and documented variance; idempotent inventory posting; and location-scoped finance views. These are process controls to consider, not a reason to copy its legacy database schema or customer-specific workflow unchanged.
+## 7.1 Ethiopia payroll localization boundary
 
-Do not copy its historic/synthetic PAYE example or pension-before-tax arithmetic as an authoritative current formula. Its example predates the 2025 Income Tax Amendment and 2026 implementing regulation. Recompute the legal tax/pension basis from the current official sources and obtain local payroll review before activation.
+The canonical ERP is a new greenfield application. Uploaded payroll samples are used only to identify Ethiopian legal questions, acceptance evidence and candidate arithmetic. No prior product version, customer data, application namespace, database schema or SQL table design is inherited.
+
+The ETB 30,000 pension-first calculation is retained as an isolated candidate regression alongside the gross-taxable comparison. It is not a legal conclusion. The PAYE base must remain inactive until a qualified Ethiopian tax practitioner or lawyer issues a written, clause-specific opinion on the interaction between the income-tax and private-organization pension provisions. See [Ethiopia Payroll Localization](../localization/ethiopia-payroll-localization-2026-11-27.md) and its [Engineering Release Gate](../localization/ethiopia-payroll-engineering-release-gate.md).
+
+Exempt allowance evidence, non-standard pensionable-salary rationale, effective-dated legal-source snapshots, exact-decimal server-side calculations and the `RETAINER_SERVICE` exclusion are mandatory controls. Neither a UI label nor a unit test grants statutory authority. Historical posted payroll remains immutable; corrections use separately authorized adjustment/reversal runs.
 
 **Unresolved official clarification:** Proclamation No. 1395/2025 Article 22(3) requires a Tax Authority directive defining when digital-content creation is a business activity. The directive was not located in the official-source search completed on 22 November 2026. Regulation No. 597/2026 references the business-income test in Article 55 and provides Schedule C/Schedule D treatment. Until the Article 22(3) directive or an official Tax Authority confirmation is obtained, the creator classification workflow must remain **review required** for cases that are not unambiguously covered by the published text.
 
@@ -218,8 +222,9 @@ Industry design references:
 - ILO Ethiopia garment SCORE results: https://www.ilo.org/resource/article/advancing-productivity-quality-improvement-and-decent-work-ethiopias
 - ILO Ethiopia sector skills strategy: https://www.ilo.org/publications/sector-skills-strategy-garment-sector-ethiopia
 - Ethiopia Ministry of Labour and Skills, Garment Production Level I: https://www.hptc.edu.et/sites/default/files/GARMENT%20L-I.pdf
-- Bangladesh SEIP, Production Planning and Control competency standard: https://seip-fd.gov.bd/wp-content/uploads/2019/07/Competency-Standard-%E2%80%93-Production-Planning-and-Control.pdf
-- Bangladesh/IFC/ILO Better Work GEAR assessment 2025: https://betterwork.org/reports-and-publications/gear-bangladesh-report-2025/
+- Ethiopia Ministry of Labour and Skills, Garment Production Level I: https://www.hptc.edu.et/sites/default/files/GARMENT%20L-I.pdf
+- ILO Ethiopia, advancing productivity, quality improvement and decent work in Ethiopia's garment sector: https://www.ilo.org/resource/article/advancing-productivity-quality-improvement-and-decent-work-ethiopias
+- ILO Ethiopia, sector skills strategy for the garment sector: https://www.ilo.org/publications/sector-skills-strategy-garment-sector-ethiopia
 
 Legal source register: ../localization/ethiopia-legal-regulatory-register.md
 
