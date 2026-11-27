@@ -3355,3 +3355,52 @@ These records are an infrastructure execution failure, not acceptance. Work that
 - [ ] Add browser E2E with more than 100 units, positions, manager assignments and reporting relations; verify exact totals and that records on later pages remain selectable in relationship forms.
 
 **Acceptance boundary:** the current PR #21 workbench is an initial source-backed implementation candidate, not a complete enterprise organization operator experience. This is a build task under PROD-WP03-008 and must pass the same QG-06, QG-07 and QG-11 gates as every other task.
+
+
+---
+
+## 48. WP-15 runtime grant correction — implementation candidate PR #23
+
+### 48.1 Source defect fixed in a separate candidate branch
+
+The audit at Section 38.1 established that three service paths issue database UPDATE statements against tables whose canonical grants were limited to SELECT/INSERT. A dedicated fix candidate is now committed separately from this documentation PR.
+
+**Candidate:** PR #23 — fix(WP-15): grant least-privilege agent and device transition updates
+
+**Base:** delivery SHA fc01eced62b97c4ec27f0075264fc8ba0fb11851
+
+**Candidate head:** 8497cfc76200e1263f0f5ce47afdb668773758bc
+
+**Files**
+- backend/database/migrations/2026_11_27_000033_grant_agent_and_device_runtime_transition_columns.php
+- backend/tests/Feature/DomainRlsSecurityTest.php
+
+### 48.2 Database change boundary
+
+The forward migration grants column-specific UPDATE only:
+
+| Table | UPDATE columns required by current services |
+|---|---|
+| agent_run_audits | status, output_sha256, token_usage, tool_trace, completed_at |
+| agent_action_proposals | status |
+| device_scan_events | resolution_status, resolution_reference_type, resolution_reference_id, raw_metadata |
+
+It deliberately does not grant table-wide UPDATE or DELETE. agent_approval_decisions and agent_action_events remain append-only to the application role. The migration's down() revokes precisely the column grants it adds.
+
+The added feature-test method checks that each required transition column is updateable and that unrelated source/identity/payload fields, approval/action events and delete privileges remain unavailable.
+
+### 48.3 Verification evidence and remaining gate
+
+- [x] Candidate branch created from the exact audited delivery SHA.
+- [x] Forward migration committed.
+- [x] PostgreSQL privilege regression assertions committed.
+- [x] Changed-file diff inspected: two files only; no unrelated application behavior was modified.
+- [x] Local PHP syntax lint passed for the migration and added test-method syntax.
+- [ ] PostgreSQL migration-upgrade execution and privilege assertions under the actual app_runtime role.
+- [ ] Exact-head ERP CI, backend tests and combined verification.
+- [ ] Review migration ordering against any parallel candidate before integration.
+- [ ] Merge only through the canonical delivery PR/change-control path after the exact-head tests pass.
+
+**Evidence classification:** source implementation candidate with local syntax verification. No PostgreSQL or CI pass is claimed. PR #23 is open as a draft; the workflow query returned no run for its head at the time of this audit update.
+
+**Scope deliberately not included:** this patch does not resolve agent run starter/finisher attribution, A0/A1 proposal completion, REQUEST_CHANGES revision history, outbox delivery workers/leases or device authentication. Those remain separate source tasks under Sections 32 and 38.
