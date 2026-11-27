@@ -29,6 +29,8 @@ Exact supported patch versions are recorded in the platform standard and must be
 
 ## Start here
 
+- Enterprise organogram, positions and delegated authority: [Enterprise Organogram and Delegated Authority Framework](docs/organization/enterprise-organogram-and-delegated-authority.md)
+
 1. Project governance: docs/agent/project-governance-agreement.md
 2. Platform architecture and technology standard: docs/architecture/platform-standard.md
 3. Exact application folders and file responsibilities: docs/architecture/application-folder-code-map.md
