@@ -7,8 +7,8 @@ use App\Services\ScopedAccessService;
 use App\Support\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class AccessScopeController extends Controller
 {
