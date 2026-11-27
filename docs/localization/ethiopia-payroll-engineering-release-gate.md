@@ -112,9 +112,13 @@ A pensionable salary that differs from the standard regular-hours salary basis r
 - The server calculates from a frozen rule set and verified inputs.
 - A payroll run must contain exactly one selected Income Tax and one Pension rule record for this calculator, each covering the complete payroll period.
 - Both records must have official source URL/hash, instrument/authority/title, publication/effective dates, independent reviewer and professional approval reference.
-- Each rule payload must include supporting official sources with exact articles, dates, source hashes and independent review evidence.
+- The source document must be stored as a tenant-owned `document_assets` file, its UUID referenced by the rule, and the SHA-256 rechecked against the current private-object bytes before payroll-run creation. Hash mismatch rejects the document and blocks the payroll run.
+- Each rule payload must include supporting official sources with exact articles, dates, source hashes, stored document UUIDs and independent review evidence.
+- The PAYE-base legal opinion itself must be a stored `LEGAL_OPINION` document with reviewer qualification/registration, source hash and the approved method recorded in the rule payload.
 - The tax rule payload must include monthly bands, explicit rounding method, approved tax-base method and separate tax-base opinion.
 - The pension payload must include employee/employer rates, pension salary basis and approved rounding method.
+- Every per-line exemption and non-standard pensionable-salary rationale must include a stored tenant document UUID and source hash; the server re-verifies those bytes before calculation.
+- Pension coverage decisions must cite and store the official coverage provision and be independently reviewed; payroll deductions require a stored employee authorization document and independent approval.
 - The result stores line inputs, breakdown, rule-source snapshot and deterministic SHA-256 snapshot hash.
 - The line is a draft calculation only. No calculation result is posted to the GL or transmitted to a bank or authority here.
 
@@ -135,7 +139,8 @@ This change does not recalculate or rewrite posted payroll, old payslips, posted
 | ETH-PAY-007 | Non-standard pensionable salary without rationale | Rejected/held |
 | ETH-PAY-008 | No approved income-tax/pension rules | Payroll calculation held |
 | ETH-PAY-009 | PAYE base opinion absent or inconsistent | Payroll calculation held |
-| ETH-PAY-010 | Official source URL/hash missing or invalid | Payroll calculation held |
+| ETH-PAY-010 | Official source URL/hash missing or invalid, or stored bytes mismatch the approved hash | Payroll calculation held; mismatched document is rejected |
+| ETH-PAY-017 | Exemption, pension-coverage, non-standard salary or deduction evidence is not stored/verified | Payroll line held; no evidence-free override |
 | ETH-PAY-011 | Rule effective dates do not cover the complete payroll period | Payroll calculation held |
 | ETH-PAY-012 | Missing rounding method | Calculation rejected; no default |
 | ETH-PAY-013 | Decimal precision / band boundaries / ties | Exact-cent calculations under the approved rounding rule |
