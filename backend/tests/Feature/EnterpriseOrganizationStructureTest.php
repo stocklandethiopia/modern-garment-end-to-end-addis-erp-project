@@ -460,7 +460,7 @@ class EnterpriseOrganizationStructureTest extends TestCase
                 'SELECT has_table_privilege(?, ?, ?)',
                 ['app_runtime', $table, 'INSERT'],
             ));
-            $this->assertTrue((bool) $runtime->scalar(
+            $this->assertFalse((bool) $runtime->scalar(
                 'SELECT has_table_privilege(?, ?, ?)',
                 ['app_runtime', $table, 'UPDATE'],
             ));
