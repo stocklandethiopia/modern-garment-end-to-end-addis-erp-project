@@ -94,6 +94,65 @@ class DocumentIntegrationService
         ]);
     }
 
+    /**
+     * Re-read a tenant-owned private document and compare its current bytes with
+     * the registered SHA-256 before it can support a statutory rule.
+     */
+    public function verifyStoredDocumentChecksum(string $tenantId, string $documentId): object
+    {
+        $document = DB::table('document_assets')
+            ->where('tenant_id', $tenantId)
+            ->where('id', $documentId)
+            ->lockForUpdate()
+            ->first();
+
+        if ($document === null || $document->classification_status === 'REJECTED') {
+            throw ValidationException::withMessages(['document_id' => 'The legal source document is missing or rejected.']);
+        }
+
+        $reference = (string) $document->object_storage_reference;
+        $parts = explode(':', $reference, 2);
+        $diskName = $parts[0] ?? '';
+        $objectPath = $parts[1] ?? '';
+        $configuredDisks = config('filesystems.disks', []);
+
+        if ($diskName === '' || $objectPath === '' || ! is_array($configuredDisks) || ! array_key_exists($diskName, $configuredDisks)) {
+            throw ValidationException::withMessages(['document_id' => 'The source document does not reference a configured private storage disk.']);
+        }
+
+        $stream = Storage::disk($diskName)->readStream($objectPath);
+        if (! is_resource($stream)) {
+            throw ValidationException::withMessages(['document_id' => 'The stored legal source document could not be retrieved for checksum verification.']);
+        }
+
+        try {
+            $context = hash_init('sha256');
+            if (! hash_update_stream($context, $stream)) {
+                throw ValidationException::withMessages(['document_id' => 'The legal source document stream could not be hashed.']);
+            }
+            $actualSha256 = hash_final($context);
+        } finally {
+            fclose($stream);
+        }
+
+        if (! hash_equals(strtolower((string) $document->sha256), strtolower($actualSha256))) {
+            DB::table('document_assets')->where('tenant_id', $tenantId)->where('id', $documentId)->update([
+                'classification_status' => 'REJECTED',
+                'checksum_verified_at' => null,
+                'updated_at' => now(),
+            ]);
+
+            throw ValidationException::withMessages(['document_id' => 'The stored legal source bytes do not match their registered SHA-256; the document was rejected.']);
+        }
+
+        DB::table('document_assets')->where('tenant_id', $tenantId)->where('id', $documentId)->update([
+            'checksum_verified_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return DB::table('document_assets')->where('tenant_id', $tenantId)->where('id', $documentId)->first();
+    }
+
     public function beginExtraction(string $tenantId, string $actorId, string $documentId, array $data): object
     {
         $document = DB::table('document_assets')->where('tenant_id', $tenantId)->where('id', $documentId)->first();
