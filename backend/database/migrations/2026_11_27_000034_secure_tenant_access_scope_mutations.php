@@ -33,8 +33,8 @@ SECURITY DEFINER
 SET search_path = pg_catalog, public
 AS $$
 DECLARE
-    actor_id uuid := NULLIF(current_setting('app.current_user_id', true), '')::uuid;
-    tenant_id uuid := NULLIF(current_setting('app.current_tenant_id', true), '')::uuid;
+    v_actor_id uuid := NULLIF(current_setting('app.current_user_id', true), '')::uuid;
+    v_tenant_id uuid := NULLIF(current_setting('app.current_tenant_id', true), '')::uuid;
     actor_role text;
     target_role text;
     previous_mode varchar(16);
@@ -42,12 +42,12 @@ DECLARE
     normalized_reason text := btrim(change_reason);
     event_time timestamptz := clock_timestamp();
 BEGIN
-    IF actor_id IS NULL OR tenant_id IS NULL THEN
+    IF v_actor_id IS NULL OR v_tenant_id IS NULL THEN
         RAISE EXCEPTION 'Authenticated tenant and actor context is required.'
             USING ERRCODE = '42501';
     END IF;
 
-    IF target_user_id IS NULL OR target_user_id = actor_id THEN
+    IF target_user_id IS NULL OR target_user_id = v_actor_id THEN
         RAISE EXCEPTION 'An administrator cannot change their own member scope mode.'
             USING ERRCODE = '42501';
     END IF;
@@ -64,7 +64,7 @@ BEGIN
     END IF;
 
     PERFORM 1 FROM public.tenants
-     WHERE id = tenant_id AND status = 'ACTIVE';
+     WHERE id = v_tenant_id AND status = 'ACTIVE';
     IF NOT FOUND THEN
         RAISE EXCEPTION 'Active tenant context is required.'
             USING ERRCODE = '42501';
@@ -74,8 +74,8 @@ BEGIN
       INTO actor_role
       FROM public.tenant_memberships membership
       JOIN public.users actor ON actor.id = membership.user_id
-     WHERE membership.tenant_id = tenant_id
-       AND membership.user_id = actor_id
+     WHERE membership.tenant_id = v_tenant_id
+       AND membership.user_id = v_actor_id
        AND membership.status = 'ACTIVE'
        AND actor.status = 'ACTIVE'
      FOR UPDATE OF membership;
@@ -89,7 +89,7 @@ BEGIN
       INTO target_role
       FROM public.tenant_memberships membership
       JOIN public.users target ON target.id = membership.user_id
-     WHERE membership.tenant_id = tenant_id
+     WHERE membership.tenant_id = v_tenant_id
        AND membership.user_id = target_user_id
        AND membership.status = 'ACTIVE'
        AND target.status = 'ACTIVE'
@@ -101,21 +101,21 @@ BEGIN
     END IF;
 
     PERFORM pg_advisory_xact_lock(
-        hashtextextended(tenant_id::text || ':access-mode:' || target_user_id::text, 0)
+        hashtextextended(v_tenant_id::text || ':access-mode:' || target_user_id::text, 0)
     );
 
     SELECT mode_record.scope_mode
       INTO previous_mode
       FROM public.tenant_access_scope_modes mode_record
-     WHERE mode_record.tenant_id = tenant_id
+     WHERE mode_record.tenant_id = v_tenant_id
        AND mode_record.user_id = target_user_id
      FOR UPDATE;
 
     INSERT INTO public.tenant_access_scope_modes (
-        id, tenant_id, user_id, scope_mode, changed_by, change_reason,
+        id, v_tenant_id, user_id, scope_mode, changed_by, change_reason,
         created_at, updated_at
     ) VALUES (
-        gen_random_uuid(), tenant_id, target_user_id, normalized_mode,
+        gen_random_uuid(), v_tenant_id, target_user_id, normalized_mode,
         actor_id, normalized_reason, event_time, event_time
     )
     ON CONFLICT (tenant_id, user_id) DO UPDATE
@@ -125,10 +125,10 @@ BEGIN
            updated_at = EXCLUDED.updated_at;
 
     INSERT INTO public.audit_events (
-        id, tenant_id, actor_user_id, action, object_type, object_id,
+        id, v_tenant_id, actor_user_id, action, object_type, object_id,
         scope, reason, correlation_id, occurred_at, created_at, updated_at
     ) VALUES (
-        gen_random_uuid(), tenant_id, actor_id,
+        gen_random_uuid(), v_tenant_id, v_actor_id,
         'TENANT_MEMBER_SCOPE_MODE_CHANGED', 'TENANT_MEMBER', target_user_id,
         jsonb_build_object(
             'previous_scope_mode', previous_mode,
@@ -170,22 +170,22 @@ DECLARE
     new_grant public.tenant_access_scopes%ROWTYPE;
     event_time timestamptz := clock_timestamp();
 BEGIN
-    IF actor_id IS NULL OR tenant_id IS NULL THEN
+    IF v_actor_id IS NULL OR v_tenant_id IS NULL THEN
         RAISE EXCEPTION 'Authenticated tenant and actor context is required.'
             USING ERRCODE = '42501';
     END IF;
 
-    IF target_user_id IS NULL OR target_user_id = actor_id THEN
+    IF target_user_id IS NULL OR target_user_id = v_actor_id THEN
         RAISE EXCEPTION 'A tenant administrator cannot grant scoped access to their own identity.'
             USING ERRCODE = '42501';
     END IF;
 
-    IF normalized_type NOT IN ('BRAND', 'SITE', 'MARKET') THEN
+    IF normalized_type IS NULL OR normalized_type NOT IN ('BRAND', 'SITE', 'MARKET') THEN
         RAISE EXCEPTION 'Unsupported tenant access scope type.'
             USING ERRCODE = '22023';
     END IF;
 
-    IF normalized_permission NOT IN ('READ', 'CREATE', 'APPROVE', 'MANAGE') THEN
+    IF normalized_permission IS NULL OR normalized_permission NOT IN ('READ', 'CREATE', 'APPROVE', 'MANAGE') THEN
         RAISE EXCEPTION 'Unsupported tenant access permission.'
             USING ERRCODE = '22023';
     END IF;
@@ -201,13 +201,13 @@ BEGIN
             USING ERRCODE = '22023';
     END IF;
 
-    IF actor_id IS NULL OR tenant_id IS NULL THEN
+    IF v_actor_id IS NULL OR v_tenant_id IS NULL THEN
         RAISE EXCEPTION 'Authenticated tenant and actor context is required.'
             USING ERRCODE = '42501';
     END IF;
 
     PERFORM 1 FROM public.tenants
-     WHERE id = tenant_id AND status = 'ACTIVE';
+     WHERE id = v_tenant_id AND status = 'ACTIVE';
     IF NOT FOUND THEN
         RAISE EXCEPTION 'Active tenant context is required.'
             USING ERRCODE = '42501';
@@ -217,8 +217,8 @@ BEGIN
       INTO actor_role
       FROM public.tenant_memberships membership
       JOIN public.users actor ON actor.id = membership.user_id
-     WHERE membership.tenant_id = tenant_id
-       AND membership.user_id = actor_id
+     WHERE membership.tenant_id = v_tenant_id
+       AND membership.user_id = v_actor_id
        AND membership.status = 'ACTIVE'
        AND actor.status = 'ACTIVE'
      FOR UPDATE OF membership;
@@ -232,7 +232,7 @@ BEGIN
       INTO target_role
       FROM public.tenant_memberships membership
       JOIN public.users target ON target.id = membership.user_id
-     WHERE membership.tenant_id = tenant_id
+     WHERE membership.tenant_id = v_tenant_id
        AND membership.user_id = target_user_id
        AND membership.status = 'ACTIVE'
        AND target.status = 'ACTIVE'
@@ -244,20 +244,20 @@ BEGIN
     END IF;
 
     IF normalized_type = 'BRAND' THEN
-        IF requested_scope_id IS NULL OR normalized_code IS NOT NULL
-           OR NOT EXISTS (
+        normalized_code := NULL;
+        IF requested_scope_id IS NULL OR NOT EXISTS (
                SELECT 1 FROM public.brands
-                WHERE tenant_id = grant_tenant_access_scope.tenant_id
+                WHERE tenant_id = v_tenant_id
                   AND id = requested_scope_id
            ) THEN
             RAISE EXCEPTION 'Brand scope target must exist in this tenant.'
                 USING ERRCODE = '22023';
         END IF;
     ELSIF normalized_type = 'SITE' THEN
-        IF requested_scope_id IS NULL OR normalized_code IS NOT NULL
-           OR NOT EXISTS (
+        normalized_code := NULL;
+        IF requested_scope_id IS NULL OR NOT EXISTS (
                SELECT 1 FROM public.business_sites
-                WHERE tenant_id = grant_tenant_access_scope.tenant_id
+                WHERE tenant_id = v_tenant_id
                   AND id = requested_scope_id
            ) THEN
             RAISE EXCEPTION 'Site scope target must exist in this tenant.'
@@ -272,7 +272,7 @@ BEGIN
 
     PERFORM pg_advisory_xact_lock(
         hashtextextended(
-            tenant_id::text || ':access-grant:' || target_user_id::text || ':' ||
+            v_tenant_id::text || ':access-grant:' || target_user_id::text || ':' ||
             normalized_type || ':' || COALESCE(requested_scope_id::text, normalized_code) || ':' ||
             normalized_permission,
             0
@@ -282,7 +282,7 @@ BEGIN
     IF EXISTS (
         SELECT 1
           FROM public.tenant_access_scopes existing
-         WHERE existing.tenant_id = tenant_id
+         WHERE existing.tenant_id = v_tenant_id
            AND existing.user_id = target_user_id
            AND existing.scope_type = normalized_type
            AND existing.scope_id IS NOT DISTINCT FROM requested_scope_id
@@ -297,12 +297,12 @@ BEGIN
     END IF;
 
     INSERT INTO public.tenant_access_scopes (
-        id, tenant_id, user_id, scope_type, scope_id, scope_code,
+        id, v_tenant_id, user_id, scope_type, scope_id, scope_code,
         permission_code, valid_from, valid_to, status, grant_reason,
         granted_by, revoked_by, revoked_at, revocation_reason,
         created_at, updated_at
     ) VALUES (
-        gen_random_uuid(), tenant_id, target_user_id, normalized_type,
+        gen_random_uuid(), v_tenant_id, target_user_id, normalized_type,
         requested_scope_id, normalized_code, normalized_permission,
         effective_from, effective_to, 'ACTIVE', normalized_reason,
         actor_id, NULL, NULL, NULL, event_time, event_time
@@ -310,10 +310,10 @@ BEGIN
     RETURNING * INTO new_grant;
 
     INSERT INTO public.audit_events (
-        id, tenant_id, actor_user_id, action, object_type, object_id,
+        id, v_tenant_id, actor_user_id, action, object_type, object_id,
         scope, reason, correlation_id, occurred_at, created_at, updated_at
     ) VALUES (
-        gen_random_uuid(), tenant_id, actor_id,
+        gen_random_uuid(), v_tenant_id, v_actor_id,
         'TENANT_ACCESS_SCOPE_GRANTED', 'ACCESS_SCOPE', new_grant.id,
         jsonb_build_object(
             'user_id', target_user_id,
@@ -349,7 +349,7 @@ DECLARE
     updated_grant public.tenant_access_scopes%ROWTYPE;
     event_time timestamptz := clock_timestamp();
 BEGIN
-    IF actor_id IS NULL OR tenant_id IS NULL THEN
+    IF v_actor_id IS NULL OR v_tenant_id IS NULL THEN
         RAISE EXCEPTION 'Authenticated tenant and actor context is required.'
             USING ERRCODE = '42501';
     END IF;
@@ -361,7 +361,7 @@ BEGIN
     END IF;
 
     PERFORM 1 FROM public.tenants
-     WHERE id = tenant_id AND status = 'ACTIVE';
+     WHERE id = v_tenant_id AND status = 'ACTIVE';
     IF NOT FOUND THEN
         RAISE EXCEPTION 'Active tenant context is required.'
             USING ERRCODE = '42501';
@@ -371,8 +371,8 @@ BEGIN
       INTO actor_role
       FROM public.tenant_memberships membership
       JOIN public.users actor ON actor.id = membership.user_id
-     WHERE membership.tenant_id = tenant_id
-       AND membership.user_id = actor_id
+     WHERE membership.tenant_id = v_tenant_id
+       AND membership.user_id = v_actor_id
        AND membership.status = 'ACTIVE'
        AND actor.status = 'ACTIVE'
      FOR UPDATE OF membership;
@@ -385,7 +385,7 @@ BEGIN
     SELECT *
       INTO grant_record
       FROM public.tenant_access_scopes existing
-     WHERE existing.tenant_id = tenant_id
+     WHERE existing.tenant_id = v_tenant_id
        AND existing.id = grant_id
      FOR UPDATE;
 
@@ -396,19 +396,19 @@ BEGIN
 
     UPDATE public.tenant_access_scopes
        SET status = 'REVOKED',
-           revoked_by = actor_id,
+           revoked_by = v_actor_id,
            revoked_at = event_time,
            revocation_reason = normalized_reason,
            updated_at = event_time
-     WHERE tenant_id = tenant_id
+     WHERE tenant_id = v_tenant_id
        AND id = grant_id
     RETURNING * INTO updated_grant;
 
     INSERT INTO public.audit_events (
-        id, tenant_id, actor_user_id, action, object_type, object_id,
+        id, v_tenant_id, actor_user_id, action, object_type, object_id,
         scope, reason, correlation_id, occurred_at, created_at, updated_at
     ) VALUES (
-        gen_random_uuid(), tenant_id, actor_id,
+        gen_random_uuid(), v_tenant_id, v_actor_id,
         'TENANT_ACCESS_SCOPE_REVOKED', 'ACCESS_SCOPE', grant_id,
         jsonb_build_object(
             'user_id', grant_record.user_id,
