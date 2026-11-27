@@ -7,6 +7,8 @@
 **Default branch inspected:** main at adca71a053290eb768987a7644d4b13c267cf2a9  
 **Purpose:** identify the source, data, workflow, control and verification work required to complete the canonical production ERP and reproducible master installer.
 
+**Controlling execution register:** [Production Execution Plan — WP-00 to WP-16](../work-packages/production-execution-plan-wp00-wp16.md). Use its PROD-WPnn-nnn task IDs alongside the approved GAR/AT/requirement IDs; this audit records source findings and is not a substitute for the task plan.
+
 ---
 
 ## 1. Executive conclusion
