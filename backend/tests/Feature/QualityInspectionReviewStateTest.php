@@ -7,6 +7,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
@@ -14,8 +15,11 @@ use Tests\TestCase;
 class QualityInspectionReviewStateTest extends TestCase
 {
     private string $tenantId;
+
     private string $inspectorId;
+
     private string $reviewerId;
+
     private string $inspectionId;
 
     protected function setUp(): void
@@ -162,7 +166,7 @@ class QualityInspectionReviewStateTest extends TestCase
             });
 
             self::fail('A resolved nonconformance must not be reopened by creating a new action.');
-        } catch (\Illuminate\Validation\ValidationException) {
+        } catch (ValidationException) {
             // Expected: reopening is a separately controlled state transition.
         }
 
