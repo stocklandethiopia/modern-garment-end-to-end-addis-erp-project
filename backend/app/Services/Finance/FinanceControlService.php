@@ -2,6 +2,7 @@
 
 namespace App\Services\Finance;
 
+use App\Services\Payroll\EthiopiaPayrollCalculator;
 use App\Services\Support\DecimalQuantity;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -184,13 +185,56 @@ class FinanceControlService
             $verifiedRules = DB::table('statutory_rule_versions')->where('tenant_id', $tenantId)
                 ->where('jurisdiction_code', $data['jurisdiction_code'])
                 ->where('verification_status', 'PROFESSIONAL_APPROVED')
-                ->whereDate('effective_from', '<=', $data['period_end'])
+                ->whereDate('effective_from', '<=', $data['period_start'])
                 ->where(function ($q) use ($data): void {
                     $q->whereNull('effective_to')->orWhereDate('effective_to', '>=', $data['period_end']);
-                })->whereIn('id', $data['statutory_rule_ids'])->get();
+                })
+                ->whereIn('id', $data['statutory_rule_ids'])
+                ->orderBy('rule_domain')
+                ->orderBy('effective_from')
+                ->get();
 
             if ($verifiedRules->count() !== count(array_unique($data['statutory_rule_ids']))) {
-                throw ValidationException::withMessages(['statutory_rule_ids' => 'Every payroll statutory rule must be professionally approved and effective for the payroll period.']);
+                throw ValidationException::withMessages(['statutory_rule_ids' => 'Every selected statutory rule must be professionally approved and cover the complete payroll period.']);
+            }
+
+            $ruleSnapshot = $verifiedRules->map(function ($rule): array {
+                $payload = is_array($rule->rule_payload)
+                    ? $rule->rule_payload
+                    : json_decode((string) $rule->rule_payload, true);
+
+                if (! is_array($payload)) {
+                    throw ValidationException::withMessages(['statutory_rule_ids' => 'A selected statutory rule has an invalid JSON rule payload.']);
+                }
+
+                return [
+                    'id' => (string) $rule->id,
+                    'jurisdiction_code' => (string) $rule->jurisdiction_code,
+                    'rule_domain' => strtoupper((string) $rule->rule_domain),
+                    'rule_code' => (string) $rule->rule_code,
+                    'source_authority' => (string) $rule->source_authority,
+                    'source_title' => (string) $rule->source_title,
+                    'source_reference' => (string) $rule->source_reference,
+                    'source_sha256' => strtolower((string) ($rule->source_sha256 ?? '')),
+                    'publication_date' => $rule->publication_date,
+                    'effective_from' => $rule->effective_from,
+                    'effective_to' => $rule->effective_to,
+                    'verification_status' => (string) $rule->verification_status,
+                    'verified_by' => (string) ($rule->verified_by ?? ''),
+                    'verified_at' => $rule->verified_at,
+                    'professional_approval_reference' => (string) ($rule->professional_approval_reference ?? ''),
+                    'rule_payload' => $payload,
+                ];
+            })->values()->all();
+
+            foreach (['INCOME_TAX', 'PENSION'] as $requiredDomain) {
+                $matches = array_filter(
+                    $ruleSnapshot,
+                    static fn (array $rule): bool => $rule['rule_domain'] === $requiredDomain
+                );
+                if (count($matches) !== 1) {
+                    throw ValidationException::withMessages(['statutory_rule_ids' => "Exactly one approved {$requiredDomain} rule record is required for Ethiopia payroll."]);
+                }
             }
 
             $id = (string) Str::uuid();
@@ -203,7 +247,7 @@ class FinanceControlService
                 'period_end' => $data['period_end'],
                 'currency' => strtoupper($data['currency']),
                 'calculation_snapshot' => json_encode($data['calculation_snapshot'] ?? [], JSON_THROW_ON_ERROR),
-                'statutory_rule_set' => json_encode($verifiedRules->map(fn ($r) => ['id' => $r->id, 'sha256' => $r->source_sha256, 'rule_code' => $r->rule_code])->values()->all(), JSON_THROW_ON_ERROR),
+                'statutory_rule_set' => json_encode($ruleSnapshot, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
                 'legal_review_status' => 'REQUIRED',
                 'status' => 'DRAFT',
                 'control_totals' => json_encode([], JSON_THROW_ON_ERROR),
@@ -224,14 +268,67 @@ class FinanceControlService
             if ($run === null || $run->status !== 'DRAFT' || $run->prepared_by !== $actorId) {
                 throw ValidationException::withMessages(['payroll_run' => 'Only the payroll preparer can add lines to a draft payroll run.']);
             }
-            $gross = (string) $data['gross_amount'];
-            $deductions = (string) $data['total_deductions'];
-            $grossUnits = DecimalQuantity::units($gross);
-            $deductionUnits = DecimalQuantity::units($deductions);
-            if ($grossUnits < $deductionUnits) {
-                throw ValidationException::withMessages(['net_amount' => 'Total deductions cannot exceed gross earnings.']);
+
+            if (strtoupper((string) $run->currency) !== 'ETB') {
+                throw ValidationException::withMessages(['currency' => 'This Ethiopia payroll calculation endpoint accepts ETB payroll only.']);
             }
-            $net = DecimalQuantity::format($grossUnits - $deductionUnits);
+
+            $ruleRecords = json_decode((string) $run->statutory_rule_set, true);
+            if (! is_array($ruleRecords)) {
+                throw ValidationException::withMessages(['statutory_rule_set' => 'The payroll run has no valid frozen statutory rule snapshot.']);
+            }
+
+            try {
+                $calculation = app(EthiopiaPayrollCalculator::class)->calculateApproved(
+                    $data['calculation_input'],
+                    $ruleRecords,
+                    (string) $run->period_start,
+                    (string) $run->period_end,
+                    $actorId
+                );
+            } catch (\InvalidArgumentException $exception) {
+                throw ValidationException::withMessages(['calculation_input' => $exception->getMessage()]);
+            }
+
+            if (($calculation['calculation_status'] ?? null) !== 'CALCULATED_DRAFT_NOT_POSTED') {
+                throw ValidationException::withMessages(['calculation_input' => 'The payroll calculation did not pass the approved-rule gate.']);
+            }
+
+            $input = $data['calculation_input'];
+            $deductionComponents = [
+                ['code' => 'PAYE', 'amount' => $calculation['paye']],
+                ['code' => 'EMPLOYEE_PENSION', 'amount' => $calculation['employee_pension']],
+            ];
+            foreach (($input['other_deductions'] ?? []) as $deduction) {
+                $deductionComponents[] = [
+                    'code' => (string) $deduction['code'],
+                    'amount' => (string) $deduction['amount'],
+                    'authorization_evidence' => $deduction['authorization_evidence'],
+                ];
+            }
+
+            $earningComponents = [
+                [
+                    'code' => 'BASE_SALARY',
+                    'amount' => $calculation['base_salary'],
+                    'tax_treatment' => 'TAXABLE',
+                ],
+            ];
+            foreach (($calculation['earning_component_snapshot'] ?? []) as $component) {
+                $earningComponents[] = $component;
+            }
+
+            $evidence = [
+                'calculation_engine' => 'ETHIOPIA_PAYROLL_SERVER',
+                'calculation_status' => $calculation['calculation_status'],
+                'prepared_by' => $actorId,
+                'prepared_at' => now()->toIso8601String(),
+                'period_start' => (string) $run->period_start,
+                'period_end' => (string) $run->period_end,
+                'input_snapshot' => $input,
+                'calculation' => $calculation,
+                'source_snapshot_sha256' => $calculation['source_snapshot_sha256'],
+            ];
 
             $id = (string) Str::uuid();
             DB::table('payroll_run_lines')->insert([
@@ -239,14 +336,14 @@ class FinanceControlService
                 'tenant_id' => $tenantId,
                 'payroll_run_draft_id' => $runId,
                 'worker_reference' => $data['worker_reference'],
-                'earning_components' => json_encode($data['earning_components'] ?? [], JSON_THROW_ON_ERROR),
-                'deduction_components' => json_encode($data['deduction_components'] ?? [], JSON_THROW_ON_ERROR),
-                'gross_amount' => $gross,
-                'total_deductions' => $deductions,
-                'net_amount' => $net,
-                'currency' => $run->currency,
-                'calculation_evidence' => json_encode($data['calculation_evidence'], JSON_THROW_ON_ERROR),
-                'calculation_status' => 'DRAFT',
+                'earning_components' => json_encode($earningComponents, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+                'deduction_components' => json_encode($deductionComponents, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+                'gross_amount' => $calculation['gross_pay'],
+                'total_deductions' => $calculation['deduction_total'],
+                'net_amount' => $calculation['net_pay'],
+                'currency' => 'ETB',
+                'calculation_evidence' => json_encode($evidence, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+                'calculation_status' => 'VALIDATED',
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
