@@ -238,6 +238,31 @@ class ScopedAccessMutationSecurityTest extends TestCase
         ], 'pgsql_test_admin');
     }
 
+    public function test_scoped_access_routes_reject_malformed_member_and_grant_ids(): void
+    {
+        $this->actAs($this->ownerId);
+
+        $this->getJson('/api/v1/enterprise/members/not-a-uuid/access-scopes')
+            ->assertNotFound();
+
+        $this->putJson('/api/v1/enterprise/members/not-a-uuid/access-scope-mode', [
+            'scope_mode' => 'SCOPED',
+            'reason' => 'Validate malformed route identity before database mutation.',
+        ])->assertNotFound();
+
+        $this->postJson('/api/v1/enterprise/members/not-a-uuid/access-scopes', [
+            'scope_type' => 'MARKET',
+            'scope_code' => 'ADDIS',
+            'permission_code' => 'READ',
+            'grant_reason' => 'Validate malformed route identity before database mutation.',
+        ])->assertNotFound();
+
+        $validUserId = $this->memberId;
+        $this->postJson('/api/v1/enterprise/members/'.$validUserId.'/access-scopes/not-a-uuid/revoke', [
+            'reason' => 'Validate malformed scope grant identifier before database mutation.',
+        ])->assertNotFound();
+    }
+
     public function test_scope_security_migration_cannot_be_rolled_back_to_restore_direct_runtime_writes(): void
     {
         $migration = require database_path('migrations/2026_11_27_000034_secure_tenant_access_scope_mutations.php');
