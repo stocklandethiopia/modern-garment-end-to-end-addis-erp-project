@@ -6,8 +6,10 @@ import { AuthSessionService } from '../../core/auth/auth-session.service';
 import { BusinessSite, BusinessSiteService } from './business-site.service';
 import { LegalEntity, LegalEntityService } from './legal-entity.service';
 import {
+  ApiPage,
   EnterpriseOrganizationService,
   JobPosition,
+  OrganizationListQuery,
   OrganizationUnit,
   OrganizationUnitManagerAssignment,
   PositionReportingRelation,
@@ -33,6 +35,16 @@ export class OrganizationStructureComponent {
   readonly legalEntities = signal<LegalEntity[]>([]);
   readonly sites = signal<BusinessSite[]>([]);
   readonly selectedUnitId = signal<string | null>(null);
+  readonly unitPage = signal<ApiPage<OrganizationUnit> | null>(null);
+  readonly positionPage = signal<ApiPage<JobPosition> | null>(null);
+  readonly managerPage = signal<ApiPage<OrganizationUnitManagerAssignment> | null>(null);
+  readonly reportingPage = signal<ApiPage<PositionReportingRelation> | null>(null);
+  readonly unitSearch = new FormControl('', { nonNullable: true });
+  readonly positionSearch = new FormControl('', { nonNullable: true });
+  readonly managerSearch = new FormControl('', { nonNullable: true });
+  readonly reportingSearch = new FormControl('', { nonNullable: true });
+  readonly reportingPositionSearch = new FormControl('', { nonNullable: true });
+  readonly reportingPositionChoices = signal<JobPosition[]>([]);
 
   readonly loading = signal(false);
   readonly loadingManagers = signal(false);
@@ -49,6 +61,12 @@ export class OrganizationStructureComponent {
 
   private requestSequence = 0;
   private managerRequestSequence = 0;
+  private unitListSequence = 0;
+  private positionListSequence = 0;
+  private managerListSequence = 0;
+  private reportingListSequence = 0;
+  private reportingPositionSequence = 0;
+  private readonly pageSize = 25;
 
   readonly canManage = computed(() => {
     const role = this.session.activeTenant()?.membership_role;
@@ -79,6 +97,11 @@ export class OrganizationStructureComponent {
     this.legalEntities.set([]);
     this.sites.set([]);
     this.selectedUnitId.set(null);
+    this.unitPage.set(null);
+    this.positionPage.set(null);
+    this.managerPage.set(null);
+    this.reportingPage.set(null);
+    this.reportingPositionChoices.set([]);
     this.errorMessage.set(null);
     this.successMessage.set(null);
     this.loading.set(false);
@@ -147,36 +170,9 @@ export class OrganizationStructureComponent {
 
   private loadAll(tenantId: string, sequence: number): void {
     this.loading.set(true);
-    this.api.listUnits().subscribe({
-      next: (response) => {
-        if (!this.isCurrentTenant(tenantId, sequence)) return;
-        this.units.set(response.data);
-        const currentId = this.selectedUnitId();
-        const selected = response.data.find((unit) => unit.id === currentId) ?? response.data[0] ?? null;
-        if (selected) {
-          this.selectUnit(selected.id);
-        } else {
-          this.selectedUnitId.set(null);
-          this.managerAssignments.set([]);
-        }
-        this.loading.set(false);
-      },
-      error: () => this.failLoad(tenantId, sequence, 'Organizational units could not be loaded.'),
-    });
-
-    this.api.listPositions().subscribe({
-      next: (response) => {
-        if (this.isCurrentTenant(tenantId, sequence)) this.positions.set(response.data);
-      },
-      error: () => this.failLoad(tenantId, sequence, 'Job positions could not be loaded.'),
-    });
-
-    this.api.listReportingRelations().subscribe({
-      next: (response) => {
-        if (this.isCurrentTenant(tenantId, sequence)) this.reportingRelations.set(response.data);
-      },
-      error: () => this.failLoad(tenantId, sequence, 'Reporting relationships could not be loaded.'),
-    });
+    this.loadUnitPage(tenantId, 1, sequence);
+    this.loadReportingPage(tenantId, 1, sequence);
+    this.loadReportingPositionChoices(tenantId, '', sequence);
 
     this.legalEntityApi.list().subscribe({
       next: (response) => {
@@ -190,6 +186,123 @@ export class OrganizationStructureComponent {
         if (this.isCurrentTenant(tenantId, sequence)) this.sites.set(response.data);
       },
       error: () => this.failLoad(tenantId, sequence, 'Business-site options could not be loaded.'),
+    });
+  }
+
+  private loadUnitPage(tenantId: string, page: number, tenantSequence = this.requestSequence): void {
+    const request = ++this.unitListSequence;
+    const query: OrganizationListQuery = {
+      page,
+      per_page: this.pageSize,
+      q: this.unitSearch.value.trim() || undefined,
+    };
+    this.loading.set(true);
+    this.api.listUnits(query).subscribe({
+      next: (response) => {
+        if (request !== this.unitListSequence || !this.isCurrentTenant(tenantId, tenantSequence)) return;
+        this.unitPage.set(response);
+        this.units.set(response.data);
+        const selected = response.data.find((unit) => unit.id === this.selectedUnitId())
+          ?? (this.selectedUnitId() === null ? response.data[0] ?? null : null);
+        if (selected) {
+          if (selected.id !== this.selectedUnitId()) this.selectUnit(selected.id);
+        } else {
+          this.selectedUnitId.set(null);
+          this.managerAssignments.set([]);
+          this.managerPage.set(null);
+          this.positions.set([]);
+          this.positionPage.set(null);
+        }
+        this.loading.set(false);
+      },
+      error: () => {
+        if (request !== this.unitListSequence || !this.isCurrentTenant(tenantId, tenantSequence)) return;
+        this.loading.set(false);
+        this.errorMessage.set('Organizational units could not be loaded.');
+      },
+    });
+  }
+
+  private loadPositionPage(tenantId: string, page: number, unitId: string, tenantSequence = this.requestSequence): void {
+    const request = ++this.positionListSequence;
+    const query: OrganizationListQuery = {
+      page,
+      per_page: this.pageSize,
+      org_unit_id: unitId,
+      q: this.positionSearch.value.trim() || undefined,
+    };
+    this.api.listPositions(query).subscribe({
+      next: (response) => {
+        if (request !== this.positionListSequence || !this.isCurrentTenant(tenantId, tenantSequence)
+          || this.selectedUnitId() !== unitId) return;
+        this.positionPage.set(response);
+        this.positions.set(response.data);
+      },
+      error: () => {
+        if (request !== this.positionListSequence || !this.isCurrentTenant(tenantId, tenantSequence)) return;
+        this.errorMessage.set('Job positions could not be loaded for the selected unit.');
+      },
+    });
+  }
+
+  private loadManagerPage(tenantId: string, page: number, unitId: string, tenantSequence = this.requestSequence): void {
+    const request = ++this.managerListSequence;
+    const query: OrganizationListQuery = {
+      page,
+      per_page: this.pageSize,
+      q: this.managerSearch.value.trim() || undefined,
+    };
+    this.loadingManagers.set(true);
+    this.api.listUnitManagers(unitId, query).subscribe({
+      next: (response) => {
+        if (request !== this.managerListSequence || !this.isCurrentTenant(tenantId, tenantSequence)
+          || this.selectedUnitId() !== unitId) return;
+        this.managerPage.set(response);
+        this.managerAssignments.set(response.data);
+        this.loadingManagers.set(false);
+      },
+      error: () => {
+        if (request !== this.managerListSequence || !this.isCurrentTenant(tenantId, tenantSequence)
+          || this.selectedUnitId() !== unitId) return;
+        this.managerAssignments.set([]);
+        this.loadingManagers.set(false);
+        this.errorMessage.set('Manager-position history could not be loaded.');
+      },
+    });
+  }
+
+  private loadReportingPage(tenantId: string, page: number, tenantSequence = this.requestSequence): void {
+    const request = ++this.reportingListSequence;
+    const query: OrganizationListQuery = {
+      page,
+      per_page: this.pageSize,
+      q: this.reportingSearch.value.trim() || undefined,
+    };
+    this.api.listReportingRelations(query).subscribe({
+      next: (response) => {
+        if (request !== this.reportingListSequence || !this.isCurrentTenant(tenantId, tenantSequence)) return;
+        this.reportingPage.set(response);
+        this.reportingRelations.set(response.data);
+      },
+      error: () => {
+        if (request !== this.reportingListSequence || !this.isCurrentTenant(tenantId, tenantSequence)) return;
+        this.errorMessage.set('Position reporting relationships could not be loaded.');
+      },
+    });
+  }
+
+  private loadReportingPositionChoices(tenantId: string, term: string, tenantSequence = this.requestSequence): void {
+    const request = ++this.reportingPositionSequence;
+    this.api.listPositions({ page: 1, per_page: 100, q: term.trim() || undefined }).subscribe({
+      next: (response) => {
+        if (request !== this.reportingPositionSequence || !this.isCurrentTenant(tenantId, tenantSequence)) return;
+        this.reportingPositionChoices.set(response.data);
+      },
+      error: () => {
+        if (request !== this.reportingPositionSequence || !this.isCurrentTenant(tenantId, tenantSequence)) return;
+        this.reportingPositionChoices.set([]);
+        this.errorMessage.set('Position choices could not be searched.');
+      },
     });
   }
 
@@ -213,27 +326,15 @@ export class OrganizationStructureComponent {
     this.savingPosition.set(false);
     this.savingManager.set(false);
     this.managerAssignments.set([]);
+    this.managerPage.set(null);
     this.managerRequestSequence += 1;
+    this.managerSearch.setValue('');
+    this.positionSearch.setValue('');
     const tenantId = this.session.activeTenant()?.id;
     if (!tenantId || !this.units().some((unit) => unit.id === unitId)) return;
 
-    const sequence = ++this.managerRequestSequence;
-    this.loadingManagers.set(true);
-    this.api.listUnitManagers(unitId).subscribe({
-      next: (response) => {
-        if (sequence !== this.managerRequestSequence
-          || this.session.activeTenant()?.id !== tenantId
-          || this.selectedUnitId() !== unitId) return;
-        this.managerAssignments.set(response.data);
-        this.loadingManagers.set(false);
-      },
-      error: () => {
-        if (sequence !== this.managerRequestSequence || this.session.activeTenant()?.id !== tenantId || this.selectedUnitId() !== unitId) return;
-        this.managerAssignments.set([]);
-        this.loadingManagers.set(false);
-        this.errorMessage.set('Manager positions could not be loaded for the selected unit.');
-      },
-    });
+    this.loadPositionPage(tenantId, 1, unitId);
+    this.loadManagerPage(tenantId, 1, unitId);
 
     this.positionForm.reset({
       position_code: '',
@@ -251,6 +352,60 @@ export class OrganizationStructureComponent {
       reason: '',
     });
   }
+
+  searchUnits(): void {
+    const tenantId = this.session.activeTenant()?.id;
+    if (tenantId) this.loadUnitPage(tenantId, 1);
+  }
+
+  changeUnitPage(page: number): void {
+    const tenantId = this.session.activeTenant()?.id;
+    const last = this.unitPage()?.last_page ?? 1;
+    if (tenantId && page >= 1 && page <= last) this.loadUnitPage(tenantId, page);
+  }
+
+  searchPositions(): void {
+    const tenantId = this.session.activeTenant()?.id;
+    const unitId = this.selectedUnitId();
+    if (tenantId && unitId) this.loadPositionPage(tenantId, 1, unitId);
+  }
+
+  changePositionPage(page: number): void {
+    const tenantId = this.session.activeTenant()?.id;
+    const unitId = this.selectedUnitId();
+    const last = this.positionPage()?.last_page ?? 1;
+    if (tenantId && unitId && page >= 1 && page <= last) this.loadPositionPage(tenantId, page, unitId);
+  }
+
+  searchManagers(): void {
+    const tenantId = this.session.activeTenant()?.id;
+    const unitId = this.selectedUnitId();
+    if (tenantId && unitId) this.loadManagerPage(tenantId, 1, unitId);
+  }
+
+  changeManagerPage(page: number): void {
+    const tenantId = this.session.activeTenant()?.id;
+    const unitId = this.selectedUnitId();
+    const last = this.managerPage()?.last_page ?? 1;
+    if (tenantId && unitId && page >= 1 && page <= last) this.loadManagerPage(tenantId, page, unitId);
+  }
+
+  searchReporting(): void {
+    const tenantId = this.session.activeTenant()?.id;
+    if (tenantId) this.loadReportingPage(tenantId, 1);
+  }
+
+  changeReportingPage(page: number): void {
+    const tenantId = this.session.activeTenant()?.id;
+    const last = this.reportingPage()?.last_page ?? 1;
+    if (tenantId && page >= 1 && page <= last) this.loadReportingPage(tenantId, page);
+  }
+
+  searchReportingPositions(): void {
+    const tenantId = this.session.activeTenant()?.id;
+    if (tenantId) this.loadReportingPositionChoices(tenantId, this.reportingPositionSearch.value);
+  }
+
 
   createUnit(): void {
     if (!this.canManage() || this.unitForm.invalid || this.savingUnit()) {
@@ -276,7 +431,7 @@ export class OrganizationStructureComponent {
     }).subscribe({
       next: ({ data }) => {
         if (this.session.activeTenant()?.id !== tenantId) return;
-        this.units.update((current) => [...current, data].sort((a, b) => a.unit_code.localeCompare(b.unit_code)));
+        this.loadUnitPage(tenantId, 1);
         this.savingUnit.set(false);
         this.showUnitForm.set(false);
         this.unitForm.reset({
@@ -326,7 +481,7 @@ export class OrganizationStructureComponent {
     }).subscribe({
       next: ({ data }) => {
         if (this.session.activeTenant()?.id !== tenantId || this.selectedUnitId() !== unitId) return;
-        this.positions.update((current) => [...current, data].sort((a, b) => a.position_code.localeCompare(b.position_code)));
+        this.loadPositionPage(tenantId, 1, unitId);
         this.savingPosition.set(false);
         this.showPositionForm.set(false);
         this.positionForm.reset({
@@ -370,7 +525,7 @@ export class OrganizationStructureComponent {
     }).subscribe({
       next: ({ data }) => {
         if (this.session.activeTenant()?.id !== tenantId || this.selectedUnitId() !== unitId) return;
-        this.managerAssignments.update((current) => [data, ...current]);
+        this.loadManagerPage(tenantId, 1, unitId);
         this.savingManager.set(false);
         this.showManagerForm.set(false);
         this.managerForm.reset({ manager_position_id: '', valid_from: '2026-01-01', valid_to: '', reason: '' });
@@ -407,7 +562,7 @@ export class OrganizationStructureComponent {
     }).subscribe({
       next: ({ data }) => {
         if (this.session.activeTenant()?.id !== tenantId) return;
-        this.reportingRelations.update((current) => [data, ...current]);
+        this.loadReportingPage(tenantId, 1);
         this.savingReporting.set(false);
         this.showReportingForm.set(false);
         this.reportingForm.reset({
