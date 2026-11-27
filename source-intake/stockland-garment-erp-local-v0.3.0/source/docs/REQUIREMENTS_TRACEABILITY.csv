@@ -1,0 +1,31 @@
+requirement_id,requirement,implementation_reference,verification,coverage
+BOOT-001,One-time Owner setup and five canonical locations,scripts/bootstrap.mjs;src/server.mjs;src/db.mjs,health/setup acceptance test,local-pass
+AUTH-001,Scrypt password hashing and opaque hashed sessions,src/security.mjs;src/server.mjs,owner setup/login integration coverage,local-pass
+AUTH-002,CSRF protection for authenticated state-changing API calls,src/server.mjs;tests/erp.test.mjs,missing CSRF returns 403,local-pass
+AUTH-003,Assigned branch requirement for Branch Manager and Cashier,src/server.mjs;tests/erp.test.mjs,user provisioning rejects invalid assignment,local-pass
+AUTH-004,Assigned location requirement for Warehouse Manager,src/server.mjs;tests/erp.test.mjs,unassigned manager rejected,local-pass
+AUTH-005,Branch and warehouse data scope,src/server.mjs;src/modules/enterprise.mjs;tests/erp.test.mjs,cross-location reads return 403,local-pass
+PROD-001,Garment SKU stores brand/category/department/age/size/colour/barcode/UOM/prices,src/db.mjs;src/server.mjs;public/app.js,create/update product test,local-pass
+PROD-002,SKU and barcode uniqueness,src/db.mjs;src/server.mjs,database constraints and create path validation,local-pass
+INV-001,Inventory quantity is derived from movement ledger,src/db.mjs;src/server.mjs,receipt and stock balance test,local-pass
+INV-002,Posted movement and audit rows are immutable,src/db.mjs;tests/erp.test.mjs,update/delete trigger assertions,local-pass
+INV-003,Atomic two-sided transfers,src/server.mjs;src/modules/enterprise.mjs;tests/erp.test.mjs,paired movement and shortage test,local-pass
+INV-004,POS validates sellable quantity including reservations,src/server.mjs;src/modules/enterprise.mjs,aggregate oversell and reservation test,local-pass
+INV-005,Physical count variance posts stock and GL,src/modules/enterprise.mjs;src/migrations/002_enterprise.sql,count release and journal assertion,local-pass
+INV-006,Damage and sales return post ledger/journal,src/modules/enterprise.mjs,"damage, linked return test",local-pass
+PROC-001,Purchase order with partial goods receiving,src/modules/enterprise.mjs,"supplier, PO and receiving test",local-pass
+POS-001,Retail price is resolved from Product Master,src/server.mjs,sale input ignores client-side prices,local-pass
+POS-002,POS sale source identity is idempotent,src/db.mjs;src/server.mjs,retry returns existing sale,local-pass
+IMP-001,POS CSV upload is validated and staged without posting,src/server.mjs,inventory unchanged after upload,local-pass
+IMP-002,POS source control total is mandatory and exact,src/server.mjs,missing total and variance tests,local-pass
+IMP-003,Only assigned Branch Manager can release import,src/server.mjs,"Owner denied, assigned manager allowed",local-pass
+IMP-004,Branch Manager release automatically posts atomically,src/server.mjs;src/modules/enterprise.mjs,release and stock/journal assertions,local-pass
+IMP-005,POS import release rolls back and can retry after posting failure,src/server.mjs;tests/erp.test.mjs,journal fault injection and retry test,local-pass
+WHO-001,Wholesale order confirmation checks stock and posts GL,src/modules/enterprise.mjs,wholesale confirmation test,local-pass
+FIN-001,Double-entry journals balance exactly,src/modules/enterprise.mjs,trial balance debit/credit equality test,local-pass
+FIN-002,"AP/AR bills, payment allocation and expense posting",src/modules/enterprise.mjs,AP/AR payment and expense integration test,local-pass
+HR-001,"Employee, contract and attendance records",src/modules/enterprise.mjs,HR acceptance scenario,local-pass
+HR-002,Payroll calculation and journal posting,src/modules/enterprise.mjs,payroll post and GL test,local-pass
+OPS-001,Daily branch cash close,src/modules/enterprise.mjs,closing submit and close test,local-pass
+PWA-001,"PWA manifest, service worker, icon and count CSV are served",public/manifest.webmanifest;public/sw.js;public/icons/stockland.svg,static asset acceptance checks,local-pass
+REL-001,Local release criteria and file integrity,scripts/release-gate.mjs;scripts/verify-manifest.mjs;.github/workflows/ci.yml,local release command sequence,local-pass

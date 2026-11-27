@@ -1,0 +1,2 @@
+employeeNumber,fullName,email,phone,department,jobTitle,locationCode,hireDate,baseSalaryETB
+EMP-001,Example Employee,employee@example.test,,Retail,Sales Associate,GORO_BRANCH,2026-11-01,12000.00

@@ -1,0 +1,25 @@
+CAP_ID,WP,Finding,Corrective_Action,Acceptance_Evidence,Status
+CAP-E01,EVIDENCE,Archive/manifest identity ambiguous,Reconcile sidecar archive and embedded manifest SHA plus all manifest entries,Archive SHA + manifest SHA + 106/106 per-file size/hash match,DONE
+CAP-E02,EVIDENCE,Python and Node test counts could be conflated,Record runtime reports separately,Python report 16; Node v0.3 TAP 15 (14 nested + suite),DONE
+CAP-E03,EVIDENCE,Stand-in replay could be mistaken for canonical proof,Port verified 19-stage control fixture to canonical acceptance tests,Python replay passes; exact Laravel/PostgreSQL test remains required,OPEN_CANONICAL_PORT
+CAP-E04,EVIDENCE,Python code bytes not supplied for seven-hash verification,Retrieve committed runtime archive and recompute hashes,Run 45397701554: 7/7 hashes match and 16/16 tests pass,DONE_REFERENCE_ONLY
+CAP-E07,EVIDENCE,Source commit labels README hash as verification package hash,Separate the README file SHA from the two source archive hashes,README f4f5... and archive hashes b8b58... / c2124... distinctly recorded,DONE
+CAP-E05,EVIDENCE,Two Drive folder IDs could be conflated,Record folder ID for each source retrieval,1Kl3 successful v0.3 import distinct from 1o4y later listing failure,DONE
+CAP-E06,WP-16,CI summary shell interprets Markdown backticks,Quote heredoc or escape Markdown report content,No shell command-not-found output from summary,OPEN
+CAP-WP00,WP-00,Local app documentation is not canonical governance,Pin baseline and preserve decision approval and handover log,Exact-SHA decisions and independent approvals traceable,OPEN
+CAP-WP01,WP-01,30 traceability rows are incomplete,Map every requirement to role workflow data control evidence test owner,100 percent coverage and no orphan critical tests,OPEN
+CAP-WP02,WP-02,No complete legally approved Ethiopia rules registry,Verify primary sources and store effective-dated qualified-approved rules,Date-boundary tests and no activation without sign-off,OPEN
+CAP-WP03,WP-03,No canonical multi-tenant SaaS and forced RLS,Implement tenant/legal entity/site model PostgreSQL RLS and scoped policies,Adversarial isolation tests on restricted DB role,OPEN
+CAP-WP04,WP-04,No initiative-first brand/range lifecycle,Implement idea insight portfolio collection range assortment and merchandising,Own-brand flow without buyer PO plus stage audit,OPEN
+CAP-WP05,WP-05,No complete PLM CAD sample fit and technical release,Implement design pattern grading 2D/3D sample tech-pack BOM and asset rights,Production cannot consume draft/superseded revision,OPEN
+CAP-WP06,WP-06,No complete IE and approved capacity system,Implement observed time study SAM/SMV method machine skill line balance readiness,Unapproved IE cannot drive target/release,OPEN
+CAP-WP07,WP-07,Partial supplier procurement and material traceability,Implement canonical separate fabric trim chemical packaging ledgers and lot genealogy,Stand-in tests pass; canonical over-issue expiry SDS UOM duplicate and single-reversal tests still required,OPEN
+CAP-WP08,WP-08,No versioned conditional route/SOP framework,Implement route graph SOP handoffs exceptions and controlled skips,Route order enforced and optional stage skip proven,OPEN
+CAP-WP09,WP-09,No full department MES and WIP execution,Implement cutting bundle split/merge sewing special process finishing packing subcontract,19-stage replay and idempotent component genealogy tests,OPEN
+CAP-WP10,WP-10,No capacity/workforce skills and plan-actual,Implement shift/hour targets approved SAM efficiency skill deployment downtime and fair work,Approved target vectors and skill gate tests,OPEN
+CAP-WP11,WP-11,No full buyer QC CAPA compliance and HSE,Implement revisioned sampling inspection defect CAPA chemical and worker safety,No default AQL failed audit blocks independent reinspection,OPEN
+CAP-WP12,WP-12,Partial warehouse distribution and commerce,Implement DC/bin ATP fulfilment retail wholesale D2C returns reverse logistics,Exactly-once cross-channel stock and finance reconciliation,OPEN
+CAP-WP13,WP-13,Partial GL lacks manufacturing costing tax FX treasury,Implement WIP FG actual/standard cost and effective dated statutory finance,Balanced source-linked journals and cost reconciliation,OPEN
+CAP-WP14,WP-14,Partial HR/payroll and compensation classifications,Implement workforce lifecycle benefits skills training and distinct payment classes,Qualified payroll vectors and secured HR access,OPEN
+CAP-WP15,WP-15,Partial analytics integration and outbox controls,Implement KPI contracts connectors versioned events human-governed AI,Exactly-once tenant-scoped events and ledger-tied KPIs,OPEN
+CAP-WP16,WP-16,Canonical stack and production release evidence absent,Run exact stack CI RLS concurrency security performance backup restore UAT rollback,Green exact-SHA build and accepted release handover,OPEN

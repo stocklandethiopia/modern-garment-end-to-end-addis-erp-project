@@ -1,0 +1,551 @@
+{
+  "application": "Stockland Garment ERP",
+  "version": "0.3.0",
+  "build_date": "2026-11-22",
+  "runtime_requirement": ">=22.5.0",
+  "runtime_verified": "Node.js v22.16.0",
+  "schema_version": 2,
+  "application_tables": 45,
+  "package_type": "full-stack local source package",
+  "verification_commands": [
+    "npm run check",
+    "npm test",
+    "npm run release:gate",
+    "npm run verify:manifest"
+  ],
+  "manifest_algorithm": "SHA-256",
+  "manifest_scope_note": "Lists every maintained source, documentation, template and workflow file except BUILD_MANIFEST.json itself. Environment-specific database files, installed dependencies, coverage output and generated delivery archives are managed separately.",
+  "file_count": 106,
+  "files": [
+    {
+      "path": ".env.example",
+      "size_bytes": 361,
+      "sha256": "eb762ca477805804f816159beb02a34279959163478302aef956417dcc49e5d0"
+    },
+    {
+      "path": ".github/README.md",
+      "size_bytes": 901,
+      "sha256": "cf71579c8a5e0a1b2a8b7156b7fe03a75457c2ccaa3b308f8ce10440c16f0f70"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "size_bytes": 1069,
+      "sha256": "e8439d1f3bd1a5c3c56ea9eeb4fa2d6ebf7393d2da472ed5f497c7e79245553d"
+    },
+    {
+      "path": ".github/workflows/README.md",
+      "size_bytes": 287,
+      "sha256": "19cc44ec0c5dba841900265366020de277329b555ef4269f1d940dbfe5976c84"
+    },
+    {
+      "path": ".gitignore",
+      "size_bytes": 81,
+      "sha256": "eaebf21705dd377cc85ca6aea916e2f901e9e660f8833e1809d0571738beba0c"
+    },
+    {
+      "path": "docs/API_REFERENCE.md",
+      "size_bytes": 10682,
+      "sha256": "11fd92b34d561f7d4a1679810e21cae93041e6047b0d55a957094dcfd6bd5596"
+    },
+    {
+      "path": "docs/ARCHITECTURE.md",
+      "size_bytes": 2863,
+      "sha256": "5669a46d6967fdabb25b5978e7e357f360d4b1e15ff2e932625ae8532b28b74e"
+    },
+    {
+      "path": "docs/ARTIFACT_INVENTORY.md",
+      "size_bytes": 19907,
+      "sha256": "0f1847346b0602f63a0331ce061d3f3df36c844fe4a71eaf2709c81e5b877269"
+    },
+    {
+      "path": "docs/DATABASE_SCHEMA.md",
+      "size_bytes": 33239,
+      "sha256": "e4f0e90652566fd6bb48fddd686dad9e542bdb6bfd0d4e52fad7b738dde38b6b"
+    },
+    {
+      "path": "docs/DECISIONS.md",
+      "size_bytes": 2683,
+      "sha256": "2a006310ec5ca4f6bb75cd9909dd4af73cf9dbf84a62b6f8b562e772e4274403"
+    },
+    {
+      "path": "docs/IMPLEMENTATION_BOUNDARIES.md",
+      "size_bytes": 2472,
+      "sha256": "c4d35da663d2c7b3e661b6f16384bb52b41c1ef03a1697a039115a1fb286ac1c"
+    },
+    {
+      "path": "docs/KNOWN_LIMITATIONS.md",
+      "size_bytes": 1964,
+      "sha256": "1d817c8aff89820c5c68b891264d47a5e050bb426847655fa5344473bf4abd9a"
+    },
+    {
+      "path": "docs/modules/BRANCH_OPERATIONS.md",
+      "size_bytes": 787,
+      "sha256": "573816fd10a695715565326a403bc4db5a2c6133d98cb3e0342f6537e02a23f2"
+    },
+    {
+      "path": "docs/modules/FINANCE.md",
+      "size_bytes": 1458,
+      "sha256": "cb7323e706f22a6dd241705450a888735b8674361e16f032bf590fcc672e3f2a"
+    },
+    {
+      "path": "docs/modules/HR_PAYROLL.md",
+      "size_bytes": 904,
+      "sha256": "19d010031a0f01d1db08bbadb8c99e0c824f1f10522ac56afb929c1846401e7b"
+    },
+    {
+      "path": "docs/modules/INVENTORY.md",
+      "size_bytes": 1369,
+      "sha256": "3d621afda41e1b92f0d6bf67ab3805e7a35ab8a57a8615856131d2613dbe8b73"
+    },
+    {
+      "path": "docs/modules/POS.md",
+      "size_bytes": 1125,
+      "sha256": "7ab893e9df24685714fa9f8c99ce6edc52e02aeea98501e53c69e7054cd93d2b"
+    },
+    {
+      "path": "docs/modules/PROCUREMENT.md",
+      "size_bytes": 1007,
+      "sha256": "b3dcf28249a0a306a577a90ff4ec97e8c5362b6052197d77a510844467661cf7"
+    },
+    {
+      "path": "docs/modules/PRODUCT_CATALOG.md",
+      "size_bytes": 953,
+      "sha256": "8cf12747937c0ad121e9cc82ce7e6c82107add22760755ed2a6f1151868dd843"
+    },
+    {
+      "path": "docs/modules/README.md",
+      "size_bytes": 506,
+      "sha256": "ce185c6ae86d734a184f3d52b40c5b31b385af7a9f6bf6b97d7b30a7262c12d7"
+    },
+    {
+      "path": "docs/modules/WHOLESALE_CUSTOMERS.md",
+      "size_bytes": 877,
+      "sha256": "cffc350ac227102a99b118bd8cafd1ab162a989f6616645898b9837f7a344f49"
+    },
+    {
+      "path": "docs/OPEN_SOURCE_PROVENANCE.md",
+      "size_bytes": 1866,
+      "sha256": "200d49163debc3ab9696b9755fa6d259a89ed53e2ea4aaa5013a718614a97388"
+    },
+    {
+      "path": "docs/OPERATIONS_RUNBOOK.md",
+      "size_bytes": 2813,
+      "sha256": "3fa5be748b471e4d42545b9fea26d7e12f553fb549ede56166872770c90ab336"
+    },
+    {
+      "path": "docs/POS_IMPORT_RELEASE.md",
+      "size_bytes": 2882,
+      "sha256": "2051a85d8a9ce3db33933555373f61c2401d691d2790778d0a2d935f7f2fae37"
+    },
+    {
+      "path": "docs/PROJECT_CHARTER.md",
+      "size_bytes": 2155,
+      "sha256": "9692cc4492089ce56a9a8ccfe49385028d211985ee7ec1c46111fa32c94c8c0f"
+    },
+    {
+      "path": "docs/README.md",
+      "size_bytes": 2875,
+      "sha256": "ac40dee001e27858876e167f65e64efdba782ae5e52d62ab5520c21b5b29b07f"
+    },
+    {
+      "path": "docs/RELEASE_GATES.md",
+      "size_bytes": 2151,
+      "sha256": "da0aa00ff51da35327b601d72c2ad1e44580a13df7ea650c6e1d308adb9b6d21"
+    },
+    {
+      "path": "docs/RELEASE_NOTES.md",
+      "size_bytes": 1683,
+      "sha256": "f3b7a0a2e33d95ee43d2ba0806e736f3f59b9c7cacb632a8c3b35ac6df7b23de"
+    },
+    {
+      "path": "docs/REQUIREMENTS_TRACEABILITY.csv",
+      "size_bytes": 4179,
+      "sha256": "a6e8ee131d4e04afb157a4bab2def29b19e60947d6322f6cf73a64b6c9cf776e"
+    },
+    {
+      "path": "docs/RISK_REGISTER.md",
+      "size_bytes": 2039,
+      "sha256": "56ecfb48b6c6e965ab3a25db1e8feeca867c0900e6f8d575282e191e221749a7"
+    },
+    {
+      "path": "docs/SECURITY_MODEL.md",
+      "size_bytes": 3104,
+      "sha256": "9de4534ad9537f1af19079e3be01444f1249a28d1162f4d499f7e5263cdd0fca"
+    },
+    {
+      "path": "docs/standards/ENGINEERING_DOC_TEMPLATE.md",
+      "size_bytes": 1051,
+      "sha256": "19a3a6276ad960d86f3f55b526d7b6599936484df94e2c9b3590df5c97a669f4"
+    },
+    {
+      "path": "docs/standards/README.md",
+      "size_bytes": 266,
+      "sha256": "b24ad7b5014b7b21fbffa9044207a8aa38c4fb21f815bafa20ac90075981b026"
+    },
+    {
+      "path": "docs/standards/RELEASE_EVIDENCE_TEMPLATE.md",
+      "size_bytes": 1189,
+      "sha256": "de42df0b312dd118d70210ea1cfcec7d3b9d244de15d7f738a9797f0447947c2"
+    },
+    {
+      "path": "docs/TECHNICAL_REQUIREMENTS.md",
+      "size_bytes": 2780,
+      "sha256": "8ef803395468e69837f89da955512b8ec5acceee8f362b519dbf8df281f65d61"
+    },
+    {
+      "path": "docs/TEST_STRATEGY.md",
+      "size_bytes": 2789,
+      "sha256": "87cdeab1fda61796a2b980e4792ad66d7d920430642a20fb4c8d9cc662b50d0f"
+    },
+    {
+      "path": "docs/VERIFICATION_REPORT.md",
+      "size_bytes": 4500,
+      "sha256": "e65cbe68085cb419e0eecd9dce3ecb6a2da227b27ee02ed4f2af3ff18c15ef30"
+    },
+    {
+      "path": "docs/WORKFLOWS.md",
+      "size_bytes": 5047,
+      "sha256": "91bc4cb0fc1fea113b343f0080972117a22c7b891ea334940f04729410bef3d8"
+    },
+    {
+      "path": "package.json",
+      "size_bytes": 652,
+      "sha256": "e501c44d6e8f54339e853e3977ae2c04e407e1c3c2ad1872152a5d213c15cb41"
+    },
+    {
+      "path": "public/app.css",
+      "size_bytes": 8123,
+      "sha256": "a2c287564dbf25870cc6128ad2f8ec98785519edc59dde5a693044e1f51c338b"
+    },
+    {
+      "path": "public/app.js",
+      "size_bytes": 81364,
+      "sha256": "f493010506248aff05ea86d1129407091d85a91a6fc76e8428f859865eed8b16"
+    },
+    {
+      "path": "public/icons/README.md",
+      "size_bytes": 244,
+      "sha256": "d4d46753b7b79d3af8349437a7fcd614697d7fef93e4f93ccd7e4b9e60a857d4"
+    },
+    {
+      "path": "public/icons/stockland.svg",
+      "size_bytes": 481,
+      "sha256": "d38cc564af3ec265803ee69c249ed25dc021697c7c77c671b82fbbe9bc919862"
+    },
+    {
+      "path": "public/index.html",
+      "size_bytes": 752,
+      "sha256": "5f75905fd66009ecdd82a0f233c3d88e1c3036d0b4a5f1f93eaf1d62039799c8"
+    },
+    {
+      "path": "public/manifest.webmanifest",
+      "size_bytes": 422,
+      "sha256": "92ff19568bacf13678ef933ff58db127cf96a516a50cbc81e32d9b6a715ee454"
+    },
+    {
+      "path": "public/physical-count-template.csv",
+      "size_bytes": 36,
+      "sha256": "98d7913b114a3054428c69e4adf9bb36fbab5e453f808d6ba045c14d2440659c"
+    },
+    {
+      "path": "public/README.md",
+      "size_bytes": 1803,
+      "sha256": "89a99a0e1e4ad3435f97035f487880910acb47170c631c1154a4677897afd79d"
+    },
+    {
+      "path": "public/sw.js",
+      "size_bytes": 1298,
+      "sha256": "da40465fa69be199de92c8fb5fd1078d7f65b4e05c396fb5f9407566358ad25d"
+    },
+    {
+      "path": "README.md",
+      "size_bytes": 6856,
+      "sha256": "91d6f2631f3f61a161628459dc8d8f03244ec39088f608c8c4ceabe4131037a3"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/LICENSE_COMPLIANCE.md",
+      "size_bytes": 1446,
+      "sha256": "116b54fa8c8a72362c2d49aa78ad1bef21acef73462aa20b222b2c4b39d8561e"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/README.md",
+      "size_bytes": 2314,
+      "sha256": "ac01ef8d30f31d6a35ec937e0396f27decc7d75fbcbb546375a90d26336dfa71"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/reference-sources/xpos/frontend/README.md",
+      "size_bytes": 244,
+      "sha256": "6a6a5a297a81e33e9ab426d5b3edfa24e65b9742183398d9ddf8d3474790f05b"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/reference-sources/xpos/frontend/src/README.md",
+      "size_bytes": 197,
+      "sha256": "6f9ee969a87be8695079bfe58ca122eb909730ec1c4a3edba98a7870d397513d"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/reference-sources/xpos/frontend/src/services/invoiceSubmission.ts",
+      "size_bytes": 1550,
+      "sha256": "902fe64c5a69e2875ce69421241c606fb9c0377da321e051539a3d508195313e"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/reference-sources/xpos/frontend/src/services/offlinePolicy.ts",
+      "size_bytes": 3238,
+      "sha256": "ec35b82f7c183344b6b311ea0b1d98a44673e3b04ef0f7dd9fb979451fda6e41"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/reference-sources/xpos/frontend/src/services/README.md",
+      "size_bytes": 356,
+      "sha256": "605efb35a01410d7324e4ba0f9411a89e8d0ce4d5028bedab41f0af10c7c4f82"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/reference-sources/xpos/LICENSE",
+      "size_bytes": 1065,
+      "sha256": "d29cedf4a81ee59edcb6125864cd5238508e66d01adc0a8960cb8de0b19b39aa"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/reference-sources/xpos/ORIGIN.md",
+      "size_bytes": 789,
+      "sha256": "8f1cc7ba0f088fa7a47991cef8a564992a7b29626c1a4b803b630fef5d778762"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/reference-sources/xpos/README.md",
+      "size_bytes": 453,
+      "sha256": "8f823d07e04d1f29e340a11e966e80ead42c81313b33e472ef9953039630a21d"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/reference-sources/xpos/xpos/api/README.md",
+      "size_bytes": 238,
+      "sha256": "c2a591a871fc1a319d67a2f194e470ef7d099bfae252ceb254f75b7c6f1123a9"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/reference-sources/xpos/xpos/api/tests/README.md",
+      "size_bytes": 253,
+      "sha256": "3b4e589fa05c51957313712623f7c4233b996aa4fb50f8f11268a823a7946878"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/reference-sources/xpos/xpos/api/tests/test_invoice_retry.py",
+      "size_bytes": 1079,
+      "sha256": "8ab2d4a47b5634520c5ec959d18487a0712ce9468d20c1d825a83e7a26441040"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/reference-sources/xpos/xpos/api/tests/test_stock_guards.py",
+      "size_bytes": 8929,
+      "sha256": "7fc277ac5bb0945fe1d45d37bfaf2b9f85a45ac9fca880e1ededec9b969469c7"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/reference-sources/xpos/xpos/README.md",
+      "size_bytes": 268,
+      "sha256": "1dbd65a7027e5debd73d545c963bb213076a0e64941449bb913ecd1ecf89bad0"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/reference-sources/xpos/xpos/x_pos/api/item_processing/barcode.py",
+      "size_bytes": 3569,
+      "sha256": "5120ba7c36d7c1536f18ee33eb1207b24a011ba85ad88fa6271c2d756242aa09"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/reference-sources/xpos/xpos/x_pos/api/item_processing/README.md",
+      "size_bytes": 296,
+      "sha256": "ec2482ba960c4dddc1aab3858eded2301faebc5e4fb3b8e44affa33d7eda9892"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/reference-sources/xpos/xpos/x_pos/api/item_processing/stock.py",
+      "size_bytes": 4275,
+      "sha256": "cf7b9510f05a3fb47d4aeaac28902bd03e65d26eb46a96a2a82ac813bf79eaa2"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/reference-sources/xpos/xpos/x_pos/api/README.md",
+      "size_bytes": 136,
+      "sha256": "431acb667975f58b4cf8851fd920e7766b6903ccbd971d6cb0c00a3c064ff16c"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/reference-sources/xpos/xpos/x_pos/README.md",
+      "size_bytes": 199,
+      "sha256": "425dacc3d78d0a65e3843891fe255f14939756ac065006bd474795da3dbfa67d"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/SOURCE_MANIFEST.json",
+      "size_bytes": 2359,
+      "sha256": "c464c20f3d46323dd50812c191d0dc778a65a2754995abca3870e132a1bd7cda"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/SOURCE_REGISTER.csv",
+      "size_bytes": 2519,
+      "sha256": "b42fe89194d6b89624cb45e887e5420cdad7fa423599fd10e276c14bbb6e94e7"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/source-review/README.md",
+      "size_bytes": 239,
+      "sha256": "8eed3d4e3549c8f8c55ed893751b06266e0d23add43e7274a1b7f5d1cd26a353"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/source-review/SOURCE_REVIEW.md",
+      "size_bytes": 2615,
+      "sha256": "c67d96cb919485fc9c07ee747851ae3702c39f176e7ef397003d130459518da2"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/stockland-adaptation/contracts/CATALOG_VARIANT_CONTRACT.md",
+      "size_bytes": 1264,
+      "sha256": "d6d6cd7d862e5cdb71f5a545a5f52741c8ab02cdc7cdc4ff4c97c8fc4faaadf1"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/stockland-adaptation/contracts/INVENTORY_LEDGER_CONTRACT.md",
+      "size_bytes": 1593,
+      "sha256": "c0c6da7ac7a1f7294f2e9d8943d3887ebaf2b09701a8f9b953820f0784dd8b4a"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/stockland-adaptation/contracts/OFFLINE_POS_CONTRACT.md",
+      "size_bytes": 1513,
+      "sha256": "797a88cf6b444cee463c8a36084a5deea5c2269ff7d3281aad321299de155b7f"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/stockland-adaptation/contracts/POS_IMPORT_RELEASE_CONTRACT.md",
+      "size_bytes": 1723,
+      "sha256": "869780d66478a5ed7a0b119d8d02cf5683b08e3c88b1b5b2e73ec3f2ae9246ff"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/stockland-adaptation/contracts/README.md",
+      "size_bytes": 241,
+      "sha256": "36a5d412d11c6d76895194193cb8f786019433f53fea6ed1607e78f1f0a55a3c"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/stockland-adaptation/MODULE_MAPPING.md",
+      "size_bytes": 1690,
+      "sha256": "4b82e2bc14b30f492ef3ccc7d0c8e90c221d10aece72c152a3e97b364f6cd806"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/stockland-adaptation/README.md",
+      "size_bytes": 704,
+      "sha256": "8369b4f124ab136c8cb47cb1616ba33299ef2de1680dbdba1b3ff7f8e86563e7"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/tests/README.md",
+      "size_bytes": 208,
+      "sha256": "239e01ddce6431da0ad8fbe0d44cf7e76355c688ec8a2a1c8e423cace1690997"
+    },
+    {
+      "path": "reference-sources/OPEN_SOURCE_REFERENCE_KIT/tests/STOCKLAND_ACCEPTANCE_MATRIX.md",
+      "size_bytes": 2489,
+      "sha256": "4d925f03a963d419370830a040db2d06c13d59364065ec18a0bca55ac04c01e9"
+    },
+    {
+      "path": "reference-sources/README.md",
+      "size_bytes": 1062,
+      "sha256": "0a87f06d4278f2e7d69517b611384c1ea79f8f70b04fa679404cf22acf08f2fe"
+    },
+    {
+      "path": "scripts/bootstrap.mjs",
+      "size_bytes": 2367,
+      "sha256": "8b00661676b23f64708146c9302211f9d5a63c1cf643dcee18146b416b446b0b"
+    },
+    {
+      "path": "scripts/build-manifest.mjs",
+      "size_bytes": 1933,
+      "sha256": "1135736331e82981aac12fe1f54142c8bbfa80c03232d07a5fc9a986f973d0c3"
+    },
+    {
+      "path": "scripts/check.mjs",
+      "size_bytes": 698,
+      "sha256": "4a5f10c522ccf316d13ebf6bcfb558470d40fcae6c5eb3a3556b67136e7a9982"
+    },
+    {
+      "path": "scripts/README.md",
+      "size_bytes": 1536,
+      "sha256": "e7aabf6ecf681d3bfa4718b20925b96c6566122553fba112df1127f460beeb35"
+    },
+    {
+      "path": "scripts/release-gate.mjs",
+      "size_bytes": 12596,
+      "sha256": "8b8ac994083b6178c92b5b08b28d4093a62527bc573668ecfba848f37a1235a1"
+    },
+    {
+      "path": "scripts/verify-manifest.mjs",
+      "size_bytes": 1868,
+      "sha256": "36bd225b3eba1391889893a042eae2786e3becfaaff2ca43b96fbb3a1998d467"
+    },
+    {
+      "path": "src/db.mjs",
+      "size_bytes": 8856,
+      "sha256": "55576d1c22695080373f111d2481a29afa6f7b4070fd85e380779aa2fc1b7bda"
+    },
+    {
+      "path": "src/migrations/002_enterprise.sql",
+      "size_bytes": 18717,
+      "sha256": "9aceb755cfae4a355bd53300b1bfbf9512e03b2ea6e8f0e7eb705057544dc3de"
+    },
+    {
+      "path": "src/migrations/README.md",
+      "size_bytes": 437,
+      "sha256": "523fa3142b611307f5d367a73d68637aecb658f66afe74bca0ba24df0d53afb0"
+    },
+    {
+      "path": "src/modules/enterprise.mjs",
+      "size_bytes": 60425,
+      "sha256": "5faae060ee8f89b9114ad5e3e8e4abbf7b0e52bf0d4f0657320301e65adb9ff7"
+    },
+    {
+      "path": "src/modules/README.md",
+      "size_bytes": 343,
+      "sha256": "da6d3c57d4823407543dd9aab18a92e267cee04d9f84fae06ccabb8406ac267a"
+    },
+    {
+      "path": "src/README.md",
+      "size_bytes": 2226,
+      "sha256": "063f60ac99dddea08ac9749817b962a9bae05b81909c3bfe4925232699f2618e"
+    },
+    {
+      "path": "src/security.mjs",
+      "size_bytes": 2191,
+      "sha256": "db074920aa88f77ee6b059bb0fddc213382538bd5577b041eb112bca0c6c3600"
+    },
+    {
+      "path": "src/server.mjs",
+      "size_bytes": 49506,
+      "sha256": "453d3013050dcc8bebcebd9c83397cf8761d56e92968b9292d2c470e50da9f4c"
+    },
+    {
+      "path": "templates/imports/employee-template.csv",
+      "size_bytes": 195,
+      "sha256": "87b52ca99800722440103cf47b139d77011f3e39fe2ed9c75a2e92ce8c79182c"
+    },
+    {
+      "path": "templates/imports/product-variant-template.csv",
+      "size_bytes": 199,
+      "sha256": "8b39f3db9372b85615dbfb00c4d1f86c00f9ebef97647564c06926cebf5deb47"
+    },
+    {
+      "path": "templates/imports/README.md",
+      "size_bytes": 446,
+      "sha256": "6d2acf2723e1e3feadd5fc86eadf1d74351c042f554dab40edfdfaa319d8a2ca"
+    },
+    {
+      "path": "templates/imports/supplier-purchase-order-template.csv",
+      "size_bytes": 142,
+      "sha256": "3a059085fe94c53d127f1dee1c5c56c0ba8461967ba037dca1a8580004c427e7"
+    },
+    {
+      "path": "templates/physical-count-template.csv",
+      "size_bytes": 36,
+      "sha256": "98d7913b114a3054428c69e4adf9bb36fbab5e453f808d6ba045c14d2440659c"
+    },
+    {
+      "path": "templates/pos-import-template.csv",
+      "size_bytes": 73,
+      "sha256": "5b1fdcd4385d83e14e99368d1c01ed00ab1fab86e2d94f3e30d8e955c97bb6db"
+    },
+    {
+      "path": "templates/README.md",
+      "size_bytes": 1948,
+      "sha256": "ae3d3f6e0618decf4a8f17e09c0cb2036efe015024f11bdf14bbddb7f8345c48"
+    },
+    {
+      "path": "tests/erp.test.mjs",
+      "size_bytes": 26990,
+      "sha256": "bea3067e01e4bf8e0ab27ac8b8bb83556ab74b01f6613c57878df390ea416ff6"
+    },
+    {
+      "path": "tests/README.md",
+      "size_bytes": 1717,
+      "sha256": "b4dd82fc8b81d5e093d1a05872323b47e72fa9d77e899db0c585f1eccd2798eb"
+    }
+  ]
+}

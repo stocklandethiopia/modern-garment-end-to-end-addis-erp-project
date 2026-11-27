@@ -1,0 +1,14 @@
+{
+  "id": "/",
+  "name": "Stockland Ethiopia ERP",
+  "short_name": "Stockland ERP",
+  "description": "Stockland garment retail, wholesale, inventory and finance workspace",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f6f2",
+  "theme_color": "#17231f",
+  "icons": [
+    { "src": "/icons/stockland.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
