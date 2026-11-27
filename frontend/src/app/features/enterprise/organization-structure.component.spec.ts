@@ -1,6 +1,6 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -51,7 +51,7 @@ describe('OrganizationStructureComponent', () => {
     membership_role: 'OWNER',
   });
 
-  function flushInitial(fixture: ReturnType<typeof TestBed.createComponent<OrganizationStructureComponent>>): void {
+  function flushInitial(fixture: ComponentFixture<OrganizationStructureComponent>): void {
     http.expectOne('/api/v1/enterprise/organization-units').flush(page([unit]));
     http.expectOne('/api/v1/enterprise/job-positions').flush(page([position]));
     http.expectOne('/api/v1/enterprise/position-reporting-relations').flush(page([]));
