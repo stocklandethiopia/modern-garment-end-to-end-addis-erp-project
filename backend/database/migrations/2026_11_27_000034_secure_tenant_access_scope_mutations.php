@@ -424,9 +424,9 @@ $$;
 REVOKE ALL ON FUNCTION public.set_tenant_member_scope_mode(uuid, text, text) FROM PUBLIC, app_runtime;
 REVOKE ALL ON FUNCTION public.grant_tenant_access_scope(uuid, text, uuid, text, text, date, date, text) FROM PUBLIC, app_runtime;
 REVOKE ALL ON FUNCTION public.revoke_tenant_access_scope(uuid, text) FROM PUBLIC, app_runtime;
-GRANT EXECUTE ON FUNCTION public.set_tenant_member_scope_mode(uuid, text, text) TO app_runtime;
-GRANT EXECUTE ON FUNCTION public.grant_tenant_access_scope(uuid, text, uuid, text, text, date, date, text) TO app_runtime;
-GRANT EXECUTE ON FUNCTION public.revoke_tenant_access_scope(uuid, text) TO app_runtime;
+GRANT EXECUTE ON FUNCTION public.set_tenant_member_scope_mode(uuid, text, text) TO app_control;
+GRANT EXECUTE ON FUNCTION public.grant_tenant_access_scope(uuid, text, uuid, text, text, date, date, text) TO app_control;
+GRANT EXECUTE ON FUNCTION public.revoke_tenant_access_scope(uuid, text) TO app_control;
 SQL);
     }
 
