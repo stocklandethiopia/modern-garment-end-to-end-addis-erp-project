@@ -230,6 +230,9 @@ class EthiopiaPayrollCalculatorTest extends TestCase
             'approved_by' => 'pension-reviewer',
             'approved_at' => '2026-10-31T12:00:00+03:00',
             'approval_reference' => 'PENSION-COVERAGE-OPINION-01',
+            'source_url' => 'https://justice.gov.et/law/private-organization-employees-pension-proclamation-1268-2022/',
+            'source_sha256' => hash('sha256', 'synthetic-coverage-source'),
+            'article_reference' => 'Proclamation 1268/2022 Articles 2, 3 and 10',
         ];
 
         return $input;
@@ -254,6 +257,9 @@ class EthiopiaPayrollCalculatorTest extends TestCase
                 'opinion_reference' => 'SYNTHETIC-LEGAL-OPINION-TEST',
                 'reviewer_qualification' => 'Synthetic qualified tax reviewer fixture',
                 'reviewer_user_id' => 'tax-reviewer',
+                'reviewer_registration_reference' => 'SYNTHETIC-TAX-QUALIFICATION',
+                'opinion_document_reference' => 'synthetic://tax-opinion',
+                'opinion_sha256' => hash('sha256', 'synthetic-tax-opinion'),
                 'independence_confirmed' => true,
                 'reviewed_at' => '2026-10-31T12:00:00+03:00',
                 'article_references' => ['1395/2025 Article 11', '979/2016 Article 10'],
