@@ -137,50 +137,50 @@ export class EnterpriseOrganizationService {
 
   listUnits(query: OrganizationListQuery = {}): Observable<ApiPage<OrganizationUnit>> {
     return this.http.get<ApiPage<OrganizationUnit>>(
-      \`\${this.base}/organization-units\`,
+      this.base + '/organization-units',
       { params: this.queryParams(query) },
     );
   }
 
   createUnit(input: OrganizationUnitInput): Observable<ResourceResponse<OrganizationUnit>> {
-    return this.http.post<ResourceResponse<OrganizationUnit>>(\`\${this.base}/organization-units\`, input);
+    return this.http.post<ResourceResponse<OrganizationUnit>>(this.base + '/organization-units', input);
   }
 
   listPositions(query: OrganizationListQuery = {}): Observable<ApiPage<JobPosition>> {
     return this.http.get<ApiPage<JobPosition>>(
-      \`\${this.base}/job-positions\`,
+      this.base + '/job-positions',
       { params: this.queryParams(query) },
     );
   }
 
   createPosition(input: JobPositionInput): Observable<ResourceResponse<JobPosition>> {
-    return this.http.post<ResourceResponse<JobPosition>>(\`\${this.base}/job-positions\`, input);
+    return this.http.post<ResourceResponse<JobPosition>>(this.base + '/job-positions', input);
   }
 
   listUnitManagers(unitId: string, query: OrganizationListQuery = {}): Observable<ApiPage<OrganizationUnitManagerAssignment>> {
     return this.http.get<ApiPage<OrganizationUnitManagerAssignment>>(
-      \`\${this.base}/organization-units/\${encodeURIComponent(unitId)}/manager-assignments\`,
+      this.base + '/organization-units/' + encodeURIComponent(unitId) + '/manager-assignments',
       { params: this.queryParams(query) },
     );
   }
 
   assignUnitManager(unitId: string, input: UnitManagerInput): Observable<ResourceResponse<OrganizationUnitManagerAssignment>> {
     return this.http.post<ResourceResponse<OrganizationUnitManagerAssignment>>(
-      \`\${this.base}/organization-units/\${encodeURIComponent(unitId)}/manager-assignments\`,
+      this.base + '/organization-units/' + encodeURIComponent(unitId) + '/manager-assignments',
       input,
     );
   }
 
   listReportingRelations(query: OrganizationListQuery = {}): Observable<ApiPage<PositionReportingRelation>> {
     return this.http.get<ApiPage<PositionReportingRelation>>(
-      \`\${this.base}/position-reporting-relations\`,
+      this.base + '/position-reporting-relations',
       { params: this.queryParams(query) },
     );
   }
 
   createReportingRelation(input: PositionReportingInput): Observable<ResourceResponse<PositionReportingRelation>> {
     return this.http.post<ResourceResponse<PositionReportingRelation>>(
-      \`\${this.base}/position-reporting-relations\`,
+      this.base + '/position-reporting-relations',
       input,
     );
   }
