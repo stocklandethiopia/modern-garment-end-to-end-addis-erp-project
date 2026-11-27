@@ -177,6 +177,43 @@ class QualityInspectionReviewStateTest extends TestCase
         );
     }
 
+    public function test_reviewer_identity_and_timestamp_must_be_paired_for_every_inspection_state(): void
+    {
+        $rowId = (string) Str::uuid();
+        $admin = DB::connection('pgsql_test_admin');
+
+        try {
+            $admin->table('quality_inspections')->insert([
+                'id' => $rowId,
+                'tenant_id' => $this->tenantId,
+                'inspection_code' => 'QI-PAIR-'.Str::upper(Str::random(8)),
+                'inspection_type' => 'FINAL',
+                'subject_type' => 'PRODUCTION_ORDER',
+                'subject_id' => (string) Str::uuid(),
+                'sample_quantity' => '1.0000',
+                'accepted_quantity' => '0.0000',
+                'rejected_quantity' => '0.0000',
+                'result_status' => 'FAIL',
+                'measurements' => json_encode([], JSON_THROW_ON_ERROR),
+                'observations' => json_encode([], JSON_THROW_ON_ERROR),
+                'inspected_by' => $this->inspectorId,
+                'reviewed_by' => $this->reviewerId,
+                'reviewed_at' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            self::fail('Reviewer identity and timestamp must be stored as a complete pair.');
+        } catch (\\Illuminate\\Database\\QueryException) {
+            // Expected: database constraint prevents a partial reviewer record.
+        }
+
+        self::assertSame(
+            0,
+            $admin->table('quality_inspections')->where('tenant_id', $this->tenantId)->where('id', $rowId)->count(),
+        );
+    }
+
     public function test_passing_inspection_can_be_submitted_then_independently_reviewed(): void
     {
         $service = app(QualityControlService::class);
