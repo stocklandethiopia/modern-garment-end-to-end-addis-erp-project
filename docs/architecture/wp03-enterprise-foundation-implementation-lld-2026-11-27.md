@@ -500,7 +500,7 @@ Handover requires requirement traceability, entity/relationship model, migration
 - MoJ Public Procurement Proclamation 1333/2024: https://justice.gov.et/en/law/the-federal-public-procurement-and-property-administration-proclamation/
 - MoR Income Tax Amendment 1395/2025 Gazette PDF: https://www.mor.gov.et/DomesticProclamations/1786970364007-582645424-pdf-%C3%A1%C2%8A%C2%A0%C3%A1%C2%8B%C2%8B%C3%A1%C2%8C%C2%85-%C3%A1%C2%89%C2%81%C3%A1%C2%8C%C2%A5-%C3%A1%C2%88%C2%AD-1395-2017.pdf
 - MoJ Regulation 597/2026 Gazette PDF: https://justice.gov.et/wp-content/uploads/2026/11/%E1%8C%98%E1%88%9B%E1%8C%AB%E1%88%AC-%E1%8C%A5%E1%88%AD-597-2019.pdf
-- HOPR Pension Proclamation 1268/2022 Gazette PDF: https://www.hopr.gov.et/admin/Files/2026/2/25/fc53f560-b228-4314-b372-da2b26ef4b53_Upploads_04012023090127_%E1%8B%A8%E1%8C%8D%E1%88%8D%20%E1%8B%B5%E1%88%AD%E1%8C%85%E1%89%B5%20%E1%88%A0%E1%82%AB%E1%89%B0%E1%8A%9E%E1%89%BD%20%E1%8C%A1%E1%88%AB%E1%89%B3%20%E1%8A%A0%E1%8B%8B%E1%8C%85%20%E1%89%81%E1%8C%A5%E1%88%AD%201268%20%281%29.pdf
+- HOPR Pension Proclamation 1268/2022 Gazette PDF: https://www.hopr.gov.et/
 - MoJ Labour Proclamation 1156/2019: https://justice.gov.et/en/law/labour-proclamation/
 
 ## 19. Document control
