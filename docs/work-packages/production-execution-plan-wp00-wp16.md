@@ -151,7 +151,7 @@ Every task that creates or changes executable source must satisfy all applicable
   - **Acceptance:** platform authority cannot be obtained from tenant-owner role; grants expire/revoke and every privileged read/write is auditable.
 - [ ] **PROD-WP03-007 — Authentication assurance.** Complete MFA, OIDC/SSO integration, session/device policy, password/recovery controls, token ability/scope, credential rotation and secure service principals.
   - **Acceptance:** account takeover, stale token, disabled user, unauthorized client, expired session and recovery abuse tests pass.
-- [ ] **PROD-WP03-008 — Enterprise operator UI and tenant acceptance.** Complete accessible onboarding, member/invitation, legal entity/site, department/warehouse, role/scope, delegation, entitlement, audit and platform operator journeys.
+- [ ] **PROD-WP03-008 — Enterprise operator UI and tenant acceptance.** Complete accessible onboarding, member/invitation, legal entity/site, department/warehouse, organization hierarchy, job-position/reporting, role/scope, delegation, entitlement, audit and platform operator journeys. Implement server-side search, pagination and accurate total counts for every enterprise register and relationship list; preserve selected record, tenant context and effective-date filters across page changes.
   - **Acceptance:** operators can perform authorized lifecycle tasks end-to-end; restricted users see only permitted records and actionable denial reasons.
 
 **Exit:** enterprise control plane is complete across backend, database, UI, audit, recovery and security acceptance; downstream WPs use it rather than inventing local authorization.
