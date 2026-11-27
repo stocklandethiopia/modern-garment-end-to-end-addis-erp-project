@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ScopedAccessService
 {
@@ -25,9 +28,10 @@ class ScopedAccessService
 
     public function setMode(string $targetUserId, string $mode, string $reason): array
     {
-        $result = DB::selectOne(
+        $result = $this->mutate(
             'SELECT * FROM public.set_tenant_member_scope_mode(?::uuid, ?, ?)',
             [$targetUserId, $mode, trim($reason)],
+            'scope_mode',
         );
 
         if ($result === null) {
@@ -48,7 +52,7 @@ class ScopedAccessService
             ? strtoupper(trim((string) ($data['scope_code'] ?? '')))
             : null;
 
-        $result = DB::selectOne(
+        $result = $this->mutate(
             'SELECT * FROM public.grant_tenant_access_scope(
                 ?::uuid, ?, ?::uuid, ?, ?, ?::date, ?::date, ?
             )',
@@ -62,6 +66,7 @@ class ScopedAccessService
                 $data['valid_to'] ?? null,
                 trim((string) $data['grant_reason']),
             ],
+            'scope',
         );
 
         if ($result === null) {
@@ -73,9 +78,10 @@ class ScopedAccessService
 
     public function revoke(string $scopeGrantId, string $reason): object
     {
-        $result = DB::selectOne(
+        $result = $this->mutate(
             'SELECT * FROM public.revoke_tenant_access_scope(?::uuid, ?)',
             [$scopeGrantId, trim($reason)],
+            'scope',
         );
 
         if ($result === null) {
@@ -98,6 +104,31 @@ class ScopedAccessService
                 ->orderByDesc('created_at')
                 ->get(),
         ];
+    }
+
+    private function mutate(string $sql, array $bindings, string $errorField): ?object
+    {
+        try {
+            return DB::selectOne($sql, $bindings);
+        } catch (QueryException $exception) {
+            $sqlState = $exception->errorInfo[0] ?? null;
+
+            if ($sqlState === '42501') {
+                throw new AuthorizationException('Tenant owner or administrator permission is required for this scope operation.');
+            }
+
+            if ($sqlState === 'P0002') {
+                abort(404, 'The requested tenant access-scope grant does not exist or is no longer active.');
+            }
+
+            if (in_array($sqlState, ['22023', '23505', '23514'], true)) {
+                throw ValidationException::withMessages([
+                    $errorField => 'The requested scope operation is invalid or conflicts with an existing effective grant.',
+                ]);
+            }
+
+            throw $exception;
+        }
     }
 
     private function assertScope(
