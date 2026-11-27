@@ -36,6 +36,122 @@ class EnterpriseOrganizationService
             ]);
     }
 
+    public function managerAssignments(string $tenantId, string $orgUnitId): LengthAwarePaginator
+    {
+        return DB::table('org_unit_manager_assignments')
+            ->join('job_positions as manager', function ($join): void {
+                $join->on('manager.id', '=', 'org_unit_manager_assignments.manager_position_id')
+                    ->on('manager.tenant_id', '=', 'org_unit_manager_assignments.tenant_id');
+            })
+            ->where('org_unit_manager_assignments.tenant_id', $tenantId)
+            ->where('org_unit_manager_assignments.org_unit_id', $orgUnitId)
+            ->orderBy('org_unit_manager_assignments.valid_from', 'desc')
+            ->paginate(100, [
+                'org_unit_manager_assignments.*',
+                'manager.position_code as manager_position_code',
+                'manager.title as manager_position_title',
+            ]);
+    }
+
+    public function assignUnitManager(string $tenantId, string $actorId, string $orgUnitId, array $data): object
+    {
+        return DB::transaction(function () use ($tenantId, $actorId, $orgUnitId, $data): object {
+            $this->lockOrganizationGraph($tenantId);
+
+            $unit = DB::table('org_units')
+                ->where('tenant_id', $tenantId)
+                ->where('id', $orgUnitId)
+                ->lockForUpdate()
+                ->first();
+
+            $manager = DB::table('job_positions')
+                ->where('tenant_id', $tenantId)
+                ->where('id', $data['manager_position_id'])
+                ->lockForUpdate()
+                ->first();
+
+            if ($unit === null || $unit->status !== 'ACTIVE') {
+                throw ValidationException::withMessages([
+                    'org_unit_id' => 'The organizational unit must exist and be active in this tenant.',
+                ]);
+            }
+
+            if ($manager === null || $manager->status !== 'ACTIVE' || $manager->org_unit_id !== $unit->id) {
+                throw ValidationException::withMessages([
+                    'manager_position_id' => 'The manager position must be active and belong to the organizational unit.',
+                ]);
+            }
+
+            $this->assertContainedDateRange(
+                $data['valid_from'],
+                $data['valid_to'] ?? null,
+                $unit->valid_from,
+                $unit->valid_to,
+                'valid_from',
+            );
+            $this->assertContainedDateRange(
+                $data['valid_from'],
+                $data['valid_to'] ?? null,
+                $manager->valid_from,
+                $manager->valid_to,
+                'valid_from',
+            );
+
+            $overlap = DB::table('org_unit_manager_assignments')
+                ->where('tenant_id', $tenantId)
+                ->where('org_unit_id', $unit->id)
+                ->where('valid_from', '<=', $data['valid_to'] ?? '9999-12-31')
+                ->where(function ($query) use ($data): void {
+                    $query->whereNull('valid_to')
+                        ->orWhere('valid_to', '>=', $data['valid_from']);
+                })
+                ->exists();
+
+            if ($overlap) {
+                throw ValidationException::withMessages([
+                    'manager_position_id' => 'An organizational unit already has a manager position for an overlapping effective period.',
+                ]);
+            }
+
+            $id = (string) Str::uuid();
+            $now = now();
+
+            DB::table('org_unit_manager_assignments')->insert([
+                'id' => $id,
+                'tenant_id' => $tenantId,
+                'org_unit_id' => $unit->id,
+                'manager_position_id' => $manager->id,
+                'valid_from' => $data['valid_from'],
+                'valid_to' => $data['valid_to'] ?? null,
+                'reason' => $data['reason'],
+                'created_by' => $actorId,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            $this->recordChange(
+                $tenantId,
+                $actorId,
+                'ORG_UNIT_MANAGER_POSITION_ASSIGNED',
+                'ORG_UNIT_MANAGER_ASSIGNMENT',
+                $id,
+                [
+                    'org_unit_id' => $unit->id,
+                    'manager_position_id' => $manager->id,
+                    'valid_from' => $data['valid_from'],
+                    'valid_to' => $data['valid_to'] ?? null,
+                ],
+                'OrganizationUnitManagerAssigned.v1',
+            );
+
+            return DB::table('org_unit_manager_assignments')
+                ->where('tenant_id', $tenantId)
+                ->where('id', $id)
+                ->first()
+                ?? throw new RuntimeException('The organizational manager assignment was created but could not be reloaded.');
+        }, 3);
+    }
+
     public function reportingRelations(string $tenantId): LengthAwarePaginator
     {
         return DB::table('position_reporting_relations')
