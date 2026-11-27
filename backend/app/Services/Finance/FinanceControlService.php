@@ -451,22 +451,12 @@ class FinanceControlService
             if ($run === null || $run->prepared_by !== $actorId || $run->status !== 'DRAFT') {
                 throw ValidationException::withMessages(['payroll_run' => 'Only the preparer can submit a draft run.']);
             }
-            $lineSummary = DB::table('payroll_run_lines')
-                ->where('tenant_id', $tenantId)
-                ->where('payroll_run_draft_id', $runId)
-                ->selectRaw('COUNT(*) AS line_count, COUNT(*) FILTER (WHERE calculation_status = ?) AS validated_count', ['VALIDATED'])
-                ->first();
 
-            if ($lineSummary === null || (int) $lineSummary->line_count < 1) {
-                throw ValidationException::withMessages(['payroll_run_lines' => 'A payroll run must contain at least one worker line.']);
-            }
-
-            if ((int) $lineSummary->line_count !== (int) $lineSummary->validated_count) {
-                throw ValidationException::withMessages(['payroll_run_lines' => 'Every payroll line must be server-calculated and source-validated before professional review.']);
-            }
+            $controlTotals = $this->calculatePayrollControlTotals($tenantId, $runId, $run);
 
             DB::table('payroll_run_drafts')->where('tenant_id', $tenantId)->where('id', $runId)->update([
                 'status' => 'UNDER_REVIEW',
+                'control_totals' => json_encode($controlTotals, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
                 'reviewed_by' => null,
                 'reviewed_at' => null,
                 'updated_at' => now(),
@@ -474,6 +464,130 @@ class FinanceControlService
 
             return DB::table('payroll_run_drafts')->where('tenant_id', $tenantId)->where('id', $runId)->first();
         }, 3);
+    }
+
+    /**
+     * Recompute every line's evidence hash, check the embedded calculation
+     * against the stored amounts, and freeze exact run control totals.
+     *
+     * @param object $run
+     * @return array<string, mixed>
+     */
+    private function calculatePayrollControlTotals(string $tenantId, string $runId, object $run): array
+    {
+        if (strtoupper((string) $run->currency) !== 'ETB') {
+            throw ValidationException::withMessages(['currency' => 'Ethiopia payroll control totals must be ETB.']);
+        }
+
+        $lines = DB::table('payroll_run_lines')
+            ->where('tenant_id', $tenantId)
+            ->where('payroll_run_draft_id', $runId)
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
+        if ($lines->isEmpty()) {
+            throw ValidationException::withMessages(['payroll_run_lines' => 'A payroll run must contain at least one worker line.']);
+        }
+
+        $grossUnits = 0;
+        $deductionUnits = 0;
+        $netUnits = 0;
+        $lineEvidenceSet = [];
+
+        foreach ($lines as $line) {
+            if ($line->calculation_status !== 'VALIDATED' || strtoupper((string) $line->currency) !== 'ETB') {
+                throw ValidationException::withMessages(['payroll_run_lines' => 'Every payroll line must be validated and use ETB before professional review.']);
+            }
+
+            $evidence = json_decode((string) $line->calculation_evidence, true);
+            if (! is_array($evidence)
+                || ! is_array($evidence['input_snapshot'] ?? null)
+                || ! is_array($evidence['calculation'] ?? null)
+                || (string) ($evidence['prepared_by'] ?? '') !== (string) $run->prepared_by
+                || (string) ($evidence['period_start'] ?? '') !== (string) $run->period_start
+                || (string) ($evidence['period_end'] ?? '') !== (string) $run->period_end
+                || strtoupper((string) ($evidence['input_snapshot']['payee_type'] ?? '')) !== 'EMPLOYEE'
+                || strtoupper((string) ($evidence['input_snapshot']['currency'] ?? '')) !== 'ETB'
+            ) {
+                throw ValidationException::withMessages(['calculation_evidence' => 'A payroll line is missing its matching employee, preparer, period or currency calculation snapshot.']);
+            }
+
+            $canonicalEvidence = $this->canonicalizePayrollEvidence($evidence);
+            $evidenceJson = json_encode($canonicalEvidence, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+            $actualEvidenceHash = hash('sha256', $evidenceJson);
+            $storedEvidenceHash = strtolower((string) ($line->calculation_evidence_sha256 ?? ''));
+
+            if (! preg_match('/^[a-f0-9]{64}$/D', $storedEvidenceHash)
+                || ! hash_equals($storedEvidenceHash, $actualEvidenceHash)
+            ) {
+                throw ValidationException::withMessages(['calculation_evidence_sha256' => 'A payroll line evidence digest does not match its canonical stored calculation snapshot.']);
+            }
+
+            $calculation = $evidence['calculation'];
+            $sourceSnapshot = $calculation['source_snapshot'] ?? null;
+            $sourceSnapshotHash = strtolower((string) ($calculation['source_snapshot_sha256'] ?? ''));
+            if (($calculation['calculation_status'] ?? null) !== 'CALCULATED_DRAFT_NOT_POSTED'
+                || ! is_array($sourceSnapshot)
+                || ! preg_match('/^[a-f0-9]{64}$/D', $sourceSnapshotHash)
+                || ! hash_equals($sourceSnapshotHash, hash('sha256', json_encode(
+                    $this->canonicalizePayrollEvidence($sourceSnapshot),
+                    JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR
+                )))
+                || ! hash_equals($sourceSnapshotHash, strtolower((string) ($evidence['source_snapshot_sha256'] ?? '')))
+            ) {
+                throw ValidationException::withMessages(['source_snapshot_sha256' => 'A payroll line has an invalid or inconsistent frozen statutory source snapshot.']);
+            }
+
+            $gross = (string) ($calculation['gross_pay'] ?? '');
+            $deductions = (string) ($calculation['deduction_total'] ?? '');
+            $net = (string) ($calculation['net_pay'] ?? '');
+
+            if (! DecimalQuantity::equal((string) $line->gross_amount, $gross)
+                || ! DecimalQuantity::equal((string) $line->total_deductions, $deductions)
+                || ! DecimalQuantity::equal((string) $line->net_amount, $net)
+                || ! DecimalQuantity::equal(DecimalQuantity::subtract($gross, $deductions), $net)
+            ) {
+                throw ValidationException::withMessages(['payroll_run_lines' => 'Stored payroll line amounts do not reconcile to their hashed server calculation.']);
+            }
+
+            $grossLineUnits = DecimalQuantity::units($gross);
+            $deductionLineUnits = DecimalQuantity::units($deductions);
+            $netLineUnits = DecimalQuantity::units($net);
+            if ($grossLineUnits > PHP_INT_MAX - $grossUnits
+                || $deductionLineUnits > PHP_INT_MAX - $deductionUnits
+                || $netLineUnits > PHP_INT_MAX - $netUnits
+            ) {
+                throw ValidationException::withMessages(['control_totals' => 'Payroll run control totals exceed the supported exact integer range.']);
+            }
+
+            $grossUnits += $grossLineUnits;
+            $deductionUnits += $deductionLineUnits;
+            $netUnits += $netLineUnits;
+            $lineEvidenceSet[] = [
+                'line_id' => (string) $line->id,
+                'worker_reference' => (string) $line->worker_reference,
+                'calculation_evidence_sha256' => $actualEvidenceHash,
+            ];
+        }
+
+        $lineSet = $this->canonicalizePayrollEvidence([
+            'run_id' => $runId,
+            'currency' => 'ETB',
+            'lines' => $lineEvidenceSet,
+        ]);
+
+        return [
+            'currency' => 'ETB',
+            'worker_count' => count($lineEvidenceSet),
+            'gross_total' => DecimalQuantity::format($grossUnits),
+            'deduction_total' => DecimalQuantity::format($deductionUnits),
+            'net_total' => DecimalQuantity::format($netUnits),
+            'line_evidence_set_sha256' => hash('sha256', json_encode(
+                $lineSet,
+                JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR
+            )),
+        ];
     }
 
     /**
@@ -547,6 +661,23 @@ class FinanceControlService
             }
             if (trim($reference) === '' || trim($reason) === '') {
                 throw ValidationException::withMessages(['professional_approval' => 'Professional approval reference and decision reason are required.']);
+            }
+
+            $currentControlTotals = $this->calculatePayrollControlTotals($tenantId, $runId, $run);
+            $storedControlTotals = json_decode((string) $run->control_totals, true);
+            if (! is_array($storedControlTotals)) {
+                throw ValidationException::withMessages(['control_totals' => 'The payroll run has no frozen control-total snapshot.']);
+            }
+            $currentTotalsJson = json_encode(
+                $this->canonicalizePayrollEvidence($currentControlTotals),
+                JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR
+            );
+            $storedTotalsJson = json_encode(
+                $this->canonicalizePayrollEvidence($storedControlTotals),
+                JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR
+            );
+            if (! hash_equals(hash('sha256', $storedTotalsJson), hash('sha256', $currentTotalsJson))) {
+                throw ValidationException::withMessages(['control_totals' => 'Payroll run lines no longer match the totals frozen at professional-review submission.']);
             }
 
             DB::table('payroll_run_drafts')->where('tenant_id', $tenantId)->where('id', $runId)->update([
