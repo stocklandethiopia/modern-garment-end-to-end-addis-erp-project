@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Illuminate\\Database\\Migrations\\Migration;
-use Illuminate\\Support\\Facades\\DB;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -33,8 +33,8 @@ SECURITY DEFINER
 SET search_path = pg_catalog, public
 AS $$
 DECLARE
-    v_actor_id uuid := NULLIF(current_setting('app.current_user_id', true), '')::uuid;
-    v_tenant_id uuid := NULLIF(current_setting('app.current_tenant_id', true), '')::uuid;
+    v_v_actor_id uuid := NULLIF(current_setting('app.current_user_id', true), '')::uuid;
+    v_v_tenant_id uuid := NULLIF(current_setting('app.current_tenant_id', true), '')::uuid;
     actor_role text;
     target_role text;
     previous_mode varchar(16);
@@ -42,7 +42,7 @@ DECLARE
     normalized_reason text := btrim(change_reason);
     event_time timestamptz := clock_timestamp();
 BEGIN
-    IF v_actor_id IS NULL OR v_tenant_id IS NULL THEN
+    IF v_v_actor_id IS NULL OR v_v_tenant_id IS NULL THEN
         RAISE EXCEPTION 'Authenticated tenant and actor context is required.'
             USING ERRCODE = '42501';
     END IF;
@@ -101,7 +101,7 @@ BEGIN
     END IF;
 
     PERFORM pg_advisory_xact_lock(
-        hashtextextended(v_tenant_id::text || ':access-mode:' || target_user_id::text, 0)
+        hashtextextended(v_v_tenant_id::text || ':access-mode:' || target_user_id::text, 0)
     );
 
     SELECT mode_record.scope_mode
@@ -116,7 +116,7 @@ BEGIN
         created_at, updated_at
     ) VALUES (
         gen_random_uuid(), v_tenant_id, target_user_id, normalized_mode,
-        actor_id, normalized_reason, event_time, event_time
+        v_actor_id, normalized_reason, event_time, event_time
     )
     ON CONFLICT (tenant_id, user_id) DO UPDATE
        SET scope_mode = EXCLUDED.scope_mode,
@@ -157,8 +157,8 @@ SECURITY DEFINER
 SET search_path = pg_catalog, public
 AS $$
 DECLARE
-    actor_id uuid := NULLIF(current_setting('app.current_user_id', true), '')::uuid;
-    tenant_id uuid := NULLIF(current_setting('app.current_tenant_id', true), '')::uuid;
+    v_actor_id uuid := NULLIF(current_setting('app.current_user_id', true), '')::uuid;
+    v_tenant_id uuid := NULLIF(current_setting('app.current_tenant_id', true), '')::uuid;
     actor_role text;
     target_role text;
     normalized_type text := upper(btrim(requested_scope_type));
@@ -170,7 +170,7 @@ DECLARE
     new_grant public.tenant_access_scopes%ROWTYPE;
     event_time timestamptz := clock_timestamp();
 BEGIN
-    IF v_actor_id IS NULL OR v_tenant_id IS NULL THEN
+    IF v_v_actor_id IS NULL OR v_v_tenant_id IS NULL THEN
         RAISE EXCEPTION 'Authenticated tenant and actor context is required.'
             USING ERRCODE = '42501';
     END IF;
@@ -201,7 +201,7 @@ BEGIN
             USING ERRCODE = '22023';
     END IF;
 
-    IF v_actor_id IS NULL OR v_tenant_id IS NULL THEN
+    IF v_v_actor_id IS NULL OR v_v_tenant_id IS NULL THEN
         RAISE EXCEPTION 'Authenticated tenant and actor context is required.'
             USING ERRCODE = '42501';
     END IF;
@@ -272,7 +272,7 @@ BEGIN
 
     PERFORM pg_advisory_xact_lock(
         hashtextextended(
-            v_tenant_id::text || ':access-grant:' || target_user_id::text || ':' ||
+            v_v_tenant_id::text || ':access-grant:' || target_user_id::text || ':' ||
             normalized_type || ':' || COALESCE(requested_scope_id::text, normalized_code) || ':' ||
             normalized_permission,
             0
@@ -305,7 +305,7 @@ BEGIN
         gen_random_uuid(), v_tenant_id, target_user_id, normalized_type,
         requested_scope_id, normalized_code, normalized_permission,
         effective_from, effective_to, 'ACTIVE', normalized_reason,
-        actor_id, NULL, NULL, NULL, event_time, event_time
+        v_actor_id, NULL, NULL, NULL, event_time, event_time
     )
     RETURNING * INTO new_grant;
 
@@ -341,15 +341,15 @@ SECURITY DEFINER
 SET search_path = pg_catalog, public
 AS $$
 DECLARE
-    actor_id uuid := NULLIF(current_setting('app.current_user_id', true), '')::uuid;
-    tenant_id uuid := NULLIF(current_setting('app.current_tenant_id', true), '')::uuid;
+    v_actor_id uuid := NULLIF(current_setting('app.current_user_id', true), '')::uuid;
+    v_tenant_id uuid := NULLIF(current_setting('app.current_tenant_id', true), '')::uuid;
     actor_role text;
     normalized_reason text := btrim(revocation_reason);
     grant_record public.tenant_access_scopes%ROWTYPE;
     updated_grant public.tenant_access_scopes%ROWTYPE;
     event_time timestamptz := clock_timestamp();
 BEGIN
-    IF v_actor_id IS NULL OR v_tenant_id IS NULL THEN
+    IF v_v_actor_id IS NULL OR v_v_tenant_id IS NULL THEN
         RAISE EXCEPTION 'Authenticated tenant and actor context is required.'
             USING ERRCODE = '42501';
     END IF;
