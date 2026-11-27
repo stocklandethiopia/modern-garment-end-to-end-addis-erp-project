@@ -12,7 +12,7 @@ WP-01 converts the approved product goal into uniquely identified, testable, cro
 
 This is a greenfield apparel business operating system, not a copy of the legacy Stockland ERP, not a cut-and-sew-only tracker, and not a collection of isolated CRUD screens. A requirement is accepted only when the workflow, accountable roles, rules, data ownership, evidence/audit trail, integration consequences, security and acceptance test are defined.
 
-**Interpretation of completion:** the inventory and traceability framework are complete as a product-analysis deliverable. Application code, database migrations and executable acceptance tests are implementation outputs of later work packages; they are not falsely marked as implemented in WP-01.
+**Interpretation of completion:** the legacy 120-record GAR inventory and its original traceability framework were prepared as a product-analysis deliverable. The separate verified WP-01 R3 canonical register contains 128 records across 24 bounded contexts; its semantic crosswalk, disposition of unmatched records and reconciliation into the delivery matrix remain open. Therefore this legacy matrix does not establish full WP-01 reconciliation or acceptance. Application code, database migrations and executable acceptance tests are implementation outputs of later work packages; they are not falsely marked as implemented in WP-01.
 
 ## 2. Requirement record model
 
