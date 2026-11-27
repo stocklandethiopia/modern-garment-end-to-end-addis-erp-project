@@ -241,6 +241,33 @@ class ScopedAccessMutationSecurityTest extends TestCase
         ], 'pgsql_test_admin');
     }
 
+    public function test_tenant_administrator_cannot_scope_or_grant_access_to_the_tenant_owner(): void
+    {
+        $this->actAs($this->adminId);
+
+        $this->putJson('/api/v1/enterprise/members/'.$this->ownerId.'/access-scope-mode', [
+            'scope_mode' => 'SCOPED',
+            'reason' => 'An administrator cannot restrict the tenant owner identity.',
+        ])->assertForbidden();
+
+        $this->postJson('/api/v1/enterprise/members/'.$this->ownerId.'/access-scopes', [
+            'scope_type' => 'MARKET',
+            'scope_code' => 'ADDIS-ABABA',
+            'permission_code' => 'READ',
+            'grant_reason' => 'An administrator cannot grant scoped access to the tenant owner.',
+        ])->assertForbidden();
+
+        $this->assertDatabaseMissing('tenant_access_scope_modes', [
+            'tenant_id' => $this->tenantId,
+            'user_id' => $this->ownerId,
+        ], 'pgsql_test_admin');
+
+        $this->assertDatabaseMissing('tenant_access_scopes', [
+            'tenant_id' => $this->tenantId,
+            'user_id' => $this->ownerId,
+        ], 'pgsql_test_admin');
+    }
+
     public function test_scoped_access_routes_reject_malformed_member_and_grant_ids(): void
     {
         $this->actAs($this->ownerId);
