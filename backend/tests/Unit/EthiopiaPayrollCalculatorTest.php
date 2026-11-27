@@ -145,6 +145,20 @@ class EthiopiaPayrollCalculatorTest extends TestCase
         $this->calculator->calculateCandidate($this->standardEmployeeInput(), $tax, $this->pensionRule());
     }
 
+    public function test_monetary_range_is_bounded_before_percentage_multiplication(): void
+    {
+        $input = $this->standardEmployeeInput();
+        $input['base_salary'] = '10000000000000.00';
+        $input['pensionable_salary'] = '10000000000000.00';
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->calculator->calculateCandidate(
+            $input,
+            $this->incomeTaxRule(EthiopiaPayrollCalculator::TAX_BASE_GROSS),
+            $this->pensionRule()
+        );
+    }
+
     public function test_production_calculation_is_blocked_without_independent_tax_base_opinion(): void
     {
         $tax = $this->incomeTaxRule(EthiopiaPayrollCalculator::TAX_BASE_GROSS_LESS_EMPLOYEE_PENSION);
