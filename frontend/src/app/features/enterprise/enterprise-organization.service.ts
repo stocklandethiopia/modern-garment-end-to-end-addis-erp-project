@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
@@ -55,6 +55,22 @@ export interface PositionReportingRelation {
   manager_position_title: string;
 }
 
+export interface OrganizationListQuery {
+  page?: number;
+  per_page?: number;
+  q?: string;
+  unit_type?: string;
+  status?: string;
+  legal_entity_id?: string;
+  business_site_id?: string;
+  parent_id?: string;
+  org_unit_id?: string;
+  position_class?: string;
+  reporting_type?: 'SOLID_LINE' | 'FUNCTIONAL';
+  position_id?: string;
+  valid_on?: string;
+}
+
 export interface ApiPage<T> {
   data: T[];
   current_page: number;
@@ -109,25 +125,42 @@ export class EnterpriseOrganizationService {
   private readonly http = inject(HttpClient);
   private readonly base = '/api/v1/enterprise';
 
-  listUnits(): Observable<ApiPage<OrganizationUnit>> {
-    return this.http.get<ApiPage<OrganizationUnit>>(\`\${this.base}/organization-units\`);
+  private queryParams(query: OrganizationListQuery = {}): HttpParams {
+    let params = new HttpParams();
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== undefined && value !== null && String(value).trim() !== '') {
+        params = params.set(key, String(value));
+      }
+    }
+    return params;
+  }
+
+  listUnits(query: OrganizationListQuery = {}): Observable<ApiPage<OrganizationUnit>> {
+    return this.http.get<ApiPage<OrganizationUnit>>(
+      \`\${this.base}/organization-units\`,
+      { params: this.queryParams(query) },
+    );
   }
 
   createUnit(input: OrganizationUnitInput): Observable<ResourceResponse<OrganizationUnit>> {
     return this.http.post<ResourceResponse<OrganizationUnit>>(\`\${this.base}/organization-units\`, input);
   }
 
-  listPositions(): Observable<ApiPage<JobPosition>> {
-    return this.http.get<ApiPage<JobPosition>>(\`\${this.base}/job-positions\`);
+  listPositions(query: OrganizationListQuery = {}): Observable<ApiPage<JobPosition>> {
+    return this.http.get<ApiPage<JobPosition>>(
+      \`\${this.base}/job-positions\`,
+      { params: this.queryParams(query) },
+    );
   }
 
   createPosition(input: JobPositionInput): Observable<ResourceResponse<JobPosition>> {
     return this.http.post<ResourceResponse<JobPosition>>(\`\${this.base}/job-positions\`, input);
   }
 
-  listUnitManagers(unitId: string): Observable<ApiPage<OrganizationUnitManagerAssignment>> {
+  listUnitManagers(unitId: string, query: OrganizationListQuery = {}): Observable<ApiPage<OrganizationUnitManagerAssignment>> {
     return this.http.get<ApiPage<OrganizationUnitManagerAssignment>>(
       \`\${this.base}/organization-units/\${encodeURIComponent(unitId)}/manager-assignments\`,
+      { params: this.queryParams(query) },
     );
   }
 
@@ -138,8 +171,11 @@ export class EnterpriseOrganizationService {
     );
   }
 
-  listReportingRelations(): Observable<ApiPage<PositionReportingRelation>> {
-    return this.http.get<ApiPage<PositionReportingRelation>>(\`\${this.base}/position-reporting-relations\`);
+  listReportingRelations(query: OrganizationListQuery = {}): Observable<ApiPage<PositionReportingRelation>> {
+    return this.http.get<ApiPage<PositionReportingRelation>>(
+      \`\${this.base}/position-reporting-relations\`,
+      { params: this.queryParams(query) },
+    );
   }
 
   createReportingRelation(input: PositionReportingInput): Observable<ResourceResponse<PositionReportingRelation>> {
