@@ -120,6 +120,9 @@ class ScopedAccessMutationSecurityTest extends TestCase
         ));
 
         $control = DB::connection('pgsql_control');
+        $this->assertSame('app_control', (string) $control->scalar('SELECT current_user'));
+        $this->assertFalse((bool) $control->scalar("SELECT has_schema_privilege('app_control', 'public', 'CREATE')"));
+        $this->assertFalse((bool) $control->scalar("SELECT rolsuper OR rolcreaterole OR rolbypassrls FROM pg_roles WHERE rolname = 'app_control'"));
         foreach ([
             'public.set_tenant_member_scope_mode(uuid,text,text)',
             'public.grant_tenant_access_scope(uuid,text,uuid,text,text,date,date,text)',
