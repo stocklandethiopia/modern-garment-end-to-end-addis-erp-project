@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Services\PlatformAdministrationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class PlatformAdministrationController extends Controller
 {
@@ -26,6 +27,8 @@ class PlatformAdministrationController extends Controller
         string $tenantId,
         PlatformAdministrationService $platform,
     ): JsonResponse {
+        abort_unless(Str::isUuid($tenantId), 404);
+
         $data = $request->validate([
             'status' => ['required', 'string', 'in:ACTIVE,SUSPENDED,CLOSED'],
             'reason' => ['required', 'string', 'min:10', 'max:500'],
@@ -41,6 +44,8 @@ class PlatformAdministrationController extends Controller
         string $tenantId,
         PlatformAdministrationService $platform,
     ): JsonResponse {
+        abort_unless(Str::isUuid($tenantId), 404);
+
         $data = $request->validate([
             'plan_code' => ['required', 'string', 'in:STARTER,BUSINESS,ENTERPRISE,CUSTOM'],
             'status' => ['required', 'string', 'in:ACTIVE,REVIEW_REQUIRED,SUSPENDED,EXPIRED'],
