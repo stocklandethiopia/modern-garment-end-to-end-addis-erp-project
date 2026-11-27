@@ -2053,3 +2053,152 @@ Migration 000019 creates incentive_policy_versions and incentive_calculation_dra
 6. Add domain audit events and the WP-06 PostgreSQL test suite.
 7. Implement incentive policy/calculation flows in conjunction with WP-14, using approved output and quality facts.
 8. Link time-study/skills/ergonomic evidence to verified WP-15 assets and add factory UAT.
+
+
+---
+
+## 27. WP-12 order-to-cash, warehouse, shipment and delivery audit
+
+### 27.1 Existing order/credit/reservation safeguards to retain
+
+The canonical source already implements several valuable controls:
+- customer-order confirmation requires a linked CLEAR or APPROVED_EXCEPTION credit decision;
+- order creator cannot perform the independent credit review;
+- held credit requires a distinct exception approver and reference;
+- credit reviewer/exception approver cannot also confirm the order;
+- reservation requires a CONFIRMED/ALLOCATED/PART_FULFILLED order;
+- lot must be AVAILABLE and match SKU, colour and size;
+- available location balance is reduced by active reservations before a new reservation;
+- reservation quantity cannot exceed outstanding unfulfilled order demand;
+- location and reservation identity/quantity are subsequently protected by migration 000024;
+- finished-goods transactions are append-only at database level;
+- dispatch checks that it originates from the exact stock-enabled location assigned to the reservation;
+- shipment/stock/line/ reservation/order updates run in one database transaction.
+
+These controls should remain and receive PostgreSQL regression tests as the full WMS/commerce model is implemented.
+
+### 27.2 Customer-order creation is not atomic and price/tax are caller supplied
+
+**Finding:** createCustomerOrder() inserts the customer-order header and then inserts each line without a surrounding transaction. The controller accepts unit_price and tax_code_reference from the caller. The service stores them directly without invoking the WP-04 price list/promotion resolver or WP-02/WP-13 tax rule resolver.
+
+**Source:** backend/app/Services/Distribution/FinishedGoodsService.php, createCustomerOrder(); backend/app/Http/Controllers/Distribution/FinishedGoodsController.php, storeCustomerOrder().
+
+**Required implementation**
+- [ ] Make header and all lines one transaction with request/order idempotency and payload fingerprint.
+- [ ] Use an authoritative server-side product/SKU, customer/account and price/tax resolver.
+- [ ] Preserve an approved override path with separate authority, reason and audit; do not trust client totals.
+- [ ] Store immutable product, pricing, promotion, tax, currency and customer-account snapshots on the order.
+- [ ] Add partial-line-failure rollback, duplicate retry, price mismatch and tax-rule effective-date tests.
+
+### 27.3 Credit decision is a manual reference gate, not a live WP-13 credit exposure calculation
+
+**Finding:** recordCustomerCreditDecision() accepts a CLEAR or HELD decision plus caller-entered decision_reference and reason. It stores the independent reviewer identity and timestamp and has a separate exception-approval flow. It does not calculate customer credit limit, posted AR, overdue exposure, unbilled shipments, open order exposure, deposit/security, currency/FX or aging from WP-13 finance records. The reference string can represent an external decision, but the source does not verify the external record or link it to a retained evidence artifact.
+
+**Required implementation**
+- [ ] Define customer/account credit profile, limit, risk/terms, currency and effective-date policy.
+- [ ] Compute exposure from authoritative posted AR, pending invoices, open confirmed orders, unbilled shipments, receipts/deposits and approved FX basis.
+- [ ] Preserve a manual/external credit decision route, but link a verified source decision/artifact ID and amount/currency/as-of snapshot.
+- [ ] Recheck exposure at order confirmation and before dispatch when policy requires it.
+- [ ] Store decision formula/source snapshot, reviewer and exception approver independently.
+- [ ] Add tests for stale exposure, concurrent order confirmations, FX change, over-limit exception, expired decision and cross-legal-entity account access.
+
+### 27.4 Reservation retry is not payload-aware and returns an error after a successful timeout
+
+**Finding:** reservation_key is uniquely constrained by the database and stored on finished_goods_reservations. reserveCustomerOrderLine() does not look up an existing key before recalculating available stock and creating another reservation. An identical client retry after a committed response loss is not returned as the original reservation; it can fail because the first reservation is already included in reservedElsewhere or hit the unique key.
+
+The schema also does not store a canonical request hash, so reuse of a key with a different order line, lot, location or quantity is not distinguished as a conflicting replay.
+
+**Required implementation**
+- [ ] Resolve reservation_key before computing stock and compare a canonical request fingerprint.
+- [ ] Return the same reservation on identical replay and return a stable idempotency conflict for a changed payload.
+- [ ] Keep stock balance and reservation rows under the same lot/location/order-line locks.
+- [ ] Add timeout-after-commit, duplicate scan, conflicting replay and concurrent reserve tests.
+
+### 27.5 Dispatch retry is not idempotent at the service boundary
+
+**Finding:** dispatchReservedLine() locks a reservation and requires status ACTIVE, then inserts a new shipment, shipment line, dispatch transaction, closes the reservation, increments fulfilled quantity and updates the order. The dispatch transaction has a deterministic idempotency key based on reservation ID, but the service checks for an existing dispatch event only after requiring the reservation to be ACTIVE, and a completed first dispatch changes it to FULFILLED.
+
+A client that loses the response after the transaction commits will retry with the same reservation and receive “Only an active reservation can be dispatched” instead of the already-created shipment. The service also does not compare a canonical dispatch payload (shipment number, mode, carrier, tracking, destination, pack reference) to the original dispatch.
+
+**Required implementation**
+- [ ] Check the reservation's existing dispatch result before rejecting a FULFILLED reservation.
+- [ ] Store the immutable dispatch request hash and link to exactly one shipment.
+- [ ] Return the original shipment on identical retry; reject a reused reservation with conflicting dispatch details.
+- [ ] Enforce unique shipment-per-reservation and source transaction identity at database level.
+- [ ] Add timeout-after-commit, duplicate request, conflicting payload and concurrent dispatch tests.
+
+### 27.6 Packing, release and physical dispatch are collapsed into one actor/path
+
+**Finding:** dispatchReservedLine() creates a shipment directly in PACKED with packed_at set by the same caller, then inserts the dispatch ledger event and changes status to DISPATCHED. In the same update, it sets released_by and dispatched_by to the same actor. The schema supports DRAFT, PICKING, PACKED, RELEASED and DISPATCHED, but the inspected API has one dispatchReservation action and no separate pick, pack, release, gate-out/dispatch or weigh/manifest decision paths.
+
+The current implementation is suitable as an initial bounded dispatch slice, but it does not yet preserve independent warehouse packing, shipment release and gate-out custody.
+
+**Required implementation**
+- [ ] Implement separate shipment lifecycle commands: create/pick, pack/close cartons, release/authorize, dispatch/gate-out and transport acknowledgement.
+- [ ] Bind each transition to an authorized role/site and capture actor, timestamp, device, reason and immutable package/manifest snapshot.
+- [ ] Enforce role/position segregation for picker, packer, shipment releaser and gate-out dispatcher where the DoA/risk model requires it.
+- [ ] Revalidate quality release, order credit, reservation state, stock balance, source location and destination before gate-out.
+- [ ] Add append-only shipment event history and exact stage-transition constraints/tests.
+- [ ] Support consolidated multi-line shipments/cartons/pallets without duplicating stock movements.
+
+### 27.7 Order fulfilment status advances at dispatch, not proof of delivery
+
+**Finding:** after a reservation dispatch, the service updates customer_order_lines.fulfilled_quantity and sets the order status to PART_FULFILLED or FULFILLED when all quantities have been dispatched. The shipment schema includes IN_TRANSIT, DELIVERED and DELIVERY_EXCEPTION, and delivered_at, but the inspected API/service has no delivery confirmation, proof-of-delivery, recipient acknowledgement or delivery-exception operation.
+
+Consequently FULFILLED currently means quantities dispatched, not necessarily delivered to/accepted by the customer. This can misstate customer service, invoice trigger and revenue recognition events.
+
+**Required implementation**
+- [ ] Separate allocated, picked, packed, released, dispatched, in-transit, delivered, delivery-exception, customer-accepted and commercially fulfilled states.
+- [ ] Add signed carrier/recipient proof-of-delivery or controlled manual confirmation with recipient, timestamp, evidence reference and exception reason.
+- [ ] Define when an order line is shipped versus delivered/accepted; preserve partial delivery and customer short/over/claim handling.
+- [ ] Trigger invoice/AR handoff only under the approved accounting and delivery terms, not merely on an arbitrary shipment update.
+- [ ] Add delivery proof, partial delivery, lost shipment, rejected delivery, short receipt and late carrier event tests.
+
+### 27.8 Returns, refunds and reverse logistics are not implemented in the inspected WP-12 source
+
+The finished-goods transaction type constraint already includes CUSTOMER_RETURN, and the merchandising dashboard explicitly identifies return/fit feedback as a future WP-05/WP-12 dependency. But the inspected FinishedGoodsService/controller and domain API routes do not implement customer RMA creation, return authorization, receipt, inspection, refund/credit, restock/quarantine, replacement shipment or reverse finance posting.
+
+**Required implementation**
+- [ ] Implement RMA and return authorization linked to original order/shipment/line and delivery proof.
+- [ ] Capture reason, quantity, condition, serial/lot/carton, customer claim, return freight and evidence.
+- [ ] Receive returns into a controlled returns/quarantine location; inspect and determine restock, rework, repair, scrap, replacement or supplier claim.
+- [ ] Use append-only compensating finished-goods transactions rather than rewriting the original dispatch.
+- [ ] Create approved refund/credit-note and AR/AP adjustment handoff to WP-13.
+- [ ] Add duplicate return, over-return, wrong-lot, wrong-customer, partial return, customer claim and full reverse genealogy tests.
+
+### 27.9 Finished-goods source identity and location need to remain bound to the production passport
+
+**Finding:** receiveCompletedProduction() accepts sku_code, lot_code, colour_code and size_code from request data. It verifies that the order is COMPLETED and the last completed operation has a good_quantity, but does not resolve the SKU/colour/size against an approved style revision, product passport, production-order size breakdown or legal-entity/site-bound product output record. The quarantine location is checked for QUARANTINE type but is not compared to the production order's operating site/legal entity.
+
+The lot stores style_id/style_revision_no from the order, but its SKU/colour/size values are independently supplied. This can create a finished-goods lot whose declared style revision and SKU/size combination have no approved mapping.
+
+**Required implementation**
+- [ ] Resolve SKU/colour/size as approved style/revision/colour/size master identities pinned by the production order.
+- [ ] Validate receipt quantity against the cumulative output balance per approved size/colour/SKU allocation, not only the last operation total.
+- [ ] Validate quarantine location and all later transfers against the production order legal entity/site and an authorized inventory node.
+- [ ] Store the exact BOM/tech-pack/route/quality/IE source versions and production output event IDs on the finished-goods genealogy.
+- [ ] Add wrong-SKU, wrong-size, wrong-colour, cross-site location and cumulative receipt tests.
+
+### 27.10 Finished-goods reservation unit and order unit are not checked for compatibility
+
+**Finding:** reserveCustomerOrderLine() checks SKU, colour and size and stores reservation.unit_code from the finished-goods lot. It does not verify that customer_order_lines.unit_code equals the lot unit_code or apply a versioned unit conversion. The quantity comparison then uses DecimalQuantity directly across the two numeric values.
+
+**Required implementation**
+- [ ] Require exact unit equality for discrete piece reservations or perform an approved unit conversion.
+- [ ] Store the conversion factor/version and normalized base quantity; prevent conversion for incompatible dimension families.
+- [ ] Add PCS/DOZEN/BOX/CARTON, fractional pack, rounding and invalid conversion tests.
+
+---
+
+## 28. WP-12 implementation sequence
+
+1. Integrate server-side price/tax and SKU/customer master resolution into order creation.
+2. Make order header/lines atomic and idempotent.
+3. Complete customer credit profile/exposure and verified external decision integration.
+4. Make reservation and dispatch retries payload-aware and replay-safe.
+5. Implement independent picking/packing/release/gate-out shipment workflow with shipment event history.
+6. Separate dispatch from delivery/acceptance and add proof-of-delivery.
+7. Implement RMA/returns/reverse inventory and finance integration.
+8. Enforce production passport, SKU/size/colour and legal-entity/site genealogy at finished-goods receipt.
+9. Validate reservation unit dimensions and supported conversions.
+10. Add end-to-end WP-12 sales/order/credit/ATP/reserve/ship/deliver/return/refund/AR test journeys.
