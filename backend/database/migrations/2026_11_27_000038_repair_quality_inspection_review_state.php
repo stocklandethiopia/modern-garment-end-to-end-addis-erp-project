@@ -14,7 +14,7 @@ return new class extends Migration
         DB::statement('ALTER TABLE quality_inspections ADD COLUMN submitted_result_status varchar(24)');
 
         DB::unprepared(<<<'SQL'
-DO $
+DO $$
 BEGIN
     IF EXISTS (
         SELECT 1
@@ -23,11 +23,11 @@ BEGIN
     ) THEN
         RAISE EXCEPTION 'Existing quality inspections contain unmatched reviewer identity/time metadata; reconcile the historical rows before applying this migration.';
     END IF;
-END $;
+END $$;
 SQL);
 
         DB::unprepared(<<<'SQL'
-DO $
+DO $$
 DECLARE
     constraint_record record;
 BEGIN
