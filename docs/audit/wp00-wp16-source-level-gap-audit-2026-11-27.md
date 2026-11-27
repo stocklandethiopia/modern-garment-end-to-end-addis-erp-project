@@ -3330,3 +3330,31 @@ Do not attribute these failures specifically to billing, runner allocation, Post
 - [ ] Re-run the same checks again on the canonical integration SHA after any accepted merge.
 
 The workflow summaries are retained as failure evidence, but they are not sufficient to diagnose a code failure or an infrastructure cause.
+
+
+---
+
+## 44. Exact-head failed-job retry evidence — 27 November 2026
+
+The six failed workflow runs in Section 43 were retried using GitHub's failed-jobs retry action. The retry request was accepted for each run. All retries then completed with the same FAILURE workflow conclusion and the same absence of usable diagnostic steps/logs.
+
+| PR | Original run | Retry attempt | Retry job records |
+|---|---:|---:|---|
+| #18 | 46014869903 (completion verification) | 2 | Laravel/PostgreSQL, WP-01 R3 and Angular jobs failed; combined assembly skipped |
+| #18 | 46014870000 (ERP CI) | 2 | Angular and Laravel/PostgreSQL jobs failed; lockfile reconciliation skipped |
+| #20 | 46015026376 (completion verification) | 2 | WP-01 R3, Laravel/PostgreSQL and Angular jobs failed; combined assembly skipped |
+| #20 | 46015026266 (ERP CI) | 2 | Angular and Laravel/PostgreSQL jobs failed; lockfile reconciliation skipped |
+| #21 | 46013596367 (ERP CI) | 3 | Angular and Laravel/PostgreSQL jobs failed; lockfile reconciliation skipped |
+| #21 | 46013595997 (completion verification) | 3 | Laravel/PostgreSQL, Angular and WP-01 R3 jobs failed; combined assembly skipped |
+
+The retried job IDs also return empty step lists. The retried jobs have no log URL; a log retrieval attempt for a retried job returned a missing blob response. This confirms that simply retrying these six workflow runs did not yield executable test output.
+
+**Updated evidence classification:**
+- Workflow rerun action accepted: YES.
+- Retry workflow conclusion: FAILURE for all six runs.
+- Failing command/step/stack trace: NOT AVAILABLE.
+- Application test result: NOT ESTABLISHED.
+- Root cause attribution: UNVERIFIED.
+- Test pass claim: NOT MADE.
+
+The project must not keep retrying the same opaque job record indefinitely. The next CI action is to inspect GitHub Actions run details/settings through the repository owner's authenticated GitHub interface (runner allocation, service/setup diagnostics, workflow permissions and run logs), or run the identical workflow on a securely configured trusted runner while retaining every existing gate. Once logs exist, diagnose and fix the exact failure; no source test may be marked passed from this record alone.
