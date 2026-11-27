@@ -411,12 +411,12 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.platform_expire_operator_grants(uuid) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.platform_current_operator_roles() FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.platform_list_operator_grants() FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.platform_request_operator_grant(text, text, date, date, text) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.platform_approve_operator_grant(uuid, text) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.platform_revoke_operator_grant(uuid, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.platform_expire_operator_grants(uuid) FROM PUBLIC, app_runtime, app_control;
+REVOKE ALL ON FUNCTION public.platform_current_operator_roles() FROM PUBLIC, app_runtime;
+REVOKE ALL ON FUNCTION public.platform_list_operator_grants() FROM PUBLIC, app_runtime;
+REVOKE ALL ON FUNCTION public.platform_request_operator_grant(text, text, date, date, text) FROM PUBLIC, app_runtime;
+REVOKE ALL ON FUNCTION public.platform_approve_operator_grant(uuid, text) FROM PUBLIC, app_runtime;
+REVOKE ALL ON FUNCTION public.platform_revoke_operator_grant(uuid, text) FROM PUBLIC, app_runtime;
 
 GRANT EXECUTE ON FUNCTION public.platform_current_operator_roles() TO app_control;
 GRANT EXECUTE ON FUNCTION public.platform_list_operator_grants() TO app_control;
