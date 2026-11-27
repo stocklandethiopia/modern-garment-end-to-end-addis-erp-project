@@ -3516,3 +3516,85 @@ The current UI allows the tenant administrator to create draft legal entities an
 8. Keep legal, tax, payroll, customs, FX and regulated activity calculations disabled until their separate current primary-source and professional approval evidence is complete.
 
 **Dependency rule:** WP-02 legal/entity/site activation is a shared prerequisite for operational WP-07/09/10/12/13/14 transactions. A tenant-scoped UUID or a DRAFT entity record is not itself authorization to purchase, manufacture, sell, employ, pay or post a regulated transaction. This gate must be enforced centrally and by the owning domain at the exact state transition, not by one UI warning.
+
+
+---
+
+## 51. WP-09/WP-10 manufacturing execution — operator, recorder and device authority audit
+
+### 51.1 One generic API ability authorizes materially different operation events
+
+**Finding:** ManufacturingController.recordOperationEvent() uses one Gate ability, manufacturing.record-execution, for every supported event type: START, OUTPUT, DEFECT, DOWNTIME, BLOCK, UNBLOCK, COMPLETE and SKIP. It validates event data and passes the authenticated actor ID as recorded_by, but does not resolve event-specific authority for the operation state change.
+
+The service performs a confirmed assignment and current skill-record check for START only. For OUTPUT, DEFECT and DOWNTIME it checks that the operation is IN_PROGRESS and validates the quantity/downtime value; it does not require a currently assigned worker or require the authenticated recorder to be the assigned operator/authorized supervisor. COMPLETE, BLOCK, UNBLOCK and SKIP similarly rely on the same generic route Gate and the domain state checks, not a specific operation role/authority.
+
+**Source**
+- backend/app/Http/Controllers/Manufacturing/ManufacturingController.php, recordOperationEvent().
+- backend/app/Services/Manufacturing/ManufacturingExecutionService.php, recordOperationEvent() event branches.
+- backend/routes/domain-api.php, POST manufacturing/production-orders/{orderId}/operations/{operationId}/events.
+- backend/database/migrations/2026_11_26_000016_create_route_and_manufacturing_execution.php, production_execution_events.recorded_by, operator_reference, workstation_reference and source_device_reference.
+
+**Effect:** a user authorized to submit one event category receives the same API-level capability for every other event category. Database actor attribution establishes the authenticated user who submitted the event, but not that the user is qualified/assigned to record output or defects, or authorized to skip/block/complete the operation. A supervisor correction and a worker terminal event are indistinguishable in the current command contract except for caller-supplied reason/reference fields.
+
+**Required implementation**
+- [ ] Define separate command policies for operation start, output/defect entry, downtime/Andon, block/unblock, optional-step skip and completion.
+- [ ] Resolve each command against active tenant membership, legal-entity/site/work-centre scope, approved domain role/position and the current operation state.
+- [ ] For normal shop-floor output/defect events, require a current confirmed worker assignment and bind the event to the assignment ID, skill record ID/version and the actual worker/person/employee identity when the WP-14 identity master is approved.
+- [ ] Permit an authorized supervisor/quality/maintenance correction path separately, with a mandatory reason, reference evidence and explicit correction/override decision; do not impersonate an operator.
+- [ ] Require independent authority for BLOCK/UNBLOCK, SKIP and re-open/correction actions according to the manufacturing/quality delegation matrix.
+- [ ] Store actor_user_id, worker/employee ID where available, assignment ID, role/authority decision snapshot, recorder identity, supervisor override ID and source correlation as separate fields.
+- [ ] Add authorization tests proving a user with only output permission cannot skip or unblock; an assigned operator cannot release a quality gate; a supervisor correction is separately authorized and audited.
+
+### 51.2 Operator, workstation and device references are untrusted text rather than registered identities
+
+**Finding:** recordOperationEvent() accepts operator_reference, workstation_reference and source_device_reference as optional text supplied in the request. The service only requires operator_reference to be non-empty for START and then finds a matching workforce assignment and skill row by worker_reference. It does not resolve a registered human identity, workstation registry or authenticated device record for any event.
+
+The current DeviceScanResolutionService is intentionally read-only and only resolves scanned identifiers to candidate tenant records. It does not authenticate a device or issue a trusted event credential. Manufacturing execution accepts source_device_reference directly and does not require a scan event ID, registered device ID or device signature.
+
+**Effect:** the event can assert a worker, workstation or terminal reference that is not itself authenticated. The recorded_by field identifies the HTTP user, but it does not prove who physically operated the machine/terminal or whether the event came from an approved factory device. Shared operator accounts and arbitrary terminal identifiers cannot be distinguished from an authenticated user/device workflow.
+
+**Required implementation**
+- [ ] Use the approved WP-14 person/employee/assignment identity as the authoritative worker reference; retain an explicit non-employee contractor/subcontractor identity model where legally/operationally required.
+- [ ] Introduce a registered device/workstation identity with tenant, legal entity, site, work centre, machine, credential status, public-key/certificate or equivalent trust binding, expiry/revocation and allowed event categories.
+- [ ] Authenticate device-originated submissions separately from human sessions and bind device ID to its registered site/work centre; a caller-supplied source_device_reference is metadata only.
+- [ ] Link a device scan event to the manufacturing event through a verified scan-event ID and canonical event payload hash; scan resolution alone must not post production quantity or inventory.
+- [ ] Capture device event time, server receive time, clock-skew validation, sequence number, offline batch identity, signature/certificate result and replay outcome.
+- [ ] Reject revoked, unregistered, wrong-site, wrong-work-centre and unauthorized-event devices. Provide an explicit manual-entry exception with human operator identity, reason and supervisor approval.
+- [ ] Add device registration/revocation, shared-terminal, offline replay, sequence gap, altered payload, time-skew, duplicated event and cross-site tests.
+
+### 51.3 Shop-floor event timestamps and sequence are not bounded by the source operation timeline
+
+**Finding:** the event controller accepts optional occurred_at as a general date value. recordOperationEvent() stores the supplied value or server now() but does not require it to be at/after the operation's start, within a permitted device clock-skew window, earlier than the server receive time by a bounded amount, or in sequence with the previous event. The table stores both occurred_at and created_at, but no normalized device sequence, correction reference or event-order invariant is present.
+
+**Effect:** an authorized API user can backdate/future-date a shop-floor event. This can distort hourly efficiency, downtime, operator earned minutes, incentive attribution, production-day cutoffs, WIP aging and traceability. created_at indicates when the database row was inserted, but the business service does not classify late-arriving offline events separately from retroactive manual corrections.
+
+**Required implementation**
+- [ ] Define a canonical temporal policy per event source: trusted server event, authenticated connected device, offline queued device or authorized manual correction.
+- [ ] Enforce device clock skew and event sequence where device-originated; retain original device time and normalized server receipt time separately.
+- [ ] Reject future timestamps outside the approved skew allowance and prevent ordinary events from predating operation start or contradicting the accepted prior event sequence.
+- [ ] Handle late offline events through an explicit reconciliation state; do not silently reorder posted output or rewrite completed production facts.
+- [ ] Implement correction/reversal events linked to the original event, reason, authorizer and before/after snapshot instead of editing the append-only execution history.
+- [ ] Add tests for backdated output, future downtime, offline event arrival, same timestamp tie-break, event sequence gap, correction, reversal and timezone/daylight boundary.
+
+### 51.4 Output event quantities are not attributed to a size/bundle/quality disposition grain
+
+The operation event stores good and defective quantities at the operation level. The current record contract does not capture a stable bundle/piece/size breakdown, panel/bundle genealogy, defect disposition reference or material-consumption reference. Cutting-bundle schema exists, but there is no cutting-bundle service/controller workflow in the inspected delivery branch and no link between bundle operation events and production_execution_events.
+
+**Required implementation**
+- [ ] Add quantity allocation by approved production-order size/colour/SKU breakdown and cutting bundle/piece genealogy where the process requires it.
+- [ ] Link defects to an exact bundle/piece/size/operation and NCR/quality disposition; do not treat an aggregate defect quantity as sufficient traceability for high-risk defects.
+- [ ] Link output to the order/operation/worker assignment/line/shift and the approved quality gate state.
+- [ ] Reconcile bundles issued, operation input/output, rework, loss, defects, finished-goods size/colour quantities and material ledger totals.
+- [ ] Add split bundle, mixed size, partial operation, rework, defect recode, bundle transfer and full piece-to-finished-lot genealogy tests.
+
+---
+
+## 52. WP-09/WP-10 shop-floor identity and event implementation sequence
+
+1. Define command-specific authorization and role/position scope for every manufacturing event.
+2. Connect worker references to the approved WP-14 identity and effective assignment; keep supervisor corrections distinct.
+3. Add registered workstation/device identity, credentials, revocation and site/work-centre binding.
+4. Link verified device scan events to manufacturing commands and implement offline queue/reconciliation.
+5. Enforce time/sequence rules and explicit correction/reversal events.
+6. Add bundle/piece/size genealogy and connect the production event stream to material issue/consumption and quality dispositions.
+7. Run non-owner PostgreSQL/RLS, authorization, event replay, concurrency, offline-device and full factory E2E suites on the exact candidate SHA.
