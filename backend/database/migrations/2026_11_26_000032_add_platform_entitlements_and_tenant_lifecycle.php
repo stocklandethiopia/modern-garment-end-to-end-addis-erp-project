@@ -525,9 +525,9 @@ REVOKE ALL ON FUNCTION public.platform_set_tenant_entitlements(uuid, text, text,
 REVOKE ALL ON FUNCTION public.platform_get_current_entitlement(uuid) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.prevent_platform_audit_mutation() FROM PUBLIC;
 
-GRANT EXECUTE ON FUNCTION public.platform_list_tenants() TO app_runtime;
-GRANT EXECUTE ON FUNCTION public.platform_change_tenant_status(uuid, text, text) TO app_runtime;
-GRANT EXECUTE ON FUNCTION public.platform_set_tenant_entitlements(uuid, text, text, jsonb, jsonb, date, date, text) TO app_runtime;
+GRANT EXECUTE ON FUNCTION public.platform_list_tenants() TO app_control;
+GRANT EXECUTE ON FUNCTION public.platform_change_tenant_status(uuid, text, text) TO app_control;
+GRANT EXECUTE ON FUNCTION public.platform_set_tenant_entitlements(uuid, text, text, jsonb, jsonb, date, date, text) TO app_control;
 GRANT EXECUTE ON FUNCTION public.platform_get_current_entitlement(uuid) TO app_runtime;
 SQL);
     }
@@ -553,9 +553,9 @@ BEGIN
 END;
 $$;
 
-REVOKE EXECUTE ON FUNCTION public.platform_list_tenants() FROM app_runtime;
-REVOKE EXECUTE ON FUNCTION public.platform_change_tenant_status(uuid, text, text) FROM app_runtime;
-REVOKE EXECUTE ON FUNCTION public.platform_set_tenant_entitlements(uuid, text, text, jsonb, jsonb, date, date, text) FROM app_runtime;
+REVOKE EXECUTE ON FUNCTION public.platform_list_tenants() FROM app_control;
+REVOKE EXECUTE ON FUNCTION public.platform_change_tenant_status(uuid, text, text) FROM app_control;
+REVOKE EXECUTE ON FUNCTION public.platform_set_tenant_entitlements(uuid, text, text, jsonb, jsonb, date, date, text) FROM app_control;
 REVOKE EXECUTE ON FUNCTION public.platform_get_current_entitlement(uuid) FROM app_runtime;
 DROP TRIGGER IF EXISTS platform_audit_events_append_only ON public.platform_audit_events;
 DROP FUNCTION IF EXISTS public.prevent_platform_audit_mutation();
