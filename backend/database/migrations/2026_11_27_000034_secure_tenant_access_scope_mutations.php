@@ -432,24 +432,11 @@ SQL);
 
     public function down(): void
     {
-        if (DB::connection()->getDriverName() !== 'pgsql') {
-            return;
-        }
-
-        DB::unprepared(<<<'SQL'
-REVOKE ALL ON FUNCTION public.set_tenant_member_scope_mode(uuid, text, text) FROM PUBLIC, app_runtime;
-REVOKE ALL ON FUNCTION public.grant_tenant_access_scope(uuid, text, uuid, text, text, date, date, text) FROM PUBLIC, app_runtime;
-REVOKE ALL ON FUNCTION public.revoke_tenant_access_scope(uuid, text) FROM PUBLIC, app_runtime;
-DROP FUNCTION IF EXISTS public.set_tenant_member_scope_mode(uuid, text, text);
-DROP FUNCTION IF EXISTS public.grant_tenant_access_scope(uuid, text, uuid, text, text, date, date, text);
-DROP FUNCTION IF EXISTS public.revoke_tenant_access_scope(uuid, text);
-
--- Restore the immediately preceding grant model only as part of an explicit
--- full rollback of this migration and its paired application-code change.
-GRANT SELECT, INSERT, UPDATE ON TABLE public.tenant_access_scope_modes TO app_runtime;
-GRANT SELECT, INSERT ON TABLE public.tenant_access_scopes TO app_runtime;
-GRANT UPDATE (status, revoked_by, revoked_at, revocation_reason, updated_at)
-    ON TABLE public.tenant_access_scopes TO app_runtime;
-SQL);
-    }
-};
+        // This migration closes a known direct-DML privilege bypass. A normal
+        // rollback would re-grant the vulnerable write privileges to
+        // app_runtime, so downgrade is deliberately blocked. Use a forward
+        // corrective migration if a deployment needs to change this model.
+        throw new RuntimeException(
+            'Security migration 000034 is forward-only; do not restore direct app_runtime scope-table writes.',
+        );
+    }};
