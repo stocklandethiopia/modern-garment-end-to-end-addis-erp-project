@@ -3907,4 +3907,3 @@ Both runs ended before any test step. Backend, Angular and WP-01 jobs report `ru
 
 ---
 
-\n**Additional reviewer-integrity safeguard:** migration 000038 now preflights historical rows for an unmatched reviewer ID/timestamp pair and enforces the pair all-or-nothing for every inspection state. A PostgreSQL feature test verifies the database rejects incomplete reviewer metadata.\n
