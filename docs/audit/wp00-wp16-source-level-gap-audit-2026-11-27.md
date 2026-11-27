@@ -3408,3 +3408,24 @@ A stored source object can be replaced, deleted or become inaccessible between l
 - [ ] Add object deletion/replacement, expired source, revoked legal rule and stale opinion tests.
 
 **Activation boundary retained:** the WP-14 candidate still has employee_master_release_ready=false and statutory_activation_enabled=false. These engineering requirements do not authorize legal interpretation, payroll activation, payment, remittance or GL posting.
+
+
+---
+
+## 46. Current PR-head and CI state after WP-14 pre-activation audit additions
+
+This section supersedes any earlier statement that the audit/PR head is the same as the preceding CI run.
+
+| PR | Current exact head | Latest associated workflow evidence | Current interpretation |
+|---|---|---|---|
+| #18 audit/agreement | 6e8881b91bff346005154426a4e0071ed6fdada3 | No workflow run returned for this exact head | NOT RUN / no exact-head result available |
+| #20 WP-14 payroll | db1847c64abbff8b04bc70790b122e082f5d81dd | ERP CI 46015026266; WP completion verification 46015026376; retries completed as FAILURE | FAILED workflow; no step/log detail; root cause unverified |
+| #21 WP-03 organization | f9aebe855a05dec30f0b1f4bc5f1acbd741f385b | ERP CI 46013596367; WP completion verification 46013595997; retries completed as FAILURE | FAILED workflow; no step/log detail; root cause unverified |
+
+PR #18's latest exact-head audit-only documentation changes have not yet been verified by an associated workflow run. Do not transfer earlier or later candidate SHA results to it.
+
+PR #20 has two additional evidence requirements from Section 45: a credential-backed professional reviewer identity for the PAYE-base opinion, and durable tamper/source-integrity event recording across outer transaction rollback plus a final source re-verification immediately before professional approval. The employee-master and statutory activation flags remain false.
+
+PR #21 remains an open draft candidate with the reduced SELECT/INSERT-only runtime privilege on organization master records. Its exact-head PostgreSQL feature suite is not established by the failed/no-log workflow records.
+
+**Current delivery boundary:** all three PRs remain open/draft and unmerged into delivery. The canonical ERP and installer work continue under the existing integration branch and owner workflow agreement. No package is reported as CI-passed by this section.
