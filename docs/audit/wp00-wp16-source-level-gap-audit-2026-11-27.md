@@ -2666,3 +2666,60 @@ Document registration checks the shape of a supplied SHA-256, not actual bytes. 
 7. Record exact candidate SHA, route/inspection/release snapshots and test evidence in the WP-08/WP-10/WP-11 acceptance ledger.
 
 No manufacturing or quality runtime source/migration was changed by this audit section; it records verified source/schema control gaps and their forward implementation path.
+
+
+---
+
+## 35. WP-07 / WP-09 — Inventory ledger unit-of-measure and scrap-disposition binding
+
+### 35.1 Inventory balances sum quantities without proving a common unit of measure
+
+**Finding:** inventory_transactions stores a caller-supplied unit_code for each movement. fabric_rolls separately stores its unit_code. However, material_lots has no stock/base unit field, the inspected sourcing migration does not define a material-unit conversion table or versioned conversion contract, and InventoryLedgerService::postMovement() does not compare a movement unit with the relevant roll/trim/material unit. InventoryLedgerService::balanceAt() sums all inbound and outbound numeric quantities for a lot/roll/trim/location without filtering by unit_code or converting them to a common base unit.
+
+**Effect:** a lot can have ledger rows recorded in different units and the balance calculation will add/subtract the raw numeric values as if they were the same dimension. A quantity of metres, kilograms, pieces, boxes or rolls cannot be safely added without an approved conversion and a dimension-compatible base unit. Reservation, issue, receipt and quality-release decisions that depend on this balance can therefore produce a false available quantity.
+
+**Source**
+- backend/app/Services/Inventory/InventoryLedgerService.php, postMovement() around lines 15–177 and balanceAt() around lines 179–208.
+- backend/database/migrations/2026_11_26_000015_create_sourcing_material_traceability.php: purchase_order_lines.unit_code, goods_receipt_lines.unit_code, fabric_rolls.unit_code and inventory_transactions.unit_code.
+- material_lots in migration 000015 has no unit_code/base-unit column; trim_lots has no unit_code field; inventory_transactions unit_code has no foreign key to a canonical UOM identity.
+- backend/app/Services/Sourcing/SourcingService.php, materializeInspectedReceiptLine() copies the PO-line unit to the roll, receipt-line materialization and receipt movement; subsequent movement callers can still supply their own unit_code.
+
+**Required implementation**
+- [ ] Define a canonical UOM catalogue with dimension family, precision, permitted scale, base-unit designation and effective-dated approved conversion factors.
+- [ ] Bind each material master/material lot and each fabric roll/trim lot to an immutable base-unit identity; retain the supplier/PO transaction unit separately.
+- [ ] Normalize every posted movement into the lot's base unit on the server, preserving the input quantity/unit and the exact conversion ID/version/hash.
+- [ ] Reject incompatible dimensions, unknown units, expired conversions and non-authorized manual conversion overrides.
+- [ ] Make balanceAt() aggregate only normalized base quantities or explicitly group by a common validated unit; do not sum different unit codes as raw numerics.
+- [ ] Ensure production BOM consumption, material issue, roll-length consumption, trim quantity, stocktake, quality release and finished-goods packaging use the same typed conversion contract.
+- [ ] Add tests for m/yd, kg/g, pcs/dozen, roll/length, pack/carton, fractional precision, incompatible dimensions, conversion expiry, rounding and concurrent issues.
+
+### 35.2 SCRAP can use a resolved nonconformance that belongs to a different lot
+
+**Finding:** the SCRAP path in InventoryLedgerService::postMovement() loads quality_nonconformances by tenant and caller-supplied source_document_id, and checks only disposition = SCRAP and status RESOLVED/CLOSED. It does not join the nonconformance to its quality inspection and require that inspection subject_type = MATERIAL_LOT and subject_id equals the material_lot_id being scrapped. The source-document identity can therefore be a valid, resolved SCRAP nonconformance for another material lot in the same tenant.
+
+**Effect:** a valid scrap decision for one lot can be reused as the authorization evidence for scrapping a different lot. The movement remains tenant-isolated and append-only, but the disposition-to-stock genealogy is not bound to the same physical material.
+
+**Source**
+- backend/app/Services/Inventory/InventoryLedgerService.php, SCRAP validation in postMovement() around lines 95–108.
+- backend/database/migrations/2026_11_26_000015_create_sourcing_material_traceability.php, inventory_transactions.source_document_type/source_document_id and tenant/lot foreign keys.
+- backend/database/migrations/2026_11_26_000017_create_quality_capa_and_release_gates.php, quality_nonconformances.inspection_id and quality_inspections.subject_type/subject_id.
+
+**Required implementation**
+- [ ] Resolve the quality nonconformance through its linked inspection and require exact MATERIAL_LOT subject identity for the lot being scrapped; use a different typed source flow for operation/bundle/finished-goods scrap.
+- [ ] Verify disposition, resolved/closed state, affected quantity, affected reference and approved scrap decision against the requested movement quantity and lot/roll/trim identity.
+- [ ] Bind the exact approved disposition decision ID/version and inspection ID in the inventory movement source manifest.
+- [ ] Prevent reuse of one approved nonconformance quantity across multiple scrap movements; maintain a consumed/remaining disposition quantity or a one-time decision key.
+- [ ] Require the inventory lot/roll/trim to be in an allowed status and location; preserve full source-to-scrap genealogy.
+- [ ] Add negative tests for a valid NC from another lot, another material type, another tenant, partial/over-scrap, repeated scrap, wrong roll/trim and concurrent scrap replay.
+
+### 35.3 WP-07/WP-09 material-ledger acceptance sequence
+
+1. Define canonical base UOM identity, versioned conversion and source/entered-quantity model.
+2. Add forward schema changes and backfill existing material/roll/trim identities using verified source data; quarantine unresolvable legacy rows rather than guessing.
+3. Normalize inventory postMovement() and balanceAt() to one base unit with exact conversion provenance.
+4. Bind SCRAP movements to the precise resolved NC, linked inspection subject, lot/roll/trim and approved disposition quantity.
+5. Add PostgreSQL Feature tests under app_runtime for every movement type, UOM incompatibility, source mismatch, tenant boundary, payload replay and concurrent issue/scrap.
+6. Add receipt → quarantine → inspection → release → roll/trim issue → production consumption → scrap/rework reconciliation journeys with exact unit and genealogy snapshots.
+7. Record the accepted UOM and scrap control evidence against WP-07/WP-09 requirement IDs.
+
+No sourcing, inventory, quality or production runtime source/migration was changed by this audit section; it records verified service/schema gaps and the forward build path.
