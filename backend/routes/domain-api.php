@@ -28,6 +28,8 @@ Route::middleware(['auth:sanctum', 'token.ability:erp:access', 'tenant.context']
     Route::prefix('enterprise')->group(function (): void {
         Route::get('/organization-units', [EnterpriseOrganizationController::class, 'units']);
         Route::post('/organization-units', [EnterpriseOrganizationController::class, 'storeUnit']);
+        Route::get('/organization-units/{unitId}/manager-assignments', [EnterpriseOrganizationController::class, 'managerAssignments']);
+        Route::post('/organization-units/{unitId}/manager-assignments', [EnterpriseOrganizationController::class, 'assignUnitManager']);
         Route::get('/job-positions', [EnterpriseOrganizationController::class, 'positions']);
         Route::post('/job-positions', [EnterpriseOrganizationController::class, 'storePosition']);
         Route::get('/position-reporting-relations', [EnterpriseOrganizationController::class, 'reportingRelations']);
