@@ -434,6 +434,7 @@ export class OrganizationStructureComponent {
         this.loadUnitPage(tenantId, 1);
         this.savingUnit.set(false);
         this.showUnitForm.set(false);
+        this.unitSearch.setValue(data.unit_code);
         this.unitForm.reset({
           parent_id: '',
           legal_entity_id: '',
@@ -444,7 +445,6 @@ export class OrganizationStructureComponent {
           valid_from: '2026-01-01',
           valid_to: '',
         });
-        this.selectUnit(data.id);
         this.successMessage.set('Organizational unit created. Add its positions and reporting structure; no transaction authority is granted by this record.');
       },
       error: (error: HttpErrorResponse) => {
@@ -484,6 +484,7 @@ export class OrganizationStructureComponent {
         this.loadPositionPage(tenantId, 1, unitId);
         this.savingPosition.set(false);
         this.showPositionForm.set(false);
+        this.positionSearch.setValue(data.position_code);
         this.positionForm.reset({
           position_code: '',
           title: '',
@@ -565,6 +566,7 @@ export class OrganizationStructureComponent {
         this.loadReportingPage(tenantId, 1);
         this.savingReporting.set(false);
         this.showReportingForm.set(false);
+        this.reportingSearch.setValue('');
         this.reportingForm.reset({
           subject_position_id: '',
           manager_position_id: '',
