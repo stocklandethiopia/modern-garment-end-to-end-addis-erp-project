@@ -228,12 +228,14 @@ final class EthiopiaPayrollCalculator
 
         $this->assertTaxBands($incomeTaxRule['monthly_tax_bands'] ?? null);
 
+        $taxRounding = $this->roundingMethod($incomeTaxRule['rounding_method'] ?? null, 'PAYE');
+        $pensionRounding = $this->roundingMethod($pensionRule['rounding_method'] ?? null, 'pension');
         $employeeRate = self::basisPoints($pensionRule['employee_rate_basis_points'] ?? null, 'employee_rate_basis_points');
         $employerRate = self::basisPoints($pensionRule['employer_rate_basis_points'] ?? null, 'employer_rate_basis_points');
 
         if (strtoupper((string) $coverage['status']) === 'COVERED') {
-            $employeePension = self::percentage($pensionableSalary, $employeeRate);
-            $employerPension = self::percentage($pensionableSalary, $employerRate);
+            $employeePension = self::percentage($pensionableSalary, $employeeRate, $pensionRounding);
+            $employerPension = self::percentage($pensionableSalary, $employerRate, $pensionRounding);
         } else {
             $employeePension = 0;
             $employerPension = 0;
@@ -246,7 +248,7 @@ final class EthiopiaPayrollCalculator
             ? max(0, $taxableGross - $employeePension)
             : $taxableGross;
 
-        $paye = $this->progressiveTax($taxableIncome, $incomeTaxRule['monthly_tax_bands']);
+        $paye = $this->progressiveTax($taxableIncome, $incomeTaxRule['monthly_tax_bands'], $taxRounding);
         $otherDeductions = $this->authorizedDeductions(
             $input['other_deductions'] ?? [],
             $requireApprovedEvidence,
@@ -515,11 +517,14 @@ final class EthiopiaPayrollCalculator
     }
 
     /**
+     * Accumulate all marginal-band fractions and round once at the final
+     * currency precision. No rounding convention is silently defaulted.
+     *
      * @param array<int, array<string, mixed>> $bands
      */
-    private function progressiveTax(int $income, array $bands): int
+    private function progressiveTax(int $income, array $bands, string $roundingMethod): int
     {
-        $tax = 0;
+        $taxNumerator = 0;
         foreach (array_values($bands) as $band) {
             $lower = self::toMinor($band['lower'], 'monthly_tax_bands.lower');
             $upper = isset($band['upper']) && $band['upper'] !== null
@@ -527,10 +532,10 @@ final class EthiopiaPayrollCalculator
                 : null;
             $rate = self::basisPoints($band['rate_basis_points'], 'monthly_tax_bands.rate_basis_points');
             $taxableInBand = max(0, ($upper === null ? $income : min($income, $upper)) - $lower);
-            $tax += self::percentage($taxableInBand, $rate);
+            $taxNumerator += $taxableInBand * $rate;
         }
 
-        return $tax;
+        return self::roundBasisPointNumerator($taxNumerator, $roundingMethod);
     }
 
     /**
@@ -663,9 +668,35 @@ final class EthiopiaPayrollCalculator
         return $rate;
     }
 
-    private static function percentage(int $amountMinor, int $rateBasisPoints): int
+    private static function percentage(int $amountMinor, int $rateBasisPoints, string $roundingMethod): int
     {
-        return intdiv(($amountMinor * $rateBasisPoints) + 5000, 10000);
+        return self::roundBasisPointNumerator($amountMinor * $rateBasisPoints, $roundingMethod);
+    }
+
+    private function roundingMethod(mixed $value, string $context): string
+    {
+        $method = strtoupper(trim((string) $value));
+        if (! in_array($method, ['HALF_UP', 'HALF_EVEN'], true)) {
+            throw new InvalidArgumentException("An explicit supported {$context} rounding method is required.");
+        }
+
+        return $method;
+    }
+
+    private static function roundBasisPointNumerator(int $numerator, string $method): int
+    {
+        $whole = intdiv($numerator, 10000);
+        $remainder = $numerator % 10000;
+
+        if ($method === 'HALF_UP') {
+            return $remainder >= 5000 ? $whole + 1 : $whole;
+        }
+
+        if ($remainder > 5000 || ($remainder === 5000 && ($whole % 2) === 1)) {
+            return $whole + 1;
+        }
+
+        return $whole;
     }
 
     /**
