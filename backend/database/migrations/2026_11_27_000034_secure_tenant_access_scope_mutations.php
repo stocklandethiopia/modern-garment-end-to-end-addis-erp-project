@@ -33,8 +33,8 @@ SECURITY DEFINER
 SET search_path = pg_catalog, public
 AS $$
 DECLARE
-    v_v_actor_id uuid := NULLIF(current_setting('app.current_user_id', true), '')::uuid;
-    v_v_tenant_id uuid := NULLIF(current_setting('app.current_tenant_id', true), '')::uuid;
+    v_actor_id uuid := NULLIF(current_setting('app.current_user_id', true), '')::uuid;
+    v_tenant_id uuid := NULLIF(current_setting('app.current_tenant_id', true), '')::uuid;
     actor_role text;
     target_role text;
     previous_mode varchar(16);
@@ -42,7 +42,7 @@ DECLARE
     normalized_reason text := btrim(change_reason);
     event_time timestamptz := clock_timestamp();
 BEGIN
-    IF v_v_actor_id IS NULL OR v_v_tenant_id IS NULL THEN
+    IF v_actor_id IS NULL OR v_tenant_id IS NULL THEN
         RAISE EXCEPTION 'Authenticated tenant and actor context is required.'
             USING ERRCODE = '42501';
     END IF;
@@ -101,7 +101,7 @@ BEGIN
     END IF;
 
     PERFORM pg_advisory_xact_lock(
-        hashtextextended(v_v_tenant_id::text || ':access-mode:' || target_user_id::text, 0)
+        hashtextextended(v_tenant_id::text || ':access-mode:' || target_user_id::text, 0)
     );
 
     SELECT mode_record.scope_mode
@@ -112,7 +112,7 @@ BEGIN
      FOR UPDATE;
 
     INSERT INTO public.tenant_access_scope_modes (
-        id, v_tenant_id, user_id, scope_mode, changed_by, change_reason,
+        id, tenant_id, user_id, scope_mode, changed_by, change_reason,
         created_at, updated_at
     ) VALUES (
         gen_random_uuid(), v_tenant_id, target_user_id, normalized_mode,
@@ -125,7 +125,7 @@ BEGIN
            updated_at = EXCLUDED.updated_at;
 
     INSERT INTO public.audit_events (
-        id, v_tenant_id, actor_user_id, action, object_type, object_id,
+        id, tenant_id, actor_user_id, action, object_type, object_id,
         scope, reason, correlation_id, occurred_at, created_at, updated_at
     ) VALUES (
         gen_random_uuid(), v_tenant_id, v_actor_id,
@@ -170,7 +170,7 @@ DECLARE
     new_grant public.tenant_access_scopes%ROWTYPE;
     event_time timestamptz := clock_timestamp();
 BEGIN
-    IF v_v_actor_id IS NULL OR v_v_tenant_id IS NULL THEN
+    IF v_actor_id IS NULL OR v_tenant_id IS NULL THEN
         RAISE EXCEPTION 'Authenticated tenant and actor context is required.'
             USING ERRCODE = '42501';
     END IF;
@@ -201,7 +201,7 @@ BEGIN
             USING ERRCODE = '22023';
     END IF;
 
-    IF v_v_actor_id IS NULL OR v_v_tenant_id IS NULL THEN
+    IF v_actor_id IS NULL OR v_tenant_id IS NULL THEN
         RAISE EXCEPTION 'Authenticated tenant and actor context is required.'
             USING ERRCODE = '42501';
     END IF;
@@ -272,7 +272,7 @@ BEGIN
 
     PERFORM pg_advisory_xact_lock(
         hashtextextended(
-            v_v_tenant_id::text || ':access-grant:' || target_user_id::text || ':' ||
+            v_tenant_id::text || ':access-grant:' || target_user_id::text || ':' ||
             normalized_type || ':' || COALESCE(requested_scope_id::text, normalized_code) || ':' ||
             normalized_permission,
             0
@@ -297,7 +297,7 @@ BEGIN
     END IF;
 
     INSERT INTO public.tenant_access_scopes (
-        id, v_tenant_id, user_id, scope_type, scope_id, scope_code,
+        id, tenant_id, user_id, scope_type, scope_id, scope_code,
         permission_code, valid_from, valid_to, status, grant_reason,
         granted_by, revoked_by, revoked_at, revocation_reason,
         created_at, updated_at
@@ -310,7 +310,7 @@ BEGIN
     RETURNING * INTO new_grant;
 
     INSERT INTO public.audit_events (
-        id, v_tenant_id, actor_user_id, action, object_type, object_id,
+        id, tenant_id, actor_user_id, action, object_type, object_id,
         scope, reason, correlation_id, occurred_at, created_at, updated_at
     ) VALUES (
         gen_random_uuid(), v_tenant_id, v_actor_id,
@@ -349,7 +349,7 @@ DECLARE
     updated_grant public.tenant_access_scopes%ROWTYPE;
     event_time timestamptz := clock_timestamp();
 BEGIN
-    IF v_v_actor_id IS NULL OR v_v_tenant_id IS NULL THEN
+    IF v_actor_id IS NULL OR v_tenant_id IS NULL THEN
         RAISE EXCEPTION 'Authenticated tenant and actor context is required.'
             USING ERRCODE = '42501';
     END IF;
@@ -405,7 +405,7 @@ BEGIN
     RETURNING * INTO updated_grant;
 
     INSERT INTO public.audit_events (
-        id, v_tenant_id, actor_user_id, action, object_type, object_id,
+        id, tenant_id, actor_user_id, action, object_type, object_id,
         scope, reason, correlation_id, occurred_at, created_at, updated_at
     ) VALUES (
         gen_random_uuid(), v_tenant_id, v_actor_id,
