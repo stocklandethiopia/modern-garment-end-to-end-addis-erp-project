@@ -27,6 +27,17 @@ Exact supported patch versions are recorded in the platform standard and must be
 - Strict project scope, express change approval, numbered work packages and handover rules: [Project Governance Agreement](docs/agent/project-governance-agreement.md).
 - Agent instructions: [AGENTS.md](AGENTS.md). All contributors and coding agents must read these before work.
 
+## WP-03 enterprise foundation engineering package — 27 November 2026
+
+The detailed WP-03 target design, organogram/DoA engineering contract and Ethiopia localization analysis are maintained as source documentation. This is a design baseline; it does not mark WP-03 complete or authorize statutory activation.
+
+- [WP-03 enterprise foundation engineering LLD](docs/architecture/wp03-enterprise-foundation-implementation-lld-2026-11-27.md)
+- [WP-03 architecture diagrams](docs/architecture/wp03-architecture-diagrams-2026-11-27.md)
+- [WP-03 design acceptance matrix and traceability](docs/verification/wp03-enterprise-foundation-design-acceptance-matrix-2026-11-27.md)
+- [Ethiopia organogram, DoA and payroll legal-localization note](docs/localization/ethiopia-organogram-payroll-legal-localization-note-2026-11-27.md)
+
+The localization note is an engineering source analysis, not a legal opinion. It keeps the company-specific organogram configurable by legal form and records the current tax/pension source issues, PAYE-base candidate hold, creator/freelance classification boundary and qualified-review requirements. Payroll remains WP-14 in the fixed WP-00–WP-16 sequence.
+
 ## Start here
 
 1. Project governance: docs/agent/project-governance-agreement.md
