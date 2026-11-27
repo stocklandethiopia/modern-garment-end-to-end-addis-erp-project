@@ -28,6 +28,8 @@ class ScopedAccessService
 
     public function setMode(string $tenantId, string $actorId, string $targetUserId, string $mode, string $reason): array
     {
+        $this->assertTenantMember($tenantId, $targetUserId);
+
         $result = $this->mutate(
             $tenantId,
             $actorId,
@@ -48,6 +50,8 @@ class ScopedAccessService
 
     public function grant(string $tenantId, string $actorId, string $targetUserId, array $data): object
     {
+        $this->assertTenantMember($tenantId, $targetUserId);
+
         $scopeType = strtoupper(trim((string) $data['scope_type']));
         $scopeId = $scopeType === 'MARKET' ? null : ($data['scope_id'] ?? null);
         $scopeCode = $scopeType === 'MARKET'
