@@ -78,7 +78,7 @@ class AccessScopeController extends Controller
         abort_unless($tenantContext->canAdministerTenant(), 403, 'Tenant administrator permission is required.');
 
         $data = $request->validate([
-            'reason' => ['required', 'string', 'min:10', 'max:2000'],
+            'reason' => ['required', 'string', 'min:10', 'max:500'],
         ]);
 
         $grant = $scopes->forMember($tenantContext->tenantId(), $userId)['grants']
