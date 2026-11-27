@@ -2,7 +2,7 @@
 
 **Project:** Modern Garment End-to-End Addis ERP  
 **Package:** WP-01 — Requirements and traceability  
-**Status:** COMPLETED — design baseline and traceability catalogue prepared; implementation evidence is delivered in later packages  
+**Status:** LEGACY GAR MATRIX — R3 CANONICAL REGISTER RECONCILIATION OPEN. This file contains 120 `GAR-*` records and is not yet reconciled to the verified WP-01 R3 register of 128 records across 24 bounded contexts. See [WP-01 R3 register reconciliation](wp01-r3-reconciliation-2026-11-27.md). The two ID namespaces must not be treated as interchangeable.  
 **Authority:** Product Owner's express autonomous WP-01–WP-16 delegation, 22 November 2026  
 **Baseline:** `docs/agent/project-governance-agreement.md`, `docs/product/domain-map.md`, apparel operating-system charter, distribution/channel charter, platform, security, localization, payroll and engineering standards.
 
