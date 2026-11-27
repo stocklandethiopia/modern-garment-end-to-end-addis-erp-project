@@ -119,7 +119,7 @@ A pensionable salary that differs from the standard regular-hours salary basis r
 - The pension payload must include employee/employer rates, pension salary basis and approved rounding method.
 - Every per-line exemption and non-standard pensionable-salary rationale must include a stored tenant document UUID and source hash; the server re-verifies those bytes before calculation.
 - Pension coverage decisions must cite and store the official coverage provision and be independently reviewed; payroll deductions require a stored employee authorization document and independent approval.
-- The result stores line inputs, breakdown, rule-source snapshot and deterministic SHA-256 snapshot hash.
+- The result stores line inputs, breakdown, rule-source snapshot and deterministic SHA-256 source snapshot hash. The canonical payroll-line evidence JSON is separately SHA-256 hashed and stored in `payroll_run_lines.calculation_evidence_sha256`; the database blocks new `VALIDATED` lines without a digest.
 - The line is a draft calculation only. No calculation result is posted to the GL or transmitted to a bank or authority here.
 
 ## 8. Historical transaction protection
