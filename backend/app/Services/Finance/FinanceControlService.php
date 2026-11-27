@@ -215,6 +215,7 @@ class FinanceControlService
                     'source_authority' => (string) $rule->source_authority,
                     'source_title' => (string) $rule->source_title,
                     'source_reference' => (string) $rule->source_reference,
+                    'source_document_reference' => (string) ($rule->source_document_reference ?? ''),
                     'source_sha256' => strtolower((string) ($rule->source_sha256 ?? '')),
                     'publication_date' => $rule->publication_date,
                     'effective_from' => $rule->effective_from,
@@ -234,6 +235,12 @@ class FinanceControlService
                 );
                 if (count($matches) !== 1) {
                     throw ValidationException::withMessages(['statutory_rule_ids' => "Exactly one approved {$requiredDomain} rule record is required for Ethiopia payroll."]);
+                }
+            }
+
+            foreach ($ruleSnapshot as $rule) {
+                if ($rule['jurisdiction_code'] !== 'ETH' || trim($rule['source_document_reference']) === '') {
+                    throw ValidationException::withMessages(['statutory_rule_ids' => 'Each Ethiopian payroll rule must reference the controlled stored official legal source document.']);
                 }
             }
 
@@ -363,9 +370,20 @@ class FinanceControlService
             if ($run === null || $run->prepared_by !== $actorId || $run->status !== 'DRAFT') {
                 throw ValidationException::withMessages(['payroll_run' => 'Only the preparer can submit a draft run.']);
             }
-            if (! DB::table('payroll_run_lines')->where('tenant_id', $tenantId)->where('payroll_run_draft_id', $runId)->exists()) {
+            $lineSummary = DB::table('payroll_run_lines')
+                ->where('tenant_id', $tenantId)
+                ->where('payroll_run_draft_id', $runId)
+                ->selectRaw('COUNT(*) AS line_count, COUNT(*) FILTER (WHERE calculation_status = ?) AS validated_count', ['VALIDATED'])
+                ->first();
+
+            if ($lineSummary === null || (int) $lineSummary->line_count < 1) {
                 throw ValidationException::withMessages(['payroll_run_lines' => 'A payroll run must contain at least one worker line.']);
             }
+
+            if ((int) $lineSummary->line_count !== (int) $lineSummary->validated_count) {
+                throw ValidationException::withMessages(['payroll_run_lines' => 'Every payroll line must be server-calculated and source-validated before professional review.']);
+            }
+
             DB::table('payroll_run_drafts')->where('tenant_id', $tenantId)->where('id', $runId)->update([
                 'status' => 'UNDER_REVIEW',
                 'reviewed_by' => null,
