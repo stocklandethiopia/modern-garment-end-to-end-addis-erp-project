@@ -188,6 +188,14 @@ class ScopedAccessMutationSecurityTest extends TestCase
             'reason' => 'Limit this member to Addis market reporting.',
         ], 'pgsql_test_admin');
 
+        $this->postJson('/api/v1/enterprise/members/'.$this->memberId.'/access-scopes', [
+            'scope_type' => 'MARKET',
+            'scope_code' => 'ADDIS-ABABA',
+            'permission_code' => 'READ',
+            'valid_from' => now()->toDateString(),
+            'grant_reason' => 'Attempt to duplicate the active Addis market scope.',
+        ])->assertUnprocessable();
+
         $this->postJson('/api/v1/enterprise/members/'.$this->memberId.'/access-scopes/'.$grantId.'/revoke', [
             'reason' => 'Remove the member market access after reassignment.',
         ])->assertOk()
@@ -230,7 +238,7 @@ class ScopedAccessMutationSecurityTest extends TestCase
                 $runtime->select(
                     'SELECT * FROM public.set_tenant_member_scope_mode(?::uuid, ?, ?)',
                     [
-                        $this->memberId,
+                        $this->adminId,
                         'TENANT_WIDE',
                         'Attempt to bypass the tenant administrator scope control.',
                     ],
