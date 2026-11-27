@@ -228,7 +228,7 @@ export class OrganizationStructureComponent {
         this.loadingManagers.set(false);
       },
       error: () => {
-        if (sequence !== this.managerRequestSequence || this.selectedUnitId() !== unitId) return;
+        if (sequence !== this.managerRequestSequence || this.session.activeTenant()?.id !== tenantId || this.selectedUnitId() !== unitId) return;
         this.managerAssignments.set([]);
         this.loadingManagers.set(false);
         this.errorMessage.set('Manager positions could not be loaded for the selected unit.');
@@ -293,6 +293,7 @@ export class OrganizationStructureComponent {
         this.successMessage.set('Organizational unit created. Add its positions and reporting structure; no transaction authority is granted by this record.');
       },
       error: (error: HttpErrorResponse) => {
+        if (this.session.activeTenant()?.id !== tenantId) return;
         this.savingUnit.set(false);
         this.errorMessage.set(error.status === 422
           ? 'Check the unit code, parent period, legal entity and business-site relationship.'
@@ -340,6 +341,7 @@ export class OrganizationStructureComponent {
         this.successMessage.set('Job position created as a vacant-capable slot. It is not a person, employee or login account.');
       },
       error: (error: HttpErrorResponse) => {
+        if (this.session.activeTenant()?.id !== tenantId || this.selectedUnitId() !== unitId) return;
         this.savingPosition.set(false);
         this.errorMessage.set(error.status === 422
           ? 'Check the position code and confirm the selected unit is active.'
@@ -375,6 +377,7 @@ export class OrganizationStructureComponent {
         this.successMessage.set('Manager position assigned for the stated period. This identifies a job slot, not a human incumbent.');
       },
       error: (error: HttpErrorResponse) => {
+        if (this.session.activeTenant()?.id !== tenantId || this.selectedUnitId() !== unitId) return;
         this.savingManager.set(false);
         this.errorMessage.set(error.status === 422
           ? 'The manager position must belong to this unit and cannot overlap another manager period.'
@@ -418,6 +421,7 @@ export class OrganizationStructureComponent {
         this.successMessage.set('Reporting relationship recorded. Solid-line and functional relationships are informational organization data, not approval rights.');
       },
       error: (error: HttpErrorResponse) => {
+        if (this.session.activeTenant()?.id !== tenantId) return;
         this.savingReporting.set(false);
         this.errorMessage.set(error.status === 422
           ? 'Choose two different active positions and check effective dates. Solid-line cycles and overlapping managers are rejected.'
