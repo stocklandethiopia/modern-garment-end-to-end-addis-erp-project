@@ -37,7 +37,7 @@ A legal source record must be independently reviewed and applicable to the exact
 
 - Proclamation 1395/2025: https://www.mofed.gov.et/media/filer_public/7f/72/7f720781-022a-4b90-a9e7-b4724c1f3002/income_tax_amendment_proc_no_1395-2017_compressed.pdf
 - Proclamation 979/2016 Technical Notes from the Ministry of Revenue (interpretive, explicitly non-binding): https://www.mor.gov.et/documents/49818/172549/Technical%2BNote-%2BIncome%2BTax%2BProclamation%2B%2BNo.%2B979-2016.pdf/c08d7d30-903c-70f2-044a-846a5413a2a9?download=true&t=1628061616844 (Article 10 discussion, PDF pp. 51–52; non-binding introduction, PDF p. 4)
-- Regulation 597/2026: https://justice.gov.et/wp-content/uploads/2026/11/%E1%8B%B0%E1%8A%95%E1%89%A5-%E1%89%81%E1%8C%A5%E1%88%AD-597-2019.pdf
+- Regulation 597/2026: https://justice.gov.et/wp-content/uploads/2026/11/%E1%8B%B0%E1%8A%95%E1%8B%A5-%E1%89%81%E1%8C%A5%E1%88%AD-597-2019.pdf
 - Pension Proclamation 1268/2022: https://www.ffic.gov.et/Portals/0/______1268.pdf
 - Pension Proclamation 1268/2022 (Ministry of Justice sector listing): https://justice.gov.et/am/sector/social-security-pensions/
 - Ministry of Justice POESSA directive catalogue: https://justice.gov.et/en/entity/private-organizatio-employees-social-security-administration/
