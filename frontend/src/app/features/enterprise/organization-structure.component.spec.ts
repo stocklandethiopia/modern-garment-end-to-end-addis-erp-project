@@ -51,10 +51,10 @@ describe('OrganizationStructureComponent', () => {
     membership_role: 'OWNER',
   });
 
-  function flushInitial(fixture: ComponentFixture<OrganizationStructureComponent>): void {
+  function flushInitial(fixture: ComponentFixture<OrganizationStructureComponent>, unitTotal = 1, unitLastPage = 1): void {
     http.expectOne((request) => request.url === '/api/v1/enterprise/organization-units'
       && request.params.get('page') === '1'
-      && request.params.get('per_page') === '25').flush(page([unit]));
+      && request.params.get('per_page') === '25').flush(page([unit], 1, unitLastPage, unitTotal));
 
     http.expectOne((request) => request.url === '/api/v1/enterprise/job-positions'
       && request.params.get('page') === '1'
@@ -166,14 +166,14 @@ describe('OrganizationStructureComponent', () => {
   it('requests later pages and applies tenant-scoped search filters to all organization registers', () => {
     const fixture = TestBed.createComponent(OrganizationStructureComponent);
     fixture.detectChanges();
-    flushInitial(fixture);
+    flushInitial(fixture, 26, 2);
 
     const component = fixture.componentInstance;
     component.changeUnitPage(2);
     const unitPageTwo = http.expectOne((request) => request.url === '/api/v1/enterprise/organization-units'
       && request.params.get('page') === '2'
       && request.params.get('per_page') === '25');
-    unitPageTwo.flush(page([], 2, 2, 26));
+    unitPageTwo.flush(page([unit], 2, 2, 26));
     expect(component.unitPage()?.total).toBe(26);
 
     component.selectUnit('unit-1');
