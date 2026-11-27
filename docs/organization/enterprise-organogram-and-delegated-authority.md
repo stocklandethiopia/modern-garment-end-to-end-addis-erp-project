@@ -460,3 +460,10 @@ This framework supports the existing WP-00–WP-16 order; it does not replace or
 - GAO, *Financial Audit Manual* — authorization, supporting evidence, matching and segregation-of-duties control reference: https://www.gao.gov/assets/gao-24-107026.pdf
 
 This is an ERP organization and control design, not a legal opinion or the customer's final Board charter. Each customer configures its legally valid organization, actual job appointments, constitution, bank mandates and signed DoA before activating approvals.
+
+
+## Implementation plan and cross-domain integration
+
+The numbered engineering build breakdown, target source locations, API/event contracts, Angular workbench, WP-14 employee/payroll dependencies, WP-15 agent boundaries and WP-16 acceptance gates are maintained in [WP-03 / WP-14 Organogram and Payroll Implementation Plan](../work-packages/wp03-wp14-organogram-payroll-implementation-plan.md).
+
+This organogram is a design baseline, not a completed runtime capability. WP-03 must implement and test organizational units, positions, effective-dated appointments, reporting lines, delegated authority rules, approval instances and cross-domain enforcement before the organization/DoA portion can be accepted. Payroll and other domain services must consume the same authority resolver rather than create parallel approval hierarchies.
