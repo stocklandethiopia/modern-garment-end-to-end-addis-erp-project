@@ -7,6 +7,7 @@ use App\Services\Support\DecimalQuantity;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 class QualityControlService
 {
@@ -74,10 +75,13 @@ class QualityControlService
                 $result = 'PASS_WITH_DEVIATION';
             }
 
+            $requiresIndependentReview = in_array($result, ['PASS', 'PASS_WITH_DEVIATION'], true);
+
             DB::table('quality_inspections')->where('tenant_id', $tenantId)->where('id', $inspectionId)->update([
                 'accepted_quantity' => $accepted,
                 'rejected_quantity' => $rejected,
-                'result_status' => $result,
+                'result_status' => $requiresIndependentReview ? 'SUBMITTED_PENDING_REVIEW' : $result,
+                'submitted_result_status' => $requiresIndependentReview ? $result : null,
                 'measurements' => json_encode($data['measurements'] ?? json_decode($inspection->measurements, true, 512, JSON_THROW_ON_ERROR), JSON_THROW_ON_ERROR),
                 'observations' => json_encode($observations, JSON_THROW_ON_ERROR),
                 'inspected_at' => $data['inspected_at'] ?? now(),
@@ -130,8 +134,8 @@ class QualityControlService
                 ->lockForUpdate()
                 ->first();
 
-            if ($inspection === null || ! in_array($inspection->result_status, ['PASS', 'PASS_WITH_DEVIATION', 'FAIL', 'CONTAINED'], true)) {
-                throw ValidationException::withMessages(['inspection' => 'Only a completed inspection result can be reviewed.']);
+            if ($inspection === null || ! in_array($inspection->result_status, ['SUBMITTED_PENDING_REVIEW', 'FAIL', 'CONTAINED'], true)) {
+                throw ValidationException::withMessages(['inspection' => 'Only a submitted inspection result awaiting review can be reviewed.']);
             }
             if ($inspection->inspected_by === $reviewerId) {
                 throw ValidationException::withMessages(['reviewer' => 'The inspector cannot review their own inspection.']);
@@ -142,7 +146,11 @@ class QualityControlService
             if (! in_array($data['decision'], ['ACCEPT', 'REJECT'], true)) {
                 throw ValidationException::withMessages(['decision' => 'Unsupported inspection review decision. Create a new inspection record for reinspection rather than reopening this one.']);
             }
-            if ($data['decision'] === 'ACCEPT' && ! in_array($inspection->result_status, ['PASS', 'PASS_WITH_DEVIATION'], true)) {
+            $submittedResult = $inspection->result_status === 'SUBMITTED_PENDING_REVIEW'
+                ? $inspection->submitted_result_status
+                : $inspection->result_status;
+
+            if ($data['decision'] === 'ACCEPT' && ! in_array($submittedResult, ['PASS', 'PASS_WITH_DEVIATION'], true)) {
                 throw ValidationException::withMessages(['decision' => 'A failed or contained inspection cannot be accepted; resolve the nonconformance and create a new inspection.']);
             }
             if (trim((string) ($data['review_reason'] ?? '')) === '') {
@@ -150,7 +158,7 @@ class QualityControlService
             }
 
             $newStatus = $data['decision'] === 'ACCEPT'
-                ? ($inspection->result_status === 'PASS_WITH_DEVIATION' ? 'PASS_WITH_DEVIATION' : 'PASS')
+                ? $submittedResult
                 : 'FAIL';
 
             DB::table('quality_inspections')->where('tenant_id', $tenantId)->where('id', $inspectionId)->update([
@@ -167,36 +175,54 @@ class QualityControlService
 
     public function createCorrectiveAction(string $tenantId, string $actorId, string $nonconformanceId, array $data): object
     {
-        $nonconformance = DB::table('quality_nonconformances')
-            ->where('tenant_id', $tenantId)->where('id', $nonconformanceId)->first();
-        if ($nonconformance === null) {
-            throw ValidationException::withMessages(['nonconformance' => 'The nonconformance is not available in this tenant.']);
-        }
+        return DB::transaction(function () use ($tenantId, $actorId, $nonconformanceId, $data): object {
+            $nonconformance = DB::table('quality_nonconformances')
+                ->where('tenant_id', $tenantId)
+                ->where('id', $nonconformanceId)
+                ->lockForUpdate()
+                ->first();
 
-        $id = (string) Str::uuid();
-        DB::table('quality_corrective_actions')->insert([
-            'id' => $id,
-            'tenant_id' => $tenantId,
-            'nonconformance_id' => $nonconformanceId,
-            'action_code' => $data['action_code'],
-            'action_type' => strtoupper($data['action_type']),
-            'action_description' => $data['action_description'],
-            'assigned_to_user_id' => $data['assigned_to_user_id'] ?? null,
-            'due_date' => $data['due_date'] ?? null,
-            'status' => 'OPEN',
-            'implementation_evidence' => json_encode([], JSON_THROW_ON_ERROR),
-            'effectiveness_criteria' => $data['effectiveness_criteria'] ?? null,
-            'created_by' => $actorId,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+            if ($nonconformance === null) {
+                throw ValidationException::withMessages(['nonconformance' => 'The nonconformance is not available in this tenant.']);
+            }
 
-        DB::table('quality_nonconformances')->where('tenant_id', $tenantId)->where('id', $nonconformanceId)->update([
-            'status' => 'CAPA_REQUIRED',
-            'updated_at' => now(),
-        ]);
+            $id = (string) Str::uuid();
+            DB::table('quality_corrective_actions')->insert([
+                'id' => $id,
+                'tenant_id' => $tenantId,
+                'nonconformance_id' => $nonconformanceId,
+                'action_code' => $data['action_code'],
+                'action_type' => strtoupper($data['action_type']),
+                'action_description' => $data['action_description'],
+                'assigned_to_user_id' => $data['assigned_to_user_id'] ?? null,
+                'due_date' => $data['due_date'] ?? null,
+                'status' => 'OPEN',
+                'implementation_evidence' => json_encode([], JSON_THROW_ON_ERROR),
+                'effectiveness_criteria' => $data['effectiveness_criteria'] ?? null,
+                'created_by' => $actorId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
 
-        return DB::table('quality_corrective_actions')->where('tenant_id', $tenantId)->where('id', $id)->first();
+            DB::table('quality_nonconformances')
+                ->where('tenant_id', $tenantId)
+                ->where('id', $nonconformanceId)
+                ->update([
+                    'status' => 'CAPA_REQUIRED',
+                    'updated_at' => now(),
+                ]);
+
+            $action = DB::table('quality_corrective_actions')
+                ->where('tenant_id', $tenantId)
+                ->where('id', $id)
+                ->first();
+
+            if ($action === null) {
+                throw new RuntimeException('The corrective action was not persisted.');
+            }
+
+            return $action;
+        }, 3);
     }
 
     public function decideMaterialRelease(string $tenantId, string $actorId, string $lotId, array $data): object
