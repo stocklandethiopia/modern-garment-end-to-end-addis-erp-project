@@ -23,27 +23,28 @@ The important distinction is between:
 
 A design document, migration, controller, unit test, green generic CI run or generated source archive does not by itself prove a complete business workflow. This audit uses that distinction throughout.
 
-### Overall status by work package
+### WP-00–WP-16 implementation baseline at the inspected delivery head
 
-| Work package | Assessment at the audited delivery head | Production disposition |
+| Work package | Source-backed implementation found | Next build focus |
 |---|---|---|
-| WP-00 Governance | Owner-approved governance and autonomous delivery direction recorded | Accepted governance baseline |
-| WP-01 Requirements | R3 evidence archive verified; requirements implementation and identifier reconciliation remain open | Not implementation-complete |
-| WP-02 Ethiopia legal foundation | Legal-source register internally accepted; professional legal interpretation and activation remain separate | Source register only; legal holds remain |
-| WP-03 Enterprise/SaaS foundation | Tenant, entity, membership, role and lifecycle foundations integrated; authorization and platform-operator gaps remain | Partial; scoped access fail-closed |
-| WP-04 Merchandising | Initiative, insight, range, assortment, OTB, price and promo slices | Partial |
-| WP-05 Product development | Style, measurement, pattern, sample/fit, BOM and tech-pack foundations | Partial |
-| WP-06 Industrial engineering | SAM/time study, capacity and workforce-control foundations | Partial |
-| WP-07 Sourcing/procurement | Supplier, sourcing, PO, receipt and material-lot traceability foundations | Partial |
-| WP-08 Route/SOP management | Process-route versions and initial route gates | Partial |
-| WP-09 Material issue and production genealogy | Issue/return/consumption and initial bundle/route genealogy | Partial |
-| WP-10 Manufacturing execution/planning | Initial production queues, events, skills, output and capacity slices | Partial |
-| WP-11 Quality/compliance | Inspection, defect, NCR, CAPA and release-decision foundations | Partial |
-| WP-12 Distribution/commerce | Finished-goods lots, locations, reservations, credit decisions, orders and shipment foundations | Partial |
-| WP-13 Finance/treasury | Accounts, periods, journals, balanced posting and reversal foundations | Partial |
-| WP-14 People/payroll | Existing payroll-review foundation; new Ethiopia calculator is on a separate unmerged branch | Candidate-only; payroll activation HOLD |
-| WP-15 Documents/integrations/agents | Document, extraction, outbox, scan and agent-governance records; live processing is incomplete | Partial |
-| WP-16 System quality/release | Release design and component CI exist; complete E2E/security/performance/recovery/UAT/deployment evidence does not | Release NOT ACCEPTED |
+| WP-00 Governance | Owner-approved scope, autonomous delivery delegation and the 27 November production-build/workflow amendment are recorded in the governance agreement | Keep every increment tied to approved scope, exact source, evidence and downstream dependencies |
+| WP-01 Requirements | R3 package integrity evidence: 128 requirement records, 24 contexts, 45 source-map rows and package tests | Complete the semantic crosswalk to legacy GAR identifiers and map every requirement to code, API/UI, migration, test and handover |
+| WP-02 Ethiopia legal foundation | Ethiopia localization standard and authority/source register with explicit unresolved interpretation points | Retain and hash source bytes, reconcile amendments/effective dates and obtain qualified review for statutory rules |
+| WP-03 Enterprise/SaaS | Tenant, legal entity, membership, invitations, scoped-access foundation, domain roles, ownership succession, entitlements and tenant lifecycle migrations/services | Complete platform-operator grant lifecycle, target-resource scope enforcement, expiry/recovery, SSO/MFA and entitlement enforcement |
+| WP-04 Merchandising | Initiative/market insight, brand/collection/range/assortment, forecast/OTB/pricing and account-term service slices | Complete full commercial lifecycle, channel actuals, downstream reconciliation and domain acceptance coverage |
+| WP-05 Product development | Product briefs/styles/revisions, measurement/pattern/sample-fit, BOM/technical-pack approvals and release-manifest foundations | Resolve the BOM material-verification dead-end, substitution approvals, verified object assets and dynamic cross-domain release gates |
+| WP-06 Industrial engineering | Operation standards, work centres, shifts, capacity slots, plan and workforce-skill/assignment foundations | Enforce operation quantity allocation, site binding, skill scope, worker overlap and calibrated factory planning |
+| WP-07 Sourcing/procurement | Supplier/PO/receipt/material-lot service slices and inventory-ledger foundations | Complete RFQ/quote/award, qualification evidence, receipt aggregation, service/subcontract acceptance and AP handoff |
+| WP-08 Route/SOP management | Versioned route and step records with approval and production-order linkage | Make route conditions executable and integrate approved SOP/work instructions, deviations and route genealogy |
+| WP-09 Material issue and production genealogy | Material receipt/lot, inventory movement, order/operation event and cutting-bundle schema foundations | Implement cutting/lay/bundle service, separate issue/return chains, WIP custody and full roll-to-garment genealogy |
+| WP-10 Manufacturing execution/planning | Production order, route events, execution queues and initial output/downtime/skill/capacity records | Complete department-specific MES, scan/offline execution, hourly performance, WIP control and concurrency recovery |
+| WP-11 Quality/compliance | Inspection, review, material/operation release, nonconformance, corrective-action and effectiveness service slices | Correct submission/review state, linked deviation approvals, NCR/CAPA atomicity, HSE and end-to-end hold enforcement |
+| WP-12 Distribution/commerce | Finished-goods lots/locations/reservations, customer-order, credit-decision and dispatch foundations | Complete allocation/WMS, channels, pick-pack-ship, returns/RMA, delivery integration and sales/stock reconciliation |
+| WP-13 Finance/treasury | Finance periods, journal drafts/decisions/posting, customer credit and payroll-review foundations | Freeze approved journal lines, implement reversals, subledgers, AP/AR, costing, FX, bank reconciliation and close |
+| WP-14 People/payroll | Canonical payroll-review foundation; Ethiopia calculator and legal-engineering evidence exist on a separate candidate branch | Reconcile and review candidate source, complete HR/time/leave/benefits, statutory evidence and payroll-to-GL/remittance paths |
+| WP-15 Documents/integrations/agents | Document metadata/upload/extraction records, outbox transitions, device scans and agent proposal/approval controls | Complete provider-neutral object storage, verified extraction/import, workers/adapters, device identity, agent runtime and human approval UI |
+| WP-16 Quality/installer/release | Component CI, local dependency Compose, Make targets, version pins and release engineering standards | Build the reproducible master installer/application images, worker/scheduler topology and full security/E2E/performance/recovery/UAT evidence |
+
 
 No overall completion percentage is assigned. The repository does not provide a defensible denominator of independently accepted requirements: WP-01 R3 still needs semantic reconciliation, and the later work-package source folders and evidence matrices are incomplete.
 
@@ -793,7 +794,7 @@ These dependencies must be preserved:
 
 ---
 
-## 8. Final release decision and evidence rules
+## 8. Production objective and evidence rules
 
 **Production objective:** complete and qualify the canonical ERP and reproducible master installer against the agreed WP-00–WP-16 plan and engineering standards. The source-level findings and ordered implementation work below are the active build programme toward that objective.
 
@@ -1718,3 +1719,85 @@ The frontend has a product-development service spec, but the inspected backend/t
 7. Add the same exact dependency/hash references to manufacturing order start and finished-goods genealogy.
 
 No WP-05 or WP-10 runtime source has been modified by this audit addendum. It extends the canonical source-to-plan implementation register with cross-package release controls and acceptance evidence.
+
+
+---
+
+## 21. WP-05 BOM material resolution and technical-release state audit
+
+### 21.1 BOM material verification has no permitted transition to VERIFIED
+
+**Finding:** the current BOM lifecycle creates a permanent mismatch between the WP-07 material-resolution handoff and the WP-05 release-readiness check.
+
+**Source evidence**
+- backend/app/Services/ProductDevelopment/BomTechnicalPackService.php, createBomVersion() line 68, always creates the BOM with material_resolution_status = UNVERIFIED_WP07.
+- The same service's submitBom() around lines 204–246 requires the material-resolution status to still be UNVERIFIED_WP07 at submission.
+- releaseReadiness() around lines 598–655 requires the approved BOM's material-resolution status to be VERIFIED.
+- backend/database/migrations/2026_11_22_000012_create_bom_and_tech_pack_controlled_releases.php, line 26, defines the field default as UNVERIFIED_WP07; lines 248–249 allow only UNVERIFIED_WP07 or VERIFIED.
+- The guard_style_bom_version_state() trigger around lines 297–336 allows only DRAFT → PENDING_APPROVAL and PENDING_APPROVAL → APPROVED/REJECTED transitions, and both transition branches explicitly require NEW.material_resolution_status IS NOT DISTINCT FROM OLD.material_resolution_status.
+- The trigger has no permitted DRAFT → DRAFT material-resolution update or a separate WP-07 verification transition.
+- The inspected SourcingService methods contain supplier, PO and receipt actions but no method that verifies a BOM's material references or writes a controlled resolution record. BomTechnicalPackService also has no material-resolution command.
+
+**Effect:** a BOM created through the current service remains UNVERIFIED_WP07 through submission and approval. The release-readiness method can only pass the material-resolution check if the value becomes VERIFIED, but the service exposes no transition and the database trigger prevents changing it on the existing row. This is a dead-end in the source state machine.
+
+**Required implementation**
+- [ ] Define WP-07's material-resolution contract for every BOM line: approved material master, component identity, UOM conversion, supplier qualification/scope, legal entity/site, effective dates, procurement/stock status, MOQ/lead-time and evidence references.
+- [ ] Prefer a versioned child resolution record (for example, bom_material_resolution_reviews) bound to tenant, BOM version and BOM-line snapshot, rather than mutating the immutable engineering BOM.
+- [ ] Record one decision per BOM revision with resolver, independent reviewer where required, decision time, source evidence IDs/hash, unresolved lines, exceptions and an immutable resolution-manifest hash.
+- [ ] If retaining the status column, use a forward migration to introduce one narrow, authorized, audited state transition with strict old/new predicates; do not edit the already-applied migration or weaken the general BOM immutability trigger.
+- [ ] Make the material-resolution action callable only by the WP-07 service role/capability and bind the resolved material identities to the exact approved BOM line/version.
+- [ ] Recheck resolution freshness when a supplier/material is suspended, a site/entity changes or an effective-date rule changes; invalidate or require a new resolution rather than silently reusing stale approval.
+- [ ] Add PostgreSQL feature tests for unresolved, partially resolved, fully resolved, stale, wrong-tenant, wrong-site/entity, revoked supplier and concurrent resolution attempts.
+- [ ] Add a full WP-05 → WP-07 → WP-11 → WP-08/WP-06 → WP-13 release-readiness test and verify the exact accepted BOM snapshot.
+
+### 21.2 BOM substitution candidates cannot reach quality approval or withdrawal
+
+**Finding:** a substitution candidate is created as PROPOSED with quality_approval_status = PENDING_WP11. Migration 000012 constrains quality_approval_status to exactly PENDING_WP11 (around lines 269–270). proposeSubstitution() is the only exposed substitution method in BomTechnicalPackService; the inspected QualityControlService and QualityController have no substitution-review/approval action. releaseReadiness() counts any candidate whose approval status is not APPROVED, so a proposed substitution becomes a permanent release blocker once material resolution is marked verified. The table status supports WITHDRAWN, but no service/controller action performs that transition either.
+
+**Required implementation**
+- [ ] Add a WP-11 quality review record/decision with reviewer, approved alternative material identity, equivalence/test evidence, affected BOM line/revision, conditions and effective period.
+- [ ] Add forward migration constraints that permit only the real lifecycle states and require decision metadata for APPROVED/REJECTED/WITHDRAWN; preserve maker-checker and immutable decision history.
+- [ ] Add controlled withdraw/revise/resubmit actions for the proposer or authorized style owner while the BOM is still eligible for revision.
+- [ ] Ensure a substitute is not treated as the selected material merely because a candidate was proposed; the selected line and approved alternative must be explicit.
+- [ ] Test quality approval/rejection, expired approval, wrong BOM version, withdrawn candidate, changed substitute, tenant boundary and release-readiness impact.
+
+### 21.3 Technical-pack release readiness contains permanent placeholder blockers
+
+**Finding:** releaseReadiness() adds the following blockers unconditionally:
+- OBJECT_STORAGE_NOT_VERIFIED (WP-15);
+- INDUSTRIAL_ENGINEERING_NOT_VERIFIED (WP-06);
+- ROUTE_AND_SOP_NOT_VERIFIED (WP-08);
+- QUALITY_RELEASE_NOT_VERIFIED (WP-11);
+- PRODUCT_COSTING_NOT_VERIFIED (WP-13).
+
+This correctly prevents a technical pack from being treated as fully ready while those cross-domain capabilities are not evidenced. However, these entries are static code additions rather than queries to versioned approvals/contracts. Even after the dependent modules are implemented, the method will continue to return release_ready = false until the placeholder logic is replaced.
+
+**Required implementation**
+- [ ] Retain fail-closed behavior while each dependency is absent.
+- [ ] Replace each permanent blocker with a typed readiness adapter and versioned evidence lookup: verified storage manifest; approved IE operation/method/SAM standard; approved manufacturing route/SOP revision; approved quality plan/critical-to-quality checks; approved cost roll-up.
+- [ ] Pin each evidence record to the exact style revision, BOM, measurement, pattern, fit-approved sample, legal entity/site, customer and effective date as applicable.
+- [ ] Snapshot the exact dependency IDs, versions and hashes into the release manifest; re-evaluate immediately before release under transaction locks.
+- [ ] Return actionable blockers with the missing evidence reference and owning WP, not just fixed placeholder strings.
+- [ ] Test that missing evidence blocks release and that adding complete, current, authorized evidence enables it; changing/revoking/superseding any dependency invalidates readiness.
+
+### 21.4 Technical-pack state contract has an unreachable RELEASE_BLOCKED value
+
+**Finding:** migration 000012's tech_pack_versions_decision_chk includes RELEASE_BLOCKED in its branch where decision fields must be null, but tech_pack_versions_status_chk does not include RELEASE_BLOCKED in the allowed status list. The status is therefore not a legal persisted state despite being referenced by another constraint.
+
+**Required implementation**
+- [ ] Decide whether release readiness is represented only as a computed response or as a persistent lifecycle status.
+- [ ] If computed, remove the unreachable RELEASE_BLOCKED branch in a forward migration and keep release blockers in a dedicated evidence/readiness result.
+- [ ] If persisted, add it intentionally to the status constraint and define legal transitions, retry/reassessment, audit and decision-field requirements.
+- [ ] Add migration tests that exercise every allowed status and transition.
+
+### 21.5 WP-05 regression and integration sequence
+
+1. Define and implement the immutable WP-07 BOM material-resolution record and service handoff.
+2. Add the WP-11 substitution approval/withdrawal record and API lifecycle.
+3. Replace fixed technical-pack dependency blockers with versioned readiness adapters, retaining fail-closed behavior.
+4. Correct the RELEASE_BLOCKED constraint mismatch using a forward migration.
+5. Add backend PostgreSQL feature tests for BOM lifecycle, source material verification, substitutions, asset verification and complete release-manifest creation.
+6. Add Angular product-development/BOM/tech-pack workbench tests for line resolution, substitution state, approval queues and readiness blockers.
+7. Execute a cross-domain production-intent journey using the exact release candidate SHA; preserve the complete evidence manifest.
+
+No WP-05/WP-07/WP-11 runtime source or database migration has been modified by this audit section. It records the verified state-machine defect and the required forward implementation path.
