@@ -2723,3 +2723,48 @@ No manufacturing or quality runtime source/migration was changed by this audit s
 7. Record the accepted UOM and scrap control evidence against WP-07/WP-09 requirement IDs.
 
 No sourcing, inventory, quality or production runtime source/migration was changed by this audit section; it records verified service/schema gaps and the forward build path.
+
+
+---
+
+## 36. WP-09 / WP-10 — Production material issue, consumption and WIP genealogy are not connected to the inventory ledger
+
+### 36.1 Production execution does not post material reservations, issues, returns or consumption
+
+**Finding:** ManufacturingExecutionService creates production orders and operation snapshots, then records operation START, OUTPUT, DEFECT, DOWNTIME, BLOCK, UNBLOCK, COMPLETE and SKIP events. It does not inject or call InventoryLedgerService and does not expose a material reservation, material issue, return-to-store, operation consumption or scrap/yield posting action. Its operation rows hold planned/good/defective quantities, but no material requirement, issue quantity, consumed quantity, returned quantity or material-lot/roll reference.
+
+InventoryLedgerService supports generic ISSUE, CONSUMPTION, TRANSFER and SCRAP movements, but these are not connected to the production order/operation/bundle lifecycle by an executable WP-09 service path.
+
+**Effect:** a production order can advance through output events without a corresponding authoritative movement of the required fabric roll, trim lot, packaging or chemical. The ledger can show stock balances while production execution independently reports output. The system cannot reliably reconcile BOM requirement → allocated stock → issued roll/trim → operation consumption → returned remainder → scrap/waste → completed garment quantity.
+
+**Source**
+- backend/app/Services/Manufacturing/ManufacturingExecutionService.php: createProductionOrder(), releaseProductionOrder(), startProductionOrder() and recordOperationEvent(); inspected public methods contain no material movement command or InventoryLedgerService dependency.
+- backend/app/Http/Controllers/Manufacturing/ManufacturingController.php: route/order/operation-event endpoints only; no material issue/return/consumption endpoint.
+- backend/app/Services/Inventory/InventoryLedgerService.php: postMovement() supports generic material movement types without production-specific orchestration.
+- backend/database/migrations/2026_11_26_000015_create_sourcing_material_traceability.php: inventory_transactions has generic source_document_type/source_document_id/source_line_id fields; those source IDs are not foreign keys to production_orders, production_order_operations or cutting_bundles.
+- backend/database/migrations/2026_11_26_000016_create_route_and_manufacturing_execution.php: production_order_operations contains output/status fields but no material issue/consumption ledger link.
+- backend/database/migrations/2026_11_22_000012_create_bom_and_tech_pack_controlled_releases.php: BOM lines provide product requirements, but no production-order material reservation/issue transaction is created by the manufacturing service.
+
+**Required implementation**
+- [ ] Add a production material requirement snapshot for each order, pinned to exact released tech-pack/BOM version, order quantity, approved substitutions, UOM conversion and wastage/yield assumptions.
+- [ ] Calculate required material by BOM line and approved size/colour/quantity allocation; persist the formula/version and input snapshot before order release.
+- [ ] Add material reservation and picking by legal entity/site/warehouse/location, fabric roll, shade/dye lot, trim lot, packaging and chemical batch.
+- [ ] Add issue-to-production and issue-to-operation commands that post the inventory ledger event atomically with the production material issue record and bind the movement to the exact order, operation, bundle and source BOM line.
+- [ ] Add controlled return-to-store, transfer, partial issue, substitute issue, scrap, rework, loss and offcut/remnant paths; preserve original movements and use compensating events rather than edits.
+- [ ] Add material consumption/backflush only for the explicitly approved process point and evidence source; never infer consumed stock from completed good quantity alone.
+- [ ] Reconcile issued = consumed + returned + WIP-held + approved loss/scrap by material lot/roll/trim, using canonical base UOM.
+- [ ] Enforce no issue from quarantine/blocked stock, no excess issue beyond approved tolerance, no cross-site/entity movement and no issue against a superseded BOM.
+- [ ] Add production-to-inventory foreign-key or typed source-reference controls so the inventory ledger cannot point to arbitrary/nonexistent production IDs.
+- [ ] Add tests for BOM version change after pick, shade mismatch, partial roll issue, cut waste, trim variance, return, substitute, over-issue, cross-site issue, concurrent issue, replay and complete order-to-ledger reconciliation.
+
+### 36.2 WP-09/WP-10 acceptance path
+
+1. Release a production order only after the approved BOM/material requirement snapshot and route/IE/quality dependencies are pinned.
+2. Reserve and pick the exact material lots/rolls/shades and trims; preserve the location and custody trail.
+3. Issue material to the order and operation through a transactionally linked inventory event.
+4. Record cutting/lay/bundle output and trace material allocation to each bundle and downstream operation.
+5. Record consumption, return, waste, defect and rework using typed movements and exact base-unit conversion.
+6. Reconcile the material ledger and production output against BOM quantity, expected yield and approved variance.
+7. Run tenant/site boundary, stock shortage, concurrent issue, payload replay and full roll/trim-to-finished-goods genealogy tests on the same exact candidate SHA.
+
+No production or inventory runtime source/migration was changed by this audit section; it records the missing cross-domain transaction path and its forward build sequence.
