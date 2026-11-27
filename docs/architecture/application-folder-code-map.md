@@ -389,3 +389,41 @@ Backend and frontend domain boundaries must match. A new Laravel controller/serv
 - `docs/security/platform-administration-bootstrap.md`: controlled two-person operator-grant provisioning and lifecycle/entitlement security boundary.
 - Route registration: `backend/routes/domain-api.php`; `/api/v1/platform/*` uses global identity context, while `/api/v1/tenant/entitlements` uses tenant context.
 - Integrated status: platform lifecycle/entitlement API and migration 000032 are exact-head CI verified and merged in PR #9. The current continuation branch adds immutable auditing for authorized platform tenant-register reads; its exact-head CI is pending. Controlled platform operator appointment, full feature-gate enforcement, retention/legal hold/export/recovery and platform Angular UI remain open.
+
+
+## 8. WP-03 organogram / DoA and WP-14 payroll — planned source map
+
+The paths below are the approved target layout for the build plan, not a claim that these runtime files already exist in the canonical integration branch. Before creating each migration or class, inspect the current schema and reuse existing bounded-context records rather than duplicating them.
+
+### 8.1 WP-03 enterprise organization and authority
+
+| Planned concern | Target backend source | Target frontend source | Required evidence |
+|---|---|---|---|
+| Org units and reporting hierarchy | backend/app/Models/Organization/OrgUnit.php; backend/app/Services/Organization/OrganizationStructureService.php; backend/app/Http/Controllers/Enterprise/OrganizationStructureController.php | frontend/src/app/features/enterprise/organization/organization.service.ts; organization-tree.component.* | Migration, parent/cycle/effective-date tests, RLS and historical-as-of tests |
+| Positions and job slots | backend/app/Models/Organization/Position.php; PositionAppointment.php; PositionService.php | position-catalogue.component.*; position-appointment.component.* | Vacancy, acting appointment, appointment overlap, termination and audit tests |
+| Reporting lines | ReportingLine.php; ReportingLineService.php | reporting-line-editor.component.* | Solid-line/functional-line validation, cycle prevention and date-boundary tests |
+| Delegation of Authority | backend/app/Models/Authorization/DelegationPolicy.php; DelegationRule.php; ApprovalInstance.php; ApprovalDecision.php; DelegatedAuthorityResolver.php | doa-policy-workbench.component.*; approval-inbox.component.* | Scope/amount/cumulative/budget/role-conflict tests; self-approval and stale-approval rejection |
+| Cross-domain approval | backend/app/Services/Authorization/DomainCapabilityAuthorizer.php (extend only after scoped DoA resolver exists); domain services call typed approval contract | Existing domain task workbenches consume server decisions | PO/AP/receipt/quality/treasury separation; exact source-to-transaction audit tests |
+
+### 8.2 WP-14 employee and Ethiopia payroll
+
+| Planned concern | Target backend source | Target frontend source | Required evidence |
+|---|---|---|---|
+| Employee/person/contract master | backend/app/Models/HR/Employee.php; EmploymentContract.php; EmployeeAssignment.php; EmployeeLifecycleService.php | frontend/src/app/features/hr/employees/employee.service.ts; employee profile/contract/assignment components | Person/login separation, legal-employer uniqueness, effective-dated contracts, privacy/RLS tests |
+| Time/payable-time integration | backend/app/Services/HR/PayableTimeService.php; approved WP-10 time/IE source events | features/hr/time-attendance/*; exception and approval queues | Deduplication, out-of-order/offline events, overtime approval and source-event traceability |
+| Statutory legal evidence | backend/app/Models/Payroll/StatutorySourceRecord.php; StatutoryRuleSnapshot.php; StatutoryApprovalEvidence.php | features/hr/payroll/statutory-evidence/* | Official-source hash, article/effective-date/transition, reviewer qualification and approval tests |
+| Server-side calculator | Candidate source location: backend/app/Services/Payroll/EthiopiaPayrollCalculator.php; integrate only after review | Display server-returned breakdown; no client tax math | Exact-decimal, progressive bands, rounding, candidate regressions, exemptions, pension rationale and RETAINER_SERVICE exclusion |
+| Payroll lifecycle | backend/app/Services/Payroll/PayrollRunService.php; PayrollApprovalService.php; PayrollPostingService.php | features/hr/payroll/*; payslip and review workbenches | Period freeze, idempotency, DoA, balanced WP-13 journal, history immutability and reconciliation |
+| Agent integration | WP-15 governed tools only; no agent-owned payroll transaction service | Agent findings shown as review proposals | Scoped access, source citation, prompt-injection, no approval/post/payment tool access |
+
+### 8.3 Route and event registration
+
+- Add Laravel routes in backend/routes/domain-api.php under existing tenant/auth middleware and policy gates; do not create a parallel API stack.
+- Add model factories and migrations in backend/database/migrations/; preserve chronological order and forward-only migration discipline.
+- Add Angular routes in frontend/src/app/app.routes.ts and feature providers/services in the existing standalone Angular structure.
+- Publish versioned event schemas and use the existing integration outbox for reliable downstream delivery.
+- Update this map in the same branch whenever any target path is created, moved or removed.
+
+### 8.4 Source status boundary
+
+Current integrated baseline contains tenant/identity foundations and candidate FinanceControl payroll foundations. The Ethiopia payroll calculator, new payroll rule gate and organogram runtime are still separate candidate/design sources until reconciled, merged and exact-head CI verified. The target paths in this section are a build plan only. No missing runtime class should be described as implemented merely because it is listed here.

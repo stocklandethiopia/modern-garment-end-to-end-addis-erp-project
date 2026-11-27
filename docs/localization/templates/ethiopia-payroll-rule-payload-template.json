@@ -1,0 +1,73 @@
+{
+  "jurisdiction_code": "ETH",
+  "currency": "ETB",
+  "status": "DRAFT_NOT_ACTIVE",
+  "payroll_period": {
+    "start": null,
+    "end": null
+  },
+  "records": [
+    {
+      "rule_domain": "INCOME_TAX",
+      "source_authority": null,
+      "source_title": null,
+      "source_reference": null,
+      "source_sha256": null,
+      "publication_date": null,
+      "effective_from": null,
+      "effective_to": null,
+      "verification_status": "UNVERIFIED",
+      "verified_by": null,
+      "verified_at": null,
+      "professional_approval_reference": null,
+      "rule_payload": {
+        "payroll": {
+          "rounding_method": null,
+          "tax_base_method": null,
+          "monthly_tax_bands": null,
+          "tax_base_decision": {
+            "status": "REVIEW_REQUIRED",
+            "approved_method": null,
+            "opinion_reference": null,
+            "reviewer_qualification": null,
+            "reviewer_user_id": null,
+            "reviewer_registration_reference": null,
+            "opinion_document_reference": null,
+            "opinion_sha256": null,
+            "independence_confirmed": false,
+            "reviewed_at": null,
+            "article_references": []
+          },
+          "supporting_sources": []
+        }
+      }
+    },
+    {
+      "rule_domain": "PENSION",
+      "source_authority": null,
+      "source_title": null,
+      "source_reference": null,
+      "source_sha256": null,
+      "publication_date": null,
+      "effective_from": null,
+      "effective_to": null,
+      "verification_status": "UNVERIFIED",
+      "verified_by": null,
+      "verified_at": null,
+      "professional_approval_reference": null,
+      "rule_payload": {
+        "payroll": {
+          "salary_basis": null,
+          "rounding_method": null,
+          "employee_rate_basis_points": null,
+          "employer_rate_basis_points": null,
+          "supporting_sources": []
+        }
+      }
+    }
+  ],
+  "activation": {
+    "employee_master_release_ready": false,
+    "statutory_activation_enabled": false
+  }
+}
