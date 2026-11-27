@@ -39,8 +39,8 @@ class ScopedAccessService
         }
 
         return [
-            'user_id' => (string) $result->user_id,
-            'scope_mode' => (string) $result->scope_mode,
+            'user_id' => (string) $result->result_user_id,
+            'scope_mode' => (string) $result->result_scope_mode,
         ];
     }
 
