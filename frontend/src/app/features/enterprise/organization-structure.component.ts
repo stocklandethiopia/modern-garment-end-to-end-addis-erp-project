@@ -435,11 +435,6 @@ export class OrganizationStructureComponent {
     return unit ? unit.unit_name + ' (' + unit.unit_code + ')' : 'Unknown unit';
   }
 
-  positionName(positionId: string): string {
-    const position = this.positions().find((item) => item.id === positionId);
-    return position ? position.title + ' (' + position.position_code + ')' : 'Unknown position';
-  }
-
   entityName(entityId: string | null): string {
     if (!entityId) return 'Not assigned';
     return this.legalEntities().find((entity) => entity.id === entityId)?.legal_name ?? 'Assigned';
