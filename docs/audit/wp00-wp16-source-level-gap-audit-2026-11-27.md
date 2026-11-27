@@ -587,7 +587,7 @@ Source comparison confirms:
 - WP-03 organization runtime head `da50b739...`: CI #46010970370 and combined verification #46010970310; backend and Angular jobs show `runner_id: 0`, no runner name and zero steps. The combined packaging job was skipped.
 - WP-14 payroll head `b6b3fb30...`: CI #46008205344 and combined verification #46008205340; backend and Angular jobs show `runner_id: 0`, no runner name and zero steps. The combined packaging job was skipped.
 - WP-01 R3 PR head `b57c919a...`: runs #45981018818 and #45981018841 ended as failures; no code-test conclusion is inferred from the status alone.
-- CI runner-continuity branch `659e53f3...` has no workflow run associated with the inspected head.\n- PR #27 head `1261451a...`: ERP CI #46023983272 and component/WP-01 verification #46023983506 both have backend/frontend/package jobs with `runner_id: 0`, blank runner names and zero steps; the archive follow-on is skipped. The PR's new PHP/PostgreSQL source tests therefore remain NOT RUN.
+- CI runner-continuity branch `659e53f3...` has no workflow run associated with the inspected head.\n- PR #27 head `1261451a...`: ERP CI #46024604836 and component/WP-01 verification #46024604984 both have backend/frontend/package jobs with `runner_id: 0`, blank runner names and zero steps; the archive follow-on is skipped. The PR's new PHP/PostgreSQL source tests therefore remain NOT RUN.
 - Earlier delivery SHA `f948bb85...` has successful executed test evidence (ERP CI #45901553898/#45901559007). It is useful historical evidence for that SHA only, not for later heads.
 - Earlier source-package checks recorded 128 R3 rows, 24 contexts, 45 source maps, 20 package tests, checksum verification and strict audit. These package-integrity results do not make the 128 application requirements implemented.
 
@@ -3884,8 +3884,8 @@ PR #26 (`fix/wp11-inspection-review-transition-2026-11-27`, head `d96f8c3ee343b2
 ### 57.6 Exact-head CI and verification evidence
 
 At PR #27 head `1261451a08c2df108e90ef4d335d3bbbce1989a6`:
-- ERP Continuous Integration: run #46023983272.
-- ERP component and WP-01 package verification: run #46023983506.
+- ERP Continuous Integration: run #46024604836.
+- ERP component and WP-01 package verification: run #46024604984.
 
 Both runs ended before any test step. Backend, Angular and WP-01 jobs report `runner_id: 0`, empty runner name and zero steps; the archive follow-on was skipped. Therefore:
 - Source files, test files, migration and workflow contents have been fetched back from the branch and statically checked for the expected implementation patterns.
