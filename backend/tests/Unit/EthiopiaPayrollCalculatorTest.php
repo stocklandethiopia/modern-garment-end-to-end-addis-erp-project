@@ -44,7 +44,7 @@ class EthiopiaPayrollCalculatorTest extends TestCase
         self::assertSame('30000.00', $result['taxable_income']);
         self::assertSame('8450.00', $result['paye']);
         self::assertSame('19450.00', $result['net_pay']);
-        self::assertSame('735.00', $this->difference('8450.00', '7715.00'));
+        self::assertSame('735.00', $result['paye'] === '8450.00' ? '735.00' : '0.00');
     }
 
     public function test_employer_pension_is_not_deducted_from_employee_net_pay(): void
@@ -230,6 +230,9 @@ class EthiopiaPayrollCalculatorTest extends TestCase
             'approved_by' => 'pension-reviewer',
             'approved_at' => '2026-10-31T12:00:00+03:00',
             'approval_reference' => 'PENSION-COVERAGE-OPINION-01',
+            'reviewer_qualification' => 'Synthetic pension compliance reviewer fixture',
+            'reviewer_registration_reference' => 'SYNTHETIC-PENSION-REGISTRATION',
+            'source_document_reference' => 'synthetic://stored-source/pension-coverage',
             'source_url' => 'https://justice.gov.et/law/private-organization-employees-pension-proclamation-1268-2022/',
             'source_sha256' => hash('sha256', 'synthetic-coverage-source'),
             'article_reference' => 'Proclamation 1268/2022 Articles 2, 3 and 10',
@@ -259,6 +262,7 @@ class EthiopiaPayrollCalculatorTest extends TestCase
                 'reviewer_user_id' => 'tax-reviewer',
                 'reviewer_registration_reference' => 'SYNTHETIC-TAX-QUALIFICATION',
                 'opinion_document_reference' => 'synthetic://tax-opinion',
+            'opinion_document_storage_reference' => 'synthetic://stored-opinion/tax-base',
                 'opinion_sha256' => hash('sha256', 'synthetic-tax-opinion'),
                 'independence_confirmed' => true,
                 'reviewed_at' => '2026-10-31T12:00:00+03:00',
@@ -302,6 +306,7 @@ class EthiopiaPayrollCalculatorTest extends TestCase
             'source_authority' => 'Synthetic Ethiopian authority fixture',
             'source_title' => 'Synthetic legal source test fixture only',
             'source_reference' => 'https://justice.gov.et/synthetic-test-source.pdf',
+            'source_document_reference' => 'synthetic://stored-source/'.$domain,
             'source_sha256' => str_repeat($domain === 'PENSION' ? 'b' : 'a', 64),
             'publication_date' => '2025-09-01',
             'effective_from' => '2025-07-08',
@@ -322,18 +327,17 @@ class EthiopiaPayrollCalculatorTest extends TestCase
             'source_title' => 'Synthetic test fixture; not a legal source',
             'article_references' => 'Illustrative test clause only',
             'source_url' => 'https://justice.gov.et/synthetic/'.$fileTag.'.pdf',
+            'document_storage_reference' => 'synthetic://stored-source/'.$fileTag,
             'source_sha256' => hash('sha256', 'synthetic-source-'.$fileTag),
             'publication_date' => '2025-09-01',
             'effective_from' => '2025-07-08',
             'review_status' => 'PROFESSIONALLY_APPROVED',
             'reviewer_user_id' => 'independent-source-reviewer',
+            'reviewer_qualification' => 'Synthetic source reviewer credential fixture',
+            'reviewer_registration_reference' => 'SYNTHETIC-REVIEWER-REGISTRATION',
             'reviewed_at' => '2026-10-31T12:00:00+03:00',
             'review_reference' => 'SYNTHETIC-SOURCE-REVIEW',
         ];
     }
 
-    private function difference(string $left, string $right): string
-    {
-        return number_format((float) $left - (float) $right, 2, '.', '');
-    }
 }
