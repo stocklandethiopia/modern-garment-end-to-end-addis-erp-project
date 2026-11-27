@@ -565,8 +565,8 @@ A Git commit is not part of the canonical ERP until it is integrated into `deliv
 | Enterprise organogram and delegated authority design | PR #16; `work/enterprise-organogram-doa-2026-11-27` | `ad5a5a71e8e46c87081a1f16fb0a723df44c65c0`; 6 commits ahead, 0 behind; 3 docs files | Position-based hierarchy and DoA framework plus architecture navigation/model updates | Keep as design input; reconcile with the combined WP-03/WP-14 plan and WP-03 runtime branch. The design is not a runtime approval engine. |
 | Apparel library sample reconciliation | PR #14; `work/library-apparel-sample-reconciliation-2026-11-27` | `b765460a608dd629920b9d1ef4b3512aa0db1eaa`; 1 commit ahead, 0 behind; 1 docs file | 76-entry workspace sample review, 25 proposed JSON Schemas, changeset and legacy-source boundary analysis | Retain as reference reconciliation. Previous checks record 37/37 JSON files parsed, 25/25 schemas validated, 5/5 registry tests and source-manifest checks; this is not live ERP runtime or factory acceptance. Do not copy old WordPress/PHP/MySQL runtime into the Laravel/Angular/PostgreSQL product. |
 | Agent-native ERP/Codex blueprint | PR #3; `feature/agent-native-erp-foundation-2026-11-25` | `dfdf503b4aae4b0e787ca1cb3826c4fd97171b20`; branch is based on the earlier corrective-action audit, not the current delivery; comparison shows 46 commits ahead and 813 behind delivery | Agent role definitions, agent skills, operating model, technology/experience blueprint and source-intake workflows | Reconcile the approved design and agent policies onto the delivery line selectively. Do not merge the diverged 157-file comparison as a single runtime change and do not claim that agents, device connectors or agent screens are operational. |
-| Provider-neutral private document storage | PR #10 merged to `work/wp01-16-completion-2026-11-26`, not delivery | PR head `2a48f41fc8da8ac5693dffa097056525af6e8236`; its comparison branch is 136 commits behind delivery | Fix candidate defines the private-document disk, switches fallback to local, imports RuntimeException and adds a unit test | Port only the relevant safe changes to current delivery; do not copy the old `.env.example` or loopback runtime defaults. The later WP-14 branch does not resolve this storage defect. |
-| No-loopback runtime-default correction | PR #12 merged into delivery | Merged delivery head `fc01eced62b97c4ec27f0075264fc8ba0fb11851`; source PR head `f138cfbeee9adea99fd0d0a2f98afeb9af016788` | Runtime host defaults are placeholders; checker `scripts/check-no-loopback-defaults.php`, CI and Makefile enforcement are integrated | Preserve this change. Loopback addresses used inside isolated CI service environments or local Compose infrastructure are not application runtime defaults. Exact delivery-head workflow evidence must still be executed. |
+| Provider-neutral private document storage | PR #10 intermediate merge; consolidated fix in PR #27 | PR #27 head `5751faf5f821b3b626be0e767d62671efb488623`, 20 commits ahead of delivery; 10 changed files across WP-11/WP-15/WP-16 | Configurable private disk, local fallback, RuntimeException import, transactional metadata persistence, upload compensation, unit/feature tests | Review exact-head PHP/PostgreSQL checks and storage-provider behavior; then integrate to delivery. PR #10 source is no longer the patch to port—PR #27 contains the current implementation. |
+| Private document / quality-state / RLS remediation | PR #27; `work/fix-private-document-storage-rls-inventory-2026-11-27` | `5751faf5f821b3b626be0e767d62671efb488623`; 20 commits ahead, 0 behind delivery; 10 files | Private storage transaction/compensation; explicit inspection pending-review state; atomic CAPA; dynamic tenant RLS inventory; workflow scope naming correction | Keep as a focused implementation PR. It is source-rendered and statically reviewed; exact-head CI is NOT RUN due pre-runner failures. Do not merge before executable PHP/PostgreSQL/Angular/source-package checks pass. |\n| Superseded quality-review candidate | PR #26 closed; `fix/wp11-inspection-review-transition-2026-11-27` | `d96f8c3ee343b2ec526745d9d30ce7b5740eaeda`; closed after its core behavior/test was incorporated in PR #27 | Original migration 000034 and focused inspector/reviewer feature test | Do not revive or merge: migration 000034 collides with WP-03/WP-14 candidate sequence. Its release-eligibility assertions are now in PR #27 and its chosen migration is 000038. |\n| No-loopback runtime-default correction | PR #12 merged into delivery | Merged delivery head `fc01eced62b97c4ec27f0075264fc8ba0fb11851`; source PR head `f138cfbeee9adea99fd0d0a2f98afeb9af016788` | Runtime host defaults are placeholders; checker `scripts/check-no-loopback-defaults.php`, CI and Makefile enforcement are integrated | Preserve this change. Loopback addresses used inside isolated CI service environments or local Compose infrastructure are not application runtime defaults. Exact delivery-head workflow evidence must still be executed. |
 | Earlier source-intake / SHA corrective-action audit | PR #2; isolated source-intake base | `audit/corrective-action-plan-2026-11-24` at `0d005ab32ab6b0e4c24ac87727f2d9ae3fb12024`; base is `audit/stockland-local-source-v0.3.0` | Intake provenance, source archive inspection and corrective-action documentation | Keep separate from executable ERP runtime. Use source material only through the approved greenfield reconciliation process. |
 | This WP-00–WP-16 audit | PR #18; `audit/wp00-wp16-source-gap-audit-2026-11-27` | Current branch head before this amendment: `7260c55a79135f0187ccbb884e34779fe2df346c`; PR targets delivery `fc01eced...`; 26 commits, 2 documentation files | 263 KB source-level gap audit and the workflow agreement amendment | Keep this audit on its separate branch/PR. This amendment updates its branch inventory and adds the newly inspected WP-03, WP-14 and CI source candidates; it does not change ERP runtime code. |
 
@@ -578,7 +578,7 @@ Source comparison confirms:
 - PR #10 has a candidate fix: private document disk configuration defaulting to local, local fallback, RuntimeException import and a unit test.
 - WP-14 candidate `b6b3fb3094c460e8a09f13283c9b65f75c5469cb` updates DocumentIntegrationService for legal source-document verification, but its `filesystems.php` still has no `private_documents_disk` entry and the service still falls back to `s3`. It does not port the PR #10 storage correction.
 - The PR #10 branch's old `.env.example` and configuration include loopback examples; do not copy them wholesale. Apply the storage fix to the current delivery version and preserve the no-loopback guard.
-- Add tests for default local storage, configured S3-compatible provider, unavailable provider, upload failure, read-stream/hash mismatch, and compensation/cleanup when object upload succeeds but the database transaction fails.
+- PR #27 now adds unit coverage for the non-served local default and configured provider-disk selection, plus PostgreSQL feature tests for successful upload and compensation after metadata failure. Exact-head execution is NOT RUN. Additional provider failure, legal source read-back/hash mismatch, malware scanning, worker extraction and import adapter coverage remain.
 
 ### 4.2 Workflow execution state and exact-source evidence
 
@@ -587,7 +587,7 @@ Source comparison confirms:
 - WP-03 organization runtime head `da50b739...`: CI #46010970370 and combined verification #46010970310; backend and Angular jobs show `runner_id: 0`, no runner name and zero steps. The combined packaging job was skipped.
 - WP-14 payroll head `b6b3fb30...`: CI #46008205344 and combined verification #46008205340; backend and Angular jobs show `runner_id: 0`, no runner name and zero steps. The combined packaging job was skipped.
 - WP-01 R3 PR head `b57c919a...`: runs #45981018818 and #45981018841 ended as failures; no code-test conclusion is inferred from the status alone.
-- CI runner-continuity branch `659e53f3...` has no workflow run associated with the inspected head.
+- CI runner-continuity branch `659e53f3...` has no workflow run associated with the inspected head.\n- PR #27 head `5751faf5...`: ERP CI #46023983272 and component/WP-01 verification #46023983506 both have backend/frontend/package jobs with `runner_id: 0`, blank runner names and zero steps; the archive follow-on is skipped. The PR's new PHP/PostgreSQL source tests therefore remain NOT RUN.
 - Earlier delivery SHA `f948bb85...` has successful executed test evidence (ERP CI #45901553898/#45901559007). It is useful historical evidence for that SHA only, not for later heads.
 - Earlier source-package checks recorded 128 R3 rows, 24 contexts, 45 source maps, 20 package tests, checksum verification and strict audit. These package-integrity results do not make the 128 application requirements implemented.
 
@@ -3804,3 +3804,106 @@ This candidate does not approve a deviation, override an NCR, authorize a materi
 - [ ] Confirm the final access policy against the existing privacy, HR and data-retention requirements before exposing future person/incumbent and acting appointment fields.
 
 **Acceptance boundary:** retain current tenant RLS and the existing administrator-only write boundary. Do not broaden reads or break legitimate employee directory behavior until the approved requirement-to-actor matrix is reconciled. The access policy and negative tests must be complete before WP-03 is accepted.
+
+
+---
+
+## 57. PR #27 — executed source remediation replay for WP-11, WP-15 and WP-16
+
+**Candidate branch:** `work/fix-private-document-storage-rls-inventory-2026-11-27`  
+**Base:** `delivery/autonomous-wp-01-16` at `fc01eced62b97c4ec27f0075264fc8ba0fb11851`  
+**Exact candidate head:** `5751faf5f821b3b626be0e767d62671efb488623`  
+**Pull request:** [#27 — repair private document storage and RLS inventory](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/pull/27)  
+**Candidate comparison:** 20 commits ahead, 0 behind; 10 changed files  
+**Current disposition:** source implemented on candidate branch; PR open as draft; not merged into delivery.
+
+### 57.1 WP-15 private-document upload/storage defect — source fix rendered
+
+**Source changed**
+- `backend/config/filesystems.php`
+- `backend/.env.example`
+- `backend/app/Services/Integration/DocumentIntegrationService.php`
+- `backend/tests/Unit/PrivateDocumentStorageConfigTest.php`
+- `backend/tests/Feature/DocumentIntegrationStorageTest.php`
+
+**Fixes applied**
+- Add `PRIVATE_DOCUMENTS_DISK` configuration with a default of the non-served local private disk. Preserve the option to select a configured disk by name; do not impose S3 as a mandatory runtime provider.
+- Change the document service fallback from the undefined `s3` disk to `local`.
+- Import the global `RuntimeException` and `Throwable` classes used in the namespaced service.
+- Register document metadata within a database transaction and verify that the row is present after insertion.
+- If metadata persistence fails after the object upload, attempt compensating deletion from the exact selected disk; report cleanup failure while preserving/rethrowing the original persistence error.
+- Add unit tests for the local private disk default and selection of a configured named disk.
+- Add PostgreSQL feature tests for the upload/metadata path and the duplicate-document-code failure path, which verifies that the just-uploaded object is removed and the original metadata record remains.
+
+**Remaining WP-15 work:** exact PHP/PostgreSQL execution; actual S3-compatible provider integration tests where configured; private source read-back/hash verification; malware scanning; document retention/legal hold; extraction workers; typed import adapters; approval/audit trail and operational retry/dead-letter handling. PR #27 fixes the upload/configuration defect but does not claim the entire document lifecycle complete.
+
+### 57.2 WP-11 quality inspection — explicit pending independent review
+
+The earlier source defect was confirmed by the existing migration 000017 and `QualityControlService`: an inspector's first passing submission wrote PASS/PASS_WITH_DEVIATION while the database simultaneously required reviewer ID/time. The reviewer endpoint could not run after the first write because PostgreSQL rejected the intermediate state.
+
+**Fixes applied**
+- Add forward migration `backend/database/migrations/2026_11_27_000038_repair_quality_inspection_review_state.php`.
+- Add the explicit `SUBMITTED_PENDING_REVIEW` state and `submitted_result_status` snapshot.
+- Inspector submission now records a passing proposal as SUBMITTED_PENDING_REVIEW with the original proposed PASS/PASS_WITH_DEVIATION value retained separately.
+- Independent review uses that saved proposal. Only a different reviewer can finalize the result to PASS or PASS_WITH_DEVIATION; reviewer metadata is still required by the database for final passing states.
+- The migration replaces the result-state/reviewer constraint as one defined allowed-state check, checks pending-state consistency and refuses rollback while pending reviews remain.
+- Extend `QualityInspectionReviewStateTest` to verify:
+  1. inspector submission reaches SUBMITTED_PENDING_REVIEW;
+  2. inspector cannot review their own result;
+  3. the release eligibility predicate is false before independent review;
+  4. a different reviewer accepts and records identity/time;
+  5. release eligibility becomes true only after review.
+- Existing quality release services continue to require a reviewed passing inspection; this change does not approve deviations or release inventory/production/finished goods.
+
+**Migration ordering:** migration 000038 is deliberately placed after the candidate reconciliation sequence for WP-03 platform migrations 000033/000034, WP-03 organization migration 000035, and WP-14 payroll evidence migrations provisionally sequenced as 000036/000037. This is a planned sequence for candidate integration, not evidence those candidate migrations have been merged. Confirm the final migration tree after rebasing/integration before merging PR #27.
+
+### 57.3 WP-11 CAPA and nonconformance transaction correction
+
+- `createCorrectiveAction()` now runs the nonconformance read, row lock, corrective-action insert and nonconformance state update inside one retryable transaction.
+- The service reads back the newly created corrective-action record and fails rather than returning false success if it was not persisted.
+- Resolved or closed nonconformances are rejected; a new CAPA cannot silently reopen a previously resolved record. Reopening remains a distinct controlled workflow.
+- PostgreSQL feature tests cover atomic successful creation/status update and rejection of CAPA creation against a resolved nonconformance.
+
+**Remaining WP-11 work:** deviation/waiver authority must be a separately evidenced decision, not the current request boolean; containment evidence, disposition authority, AQL/sampling plans, inspection standards, current-effective release/hold, CAPA evidence linkage and concurrency between new holds and route progression remain separate tasks.
+
+### 57.4 WP-03/WP-16 RLS inventory and verification scope correction
+
+- Add the three previously omitted platform control tables to the explicit domain RLS test: `platform_operator_grants`, `platform_tenant_entitlements`, `platform_audit_events`.
+- Add dynamic RLS feature-test discovery for all public base/partitioned tables that contain a `tenant_id` column, requiring both `relrowsecurity` and `relforcerowsecurity`.
+- Replace the workflow's manually maintained tenant-table list with the same dynamic database inventory approach; retain an explicit check for global `platform_operator_grants`, which has no tenant_id column.
+- Rename the combined verification workflow to `ERP component and WP-01 package verification` and the combined source archive to an ERP component candidate. The workflow runs backend/frontend component checks and WP-01 package checks; it does not execute the complete WP-00–WP-16 E2E acceptance matrix. The new name now reflects the work actually performed.
+
+### 57.5 Reconciliation of duplicate PR #26
+
+PR #26 (`fix/wp11-inspection-review-transition-2026-11-27`, head `d96f8c3ee343b2ec526745d9d30ce7b5740eaeda`) contained an earlier alternative migration numbered 000034 and a focused feature test for inspector submission, reviewer separation and release eligibility.
+
+- Its behavior and release-eligibility assertions were incorporated into the stronger PR #27 implementation.
+- Its migration 000034 would conflict with WP-03 platform/scope migrations and WP-14 statutory evidence migration candidates using the same sequence.
+- PR #26 was commented as superseded by PR #27 and closed. No duplicate quality-state migration should be integrated from PR #26.
+
+### 57.6 Exact-head CI and verification evidence
+
+At PR #27 head `5751faf5f821b3b626be0e767d62671efb488623`:
+- ERP Continuous Integration: run #46023983272.
+- ERP component and WP-01 package verification: run #46023983506.
+
+Both runs ended before any test step. Backend, Angular and WP-01 jobs report `runner_id: 0`, empty runner name and zero steps; the archive follow-on was skipped. Therefore:
+- Source files, test files, migration and workflow contents have been fetched back from the branch and statically checked for the expected implementation patterns.
+- PHP syntax, Pint, Laravel/PostgreSQL migrations, feature tests, Angular build/tests and WP-01 source-package verification are **NOT RUN** on this exact head.
+- No test pass or application failure is inferred from the runner allocation response.
+- PR #27 remains open as a draft; delivery remains at its existing baseline until the required exact-source verification executes successfully.
+
+### 57.7 Next actions before integration
+
+- [ ] Restore an executable CI runner or an owner-controlled trusted self-hosted runner; preserve every existing test/security gate.
+- [ ] Run migration 000038 against a clean PostgreSQL 18 database and an upgrade database containing historic inspection rows.
+- [ ] Run `PrivateDocumentStorageConfigTest`, `DocumentIntegrationStorageTest`, `QualityInspectionReviewStateTest`, `DomainRlsSecurityTest` and the complete backend suite as the restricted runtime role.
+- [ ] Run Angular tests/build, dependency audits, forced-RLS inventory and WP-01 source package checks on the same exact PR head.
+- [ ] Resolve candidate migrations 000033–000037 and verify the final complete migration order before applying PR #27's migration 000038.
+- [ ] Execute the same checks on the resulting delivery merge SHA after integration.
+- [ ] Continue the remaining WP-11 deviation/containment/AQL and WP-15 extraction/import/retention work; this PR closes only the bounded defects above.
+
+**Evidence classification:** source fix implemented and PR opened; static retrieval/review complete; executable tests NOT RUN due runner allocation; not merged into delivery.
+
+---
+
