@@ -1600,3 +1600,121 @@ IntegrationOutboxService implements claimBatch() with FOR UPDATE SKIP LOCKED, ma
 6. Complete private object hash verification, orphan cleanup, extraction worker and approved domain-import pipeline.
 7. Implement registered/authenticated device identity while preserving read-only scan resolution until an explicit domain command is authorized.
 8. Add sourcing and integration PostgreSQL/API/E2E tests and update the WP-07/WP-15 operator UI.
+
+
+---
+
+## 21. WP-05 product-development source and downstream release audit
+
+### 21.1 Existing WP-05 implementation is a real vertical slice
+
+The audited delivery includes:
+- Product brief and style APIs in backend/app/Http/Controllers/ProductDevelopment/ProductDevelopmentController.php.
+- Measurement specifications, pattern sets, pattern revisions and grade-rule validation in MeasurementPatternController.php.
+- Sample requests, sample rounds, fit sessions, observations and independent fit disposition in SampleFitController.php.
+- BOM/technical-pack service and controller in BomTechnicalPackService.php and BomTechnicalPackController.php.
+- Angular feature surfaces for product development, technical product development and sample/fit.
+
+The current code includes important controls:
+- Briefs derive from a frozen range line/current approved collection and active brand strategy.
+- Brief decisions are separated from the brief owner.
+- Style creation requires the accepted/current brief version.
+- Measurement specs are versioned against style revision; required points need values for every ordered size and base size must exist in the sequence.
+- Pattern revisions pin to approved measurement versions and require complete adjacent-size grade rules for every required point.
+- Sample rounds are sequenced; fit observations use the pinned measurement version and require every required measurement point before review.
+- Fit disposition is independent from the session creator and checks outside-tolerance/major/critical findings against the chosen decision.
+- BOM and technical pack approvals are separate from their authors; tech pack creation pins to exact approved BOM, measurement, pattern and fit-approved sample versions.
+
+These are verified source characteristics, not a claim that the full apparel PLM lifecycle or factory acceptance is complete.
+
+### 21.2 Technical-pack release readiness is permanently blocked by unimplemented downstream dependencies
+
+**Finding:** BomTechnicalPackService.releaseReadiness() appends five unconditional blockers for every technical pack:
+- OBJECT_STORAGE_NOT_VERIFIED (WP-15);
+- INDUSTRIAL_ENGINEERING_NOT_VERIFIED (WP-06);
+- ROUTE_AND_SOP_NOT_VERIFIED (WP-08);
+- QUALITY_RELEASE_NOT_VERIFIED (WP-11);
+- PRODUCT_COSTING_NOT_VERIFIED (WP-13).
+
+They are appended on every call, with no query for linked evidence that could satisfy them and no stored approval/evidence relationship that can clear them. Therefore release_ready can never become true in the present service implementation, and BomTechnicalPackService.release() always returns released=false.
+
+This is an explicit integration hold in the code. The right build action is not to delete the blockers; it is to implement the dependency contracts and clear each blocker only from verified, version-pinned records.
+
+**Source:** backend/app/Services/ProductDevelopment/BomTechnicalPackService.php, releaseReadiness() and release().
+
+**Required implementation**
+- [ ] Define versioned readiness contracts for IE operation standards/SAM, route/SOP, quality plan, costing and private asset integrity.
+- [ ] Resolve each dependency against the exact style revision, BOM version, sample/measurement/pattern version, site/customer/process scope and current effective approval.
+- [ ] Return per-dependency evidence references, approver, effective date, source SHA/document identity and validation result.
+- [ ] Replace hard-coded blockers only after each dependent package exposes a real query/command contract and positive/negative tests.
+- [ ] Preserve immutable release manifest inputs and record every dependency version/hash in the final technical release manifest.
+- [ ] Add a full dependency test where each missing/expired/superseded dependency blocks release and all approved dependencies permit release.
+
+### 21.3 WP-10 production-order creation accepts APPROVED even when tech-pack release is blocked
+
+**Finding:** ManufacturingExecutionService.createProductionOrder() accepts the linked technical pack when its status is either APPROVED or RELEASED. The WP-05 release service does not currently permit any tech pack to reach RELEASED because of the permanent downstream blockers above. Consequently the production-order creation path can proceed using APPROVED, bypassing the technical-pack release gate that was intended to prove the complete product passport is ready for production.
+
+The production-order release method also checks that the route and tech pack are approved/released and that at least one operation exists, but it does not query the WP-06 IE standard, WP-07 verified material resolution, WP-08 released route/SOP snapshot, WP-11 quality plan or WP-13 approved cost snapshot as linked dependency evidence.
+
+**Source**
+- backend/app/Services/Manufacturing/ManufacturingExecutionService.php, createProductionOrder() and releaseProductionOrder().
+- backend/app/Services/ProductDevelopment/BomTechnicalPackService.php, releaseReadiness() and release().
+
+**Required implementation**
+- [ ] Define an explicit transition from APPROVED to RELEASED that records all required downstream approvals.
+- [ ] Require the actual production release state (not merely technical approval) before production-order creation or release, once the WP dependency gates are implemented.
+- [ ] Validate production order style revision, BOM, measurement, pattern, sample/fit, IE, material, route, quality and cost dependency IDs against the same immutable product passport.
+- [ ] Enforce the dependency relationship at the service boundary and add database references/constraints where appropriate.
+- [ ] Add a negative E2E test proving an approved but unreleased tech pack cannot start production; add a positive test for a fully released product passport.
+- [ ] Preserve any explicitly approved sample/prototype production path as a different order purpose/type with quantity limits and separate route/material controls, rather than silently weakening the bulk-production release gate.
+
+### 21.4 BOM material resolution has no WP-07 bridge in the current source
+
+**Finding:** BOM versions are created with material_resolution_status UNVERIFIED_WP07. The current service requires this state while submitting the BOM, and releaseReadiness() blocks release until the BOM status becomes VERIFIED. The inspected SourcingService creates suppliers, purchase orders, receipts, lots, rolls and trims, but does not resolve BOM component references to approved material master identities, unit conversions, supplier qualification scope, inventory availability or effective material specifications. BomTechnicalPackService also has no material-resolution method.
+
+Thus, the state transition from the BOM placeholder/reference to a WP-07-verified material identity is not implemented in the inspected canonical source.
+
+**Required implementation**
+- [ ] Create a material master/reference model and controlled component mapping for every BOM line.
+- [ ] Validate unit of measure, base/issue unit conversion, approved specification/revision, material family, supplier qualification and relevant customer/brand restriction.
+- [ ] Reconcile required consumption, allowance/waste and planned production quantity to sourcing demand and available/on-order/in-transit material.
+- [ ] Record approved substitution as a separate quality-reviewed link to the BOM line; never overwrite the original component reference.
+- [ ] Transition material_resolution_status to VERIFIED only when every required line has a valid approved mapping and source evidence; include mapping snapshot hash.
+- [ ] Add tests for unknown material, expired spec, incompatible unit, blocked supplier, unapproved substitute, shortage and superseded BOM.
+
+### 21.5 Technical asset rights approval is metadata-only until the WP-15 document store is integrated
+
+**Finding:** Tech-pack assets store asset_reference, filename, MIME type, size, a SHA-256-shaped value and declared usage-rights metadata. The service computes asset_manifest_sha256 over those metadata records and reviewer decisions. It does not prove that the referenced object exists, that the actual bytes match the declared hash/size, or that an immutable object version is retained. The current document service has a separate document_assets model, but tech_pack_assets does not have an enforced document-asset linkage in the inspected source.
+
+**Required implementation**
+- [ ] Link the tech-pack asset row to an immutable tenant-scoped document asset/object version.
+- [ ] Recompute the hash from the stored object and verify byte size/MIME before rights review or release.
+- [ ] Keep rights-owner, licence/permission basis, territory, purpose, derivative rights, customer restrictions and expiry as a structured review record.
+- [ ] Re-verify current rights and storage integrity at release; do not rely only on the metadata manifest created at submission.
+- [ ] Add object missing/altered/hash mismatch/expired rights/replaced version and cross-tenant asset tests.
+
+### 21.6 WP-05 backend acceptance tests are absent from the current test tree
+
+The frontend has a product-development service spec, but the inspected backend/tests tree has no dedicated product-development feature test file. The product-development controllers and BomTechnicalPackService therefore have no package-specific PostgreSQL feature suite in the canonical test inventory to prove their multi-table transactions, row locks, approval segregation, version pinning, dependency gates and RLS behavior.
+
+**Required implementation**
+- [ ] Add backend Feature suites for brief/style, measurement/pattern, sample/fit and BOM/technical-pack release.
+- [ ] Test stale collection/brief/style revision, incomplete size grids, incomplete grade-rule coverage, incorrect unit, stale pattern, missing requested fit size, missing observation and wrong fit disposition.
+- [ ] Test creator cannot approve own brief/measurement/pattern/BOM/tech pack/asset/fit; test current accepted revision remains pinned.
+- [ ] Test all release dependencies both absent and present, and test a changed dependency invalidates a stale tech pack release attempt.
+- [ ] Test tenant isolation, authorization, concurrent version creation and audit-event atomicity.
+- [ ] Add browser E2E covering a real product brief → style → measurement → pattern → sample/fit → BOM → technical pack → readiness → release journey.
+
+---
+
+## 22. WP-05 / WP-10 implementation sequence
+
+1. Implement material master mapping and BOM resolution with WP-07.
+2. Complete stored-object integrity/rights verification with WP-15.
+3. Implement effective IE, route/SOP, quality-plan and costing dependency contracts.
+4. Make technical-pack readiness evidence-based and release only the exact complete product passport.
+5. Require released tech-pack state for bulk production order creation/release; provide an explicit bounded prototype route where needed.
+6. Add WP-05 PostgreSQL feature suites and the complete product passport browser E2E journey.
+7. Add the same exact dependency/hash references to manufacturing order start and finished-goods genealogy.
+
+No WP-05 or WP-10 runtime source has been modified by this audit addendum. It extends the canonical source-to-plan implementation register with cross-package release controls and acceptance evidence.
