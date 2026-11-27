@@ -3,6 +3,7 @@
 namespace App\Services\Finance;
 
 use App\Services\Payroll\EthiopiaPayrollCalculator;
+use App\Services\Integration\DocumentIntegrationService;
 use App\Services\Support\DecimalQuantity;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -242,6 +243,41 @@ class FinanceControlService
                 if ($rule['jurisdiction_code'] !== 'ETH' || trim($rule['source_document_reference']) === '') {
                     throw ValidationException::withMessages(['statutory_rule_ids' => 'Each Ethiopian payroll rule must reference the controlled stored official legal source document.']);
                 }
+
+                $this->verifyPayrollLegalDocument(
+                    $tenantId,
+                    (string) $rule['source_document_reference'],
+                    (string) $rule['source_sha256'],
+                    'STATUTORY_SOURCE'
+                );
+
+                $payload = $rule['rule_payload']['payroll'] ?? null;
+                if (! is_array($payload)) {
+                    throw ValidationException::withMessages(['statutory_rule_ids' => 'A statutory rule requires a payroll evidence payload.']);
+                }
+
+                foreach (($payload['supporting_sources'] ?? []) as $source) {
+                    if (! is_array($source)) {
+                        throw ValidationException::withMessages(['statutory_rule_ids' => 'A supporting legal source record is malformed.']);
+                    }
+
+                    $this->verifyPayrollLegalDocument(
+                        $tenantId,
+                        (string) ($source['document_storage_reference'] ?? ''),
+                        (string) ($source['source_sha256'] ?? ''),
+                        'STATUTORY_SOURCE'
+                    );
+                }
+
+                if ($rule['rule_domain'] === 'INCOME_TAX') {
+                    $opinion = $payload['tax_base_decision'] ?? [];
+                    $this->verifyPayrollLegalDocument(
+                        $tenantId,
+                        (string) ($opinion['opinion_document_storage_reference'] ?? ''),
+                        (string) ($opinion['opinion_sha256'] ?? ''),
+                        'LEGAL_OPINION'
+                    );
+                }
             }
 
             $id = (string) Str::uuid();
@@ -393,6 +429,29 @@ class FinanceControlService
 
             return DB::table('payroll_run_drafts')->where('tenant_id', $tenantId)->where('id', $runId)->first();
         }, 3);
+    }
+
+    /**
+     * Verify that legal evidence is a tenant-owned, stored ERP document and
+     * that the current stored bytes match the exact digest cited by the rule.
+     */
+    private function verifyPayrollLegalDocument(
+        string $tenantId,
+        string $documentId,
+        string $expectedSha256,
+        string $expectedType
+    ): void {
+        if (! Str::isUuid($documentId) || ! preg_match('/^[a-f0-9]{64}$/Di', $expectedSha256)) {
+            throw ValidationException::withMessages(['statutory_rule_ids' => 'Legal evidence must include a stored document UUID and SHA-256.']);
+        }
+
+        $document = app(DocumentIntegrationService::class)->verifyStoredDocumentChecksum($tenantId, $documentId);
+        if (strtoupper((string) $document->document_type) !== $expectedType
+            || ! hash_equals(strtolower((string) $document->sha256), strtolower($expectedSha256))
+            || $document->checksum_verified_at === null
+        ) {
+            throw ValidationException::withMessages(['statutory_rule_ids' => 'A stored legal document does not match the required evidence type or approved source hash.']);
+        }
     }
 
     /**
