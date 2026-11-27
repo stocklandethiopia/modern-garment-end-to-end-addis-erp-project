@@ -297,3 +297,16 @@ This amendment does not waive the controls in Sections 1, 3, 4, 6, 7 and the 26 
 5. Production deployment, statutory activation, real payroll/payment/bank execution, destructive production-data operations and other human-only high-impact actions remain subject to their specific accountable authorization. These narrow action gates do not reduce the engineering objective or the non-production work that can proceed.
 
 **Decision recorded:** pursue the complete approved production scope through a detailed WP-00–WP-16 task register; treat delivery constraints as problems to solve without weakening the agreed architecture, quality, security, legal or acceptance standards.
+
+
+## Standing owner amendment — 28 November 2026: action-first PR and workflow finding closure
+
+**Authority:** Product Owner's explicit instruction in the project conversation, 28 November 2026. **Effective immediately across WP-00–WP-16 and all subsequent PRs.** This adds a required response cycle to the existing autonomous delivery authorization; it does not alter the approved product scope, WP sequence, quality gates or human-only boundaries.
+
+Every PR, review submission, inline thread (including resolved threads), conversation comment, requested change, GitHub Actions workflow/check, security/dependency alert and artifact-verification finding must be inspected at the exact current head SHA and traced to source, tests, configuration and requirement evidence. Every actionable in-scope finding must be reproduced or traced, fixed/improved/built, covered by regression/integration/security/acceptance tests, and reflected in dependent migrations, CI/bootstrap, installer/deployment, API, source-map and operator documentation as applicable. Commenting, changing code without verification, or marking a thread resolved is not closure.
+
+Use the owning dedicated branch, keep unrelated scope separate, maintain a finding register, respond to each GitHub thread with the specific action and evidence, rerun applicable backend/PostgreSQL/RLS/frontend/integration/security/source-integrity/combined-WP checks on the exact final commit SHA, then report the same finding-by-finding result in the project conversation. Record run IDs, step outcomes, test/assertion totals and artifact/checksum identities. A job with runner_id 0 and zero steps is NOT RUN/BLOCKED, not PASS and not evidence of a code failure. Resolve a review thread only after the required correction and verification pass.
+
+A report-only disposition is allowed only where source/build/test work is unnecessary or a genuine external permission, runner, legal/professional or human-only production action blocks the specific item. Continue all independent safe work, document the exact blocker and next action, and never encode a temporary delivery constraint as an ERP business rule or product-scope reduction. No technical gate or production control may be bypassed. A verified increment is not a whole-WP or production completion claim.
+
+**Standing decision:** this action-first PR/workflow finding-closure cycle governs every future project PR and workflow response.
