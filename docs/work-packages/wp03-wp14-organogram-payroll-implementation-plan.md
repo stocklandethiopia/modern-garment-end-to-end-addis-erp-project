@@ -237,9 +237,9 @@ Build:
 
 The client never computes PAYE/pension or makes legal classifications. It displays authoritative server responses and clearly labels HOLD/REVIEW/APPROVED status.
 
-### WP14-PAY-07 — Agent and intelligent operations integration
+### WP-15 — Agent and intelligent operations integration (downstream package)
 
-Use governed WP-15 agent capabilities only through scoped tools, typed APIs and explicit policy:
+This is a WP-15 delivery scope, not a WP-14 task. Execute it only after WP-14 HR/payroll has completed its package work and WP-15 is reached in the fixed sequence. Use governed WP-15 agent capabilities only through scoped tools, typed APIs and explicit policy:
 - **HR data-quality agent:** detect missing/expired contracts, assignment gaps, duplicate employee records and inconsistent position links; propose corrections, never write/approve them without authorized workflow.
 - **Organogram/DoA policy assistant:** explain the applicable position and approval path; draft a proposed chart/DoA change with impact analysis; never appoint a director or grant transaction authority.
 - **Payroll legal-source monitor:** monitor official source catalogues, identify possible amendments, compare exact articles and prepare a proposed change record; never auto-activate a rule.
