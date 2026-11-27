@@ -26,9 +26,11 @@ class ScopedAccessService
         $this->assertScope($tenantId, $userId, 'MARKET', null, trim($market), $permission);
     }
 
-    public function setMode(string $targetUserId, string $mode, string $reason): array
+    public function setMode(string $tenantId, string $actorId, string $targetUserId, string $mode, string $reason): array
     {
         $result = $this->mutate(
+            $tenantId,
+            $actorId,
             'SELECT * FROM public.set_tenant_member_scope_mode(?::uuid, ?, ?)',
             [$targetUserId, $mode, trim($reason)],
             'scope_mode',
@@ -44,7 +46,7 @@ class ScopedAccessService
         ];
     }
 
-    public function grant(string $targetUserId, array $data): object
+    public function grant(string $tenantId, string $actorId, string $targetUserId, array $data): object
     {
         $scopeType = strtoupper(trim((string) $data['scope_type']));
         $scopeId = $scopeType === 'MARKET' ? null : ($data['scope_id'] ?? null);
@@ -53,6 +55,8 @@ class ScopedAccessService
             : null;
 
         $result = $this->mutate(
+            $tenantId,
+            $actorId,
             'SELECT * FROM public.grant_tenant_access_scope(
                 ?::uuid, ?, ?::uuid, ?, ?, ?::date, ?::date, ?
             )',
@@ -76,9 +80,11 @@ class ScopedAccessService
         return $result;
     }
 
-    public function revoke(string $scopeGrantId, string $reason): object
+    public function revoke(string $tenantId, string $actorId, string $scopeGrantId, string $reason): object
     {
         $result = $this->mutate(
+            $tenantId,
+            $actorId,
             'SELECT * FROM public.revoke_tenant_access_scope(?::uuid, ?)',
             [$scopeGrantId, trim($reason)],
             'scope',
@@ -106,10 +112,17 @@ class ScopedAccessService
         ];
     }
 
-    private function mutate(string $sql, array $bindings, string $errorField): ?object
+    private function mutate(string $tenantId, string $actorId, string $sql, array $bindings, string $errorField): ?object
     {
         try {
-            return DB::selectOne($sql, $bindings);
+            $connection = DB::connection('pgsql_control');
+
+            return $connection->transaction(function () use ($connection, $tenantId, $actorId, $sql, $bindings): ?object {
+                $connection->select("SELECT set_config('app.current_user_id', ?, true)", [$actorId]);
+                $connection->select("SELECT set_config('app.current_tenant_id', ?, true)", [$tenantId]);
+
+                return $connection->selectOne($sql, $bindings);
+            }, 3);
         } catch (QueryException $exception) {
             $sqlState = $exception->errorInfo[0] ?? null;
 
