@@ -119,7 +119,7 @@ describe('OrganizationStructureComponent', () => {
     expect(text).toContain('Factory Operations');
     expect(text).toContain('Factory General Manager');
     expect(text).toContain('Job positions');
-    expect(text).toContain('no transaction authority');
+    expect(text).toContain('No transaction authority is implied');
     expect(fixture.componentInstance.positionsInSelectedUnit()).toHaveLength(1);
   });
 
