@@ -189,3 +189,19 @@ The evidence above is tied only to SHA `31fc6068e29200651c42db75d996e7b4187e6933
 
 CAP-002 structural reconciliation is closed. Exact evidence: ERP CI #46154426395 PASS; full WP verification #46154426366 PASS; dedicated R3 source package #46154426369 PASS. The full backend suite reported 93 Laravel tests / 1,081 assertions; Angular build/tests, PostgreSQL 18 migration/forced RLS, tenant-security checks and the crosswalk validator passed. The structural graph and source hashes are in the WP-01 handover. Every semantic edge remains `DRAFT_REVIEW_REQUIRED`; the class labels remain graph-shape only. CAP-004 performs the requirement-level evidence review and maps each item to implementation.
 
+
+## 8. CAP-003 execution record — 28 November 2026
+
+| Field | Current evidence |
+|---|---|
+| Objective | Establish one durable WP-00 decision/assumption/risk/exception register from the accepted product, governance, architecture, security and release baselines; distinguish autonomous engineering authority from human/professional approvals |
+| Baseline | Delivery SHA `bc442495df842f8fb06ae8b8d540145c69155023`; work branch `work/wp00-cap-003-governance-register-2026-11-28` |
+| Register | `docs/governance/decision-assumption-risk-exception-register-2026-11-28.md`; blob SHA `22bb5d0a16bc7aa28ba9536ec06fe8f9e7542052` |
+| Record inventory | 13 decisions (D-0001–D-0013), 8 assumptions (A-0001–A-0008), 12 risks (R-0001–R-0012), 6 bounded exceptions (E-0001–E-0006); 39 globally unique IDs |
+| Authority controls | Routine in-scope engineering proceeds under accepted delegation; legal/statutory interpretation, payroll/financial execution, production deployment/data changes, secrets and break-glass actions retain the specified human/professional approval boundary |
+| Source pins | Seven exact Git blob hashes: governance agreement `36d5eff9490226c3a27eddc99095ea21c02c450f`; approved WP plan `ce2e761071053f5acb35043f6fb176b4ddcf63e9`; platform `6545f740b26226fd524ae0fa62576b2a5c1e86ba`; code quality `56d48713f20e6dbd6bbb9bf3405a075d6b534356`; SaaS security `305a0c34738e20607868e760cdcd976847af9781`; deployment `c77af400eb1022696c654d6e30601eaa05882757`; WP16 release acceptance `ec0282421cad015f7a3ae113cfaba20c7db65266` |
+| Executable validation | `scripts/verify-wp00-governance-register.mjs` validates record counts/unique IDs, mandatory approval boundaries, current CAP status and recomputed Git blob SHAs for all seven sources. It is a required job in `.github/workflows/wp01-16-completion-verification.yml`, and the combined WP gate depends on it. |
+| Handover | WP-00 source map, WP-01 source map, CAP ledger, handover register and README refreshed on this branch. CAP-001 and CAP-002 closeout details retained. |
+| Current disposition | **ACTIVE — exact PR-head ERP CI and full WP verification pending.** No production or statutory authority is created by this register. |
+
+CAP-003 exit requires: (1) the exact-head governance-register validator passes; (2) ERP CI and the combined WP-01–WP-16 workflow pass on the same exact SHA; (3) the affected WP-00/WP-01 handovers and CAP ledger point to the tested/merged SHA; and (4) source-pin verification proves the register cites the exact baseline documents. CAP-004 follows only after CAP-003 is merged and its handover is synchronized.
