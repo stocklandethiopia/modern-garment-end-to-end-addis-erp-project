@@ -273,7 +273,7 @@ class EnterpriseOrganizationService
                 $parent = DB::table('org_units')
                     ->where('tenant_id', $tenantId)
                     ->where('id', $data['parent_id'])
-                        ->first();
+                    ->first();
 
                 if ($parent === null || $parent->status !== 'ACTIVE') {
                     throw ValidationException::withMessages([
