@@ -29,19 +29,28 @@ if (garSet.size !== garIds.length) fail('legacy GAR matrix contains duplicate ID
 
 const tsv = gunzipSync(fs.readFileSync(crosswalkPath)).toString('utf8');
 const lines = tsv.trimEnd().split(/\r?\n/);
-const expectedHeader = ['r3_requirement_id', 'legacy_gar_ids', 'match_classification'];
+const fields = [
+  'r3_requirement_id',
+  'r3_work_package',
+  'legacy_gar_ids',
+  'match_classification',
+  'r3_acceptance_scenario_id',
+  'canonical_implementation_status',
+  'review_status'
+];
 const header = lines.shift()?.split('\t') ?? [];
-if (JSON.stringify(header) !== JSON.stringify(expectedHeader)) fail('crosswalk TSV header mismatch');
+if (JSON.stringify(header) !== JSON.stringify(fields)) fail('crosswalk TSV header mismatch');
 
 const allowedClasses = new Set(['EXACT', 'SPLIT', 'CONSOLIDATED', 'PARTIAL', 'R3_ADDITION']);
 const rows = lines.map((line, index) => {
   const cells = line.split('\t');
-  if (cells.length !== 3) fail('row ' + (index + 2) + ' does not have three fields');
-  return Object.fromEntries(expectedHeader.map((field, i) => [field, cells[i]]));
+  if (cells.length !== fields.length) fail('row ' + (index + 2) + ' has ' + cells.length + ' fields; expected ' + fields.length);
+  return Object.fromEntries(fields.map((field, i) => [field, cells[i]]));
 });
 if (rows.length !== 128) fail('expected 128 crosswalk rows; found ' + rows.length);
 
 const mappedById = new Map();
+const acceptanceIds = new Set();
 const r3ByGar = new Map([...garSet].map(id => [id, []]));
 const classCounts = new Map();
 let edges = 0;
@@ -51,7 +60,14 @@ for (const row of rows) {
   if (!source) fail('unknown R3 ID: ' + id);
   if (mappedById.has(id)) fail('duplicate R3 row: ' + id);
   mappedById.set(id, row);
-  if (source.canonical_implementation_status !== 'not_started') fail(id + ' implementation status changed from not_started');
+  if (row.r3_work_package !== source.work_package) fail(id + ' work-package mismatch');
+  const expectedAcceptanceId = 'AT-' + id;
+  if (row.r3_acceptance_scenario_id !== expectedAcceptanceId) fail(id + ' acceptance-scenario ID mismatch');
+  if (acceptanceIds.has(row.r3_acceptance_scenario_id)) fail('duplicate acceptance-scenario ID: ' + row.r3_acceptance_scenario_id);
+  acceptanceIds.add(row.r3_acceptance_scenario_id);
+  if (!source.acceptance_test.startsWith(expectedAcceptanceId + ':')) fail(id + ' source acceptance scenario does not match ' + expectedAcceptanceId);
+  if (row.canonical_implementation_status !== source.canonical_implementation_status || row.canonical_implementation_status !== 'not_started') fail(id + ' canonical implementation status changed');
+  if (row.review_status !== 'DRAFT_REVIEW_REQUIRED') fail(id + ' review state must remain DRAFT_REVIEW_REQUIRED');
   if (!allowedClasses.has(row.match_classification)) fail(id + ' has invalid relationship class');
   const aliases = row.legacy_gar_ids ? row.legacy_gar_ids.split(';').filter(Boolean) : [];
   if (new Set(aliases).size !== aliases.length) fail(id + ' repeats a legacy alias');
@@ -77,16 +93,17 @@ for (const row of rows) {
   const inverseCounts = aliases.map(alias => r3ByGar.get(alias).length);
   if (row.match_classification === 'EXACT' && (aliases.length !== 1 || inverseCounts[0] !== 1)) fail(row.r3_requirement_id + ' EXACT is not one-to-one');
   if (row.match_classification === 'SPLIT' && !inverseCounts.some(count => count > 1)) fail(row.r3_requirement_id + ' SPLIT has no multi-R3 legacy source');
-  if (row.match_classification === 'CONSOLIDATED' && (aliases.length < 2 || inverseCounts.some(count => count !== 1))) fail(row.r3_requirement_id + ' CONSOLIDATED is not many-to-one');
+  if (row.match_classification === 'CONSOLIDATED' && (aliases.length < 2 || inverseCounts.some(count => count !== 1))) fail(row.r3_requirement_id + ' CONSOLIDATED is not a consolidation of distinct legacy sources');
 }
 
 const expectedCounts = { CONSOLIDATED: 18, PARTIAL: 47, R3_ADDITION: 2, SPLIT: 61 };
 for (const [name, count] of Object.entries(expectedCounts)) {
   if ((classCounts.get(name) ?? 0) !== count) fail(name + ' count changed; expected ' + count);
 }
-if ((classCounts.get('EXACT') ?? 0) !== 0) fail('EXACT relationships require a new evidence review');
+if ((classCounts.get('EXACT') ?? 0) !== 0) fail('EXACT relationships require a fresh evidence review');
 
 console.log('PASS WP-01 R3↔GAR crosswalk integrity');
 console.log('R3 records: ' + mappedById.size + '; legacy GAR records: ' + garSet.size + '; semantic links: ' + edges);
 console.log('Classes: ' + Object.entries(expectedCounts).map(([key, value]) => key + '=' + value).join(', ') + ', EXACT=0');
+console.log('R3 WP allocation and acceptance scenario IDs match source; review/status controls preserved.');
 console.log('All legacy GAR IDs retained; all R3 IDs preserved; no canonical implementation status changed.');
