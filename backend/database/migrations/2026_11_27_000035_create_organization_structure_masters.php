@@ -148,7 +148,7 @@ SQL);
 
     public function down(): void
     {
-        throw new \RuntimeException(
+        throw new RuntimeException(
             'Migration 000035 is forward-only; do not drop tenant organization structure or its reporting history.',
         );
     }
