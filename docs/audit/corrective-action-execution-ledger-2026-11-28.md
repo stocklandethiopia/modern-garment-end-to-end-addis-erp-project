@@ -120,7 +120,7 @@ Compare results against delivery SHA `3438ab47240c10ce5ea5f1f772c1570cc2191134`:
 
 | CAP | WP | Priority | Status at this ledger revision | Dependency / next gate |
 |---|---|---:|---|---|
-| CAP-001 | WP-00 | P0 | IN PROGRESS — inventory and documentation reconciliation recorded; exact final-branch checks pending | Complete exact-head ERP CI and combined WP/source verification on this branch/PR, then record final SHA and handover |
+| CAP-001 | WP-00 | P0 | PASS FOR PR SCOPE — inventory, stale-reference correction and handover are recorded; current PR head's exact checks are authoritative; delivery integration/post-merge CI remains open | Merge only after the current PR head passes both workflows; then verify the merge SHA before CAP-002 |
 | CAP-002 | WP-00/WP-01 | P0 | NOT STARTED | Start after CAP-001 is exact-head verified; reconcile R3 128 against GAR 120 |
 | CAP-003 | WP-00 | P1 | NOT STARTED | Build decision/assumption/risk/exception register from accepted evidence |
 | CAP-004 | WP-01 | P0 | NOT STARTED | Depends on the CAP-002 canonical identity/alias crosswalk |
@@ -163,3 +163,17 @@ CAP-001 is not complete merely because this file exists. Close it only when:
 ## 6. Next dependency
 
 After CAP-001 verification, execute **CAP-002**: reconcile the 128 R3 records against the 120 visible GAR rows using the existing R3 archive, requirement matrix, amendments and PR #17 evidence. Every one of the eight deltas must receive an explicit mapping, alias/supersession or other evidence-backed disposition. No requirement is removed or treated as implemented by this reconciliation.
+
+
+## 2.5 Exact candidate verification evidence — 28 November 2026
+
+The first complete candidate snapshot, PR #31 head `31fc6068e29200651c42db75d996e7b4187e6933`, passed both required workflows:
+
+- [ERP Continuous Integration #46131204323](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/46131204323) — **SUCCESS**. Laravel/PostgreSQL job: **93 tests / 1,081 assertions**, PHP Pint/style and syntax across 137 files, dependency audit, PostgreSQL 18 fresh migrations under the restricted migrator, forced-RLS integration checks and route registration all passed. Angular job: **27 tests / 7 files**, dependency audit and production build passed.
+- [ERP WP-01–WP-16 completion verification #46131204313](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/46131204313) — **SUCCESS**. WP-01 R3 source integrity/tests passed; Angular **27 tests / 7 files** and production build passed; Laravel/PostgreSQL/Redis lane passed migration, RLS, PHP formatting, **93 tests / 1,081 assertions** and route registration; combined artifact assembly passed.
+- Candidate artifact: `modern-garment-addis-erp-wp01-wp16-candidate`, ID `15257646381`, 1,131,187 bytes, SHA-256 `54c6468cc05e8a36204a372cbafc501702208cac298039448efdfd4ee1566a2c`, expires 26 February 2027.
+- PR #31 review inspection returned zero submitted reviews, zero inline review threads (including resolved threads), and zero PR conversation comments at that observation.
+- The PR's changed files remain documentation-only; no backend, frontend, migration or runtime files are modified.
+
+The evidence above is tied only to SHA `31fc6068e29200651c42db75d996e7b4187e6933`. This evidence-ledger amendment creates a new PR head; do not transfer the PASS to that new SHA. Re-run ERP CI and the configured WP/source verification on the final amended head. The live PR #31 check results are the authority for that final head.
+
