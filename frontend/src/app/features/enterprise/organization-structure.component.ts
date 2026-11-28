@@ -162,6 +162,7 @@ export class OrganizationStructureComponent {
     unit_type: new FormControl('DEPARTMENT', { nonNullable: true, validators: [Validators.required] }),
     valid_from: new FormControl('2026-01-01', { nonNullable: true, validators: [Validators.required] }),
     valid_to: new FormControl('', { nonNullable: true }),
+    reason: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(10), Validators.maxLength(1000)] }),
   });
 
   readonly positionForm = new FormGroup({
@@ -179,6 +180,7 @@ export class OrganizationStructureComponent {
     position_class: new FormControl('PROFESSIONAL', { nonNullable: true, validators: [Validators.required] }),
     valid_from: new FormControl('2026-01-01', { nonNullable: true, validators: [Validators.required] }),
     valid_to: new FormControl('', { nonNullable: true }),
+    reason: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(10), Validators.maxLength(1000)] }),
   });
 
   readonly managerForm = new FormGroup({
@@ -482,6 +484,7 @@ export class OrganizationStructureComponent {
       unit_type: value.unit_type,
       valid_from: value.valid_from,
       valid_to: value.valid_to || null,
+      reason: value.reason.trim(),
     }).subscribe({
       next: ({ data }) => {
         if (this.session.activeTenant()?.id !== tenantId) return;
@@ -500,6 +503,7 @@ export class OrganizationStructureComponent {
           unit_type: 'DEPARTMENT',
           valid_from: '2026-01-01',
           valid_to: '',
+          reason: '',
         });
         this.successMessage.set('Organizational unit created. Add its positions and reporting structure; no transaction authority is granted by this record.');
       },
@@ -534,6 +538,7 @@ export class OrganizationStructureComponent {
       position_class: value.position_class,
       valid_from: value.valid_from,
       valid_to: value.valid_to || null,
+      reason: value.reason.trim(),
     }).subscribe({
       next: ({ data }) => {
         if (this.session.activeTenant()?.id !== tenantId || this.selectedUnitId() !== unitId) return;
@@ -549,6 +554,7 @@ export class OrganizationStructureComponent {
           position_class: 'PROFESSIONAL',
           valid_from: '2026-01-01',
           valid_to: '',
+          reason: '',
         });
         this.successMessage.set('Job position created as a vacant-capable slot. It is not a person, employee or login account.');
       },
