@@ -168,13 +168,21 @@ export function validateRegisterText(markdown) {
     'not_started',
     '| CAP-001 | CLOSED',
     '| CAP-002 | CLOSED FOR STRUCTURAL IDENTIFIER RECONCILIATION; SEMANTIC REVIEW OPEN',
-    '| CAP-003 | ACTIVE',
+    '| CAP-003 | VERIFIED AND MERGED',
     '| CAP-004 | NEXT DEPENDENT ACTION',
     '37d88f175fffb805d4de38d108045ab8e8859825',
     '7a687a8954be0d9bf198ecee742f300f4e994439',
     '46162557764',
     '46162557766',
-    '46162557765'
+    '46162557765',
+    'e42db8d4347c01000ce1b189bcc80d10a7235330',
+    '56ff9a88906f0749e5dba9883d4293d2a305c1f8',
+    '3a46fd213516ad91fb5f41b680a56cdfa827537e',
+    '46164088400',
+    '46164088349',
+    '46164088337',
+    '15270747713',
+    '1db1212e48178d8045a6eedd568688ffd7ee3660b172694975db5185e333d5af'
   ];
   for (const value of requiredControls) {
     if (!markdown.includes(value)) errors.push('required control/evidence missing: ' + value);

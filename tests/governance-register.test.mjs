@@ -42,3 +42,11 @@ test('governance validator rejects a stale canonical delivery baseline', () => {
 test('governance validator verifies every pinned source file against its Git blob SHA', () => {
   assert.deepEqual(validateSourcePins(process.cwd()), []);
 });
+
+test('governance register records the exact CAP-003 tested head, merge and workflow receipts', () => {
+  const result = validateRegisterText(register);
+  assert.deepEqual(result.errors, []);
+  for (const receipt of ['e42db8d4347c01000ce1b189bcc80d10a7235330', '56ff9a88906f0749e5dba9883d4293d2a305c1f8', '3a46fd213516ad91fb5f41b680a56cdfa827537e', '46164088400', '46164088349', '46164088337', '15270747713', '1db1212e48178d8045a6eedd568688ffd7ee3660b172694975db5185e333d5af']) {
+    assert.ok(register.includes(receipt), 'missing exact CAP-003 evidence receipt: ' + receipt);
+  }
+});
