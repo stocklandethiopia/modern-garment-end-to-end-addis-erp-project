@@ -215,6 +215,18 @@ class EnterpriseOrganizationStructureTest extends TestCase
             'aggregate_id' => $unitId,
             'status' => 'PENDING',
         ], 'pgsql_test_admin');
+
+        $outboxPayload = DB::connection('pgsql_test_admin')
+            ->table('integration_outbox_events')
+            ->where('tenant_id', $this->tenantA)
+            ->where('event_type', 'OrganizationUnitCreated.v1')
+            ->where('aggregate_id', $unitId)
+            ->value('payload');
+
+        $this->assertSame(
+            'Establish the Factory Operations unit for the approved operating structure.',
+            json_decode((string) $outboxPayload, true, 512, JSON_THROW_ON_ERROR)['attributes']['reason'],
+        );
     }
 
     public function test_ordinary_member_can_read_but_cannot_configure_organization_structure(): void
@@ -244,6 +256,7 @@ class EnterpriseOrganizationStructureTest extends TestCase
             'unit_name' => 'Child outside parent period',
             'unit_type' => 'SECTION',
             'valid_from' => '2027-01-01',
+            'reason' => 'Create a child unit within the permitted effective period.',
         ])->assertUnprocessable();
 
         $otherEntityId = (string) Str::uuid();
@@ -266,6 +279,7 @@ class EnterpriseOrganizationStructureTest extends TestCase
             'legal_entity_id' => $otherEntityId,
             'business_site_id' => $this->siteA,
             'valid_from' => '2026-01-01',
+            'reason' => 'Attempt to associate the unit to a site owned by another legal entity.',
         ])->assertUnprocessable();
     }
 
