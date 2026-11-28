@@ -377,6 +377,18 @@ class EnterpriseOrganizationStructureTest extends TestCase
             'aggregate_id' => $assignmentId,
         ], 'pgsql_test_admin');
 
+        $managerPayload = DB::connection('pgsql_test_admin')
+            ->table('integration_outbox_events')
+            ->where('tenant_id', $this->tenantA)
+            ->where('event_type', 'OrganizationUnitManagerAssigned.v1')
+            ->where('aggregate_id', $assignmentId)
+            ->value('payload');
+
+        $this->assertSame(
+            'Appoint the designated head position for this unit.',
+            json_decode((string) $managerPayload, true, 512, JSON_THROW_ON_ERROR)['attributes']['reason'],
+        );
+
         $anotherManager = $this->createPosition($unitId, 'UNIT-HEAD-ALT');
         $this->postJson('/api/v1/enterprise/organization-units/'.$unitId.'/manager-assignments', [
             'manager_position_id' => $anotherManager,
@@ -430,6 +442,45 @@ class EnterpriseOrganizationStructureTest extends TestCase
         ])->assertUnprocessable();
 
         $this->assertSame(2, DB::connection('pgsql_test_admin')->table('position_reporting_relations')->where('tenant_id', $this->tenantA)->count());
+    }
+
+    public function test_reporting_reason_is_preserved_in_audit_and_outbox_evidence(): void
+    {
+        $this->actAs($this->ownerA, $this->tenantA);
+        $unitId = $this->createUnit('REPORT-REASON');
+        $subject = $this->createPosition($unitId, 'REPORT-SUBJECT');
+        $manager = $this->createPosition($unitId, 'REPORT-MANAGER');
+        $reason = 'Record the approved reporting line for the factory quality function.';
+
+        $response = $this->postJson('/api/v1/enterprise/position-reporting-relations', [
+            'subject_position_id' => $subject,
+            'manager_position_id' => $manager,
+            'reporting_type' => 'FUNCTIONAL',
+            'valid_from' => '2026-01-01',
+            'valid_to' => '2026-12-31',
+            'reason' => $reason,
+        ])->assertCreated();
+
+        $relationId = (string) $response->json('data.id');
+
+        $this->assertDatabaseHas('audit_events', [
+            'tenant_id' => $this->tenantA,
+            'action' => 'POSITION_REPORTING_RELATION_CREATED',
+            'object_id' => $relationId,
+            'reason' => $reason,
+        ], 'pgsql_test_admin');
+
+        $payload = DB::connection('pgsql_test_admin')
+            ->table('integration_outbox_events')
+            ->where('tenant_id', $this->tenantA)
+            ->where('event_type', 'PositionReportingRelationCreated.v1')
+            ->where('aggregate_id', $relationId)
+            ->value('payload');
+
+        $this->assertSame(
+            $reason,
+            json_decode((string) $payload, true, 512, JSON_THROW_ON_ERROR)['attributes']['reason'],
+        );
     }
 
     public function test_reporting_relationship_requires_valid_active_positions_and_reason(): void
