@@ -1,0 +1,497 @@
+<section class="organization-page" aria-labelledby="organization-heading">
+  <header class="page-heading">
+    <div>
+      <span class="eyebrow">WP-03 · ENTERPRISE FOUNDATION</span>
+      <h1 id="organization-heading">Organization structure</h1>
+      <p>Configure organizational units, position slots and effective-dated reporting relationships across your legal entities and sites.</p>
+    </div>
+    <button type="button" class="secondary-button" (click)="refresh()" [disabled]="loading()">Refresh records</button>
+  </header>
+
+  <div class="scope-banner">
+    <span class="scope-icon" aria-hidden="true">⌘</span>
+    <div>
+      <strong>{{ session.activeTenant()?.name }}</strong>
+      <span>Tenant workspace · {{ session.activeTenant()?.membership_role }}</span>
+    </div>
+    <span class="scope-note">Configuration only</span>
+  </div>
+
+  <div class="boundary-note" role="note">
+    <strong>Authority boundary</strong>
+    <span>Positions and reporting lines describe the organization only. They do not appoint an employee, grant purchase-order approval or replace a signed Delegation of Authority policy. No transaction authority is implied by a position title or reporting line.</span>
+  </div>
+
+  @if (successMessage()) {
+    <div class="notice success" role="status" aria-live="polite">{{ successMessage() }}</div>
+  }
+  @if (errorMessage()) {
+    <div class="notice error" role="alert">{{ errorMessage() }}</div>
+  }
+
+  <div class="section-heading">
+    <div>
+      <h2>Organizational units</h2>
+      <p>Build the structure beneath the relevant company, factory, distribution centre, depot, branch or store.</p>
+    </div>
+    @if (canManage()) {
+      <button type="button" class="primary-button" (click)="showUnitForm.set(!showUnitForm())">
+        {{ showUnitForm() ? 'Close form' : 'Add organizational unit' }}
+      </button>
+    }
+  </div>
+
+  @if (showUnitForm() && canManage()) {
+    <form class="editor-card" [formGroup]="unitForm" (ngSubmit)="createUnit()" novalidate>
+      <div class="editor-heading">
+        <div>
+          <h3>New organizational unit</h3>
+          <p>A unit is a structural grouping. Physical premises and inventory nodes remain separate records.</p>
+        </div>
+        <span class="draft-chip">ACTIVE ON SAVE</span>
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="unit-code">Unit code</label>
+          <input id="unit-code" formControlName="unit_code" maxlength="80" required autocomplete="off">
+          @if (unitForm.controls.unit_code.touched && unitForm.controls.unit_code.invalid) {
+            <span class="field-error" role="alert">Use 2–80 letters, numbers, dots, underscores or hyphens.</span>
+          }
+        </div>
+        <div class="field">
+          <label for="unit-name">Unit name</label>
+          <input id="unit-name" formControlName="unit_name" maxlength="180" required>
+        </div>
+        <div class="field">
+          <label for="unit-type">Unit type</label>
+          <select id="unit-type" formControlName="unit_type">
+            <option value="CORPORATE">Corporate</option>
+            <option value="DIVISION">Division</option>
+            <option value="DEPARTMENT">Department</option>
+            <option value="SECTION">Section</option>
+            <option value="TEAM">Team</option>
+            <option value="FACTORY">Factory</option>
+            <option value="DISTRIBUTION_CENTRE">Distribution centre</option>
+            <option value="DEPOT">Depot</option>
+            <option value="BRANCH">Branch</option>
+            <option value="STORE">Store</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="unit-parent">Parent unit</label>
+          <select id="unit-parent" formControlName="parent_id">
+            <option value="">No parent / top level</option>
+            @for (unit of parentUnitOptions(); track unit.id) {
+              <option [value]="unit.id">{{ unit.unit_name }} · {{ unit.unit_code }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label for="unit-entity">Legal entity</label>
+          <select id="unit-entity" formControlName="legal_entity_id">
+            <option value="">Not assigned</option>
+            @for (entity of legalEntities(); track entity.id) {
+              <option [value]="entity.id">{{ entity.legal_name }} · {{ entity.registration_number }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label for="unit-site">Business site</label>
+          <select id="unit-site" formControlName="business_site_id">
+            <option value="">Not assigned</option>
+            @for (site of sites(); track site.id) {
+              <option [value]="site.id">{{ site.name }} · {{ site.code }}</option>
+            }
+          </select>
+          <span class="field-hint">A selected site must belong to the selected legal entity.</span>
+        </div>
+        <div class="field">
+          <label for="unit-from">Effective from</label>
+          <input id="unit-from" type="date" formControlName="valid_from" required>
+        </div>
+        <div class="field">
+          <label for="unit-to">Effective to (optional)</label>
+          <input id="unit-to" type="date" formControlName="valid_to">
+        </div>
+        <div class="field full-width">
+          <label for="unit-reason">Reason for creating this organizational unit</label>
+          <textarea id="unit-reason" formControlName="reason" rows="3" minlength="10" maxlength="1000" required
+            aria-describedby="unit-reason-hint"></textarea>
+          <span id="unit-reason-hint" class="field-hint">Required for the audit trail (10–1000 characters).</span>
+          @if (unitForm.controls.reason.touched && unitForm.controls.reason.invalid) {
+            <span class="field-error" role="alert">Provide an audit reason of at least 10 characters.</span>
+          }
+        </div>
+      </div>
+      <div class="form-actions">
+        <span class="form-hint">Tenant OWNER/ADMIN configuration access required. A unit does not confer financial authority.</span>
+        <button type="submit" class="primary-button" [disabled]="unitForm.invalid || savingUnit()">
+          @if (savingUnit()) { Saving… } @else { Create unit }
+        </button>
+      </div>
+    </form>
+  }
+
+  @if (loading()) {
+    <div class="loading-state" role="status">Loading organization structure…</div>
+  } @else if (units().length === 0 && unitSearch.value.trim() !== '') {
+    <div class="empty-state">
+      <strong>No organizational units match this search</strong>
+      <p>Clear the search to return to the current tenant register.</p>
+      <button type="button" class="secondary-button" (click)="unitSearch.setValue(''); searchUnits()">Clear search</button>
+    </div>
+  } @else if (units().length === 0) {
+    <div class="empty-state">
+      <strong>No organizational units configured</strong>
+      <p>Start with the appropriate corporate, head-office or site-level structure. You can add divisions, departments, factory units and retail/depot units as the business requires.</p>
+      @if (canManage()) {
+        <button type="button" class="secondary-button" (click)="showUnitForm.set(true)">Create the first unit</button>
+      }
+    </div>
+  } @else {
+    <div class="workspace-grid">
+      <section class="unit-list-panel" aria-labelledby="unit-list-heading">
+        <div class="panel-heading">
+          <div>
+            <h3 id="unit-list-heading">Unit register</h3>
+            <span>{{ unitPage()?.total ?? units().length }} total</span>
+          </div>
+        </div>
+        <div class="register-toolbar" role="search" aria-label="Search organizational units">
+          <label class="sr-only" for="unit-search">Search all organizational units</label>
+          <input id="unit-search" type="search" [formControl]="unitSearch" placeholder="Search code or unit name">
+          <button type="button" class="secondary-button" (click)="searchUnits()">Search</button>
+        </div>
+        <div class="unit-list">
+          @for (unit of units(); track unit.id) {
+            <button type="button" class="unit-option"
+              [class.selected]="selectedUnitId() === unit.id"
+              [attr.aria-pressed]="selectedUnitId() === unit.id"
+              (click)="selectUnit(unit.id)">
+              <span class="unit-icon" aria-hidden="true">{{ unit.unit_type === 'FACTORY' ? '⌂' : unit.unit_type === 'STORE' || unit.unit_type === 'BRANCH' ? '▤' : '◇' }}</span>
+              <span class="unit-copy">
+                <strong>{{ unit.unit_name }}</strong>
+                <small>{{ unit.unit_code }} · {{ unit.unit_type.replace('_', ' ') }}</small>
+                @if (unit.parent_id) {
+                  <span class="unit-parent">Parent: {{ unitName(unit.parent_id) }}</span>
+                }
+                <span class="unit-meta">{{ unit.status }} · From {{ unit.valid_from }}</span>
+              </span>
+              <span class="unit-chevron" aria-hidden="true">›</span>
+            </button>
+          }
+        </div>
+        <div class="pager" aria-label="Organizational unit pages">
+          <span>Page {{ unitPage()?.current_page ?? 1 }} of {{ unitPage()?.last_page ?? 1 }} · {{ unitPage()?.total ?? units().length }} total</span>
+          <div>
+            <button type="button" class="secondary-button" (click)="changeUnitPage(1)" [disabled]="(unitPage()?.current_page ?? 1) <= 1">First</button>
+            <button type="button" class="secondary-button" (click)="changeUnitPage((unitPage()?.current_page ?? 1) - 1)" [disabled]="(unitPage()?.current_page ?? 1) <= 1">Previous</button>
+            <button type="button" class="secondary-button" (click)="changeUnitPage((unitPage()?.current_page ?? 1) + 1)" [disabled]="(unitPage()?.current_page ?? 1) >= (unitPage()?.last_page ?? 1)">Next</button>
+            <button type="button" class="secondary-button" (click)="changeUnitPage(unitPage()?.last_page ?? 1)" [disabled]="(unitPage()?.current_page ?? 1) >= (unitPage()?.last_page ?? 1)">Last</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="unit-detail-panel" aria-labelledby="unit-detail-heading">
+        @if (selectedUnit(); as unit) {
+          <header class="panel-heading detail-heading">
+            <div>
+              <span class="eyebrow">SELECTED UNIT</span>
+              <h3 id="unit-detail-heading">{{ unit.unit_name }}</h3>
+              <p>{{ unit.unit_code }} · {{ unit.unit_type }} · {{ unit.status }}</p>
+            </div>
+            @if (canManage()) {
+              <button type="button" class="secondary-button" (click)="showPositionForm.set(!showPositionForm())">
+                {{ showPositionForm() ? 'Close' : 'Add position' }}
+              </button>
+            }
+          </header>
+
+          @if (unit.parent_id) {
+            <p class="relationship-note">Reports within: <strong>{{ unitName(unit.parent_id) }}</strong></p>
+          } @else {
+            <p class="relationship-note">Top-level unit in this tenant structure</p>
+          }
+
+          <div class="mini-grid">
+            <div><span>Sub-units on this page</span><strong>{{ childUnits().length }}</strong></div>
+            <div><span>Effective from</span><strong>{{ unit.valid_from }}</strong></div>
+            <div><span>Effective to</span><strong>{{ unit.valid_to || 'Open ended' }}</strong></div>
+            <div><span>Legal entity</span><strong>{{ entityName(unit.legal_entity_id) }}</strong></div>
+            <div><span>Business site</span><strong>{{ siteName(unit.business_site_id) }}</strong></div>
+          </div>
+
+          <div class="subsection-heading">
+            <div>
+              <h4>Job positions</h4>
+              <span>{{ positionPage()?.total ?? positionsInSelectedUnit().length }} positions in this unit</span>
+            </div>
+          </div>
+          <div class="register-toolbar" role="search" aria-label="Search job positions">
+            <label class="sr-only" for="position-search">Search positions in this unit</label>
+            <input id="position-search" type="search" [formControl]="positionSearch" placeholder="Search position code, title or family">
+            <button type="button" class="secondary-button" (click)="searchPositions()">Search</button>
+          </div>
+
+          @if (showPositionForm() && canManage()) {
+            <form class="compact-form" [formGroup]="positionForm" (ngSubmit)="createPosition()" novalidate>
+              <div class="form-grid">
+                <div class="field">
+                  <label for="position-code">Position code</label>
+                  <input id="position-code" formControlName="position_code" maxlength="80" required>
+                </div>
+                <div class="field">
+                  <label for="position-title">Position title</label>
+                  <input id="position-title" formControlName="title" maxlength="180" required placeholder="e.g. Factory General Manager">
+                </div>
+                <div class="field">
+                  <label for="position-family">Job family</label>
+                  <input id="position-family" formControlName="job_family" maxlength="100">
+                </div>
+                <div class="field">
+                  <label for="position-grade">Grade / level</label>
+                  <input id="position-grade" formControlName="grade" maxlength="80">
+                </div>
+                <div class="field">
+                  <label for="position-class">Position class</label>
+                  <select id="position-class" formControlName="position_class">
+                    <option value="LEADERSHIP">Leadership</option>
+                    <option value="MANAGEMENT">Management</option>
+                    <option value="PROFESSIONAL">Professional</option>
+                    <option value="OPERATIONAL">Operational</option>
+                    <option value="SUPPORT">Support</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="position-from">Effective from</label>
+                  <input id="position-from" type="date" formControlName="valid_from" required>
+                </div>
+                <div class="field">
+                  <label for="position-to">Effective to</label>
+                  <input id="position-to" type="date" formControlName="valid_to">
+                </div>
+                <div class="field full-width">
+                  <label for="position-reason">Reason for creating this job position</label>
+                  <textarea id="position-reason" formControlName="reason" rows="3" minlength="10" maxlength="1000" required
+                    aria-describedby="position-reason-hint"></textarea>
+                  <span id="position-reason-hint" class="field-hint">Required for the audit trail (10–1000 characters).</span>
+                  @if (positionForm.controls.reason.touched && positionForm.controls.reason.invalid) {
+                    <span class="field-error" role="alert">Provide an audit reason of at least 10 characters.</span>
+                  }
+                </div>
+              </div>
+              <div class="form-actions">
+                <span class="form-hint">A position is a job slot, not an employee or user account.</span>
+                <button type="submit" class="primary-button" [disabled]="positionForm.invalid || savingPosition()">
+                  @if (savingPosition()) { Saving… } @else { Create position }
+                </button>
+              </div>
+            </form>
+          }
+
+          @if (positionsInSelectedUnit().length === 0 && positionSearch.value.trim() !== '') {
+            <div class="empty-state compact"><strong>No positions match this search</strong><button type="button" class="text-button" (click)="positionSearch.setValue(''); searchPositions()">Clear search</button></div>
+          } @else if (positionsInSelectedUnit().length === 0) {
+            <div class="empty-state compact"><strong>No positions registered</strong><p>Add job slots for the selected unit. Appointments and incumbents are handled by the authoritative People & Payroll model.</p></div>
+          } @else {
+            <div class="table-wrap">
+              <table aria-label="Job positions in the selected organizational unit">
+                <caption class="sr-only">Job positions in the selected organizational unit</caption>
+                <thead><tr><th>Position</th><th>Class</th><th>Grade</th><th>Effective</th></tr></thead>
+                <tbody>
+                  @for (position of managerPositionChoices(); track position.id) {
+                    <tr>
+                      <td><strong>{{ position.title }}</strong><small>{{ position.position_code }} · {{ position.job_family || 'No job family' }}</small></td>
+                      <td>{{ position.position_class }}</td>
+                      <td>{{ position.grade || '—' }}</td>
+                      <td>{{ position.valid_from }}<small>{{ position.valid_to || 'Open ended' }}</small></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+          <div class="pager" aria-label="Job position pages">
+            <span>Page {{ positionPage()?.current_page ?? 1 }} of {{ positionPage()?.last_page ?? 1 }} · {{ positionPage()?.total ?? 0 }} total</span>
+            <div>
+              <button type="button" class="secondary-button" (click)="changePositionPage(1)" [disabled]="(positionPage()?.current_page ?? 1) <= 1">First</button>
+              <button type="button" class="secondary-button" (click)="changePositionPage((positionPage()?.current_page ?? 1) - 1)" [disabled]="(positionPage()?.current_page ?? 1) <= 1">Previous</button>
+              <button type="button" class="secondary-button" (click)="changePositionPage((positionPage()?.current_page ?? 1) + 1)" [disabled]="(positionPage()?.current_page ?? 1) >= (positionPage()?.last_page ?? 1)">Next</button>
+              <button type="button" class="secondary-button" (click)="changePositionPage(positionPage()?.last_page ?? 1)" [disabled]="(positionPage()?.current_page ?? 1) >= (positionPage()?.last_page ?? 1)">Last</button>
+            </div>
+          </div>
+
+          <div class="subsection-heading">
+            <div>
+              <h4>Unit manager position</h4>
+              <span>Position slot assigned to lead this unit</span>
+            </div>
+            @if (canManage() && managerPositionChoices().length > 0) {
+              <button type="button" class="text-button" (click)="showManagerForm.set(!showManagerForm())">
+                {{ showManagerForm() ? 'Close' : 'Assign manager position' }}
+              </button>
+            }
+          </div>
+
+          @if (showManagerForm() && canManage()) {
+            <form class="compact-form" [formGroup]="managerForm" (ngSubmit)="assignManager()" novalidate>
+              <div class="form-grid">
+                <div class="field">
+                  <label for="manager-position">Manager position</label>
+                  <select id="manager-position" formControlName="manager_position_id">
+                    <option value="">Choose a position in this unit</option>
+                    @for (position of positionsInSelectedUnit(); track position.id) {
+                      <option [value]="position.id">{{ position.title }} · {{ position.position_code }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="field"><label for="manager-from">Effective from</label><input id="manager-from" type="date" formControlName="valid_from"></div>
+                <div class="field"><label for="manager-to">Effective to</label><input id="manager-to" type="date" formControlName="valid_to"></div>
+                <div class="field full-width"><label for="manager-reason">Reason / record reference</label><input id="manager-reason" formControlName="reason" maxlength="1000" required></div>
+              </div>
+              <div class="form-actions">
+                <span class="form-hint">This assigns a position slot only; it does not appoint a person or confer DoA authority.</span>
+                <button type="submit" class="primary-button" [disabled]="managerForm.invalid || savingManager()">
+                  @if (savingManager()) { Saving… } @else { Save manager position }
+                </button>
+              </div>
+            </form>
+          }
+
+          @if (loadingManagers()) {
+            <div class="loading-state" role="status">Loading manager-position assignments…</div>
+          } @else if (managerAssignments().length === 0 && managerSearch.value.trim() !== '') {
+            <p class="subtle-empty">No manager assignments match this search.</p>
+          } @else if (managerAssignments().length === 0) {
+            <p class="subtle-empty">No unit manager position assigned for this unit.</p>
+          } @else {
+            <div class="manager-list">
+              @for (assignment of managerAssignments(); track assignment.id) {
+                <article class="manager-item">
+                  <div><strong>{{ assignment.manager_position_title }}</strong><small>{{ assignment.manager_position_code }}</small></div>
+                  <span>{{ assignment.valid_from }} – {{ assignment.valid_to || 'Open ended' }}</span>
+                </article>
+              }
+            </div>
+          }
+          <div class="register-toolbar" role="search" aria-label="Search manager assignment history">
+            <label class="sr-only" for="manager-search">Search manager position history</label>
+            <input id="manager-search" type="search" [formControl]="managerSearch" placeholder="Search manager position">
+            <button type="button" class="secondary-button" (click)="searchManagers()">Search</button>
+          </div>
+          <div class="pager" aria-label="Manager assignment pages">
+            <span>Page {{ managerPage()?.current_page ?? 1 }} of {{ managerPage()?.last_page ?? 1 }} · {{ managerPage()?.total ?? 0 }} total</span>
+            <div>
+              <button type="button" class="secondary-button" (click)="changeManagerPage(1)" [disabled]="(managerPage()?.current_page ?? 1) <= 1">First</button>
+              <button type="button" class="secondary-button" (click)="changeManagerPage((managerPage()?.current_page ?? 1) - 1)" [disabled]="(managerPage()?.current_page ?? 1) <= 1">Previous</button>
+              <button type="button" class="secondary-button" (click)="changeManagerPage((managerPage()?.current_page ?? 1) + 1)" [disabled]="(managerPage()?.current_page ?? 1) >= (managerPage()?.last_page ?? 1)">Next</button>
+              <button type="button" class="secondary-button" (click)="changeManagerPage(managerPage()?.last_page ?? 1)" [disabled]="(managerPage()?.current_page ?? 1) >= (managerPage()?.last_page ?? 1)">Last</button>
+            </div>
+          </div>
+        } @else {
+          <div class="empty-state detail-empty"><strong>Select an organizational unit</strong><p>Choose a unit to inspect its position slots and manager-position history.</p></div>
+        }
+      </section>
+    </div>
+  }
+
+  <section class="reporting-section" aria-labelledby="reporting-heading">
+    <div class="section-heading">
+      <div>
+        <h2 id="reporting-heading">Position reporting relationships</h2>
+        <p>Solid-line and functional reporting are recorded separately and by effective period.</p>
+      </div>
+      @if (canManage() && reportingPositionOptions().length > 1) {
+        <button type="button" class="primary-button" (click)="showReportingForm.set(!showReportingForm())">
+          {{ showReportingForm() ? 'Close form' : 'Add reporting relationship' }}
+        </button>
+      }
+    </div>
+
+    @if (showReportingForm() && canManage()) {
+      <form class="editor-card" [formGroup]="reportingForm" (ngSubmit)="createReportingRelation()" novalidate>
+        <div class="register-toolbar" role="search" aria-label="Find positions for reporting relationships">
+          <label class="sr-only" for="report-position-search">Search positions for reporting relationship</label>
+          <input id="report-position-search" type="search" [formControl]="reportingPositionSearch" placeholder="Find position code or title across the tenant">
+          <button type="button" class="secondary-button" (click)="searchReportingPositions()">Find positions</button>
+          <span>{{ reportingPositionChoices().length }} choices loaded · narrow the search for larger registers</span>
+        </div>
+        <div class="form-grid">
+          <div class="field">
+            <label for="report-subject">Subject position</label>
+            <select id="report-subject" formControlName="subject_position_id">
+              <option value="">Choose position</option>
+              @for (position of reportingPositionOptions(); track position.id) {
+                <option [value]="position.id">{{ position.title }} · {{ position.position_code }} · {{ unitName(position.org_unit_id) }}</option>
+              }
+            </select>
+          </div>
+          <div class="field">
+            <label for="report-manager">Manager position</label>
+            <select id="report-manager" formControlName="manager_position_id">
+              <option value="">Choose manager position</option>
+              @for (position of positions(); track position.id) {
+                <option [value]="position.id">{{ position.title }} · {{ position.position_code }} · {{ unitName(position.org_unit_id) }}</option>
+              }
+            </select>
+          </div>
+          <div class="field">
+            <label for="report-type">Relationship type</label>
+            <select id="report-type" formControlName="reporting_type">
+              <option value="SOLID_LINE">Solid-line reporting</option>
+              <option value="FUNCTIONAL">Functional / dotted-line reporting</option>
+            </select>
+          </div>
+          <div class="field"><label for="report-from">Effective from</label><input id="report-from" type="date" formControlName="valid_from"></div>
+          <div class="field"><label for="report-to">Effective to</label><input id="report-to" type="date" formControlName="valid_to"></div>
+          <div class="field full-width"><label for="report-reason">Reason / record reference</label><input id="report-reason" formControlName="reason" maxlength="1000" required></div>
+        </div>
+        <div class="form-actions">
+          <span class="form-hint">Self-reporting, overlapping solid-line managers and solid-line cycles are rejected.</span>
+          <button type="submit" class="primary-button" [disabled]="reportingForm.invalid || savingReporting()">
+            @if (savingReporting()) { Saving… } @else { Save relationship }
+          </button>
+        </div>
+      </form>
+    }
+
+    <div class="register-toolbar" role="search" aria-label="Search reporting relationships">
+      <label class="sr-only" for="reporting-search">Search reporting relationships</label>
+      <input id="reporting-search" type="search" [formControl]="reportingSearch" placeholder="Search subject or manager position">
+      <button type="button" class="secondary-button" (click)="searchReporting()">Search</button>
+    </div>
+    @if (reportingRelations().length === 0 && reportingSearch.value.trim() !== '') {
+      <div class="empty-state compact"><strong>No reporting relationships match this search</strong><button type="button" class="text-button" (click)="reportingSearch.setValue(''); searchReporting()">Clear search</button></div>
+    } @else if (reportingRelations().length === 0) {
+      <div class="empty-state compact"><strong>No position reporting relationships recorded</strong><p>Configure solid-line and functional reporting only after the relevant position slots exist.</p></div>
+    } @else {
+      <div class="table-wrap">
+        <table aria-label="Position reporting relationships">
+          <caption class="sr-only">Position reporting relationships</caption>
+          <thead><tr><th>Position</th><th>Reports to</th><th>Type</th><th>Effective period</th></tr></thead>
+          <tbody>
+            @for (relation of reportingRelations(); track relation.id) {
+              <tr>
+                <td><strong>{{ relation.subject_position_title }}</strong><small>{{ relation.subject_position_code }}</small></td>
+                <td><strong>{{ relation.manager_position_title }}</strong><small>{{ relation.manager_position_code }}</small></td>
+                <td><span class="type-chip">{{ relation.reporting_type === 'SOLID_LINE' ? 'Solid line' : 'Functional' }}</span></td>
+                <td>{{ relation.valid_from }}<small>{{ relation.valid_to || 'Open ended' }}</small></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+    <div class="pager" aria-label="Reporting relationship pages">
+      <span>Page {{ reportingPage()?.current_page ?? 1 }} of {{ reportingPage()?.last_page ?? 1 }} · {{ reportingPage()?.total ?? 0 }} total</span>
+      <div>
+        <button type="button" class="secondary-button" (click)="changeReportingPage(1)" [disabled]="(reportingPage()?.current_page ?? 1) <= 1">First</button>
+        <button type="button" class="secondary-button" (click)="changeReportingPage((reportingPage()?.current_page ?? 1) - 1)" [disabled]="(reportingPage()?.current_page ?? 1) <= 1">Previous</button>
+        <button type="button" class="secondary-button" (click)="changeReportingPage((reportingPage()?.current_page ?? 1) + 1)" [disabled]="(reportingPage()?.current_page ?? 1) >= (reportingPage()?.last_page ?? 1)">Next</button>
+        <button type="button" class="secondary-button" (click)="changeReportingPage(reportingPage()?.last_page ?? 1)" [disabled]="(reportingPage()?.current_page ?? 1) >= (reportingPage()?.last_page ?? 1)">Last</button>
+      </div>
+    </div>
+  </section>
+</section>

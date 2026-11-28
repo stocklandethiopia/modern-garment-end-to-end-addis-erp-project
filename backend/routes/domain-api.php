@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Agents\AgentGovernanceController;
 use App\Http\Controllers\Distribution\FinishedGoodsController;
+use App\Http\Controllers\Enterprise\EnterpriseOrganizationController;
 use App\Http\Controllers\Enterprise\PlatformAdministrationController;
 use App\Http\Controllers\Enterprise\TenantDomainRoleAssignmentController;
 use App\Http\Controllers\Enterprise\TenantEntitlementController;
@@ -23,6 +24,18 @@ Route::middleware(['auth:sanctum', 'token.ability:erp:access', 'identity.context
     });
 
 Route::middleware(['auth:sanctum', 'token.ability:erp:access', 'tenant.context'])->prefix('v1')->group(function (): void {
+
+    Route::prefix('enterprise')->group(function (): void {
+        Route::get('/organization-units', [EnterpriseOrganizationController::class, 'units']);
+        Route::post('/organization-units', [EnterpriseOrganizationController::class, 'storeUnit']);
+        Route::get('/organization-units/{unitId}/manager-assignments', [EnterpriseOrganizationController::class, 'managerAssignments']);
+        Route::post('/organization-units/{unitId}/manager-assignments', [EnterpriseOrganizationController::class, 'assignUnitManager']);
+        Route::get('/job-positions', [EnterpriseOrganizationController::class, 'positions']);
+        Route::post('/job-positions', [EnterpriseOrganizationController::class, 'storePosition']);
+        Route::get('/position-reporting-relations', [EnterpriseOrganizationController::class, 'reportingRelations']);
+        Route::post('/position-reporting-relations', [EnterpriseOrganizationController::class, 'storeReportingRelation']);
+    });
+
     Route::prefix('enterprise/ownership')->group(function (): void {
         Route::post('/transfer', [TenantOwnershipController::class, 'transfer']);
     });

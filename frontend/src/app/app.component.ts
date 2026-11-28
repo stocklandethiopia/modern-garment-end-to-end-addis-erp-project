@@ -20,6 +20,7 @@ export class AppComponent {
     { label: 'Legal entities', path: '/enterprise/legal-entities', icon: '▦' },
     { label: 'Members & access', path: '/enterprise/members', icon: '◎' },
     { label: 'Business sites & nodes', path: '/enterprise/sites', icon: '⌖' },
+    { label: 'Organization structure', path: '/enterprise/organization-structure', icon: '⌘' },
     { label: 'Initiatives & opportunities', path: '/product/initiatives', icon: '⌁' },
     { label: 'Market insight register', path: '/product/market-insights', icon: '◉' },
     { label: 'Merchandising dashboard', path: '/product/merchandising-dashboard', icon: '▤' },

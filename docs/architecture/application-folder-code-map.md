@@ -406,3 +406,25 @@ The current WP index and detailed source ownership maps are at `work-packages/RE
 See `docs/architecture/source-to-application-path-index-2026-11-28.md` for current domain-to-code ownership and `docs/audit/source-intake-to-wp-disposition-register-2026-11-28.md` for source provenance, runtime compatibility, candidate PR status, migration collisions and database/Memory boundaries.
 
 **Architecture guard:** the collected v0.3.0 application is a Node.js/SQLite reference runtime. The approved canonical SaaS remains Angular 22 + Laravel 13/PHP 8.5 + PostgreSQL 18 + Redis 8.2. Port verified Stockland business behavior into canonical bounded contexts; do not replace the runtime or copy the SQLite schema wholesale. The six-file X POS sample remains a limited, MIT-licensed reference, not a completed POS module.
+
+
+## 2026-11-28 WP-03 organization structure runtime candidate — PR #29
+
+**Candidate branch:** `work/wp03-org-structure-canonical-2026-11-28`  
+**Verified source SHA:** `2396aae8af329750bb9e6c7e1ef206652588521f`  
+**PR:** [#29 — integrate tenant-scoped organization structure masters](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/pull/29)
+
+| Responsibility | Canonical source paths | Contract |
+|---|---|---|
+| Organization API | `backend/app/Http/Controllers/Enterprise/EnterpriseOrganizationController.php`; `backend/app/Services/Enterprise/EnterpriseOrganizationService.php` | Tenant-filtered lists/writes for units, position slots, unit-manager appointments and position-reporting relations |
+| Database | `backend/database/migrations/2026_11_27_000035_create_organization_structure_masters.php` | `org_units`, `job_positions`, `org_unit_manager_assignments`, `position_reporting_relations`; tenant-leading relationships, effective-date checks, forced RLS and restricted runtime grants |
+| API registration | `backend/routes/domain-api.php` | `GET/POST /api/v1/organization-units`; `GET/POST /api/v1/organization-units/{unitId}/manager-assignments`; `GET/POST /api/v1/job-positions`; `GET/POST /api/v1/position-reporting-relations` |
+| Angular service and screen | `frontend/src/app/features/enterprise/enterprise-organization.service.ts`; `organization-structure.component.ts`, `.html`, `.css`, `.spec.ts` | Tenant operator workbench for organization units, positions, manager assignments and reporting relations |
+| Navigation | `frontend/src/app/app.routes.ts`; `frontend/src/app/app.component.ts` | Registered `/enterprise/organization-structure` route and application navigation |
+| Acceptance tests | `backend/tests/Feature/EnterpriseOrganizationStructureTest.php` | Tenant isolation, authorization, parent/date/site/entity rules, job-slot identity separation, manager periods, cycle prevention, audit/outbox, pagination, forced RLS and runtime privilege checks |
+
+**Concurrency and security correction:** `EnterpriseOrganizationService` uses the existing tenant-scoped transaction advisory lock for each of its four organization-graph write paths. The five incompatible `SELECT ... FOR UPDATE` calls were removed; the migration's minimum `app_runtime` SELECT/INSERT grants were not widened.
+
+**Detailed requirement/volume acceptance matrix:** `docs/verification/WP03-implementation-acceptance-matrix.md`. Its focused API and Angular tests passed; the >100-record stress/selected-record/tenant-switch matrix remains NOT RUN.\n\n**Exact-head receipts:** ERP CI [#46088130006](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/46088130006) passed. Combined WP verification [#46088130010](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/46088130010) passed 106 backend tests / 1,232 assertions, PostgreSQL 18 migration and forced-RLS checks, Angular 22 / Node 26 tests and production build, WP-01 R3 integrity/tests and candidate packaging. Candidate ZIP artifact `15239349964`, 1,145,924 bytes, SHA-256 `83f1c4d60a98903115f6d4d4654099f500cbf3395a6a4c264047dffd3b34e7c3`.
+
+**Boundary:** this is a verified WP-03 organization increment, not full WP-03 acceptance, not an installer and not production approval. Employee/person incumbency, position-based delegated authority, complete scoped authorization, expiry/recovery and complete identity acceptance remain open. Keep the PR open pending one dependency-ordered migration train across the related candidate branches.
