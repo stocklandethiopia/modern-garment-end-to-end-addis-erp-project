@@ -143,3 +143,8 @@ The Product Owner has directed execution of CAP-001 through CAP-030 in the depen
 ### CAP-001 close rule
 
 Close CAP-001 only after the final working PR head has passed ERP CI and the configured WP/component/source verification on that exact SHA; the PR and run IDs are recorded in the CAP ledger and this handover; all source-map references point to the exact active branches; and the refreshed inventory matches the same observation. Then begin CAP-002 (the 128 R3 ↔ 120 GAR reconciliation). No WP status or product requirement is changed by this checkpoint.
+
+
+### CAP-001 exact candidate verification — 28 November 2026
+
+PR [#31](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/pull/31) candidate head `31fc6068e29200651c42db75d996e7b4187e6933` passed ERP CI [#46131204323](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/46131204323) and configured WP verification [#46131204313](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/46131204313). Both include successful PHP formatting, PostgreSQL 18 migration/RLS, 93 Laravel tests / 1,081 assertions, 27 Angular tests across 7 files and production build; the combined WP workflow also passed WP-01 R3 source integrity and candidate artifact assembly. Artifact ID `15257646381`, SHA-256 `54c6468cc05e8a36204a372cbafc501702208cac298039448efdfd4ee1566a2c`. This evidence is exact-head-bound to 31fc only. A documentation-only evidence amendment is being retested at its own final head before PR merge; CAP-002 must not start until that recheck, delivery merge and post-merge CI succeed.
