@@ -91,6 +91,7 @@ export interface OrganizationUnitInput {
   unit_type: string;
   valid_from: string;
   valid_to: string | null;
+  reason: string;
 }
 
 export interface JobPositionInput {
@@ -102,6 +103,7 @@ export interface JobPositionInput {
   position_class: string;
   valid_from: string;
   valid_to: string | null;
+  reason: string;
 }
 
 export interface UnitManagerInput {
