@@ -96,7 +96,7 @@ for (const row of rows) {
   if (row.match_classification === 'CONSOLIDATED' && (aliases.length < 2 || inverseCounts.some(count => count !== 1))) fail(row.r3_requirement_id + ' CONSOLIDATED is not a consolidation of distinct legacy sources');
 }
 
-const expectedCounts = { CONSOLIDATED: 18, PARTIAL: 47, R3_ADDITION: 2, SPLIT: 61 };
+const expectedCounts = { CONSOLIDATED: 9, PARTIAL: 16, R3_ADDITION: 2, SPLIT: 101 };
 for (const [name, count] of Object.entries(expectedCounts)) {
   if ((classCounts.get(name) ?? 0) !== count) fail(name + ' count changed; expected ' + count);
 }
