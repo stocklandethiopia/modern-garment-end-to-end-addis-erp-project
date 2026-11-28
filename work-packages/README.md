@@ -8,7 +8,7 @@ This directory is the **work-package index and evidence map**, not a second appl
 | 00 | `wp-00-governance-and-delivery-control/SOURCE_MAP.md` | Owner-accepted governance; maintain the sequence and evidence |
 | 01 | `wp-01-requirements-traceability/SOURCE_MAP.md` | R3 source package verified; canonical implementation trace remains open |
 | 02 | `wp-02-ethiopia-legal-localization/SOURCE_MAP.md` | Source register/design exists; qualified approval and effective-dated activation remain open |
-| 03 | `wp-03-enterprise-saas-identity-organization/SOURCE_MAP.md` | Partial canonical foundation; platform/org candidates require reconciliation and exact-head acceptance |
+| 03 | `wp-03-enterprise-saas-identity-organization/SOURCE_MAP.md` | PARTIAL — WP-03 PR #13 and PR #29 candidate increments exact-head verified; migration-train reconciliation and full WP-03 acceptance remain open |
 | 04 | `wp-04-initiative-merchandising-range-planning/SOURCE_MAP.md` | Partial canonical workflow and tests |
 | 05 | `wp-05-plm-design-studio-product-development/SOURCE_MAP.md` | Partial PLM/BOM/sample foundation |
 | 06 | `wp-06-industrial-engineering-capacity-readiness/SOURCE_MAP.md` | IE foundation; full study/line balance/readiness evidence open |

@@ -71,9 +71,9 @@ These are source maps, not generic implementation placeholders and not duplicate
 
 | Candidate | Scope | Evidence/disposition at review |
 |---|---|---|
-| PR #13, `work/wp03-completion-2026-11-27` | WP-03 platform admin and scoped access | Latest failure run #445 exposed a valid ADMIN approver being rejected by a MEMBER-only scope target guard; correction is now committed and requires new exact-head CI |
+| PR #13, `work/wp03-completion-2026-11-27` | WP-03 platform admin and scoped access | Source head `735d404fdf996e58bd07140cd900dc55c50c13ed`; exact WP verification [#46085083642](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/46085083642) passed all three jobs. Seven actionable review threads were fixed and resolved. Keep open pending migration-train reconciliation. |
 | PR #20, `work/wp14-ethiopia-payroll-localization-2026-11-27` | WP-14 Ethiopia payroll candidate | Source/legal vectors and candidate code exist; no legal approval/activation claim; requires migration-sequence reconciliation and exact CI |
-| PR #21, `work/wp03-org-master-runtime-2026-11-27` | WP-03 org structure master candidate | Candidate migration/source exists; requires dependency, API/RLS/UI/tests and CI review |
+| PR #21, `work/wp03-org-master-runtime-2026-11-27` | WP-03 org structure master candidate | Superseded by current-delivery-derived PR #29; retain only as historical source until duplicate PR disposition is recorded. |\n| PR #29, `work/wp03-org-structure-canonical-2026-11-28` | WP-03 org structure runtime candidate | Source head `2396aae8af329750bb9e6c7e1ef206652588521f`; ERP CI #46088130006 and combined WP verification #46088130010 both passed, including 106 backend tests / 1,232 assertions and candidate assembly; keep open pending shared migration-train reconciliation. |
 | PR #23, `fix/wp15-agent-device-runtime-grants-2026-11-27` | WP-15 agent/device grants | Candidate migration/source exists; requires exact CI and integration review |
 | PR #27, `work/fix-private-document-storage-rls-inventory-2026-11-27` | WP-11/WP-15 private document and quality integrity | ERP CI #977 and component/WP-01 #442 passed on exact candidate SHA `b6e5486324e0eca18c065b253d1640ea7e6f2416`; PR remains unmerged and migration integration still needs reconciliation |
 
@@ -88,7 +88,7 @@ Several independent candidate branches reuse migration sequence numbers. They ca
 | WP-03 PR #13 | `000033_create_platform_operator_grant_lifecycle`, `000034_secure_tenant_access_scope_mutations`, `000037_isolate_identity_control_functions` |
 | WP-14 PR #20 | `000033_require_stored_statutory_source_document`, `000034_require_payroll_line_evidence_hash`, `000036_protect_payroll_run_line_evidence` |
 | WP-15 PR #23 | `000033_grant_agent_and_device_runtime_transition_columns` |
-| WP-03 PR #21 | `000035_create_organization_structure_masters` |
+| WP-03 PR #29 | `000035_create_organization_structure_masters` |
 | WP-11/WP-15 PR #27 | `000038_repair_quality_inspection_review_state` |
 
 **Required action:** rebase candidate code against a fresh delivery head; create one ordered migration train with unique timestamps after the canonical 000032 baseline; inspect foreign-key/function/table dependencies; run the entire migration chain from an empty PostgreSQL 18 database using the restricted migrator; run rollback/forward compatibility checks; prove RLS and API behavior on least-privilege roles; only then prepare a consolidated integration PR. Do not rename migrations already deployed in any real environment without a recorded migration-history compatibility plan.
@@ -112,3 +112,12 @@ ChatGPT Memory is conversational personalization/context, not the ERP database. 
 
 ## 8. Detailed 45-table source port map
 The exact 45 table names, source columns, canonical destination domains, analogs already present, missing schema/workflows and data conversion controls are documented in `docs/audit/stockland-v0.3-45-table-port-disposition-2026-11-28.md`. This table-level crosswalk must be used when implementing the collected schema; it prohibits a direct single-company SQLite schema clone.
+
+
+## 9. Verified WP-03 organization structure source increment — 28 November 2026
+
+PR #29 adds the canonical Laravel/Angular implementation for tenant organization units, job-position slots, unit-manager appointments and solid-line reporting relations. Source-to-target paths and exact test receipts are recorded in `docs/architecture/application-folder-code-map.md`, `work-packages/wp-03-enterprise-saas-identity-organization/SOURCE_MAP.md` and `docs/work-packages/handover-register.md`.
+
+The exact head `2396aae8af329750bb9e6c7e1ef206652588521f` passed ERP CI #46088130006 and combined WP verification #46088130010 (106 backend tests / 1,232 assertions; PostgreSQL 18 migrations and forced RLS; Angular 22 / Node 26 tests/build; WP-01 R3 integrity and candidate assembly). Artifact ID `15239349964`, SHA-256 `83f1c4d60a98903115f6d4d4654099f500cbf3395a6a4c264047dffd3b34e7c3`.
+
+This increment closes the `FOR UPDATE`/minimum-grant incompatibility using the existing tenant graph advisory lock; it does not widen `app_runtime` privileges. WP-03 remains PARTIAL. Migration-number conflicts listed in section 5 remain an integration stop.
