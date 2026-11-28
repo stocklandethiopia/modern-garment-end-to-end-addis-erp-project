@@ -22,8 +22,9 @@ const TABLES = [
     label: 'decision',
     prefix: 'D',
     count: 13,
-    headers: ['ID','Decision and current disposition','Authority / evidence','Affected WPs','Risk and required control','Review trigger / expiry'],
-    evidenceColumns: [2,3,4,5]
+    headers: ['ID','Decision and current disposition','Authority / source / accountable role','Affected WPs','Risk and required control','Review trigger / expiry'],
+    evidenceColumns: [2,3,4,5],
+    accountableColumn: 2
   },
   {
     heading: '## 4. Assumption register',
@@ -38,16 +39,16 @@ const TABLES = [
     label: 'risk',
     prefix: 'R',
     count: 12,
-    headers: ['ID','Risk / consequence','Rating','Owner role','Current mitigation / linked action','Status','Review trigger / target'],
-    evidenceColumns: [2,3,4,5,6]
+    headers: ['ID','Risk / consequence','Rating','Accountable owner role','Affected WPs','Source / evidence','Current mitigation / linked action','Status','Review trigger / target'],
+    evidenceColumns: [2,3,4,5,6,7,8]
   },
   {
     heading: '## 6. Exception register',
     label: 'exception',
     prefix: 'E',
     count: 6,
-    headers: ['ID','Bounded exception / current status','Allowed use','Prohibited inference or use','Owner role','Expiry / review trigger'],
-    evidenceColumns: [2,3,4,5]
+    headers: ['ID','Bounded exception / current status','Allowed use','Prohibited inference or use','Affected WPs','Source / evidence','Owner role','Expiry / review trigger'],
+    evidenceColumns: [2,3,4,5,6,7]
   }
 ];
 
@@ -144,6 +145,12 @@ export function validateRegisterText(markdown) {
         if (!row.cells[column]) errors.push(table.label + ' row ' + row.cells[0] + ' lacks required evidence/control field ' + table.headers[column]);
       }
       allIds.push(row.cells[0]);
+      if (table.label === 'decision' && !row.cells[2].includes('Accountable role:')) {
+        errors.push('decision ' + row.cells[0] + ' lacks an accountable role');
+      }
+      if (table.label === 'risk' && !/(HIGH|MEDIUM)/.test(row.cells[2])) {
+        errors.push('risk ' + row.cells[0] + ' lacks a severity rating');
+      }
       if (table.label === 'exception' && !row.cells[1].includes('BOUNDED_EXCEPTION')) {
         errors.push('exception ' + row.cells[0] + ' must be explicitly marked BOUNDED_EXCEPTION');
       }
