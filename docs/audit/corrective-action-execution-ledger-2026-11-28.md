@@ -121,7 +121,7 @@ Compare results against delivery SHA `3438ab47240c10ce5ea5f1f772c1570cc2191134`:
 | CAP | WP | Priority | Status at this ledger revision | Dependency / next gate |
 |---|---|---:|---|---|
 | CAP-001 | WP-00 | P0 | CLOSED / MERGED — exact PR-head ERP and WP checks passed; merge SHA and identical tree recorded | Closed on delivery merge `217aa9848e1499617aeab76d77349f4bb1805066`; separate delivery push run not asserted |
-| CAP-002 | WP-00/WP-01 | P0 | IN REVIEW — 128-R3/120-GAR draft candidate crosswalk, method, seven-column gzip data artifact and exact CI validator committed on dedicated WP-01 branch; PR-head checks pending | Review semantic relationships and run exact-head ERP CI plus configured WP-01 verification before merge/closure |
+| CAP-002 | WP-00/WP-01 | P0 | IN REVIEW — 128-R3/120-GAR draft candidate crosswalk, method, seven-column gzip data artifact and exact CI validator committed on dedicated WP-01 branch; PR-head checks pending | Review every candidate edge against both full requirement statements and acceptance boundaries; then run exact-head ERP CI plus configured WP-01 verification before merge/closure |
 | CAP-003 | WP-00 | P1 | NOT STARTED | Build decision/assumption/risk/exception register from accepted evidence |
 | CAP-004 | WP-01 | P0 | NOT STARTED | Depends on the CAP-002 canonical identity/alias crosswalk |
 | CAP-005 | WP-01 | P1 | NOT STARTED | Measurable NFR catalogue and verification methods |
