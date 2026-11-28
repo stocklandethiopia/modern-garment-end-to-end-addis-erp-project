@@ -9,6 +9,8 @@ on:
       - 'frontend/**'
       - 'work-packages/**'
       - 'docs/**'
+      - 'scripts/**'
+      - 'tests/**'
       - '.github/workflows/wp01-16-completion-verification.yml'
   pull_request:
     branches:
@@ -18,6 +20,8 @@ on:
       - 'frontend/**'
       - 'work-packages/**'
       - 'docs/**'
+      - 'scripts/**'
+      - 'tests/**'
       - '.github/workflows/wp01-16-completion-verification.yml'
   workflow_dispatch:
 
@@ -29,6 +33,24 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  wp00-governance-register:
+    name: WP-00 decision / assumption / risk / exception register
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 26
+        uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+
+      - name: Test governance register validator
+        run: node --test tests/governance-register.test.mjs
+
+      - name: Validate governance register and pinned source evidence
+        run: node scripts/verify-wp00-governance-register.mjs
+
   backend-postgresql:
     name: Laravel 13 / PHP 8.5 / PostgreSQL 18 / Redis 8.2
     runs-on: ubuntu-latest
@@ -242,7 +264,7 @@ jobs:
 
   combined-release-candidate:
     name: Assemble combined ERP repository candidate
-    needs: [backend-postgresql, frontend-angular, wp01-source-package]
+    needs: [wp00-governance-register, backend-postgresql, frontend-angular, wp01-source-package]
     runs-on: ubuntu-latest
     if: success()
     steps:
@@ -263,7 +285,7 @@ jobs:
             echo "Branch/ref: ${GITHUB_REF}"
             echo "Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
             echo
-            echo "All required backend, frontend and WP-01 source-package jobs succeeded."
+            echo "All required WP-00 governance, backend, frontend and WP-01 source-package jobs succeeded."
             echo "This artifact is a review candidate; production deployment and professional sign-offs remain separate gates."
           } > dist/BUILD-VERIFICATION.md
 
