@@ -7,13 +7,6 @@ use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
-    private array $tables = [
-        'position_reporting_relations',
-        'org_unit_manager_assignments',
-        'job_positions',
-        'org_units',
-    ];
-
     public function up(): void
     {
         if (DB::connection()->getDriverName() !== 'pgsql') {
