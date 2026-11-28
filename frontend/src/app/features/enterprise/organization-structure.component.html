@@ -209,8 +209,8 @@
             <div><span>Sub-units on this page</span><strong>{{ childUnits().length }}</strong></div>
             <div><span>Effective from</span><strong>{{ unit.valid_from }}</strong></div>
             <div><span>Effective to</span><strong>{{ unit.valid_to || 'Open ended' }}</strong></div>
-            <div><span>Legal entity</span><strong>{{ unit.legal_entity_id ? (legalEntities().find(e => e.id === unit.legal_entity_id)?.legal_name || 'Assigned') : 'Not assigned' }}</strong></div>
-            <div><span>Business site</span><strong>{{ unit.business_site_id ? (sites().find(s => s.id === unit.business_site_id)?.name || 'Assigned') : 'Not assigned' }}</strong></div>
+            <div><span>Legal entity</span><strong>{{ entityName(unit.legal_entity_id) }}</strong></div>
+            <div><span>Business site</span><strong>{{ siteName(unit.business_site_id) }}</strong></div>
           </div>
 
           <div class="subsection-heading">
