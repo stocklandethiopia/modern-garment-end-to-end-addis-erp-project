@@ -1,0 +1,210 @@
+<header class="page-heading">
+  <div>
+    <span class="eyebrow">WP-05 · DESIGN STUDIO & PRODUCT DEVELOPMENT</span>
+    <h1>Product development studio</h1>
+    <p>Carry approved merchandising intent into a version-controlled design process, with product briefs, maker-checker acceptance and style revision history.</p>
+  </div>
+  <button type="button" class="secondary-button" (click)="loadAll()" [disabled]="loading()">Refresh records</button>
+</header>
+
+@if (errorMessage()) { <p class="notice error" role="alert">{{ errorMessage() }}</p> }
+@if (successMessage()) { <p class="notice success" role="status">{{ successMessage() }}</p> }
+@if (loading()) { <p class="loading-note" role="status">Loading tenant product-development records…</p> }
+
+<nav class="studio-tabs" aria-label="Product development stages">
+  <button type="button" [class.active]="activeTab() === 'BRIEFS'" [attr.aria-pressed]="activeTab() === 'BRIEFS'" (click)="setTab('BRIEFS')">Product briefs <span>{{ briefs().length }}</span></button>
+  <button type="button" [class.active]="activeTab() === 'STYLES'" [attr.aria-pressed]="activeTab() === 'STYLES'" (click)="setTab('STYLES')">Style development <span>{{ styles().length }}</span></button>
+</nav>
+
+@if (activeTab() === 'BRIEFS') {
+  <div class="workspace-grid">
+    <section class="panel">
+      <div class="panel-heading">
+        <div><span class="panel-kicker">01 · APPROVED WP-04 HANDOFF</span><h2>Create product brief</h2><p>Only a frozen range plan from the current approved collection and active brand strategy is eligible.</p></div>
+      </div>
+      <form [formGroup]="briefForm" (ngSubmit)="createBrief()" class="form-grid">
+        <label class="full-span">Frozen range plan
+          <select formControlName="range_plan_id" (change)="loadRangePlanLines($any($event.target).value)">
+            <option value="">Select frozen range plan</option>
+            @for (plan of rangePlans(); track plan.id) { @if (plan.status === 'FROZEN') { <option [value]="plan.id">{{ plan.code }} · {{ plan.plan_start }} to {{ plan.plan_end }}</option> } }
+          </select>
+        </label>
+        <label class="full-span">Range line / product hypothesis
+          <select formControlName="range_line_id">
+            <option value="">Select range line</option>
+            @for (line of rangeLines(); track line.id) { <option [value]="line.id">{{ line.line_code }} · {{ line.category_code }} · {{ line.planned_units }} planned units</option> }
+          </select>
+        </label>
+        <label>Target consumer<input formControlName="target_consumer" placeholder="Who is the product designed for?"></label>
+        <label>Intended use / occasion<input formControlName="intended_use" placeholder="Work, everyday, school, sports, etc."></label>
+        <label class="full-span">Product need<textarea rows="3" formControlName="product_need" placeholder="Customer need, performance expectation and problem to solve"></textarea></label>
+        <label>Target retail price<input type="number" min="0" step="0.01" formControlName="target_price"></label>
+        <label>Target cost<input type="number" min="0" step="0.01" formControlName="target_cost"></label>
+        <label>Currency<input maxlength="3" formControlName="target_currency" placeholder="ETB"></label>
+        <label>Quality tier<input formControlName="quality_tier" placeholder="GOOD / BETTER / BEST or tenant tier"></label>
+        <label>Required delivery date<input type="date" formControlName="delivery_need_by"></label>
+        <label class="full-span">Sustainability and substantiation intent<input formControlName="sustainability_intent" placeholder="Traceable fibres, durability, waste control (comma separated)"></label>
+        <label class="full-span">Reason for this brief version<textarea rows="2" formControlName="change_reason" placeholder="Why is this brief being created?"></textarea></label>
+        <div class="form-footer full-span"><p>Creating a brief does not itself authorize design or bulk production. The current version requires independent acceptance.</p><button type="submit" class="primary-button" [disabled]="saving()">Create version 1 draft</button></div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading"><div><span class="panel-kicker">PRODUCT BRIEF REGISTER</span><h2>Briefs and acceptance status</h2><p>Open a brief to review its immutable version and decision history.</p></div><span class="count-tag">{{ briefs().length }} records</span></div>
+      <div class="record-list">
+        @for (brief of briefs(); track brief.id) {
+          <div class="record-row">
+            <div class="record-main">
+              <strong>{{ brief.line_code }} · {{ brief.category_code }}</strong>
+              <span>{{ brief.collection_name }} · {{ brief.range_plan_code }}</span>
+              <small>v{{ brief.current_version }} · {{ brief.status }} · {{ brief.target_consumer }}</small>
+            </div>
+            <span class="status-pill" [class.approved]="brief.status === 'ACCEPTED'" [class.pending]="brief.status === 'SUBMITTED_FOR_REVIEW'">{{ brief.status }}</span>
+            <button type="button" class="text-button" (click)="selectBrief(brief)">Open</button>
+          </div>
+        }
+        @if (briefs().length === 0) { <div class="empty-state"><strong>No product briefs yet</strong><p>Freeze an approved WP-04 range plan, then create a brief from one of its lines.</p></div> }
+      </div>
+    </section>
+  </div>
+
+  @if (selectedBrief(); as detail) {
+    <section class="panel detail-panel">
+      <div class="panel-heading">
+        <div><span class="panel-kicker">SELECTED PRODUCT BRIEF</span><h2>{{ detail.data.line_code || detail.data.id }} · Version {{ detail.data.current_version }}</h2><p>{{ detail.data.collection_name }} · {{ detail.data.range_plan_code }} · {{ detail.data.target_consumer }}</p></div>
+        <span class="status-pill" [class.approved]="detail.data.status === 'ACCEPTED'" [class.pending]="detail.data.status === 'SUBMITTED_FOR_REVIEW'">{{ detail.data.status }}</span>
+      </div>
+      <div class="brief-facts">
+        <div><span>Product need</span><strong>{{ detail.data.product_need }}</strong></div>
+        <div><span>Use / occasion</span><strong>{{ detail.data.intended_use }}</strong></div>
+        <div><span>Target price / cost</span><strong>{{ detail.data.target_currency }} {{ detail.data.target_price || '—' }} / {{ detail.data.target_cost || '—' }}</strong></div>
+        <div><span>Accepted version</span><strong>{{ detail.data.accepted_version ?? 'None yet' }}</strong></div>
+      </div>
+      <div class="subsection">
+        <div class="subsection-heading"><h3>Immutable brief versions</h3><p>Each revision records its source content, creator and change reason.</p></div>
+        <div class="table-wrap"><table><thead><tr><th>Version</th><th>Created</th><th>Creator</th><th>Change reason</th></tr></thead><tbody>
+          @for (version of detail.versions; track version.id) { <tr><td>v{{ version.version_no }}</td><td>{{ version.created_at | date:'medium' }}</td><td>{{ version.created_by }}</td><td>{{ version.change_reason }}</td></tr> }
+        </tbody></table></div>
+      </div>
+      <div class="subsection">
+        <div class="subsection-heading"><h3>Decision history</h3><p>Acceptance is tied to the exact brief revision and recorded independently.</p></div>
+        <div class="record-list">
+          @for (decision of detail.decisions; track decision.id) {
+            <div class="record-row"><div class="record-main"><strong>{{ decision.decision }} · v{{ decision.version_no }}</strong><span>{{ decision.reason }}</span><small>{{ decision.decided_at | date:'medium' }} · {{ decision.decided_by }}</small></div></div>
+          }
+          @if (detail.decisions.length === 0) { <p class="empty-inline">No acceptance decision has been recorded.</p> }
+        </div>
+      </div>
+      <div class="action-grid">
+        @if (canSubmitBrief(detail.data)) {
+          <div class="action-card"><span class="panel-kicker">OWNER ACTION</span><h3>Submit for independent review</h3><p>After submission, the current version is locked until a decision is recorded.</p><button class="primary-button" type="button" (click)="submitBrief()" [disabled]="saving()">Submit current version</button></div>
+        }
+        @if (canDecideBrief(detail.data)) {
+          <div class="action-card"><span class="panel-kicker">INDEPENDENT APPROVER</span><h3>Accept or reject this version</h3>
+            <form [formGroup]="decisionForm" (ngSubmit)="decideBrief()" class="form-grid">
+              <label>Decision<select formControlName="decision"><option value="ACCEPT">Accept</option><option value="REJECT">Reject</option></select></label>
+              <label class="full-span">Reason<textarea rows="2" formControlName="reason" placeholder="Explain the decision and evidence"></textarea></label>
+              <label class="full-span">Required actions (optional, comma separated)<input formControlName="actions" placeholder="Validate fabric, confirm size range"></label>
+              <div class="form-footer full-span"><p>The creator cannot accept their own brief.</p><button class="primary-button" type="submit" [disabled]="saving()">Record decision</button></div>
+            </form>
+          </div>
+        }
+      </div>
+      @if (canReviseBrief(detail.data)) {
+        <div class="subsection">
+          <div class="subsection-heading"><h3>Create a new brief revision</h3><p>Prior versions and their decisions remain preserved. New styles must pin to the newly accepted version.</p></div>
+          <form [formGroup]="briefVersionForm" (ngSubmit)="createBriefVersion()" class="form-grid">
+            <label>Target consumer<input formControlName="target_consumer"></label>
+            <label>Intended use<input formControlName="intended_use"></label>
+            <label class="full-span">Product need<textarea rows="2" formControlName="product_need"></textarea></label>
+            <label>Target price<input type="number" min="0" step="0.01" formControlName="target_price"></label>
+            <label>Target cost<input type="number" min="0" step="0.01" formControlName="target_cost"></label>
+            <label>Currency<input maxlength="3" formControlName="target_currency"></label>
+            <label>Quality tier<input formControlName="quality_tier"></label>
+            <label>Delivery need by<input type="date" formControlName="delivery_need_by"></label>
+            <label class="full-span">Sustainability intent<input formControlName="sustainability_intent" placeholder="Comma separated"></label>
+            <label class="full-span">Change reason<textarea rows="2" formControlName="change_reason"></textarea></label>
+            <div class="form-footer full-span"><p>Revising an accepted brief sets the new version to draft while existing styles retain their exact accepted source version.</p><button class="primary-button" type="submit" [disabled]="saving()">Create next version</button></div>
+          </form>
+        </div>
+      }
+    </section>
+  }
+}
+
+@if (activeTab() === 'STYLES') {
+  <div class="workspace-grid">
+    <section class="panel">
+      <div class="panel-heading"><div><span class="panel-kicker">02 · STYLE MASTER</span><h2>Create style from accepted brief</h2><p>A style records its exact accepted product-brief version and begins in design development.</p></div></div>
+      <form [formGroup]="styleForm" (ngSubmit)="createStyle()" class="form-grid">
+        <label class="full-span">Accepted product brief
+          <select formControlName="product_brief_id"><option value="">Select accepted current brief</option>
+            @for (brief of acceptedBriefs(); track brief.id) { <option [value]="brief.id">{{ brief.line_code }} · {{ brief.collection_name }} · v{{ brief.current_version }}</option> }
+          </select>
+        </label>
+        <label>Style code<input formControlName="style_code" placeholder="STYLE-001"></label>
+        <label>Style name<input formControlName="name" placeholder="Garment style name"></label>
+        <label>Category code<input formControlName="category_code" placeholder="WOVEN_TOP"></label>
+        <label>Silhouette<input formControlName="silhouette" placeholder="Relaxed, regular, tailored…"></label>
+        <label class="full-span">Design direction<textarea rows="3" formControlName="design_direction" placeholder="Creative direction, customer use and visual identity"></textarea></label>
+        <label>Fit intent<textarea rows="2" formControlName="fit_intent" placeholder="Ease, movement and fit expectation"></textarea></label>
+        <label>Construction intent<textarea rows="2" formControlName="construction_intent" placeholder="Construction principles and performance"></textarea></label>
+        <label>Material direction (JSON object)<textarea rows="3" formControlName="material_direction_json" placeholder='{"fibre":"Cotton blend","weight":"Midweight"}'></textarea></label>
+        <label>Colour direction (JSON object)<textarea rows="3" formControlName="colour_direction_json" placeholder='{"core":["NAVY","OLIVE"]}'></textarea></label>
+        <label>Target size range (JSON object)<textarea rows="3" formControlName="target_size_range_json" placeholder='{"system":"TENANT_DEFINED","sizes":["S","M","L"]}'></textarea></label>
+        <label class="full-span">Change summary<textarea rows="2" formControlName="change_summary" placeholder="What does this initial design revision establish?"></textarea></label>
+        <div class="form-footer full-span"><p>Style creation is rejected if the product brief has a newer unaccepted revision.</p><button class="primary-button" type="submit" [disabled]="saving()">Create style and revision 1</button></div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading"><div><span class="panel-kicker">STYLE REGISTER</span><h2>Styles in development</h2><p>Open a style to inspect its immutable design revisions.</p></div><span class="count-tag">{{ styles().length }} records</span></div>
+      <div class="record-list">
+        @for (style of styles(); track style.id) {
+          <div class="record-row">
+            <div class="record-main"><strong>{{ style.style_code }} · {{ style.name }}</strong><span>{{ style.category_code }} · Brief version {{ style.product_brief_version }}</span><small>{{ style.status }} · Revision {{ style.latest_revision_no ?? style.current_revision }} · {{ style.latest_change_summary }}</small></div>
+            <button class="text-button" type="button" (click)="selectStyle(style)">Open</button>
+          </div>
+        }
+        @if (styles().length === 0) { <div class="empty-state"><strong>No styles yet</strong><p>Accept a current product brief version before opening the first style.</p></div> }
+      </div>
+    </section>
+  </div>
+
+  @if (selectedStyle(); as detail) {
+    <section class="panel detail-panel">
+      <div class="panel-heading"><div><span class="panel-kicker">SELECTED STYLE</span><h2>{{ detail.data.style_code }} · {{ detail.data.name }}</h2><p>{{ detail.data.category_code }} · Pinned to product brief revision {{ detail.data.product_brief_version }}</p></div><span class="status-pill">{{ detail.data.status }}</span></div>
+      <div class="subsection">
+        <div class="subsection-heading"><h3>Design revision history</h3><p>Design intent and material/colour/size direction are stored as immutable revision snapshots.</p></div>
+        <div class="record-list">
+          @for (revision of detail.revisions; track revision.id) {
+            <article class="revision-card">
+              <div class="revision-title"><strong>Revision {{ revision.revision_no }}</strong><span class="status-pill">{{ revision.status }}</span></div>
+              <p>{{ revision.design_direction }}</p>
+              <div class="revision-facts"><span>Silhouette: {{ revision.silhouette || '—' }}</span><span>Fit: {{ revision.fit_intent }}</span><span>Construction: {{ revision.construction_intent }}</span></div>
+              <small>{{ revision.created_at | date:'medium' }} · {{ revision.change_summary }}</small>
+            </article>
+          }
+        </div>
+      </div>
+      @if (detail.data.status === 'DESIGN_IN_PROGRESS') {
+        <div class="subsection">
+          <div class="subsection-heading"><h3>Append a design revision</h3><p>Changing creative direction never overwrites the earlier version.</p></div>
+          <form [formGroup]="revisionForm" (ngSubmit)="createStyleRevision()" class="form-grid">
+            <label class="full-span">Design direction<textarea rows="3" formControlName="design_direction"></textarea></label>
+            <label>Silhouette<input formControlName="silhouette"></label>
+            <label>Fit intent<textarea rows="2" formControlName="fit_intent"></textarea></label>
+            <label>Construction intent<textarea rows="2" formControlName="construction_intent"></textarea></label>
+            <label>Material direction JSON<textarea rows="3" formControlName="material_direction_json"></textarea></label>
+            <label>Colour direction JSON<textarea rows="3" formControlName="colour_direction_json"></textarea></label>
+            <label>Target size range JSON<textarea rows="3" formControlName="target_size_range_json"></textarea></label>
+            <label class="full-span">Change summary<textarea rows="2" formControlName="change_summary"></textarea></label>
+            <div class="form-footer full-span"><p>This stage records design intent only. Technical specs, patterns, sample and fit approval, BOM and release remain later controlled stages.</p><button class="primary-button" type="submit" [disabled]="saving()">Append revision</button></div>
+          </form>
+        </div>
+      }
+    </section>
+  }
+}
+
+<div class="footer-note"><span class="info-icon">i</span><p>WP-05 is being delivered as sequential controlled slices. This workspace now covers product briefs, independent acceptance, styles and design revision history. It does not claim CAD/3D authoring, binary design-asset storage, pattern/grading, sample-room, fit approval, technical pack, BOM/costing or production release functionality yet.</p></div>

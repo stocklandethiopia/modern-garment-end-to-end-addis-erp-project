@@ -1,0 +1,14 @@
+repository,license_observed,license_file_checked,collection_role,engineering_context
+https://github.com/kodlyft/xpos,MIT,yes,Selected source snapshot,"POS stock availability, row locking, barcode parsing, idempotent submission, offline policy and regression tests"
+https://github.com/mayphyusinthant/pos-system,Apache-2.0,yes,Clothing-retail workflow reference,"Multi-store clothing POS concepts covering inventory, employee roles, suppliers, customers and reporting"
+https://github.com/itzcheh1ru/w-and-b-clothing-garment-management-system,MIT,yes,Garment-domain reference,"Garment-oriented supplier, customer, employee, stock, order and finance entity vocabulary"
+https://github.com/mobo-open-source/mobo_pos,Apache-2.0,yes,Mobile-client architecture reference,"Flutter client integrating Odoo POS with account switching, session control and mobile device capabilities"
+https://github.com/drmcoder/awesome-garment-erp,CC0-1.0,yes,Discovery index,Curated garment ERP and industry resource index
+https://github.com/ParaLogicTech/textile,GPL-3.0,yes,Textile ERP architecture reference,Frappe-based textile workflow and manufacturing-domain reference with copyleft license identified
+https://github.com/SLIIT-Y3-S2/Garment-Factory-Management-System-Frontend,MIT,yes,Garment-factory frontend reference,Frontend-oriented garment factory management screen and workflow reference
+https://github.com/RavinduChamodWickramage/Clothify,Root license declaration not observed,checked,Discovery reference,"Java clothing-store application with product, order, staff, supplier and supply components"
+https://github.com/chanuthjayasekera/clothing-pos-system,Root license declaration not observed,checked,Discovery reference,Small browser-based clothing POS implementation reference
+https://github.com/NimeshDilhara96/apparel-flow-erp,Root license declaration not observed,checked,Discovery reference,"Apparel order, sewing, supervisor and verification workflow reference"
+https://github.com/imranbru99/textile-erp-nextjs,Root license declaration not observed,checked,Discovery reference,Next.js textile ERP technology and module discovery reference
+https://github.com/imranbru99/manufacturing-industry-textile-garments-erp-aspdotnet,Root license declaration not observed,checked,Discovery reference,ASP.NET textile and garment manufacturing ERP discovery reference
+https://github.com/drmcoder/scan-erp-packages,Root license declaration not observed,checked,Discovery reference,ERP package and integration discovery index

@@ -1,0 +1,1 @@
+Retry exact import after removing the whitespace-only check. The source must retain its original bytes; require 107 staged files and re-run manifest SHA-256 verification after commit.

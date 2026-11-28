@@ -1,0 +1,2 @@
+supplierCode,locationCode,sku,orderedQty,unitCostETB,expectedDate,notes
+SUP-001,CENTRAL_WAREHOUSE,STK-001,100,250.00,2026-12-01,Initial order

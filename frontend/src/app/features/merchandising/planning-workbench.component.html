@@ -1,0 +1,509 @@
+<section class="page-heading">
+  <div>
+    <div class="eyebrow">WP-04 · DEMAND & COMMERCIAL PLANNING</div>
+    <h1>Planning workbench</h1>
+    <p>Publish demand assumptions, govern open-to-buy, and control effective-dated channel prices and promotions.</p>
+  </div>
+  <button type="button" class="secondary-button" (click)="loadAll()" [disabled]="loading()">
+    {{ loading() ? 'Refreshing…' : 'Refresh workspace' }}
+  </button>
+</section>
+
+@if (errorMessage()) {
+  <div class="notice error" role="alert">{{ errorMessage() }}</div>
+}
+@if (successMessage()) {
+  <div class="notice success" role="status">{{ successMessage() }}</div>
+}
+
+<nav class="workbench-tabs" aria-label="Commercial planning areas">
+  <button type="button" [class.active]="activeTab() === 'FORECAST'" [attr.aria-pressed]="activeTab() === 'FORECAST'" (click)="setTab('FORECAST')">
+    <span>01</span> Demand forecast
+  </button>
+  <button type="button" [class.active]="activeTab() === 'OTB'" [attr.aria-pressed]="activeTab() === 'OTB'" (click)="setTab('OTB')">
+    <span>02</span> Open-to-buy
+  </button>
+  <button type="button" [class.active]="activeTab() === 'PRICING'" [attr.aria-pressed]="activeTab() === 'PRICING'" (click)="setTab('PRICING')">
+    <span>03</span> Pricing & promotions
+  </button>
+</nav>
+
+@if (activeTab() === 'FORECAST') {
+  <div class="workbench-layout">
+    <section class="panel">
+      <div class="panel-heading">
+        <div>
+          <span class="panel-kicker">FORECAST INPUT</span>
+          <h2>Publish a forecast run</h2>
+          <p>Keep assumptions, method and confidence bounds with each time-bucketed forecast.</p>
+        </div>
+        <span class="step-tag">PLANNING ONLY</span>
+      </div>
+
+      <form [formGroup]="forecastForm" (ngSubmit)="createForecast()" class="form-grid">
+        <label>Forecast grain
+          <select formControlName="grain">
+            <option value="STYLE_WEEK">Style / week</option>
+            <option value="STYLE_MONTH">Style / month</option>
+            <option value="CATEGORY_WEEK">Category / week</option>
+            <option value="CATEGORY_MONTH">Category / month</option>
+            <option value="CHANNEL_CATEGORY_WEEK">Channel / category / week</option>
+            <option value="ACCOUNT_STYLE_WEEK">Account / style / week</option>
+            <option value="STORE_STYLE_WEEK">Store / style / week</option>
+          </select>
+        </label>
+        <label>Forecast method
+          <select formControlName="method">
+            <option value="MANUAL_CONSENSUS">Manual consensus</option>
+            <option value="STATISTICAL_BASELINE">Statistical baseline</option>
+            <option value="EXTERNAL_MODEL_IMPORT">External model import</option>
+          </select>
+        </label>
+        <label>Horizon
+          <input formControlName="horizon" maxlength="80">
+        </label>
+        <label>Scenario code
+          <input formControlName="scenario_code" maxlength="80">
+        </label>
+        <label>Forecast start
+          <input type="date" formControlName="forecast_start">
+        </label>
+        <label>Forecast end
+          <input type="date" formControlName="forecast_end">
+        </label>
+        <label>Style / product reference
+          <input formControlName="style_reference" maxlength="120">
+        </label>
+        <label>Channel
+          <input formControlName="channel_code" maxlength="60">
+        </label>
+        <label>Forecast time bucket
+          <input type="date" formControlName="time_bucket">
+        </label>
+        <label>Forecast quantity
+          <input type="number" min="0" step="0.0001" formControlName="forecast_quantity">
+        </label>
+        <label>Forecast value (ETB)
+          <input type="number" min="0" step="0.0001" formControlName="forecast_value">
+        </label>
+        <div class="field-pair">
+          <label>Confidence low
+            <input type="number" min="0" step="0.0001" formControlName="confidence_low">
+          </label>
+          <label>Confidence high
+            <input type="number" min="0" step="0.0001" formControlName="confidence_high">
+          </label>
+        </div>
+        <div class="form-footer full-span">
+          <p>Publishing records the model/manual baseline. Overrides are separate and require an independent approver.</p>
+          <button class="primary-button" type="submit" [disabled]="saving()">Publish forecast</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading">
+        <div>
+          <span class="panel-kicker">PUBLISHED RUNS</span>
+          <h2>Forecast history</h2>
+          <p>Select a run to inspect its source rows and approved overrides.</p>
+        </div>
+        <span class="count-tag">{{ forecastRuns().length }} runs</span>
+      </div>
+
+      @if (forecastRuns().length === 0) {
+        <div class="empty-state">
+          <span class="empty-icon">∿</span>
+          <strong>No forecast runs yet</strong>
+          <p>Publish a first baseline to begin tracking scenario assumptions.</p>
+        </div>
+      } @else {
+        <div class="record-list">
+          @for (run of forecastRuns(); track run.id) {
+            <article class="record-row">
+              <div class="record-main">
+                <strong>{{ run.scenario_code }}</strong>
+                <span>{{ run.grain }} · {{ run.method }}</span>
+                <small>{{ run.forecast_start | date:'d MMM y' }} – {{ run.forecast_end | date:'d MMM y' }}</small>
+              </div>
+              <span class="status-pill" [class.published]="run.status === 'PUBLISHED'">{{ run.status }}</span>
+              <button type="button" class="text-button" (click)="openForecastRun(run)">View run</button>
+            </article>
+          }
+        </div>
+      }
+    </section>
+  </div>
+
+  @if (selectedForecast(); as detail) {
+    <section class="panel detail-panel">
+      <div class="panel-heading">
+        <div>
+          <span class="panel-kicker">FORECAST DETAIL</span>
+          <h2>{{ detail.data.scenario_code }}</h2>
+          <p>{{ detail.data.grain }} · {{ detail.data.horizon }} · {{ detail.data.method }}</p>
+        </div>
+        <span class="status-pill published">{{ detail.data.status }}</span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Time bucket</th><th>Dimensions</th><th class="numeric">Forecast qty</th><th class="numeric">Forecast value</th><th>Confidence</th><th>Adjustment</th></tr>
+          </thead>
+          <tbody>
+            @for (forecast of detail.forecasts; track forecast.id) {
+              <tr>
+                <td>{{ forecast.time_bucket | date:'d MMM y' }}</td>
+                <td><code>{{ forecast.dimension_refs | json }}</code></td>
+                <td class="numeric">{{ forecast.forecast_quantity }}</td>
+                <td class="numeric">{{ forecast.forecast_value ?? '—' }} {{ forecast.currency ?? '' }}</td>
+                <td>{{ forecast.confidence_low ?? '—' }} – {{ forecast.confidence_high ?? '—' }}</td>
+                <td><button type="button" class="text-button" (click)="prepareAdjustment(forecast)">Propose override</button></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="subsection">
+        <div class="subsection-heading">
+          <h3>Propose a forecast adjustment</h3>
+          <p>Published quantity remains unchanged; the adjustment is a separate auditable decision.</p>
+        </div>
+        <form [formGroup]="adjustmentForm" (ngSubmit)="createAdjustment()" class="form-grid compact-grid">
+          <label>Forecast row ID
+            <input formControlName="forecast_id" readonly>
+          </label>
+          <label>Published baseline
+            <input type="number" min="0" step="0.0001" formControlName="baseline_value">
+          </label>
+          <label>Override quantity
+            <input type="number" min="0" step="0.0001" formControlName="override_value">
+          </label>
+          <label>Evidence reference
+            <input formControlName="evidence_reference" maxlength="1000">
+          </label>
+          <label class="full-span">Reason
+            <textarea formControlName="reason" rows="2" maxlength="500"></textarea>
+          </label>
+          <div class="form-footer full-span">
+            <p>Adjustment author cannot approve their own override.</p>
+            <button class="primary-button" type="submit" [disabled]="saving()">Submit adjustment</button>
+          </div>
+        </form>
+      </div>
+
+      @if (detail.adjustments.length > 0) {
+        <div class="subsection">
+          <div class="subsection-heading"><h3>Adjustment approvals</h3></div>
+          @for (adjustment of detail.adjustments; track adjustment.id) {
+            <div class="record-row">
+              <div class="record-main">
+                <strong>{{ adjustment.baseline_value }} → {{ adjustment.override_value }}</strong>
+                <span>{{ adjustment.reason }}</span>
+              </div>
+              <span class="status-pill" [class.published]="adjustment.is_approved">{{ adjustment.is_approved ? 'APPROVED' : 'PENDING' }}</span>
+              @if (!adjustment.is_approved) {
+                <button type="button" class="text-button" (click)="approveAdjustment(adjustment.id)">Approve</button>
+              }
+            </div>
+          }
+        </div>
+      }
+    </section>
+  }
+}
+
+@if (activeTab() === 'OTB') {
+  <div class="workbench-layout">
+    <section class="panel">
+      <div class="panel-heading">
+        <div><span class="panel-kicker">BUDGET POLICY</span><h2>Create OTB policy</h2><p>The entity, valuation basis and commitment inclusion rules are explicit.</p></div>
+      </div>
+      <form [formGroup]="otbPolicyForm" (ngSubmit)="createOtbPolicy()" class="form-grid">
+        <label class="full-span">Legal entity
+          <select formControlName="legal_entity_id">
+            <option value="">Select legal entity</option>
+            @for (entity of legalEntities(); track entity.id) { <option [value]="entity.id">{{ entity.legal_name }}</option> }
+          </select>
+        </label>
+        <label>Policy code <input formControlName="code" maxlength="80"></label>
+        <label>Budget basis
+          <select formControlName="budget_basis"><option value="RETAIL">Retail value</option><option value="COST">Cost value</option></select>
+        </label>
+        <label>Valuation basis
+          <select formControlName="valuation_basis"><option value="RETAIL">Retail value</option><option value="COST">Cost value</option></select>
+        </label>
+        <label>Commitment treatment
+          <select formControlName="commitments_mode">
+            <option value="ADDITIONAL">Subtract separately</option>
+            <option value="INCLUDED_IN_ON_ORDER">Included in on-order purchases</option>
+          </select>
+        </label>
+        <label>Effective from <input type="date" formControlName="effective_from"></label>
+        <label>Effective to <input type="date" formControlName="effective_to"></label>
+        <label class="checkbox-field">
+          <input type="checkbox" formControlName="actual_receipts_reduce_otb">
+          Actual receipts reduce available OTB
+        </label>
+        <div class="form-footer full-span">
+          <p>Budget and valuation basis must match. A different administrator must activate the policy.</p>
+          <button class="primary-button" type="submit" [disabled]="saving()">Save draft policy</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading">
+        <div><span class="panel-kicker">ACTIVE POLICY SET</span><h2>OTB policies</h2><p>Only approved active policies can calculate a period.</p></div>
+        <span class="count-tag">{{ policies().length }} policies</span>
+      </div>
+      @if (policies().length === 0) {
+        <div class="empty-state"><span class="empty-icon">∑</span><strong>No OTB policy configured</strong><p>Create and independently activate a policy first.</p></div>
+      } @else {
+        <div class="record-list">
+          @for (policy of policies(); track policy.id) {
+            <article class="record-row">
+              <div class="record-main">
+                <strong>{{ policy.code }}</strong>
+                <span>{{ policy.budget_basis }} basis · {{ policy.formula_version }}</span>
+                <small>{{ policy.effective_from }} – {{ policy.effective_to ?? 'Open end' }}</small>
+              </div>
+              <span class="status-pill" [class.published]="policy.status === 'ACTIVE'">{{ policy.status }}</span>
+              @if (policy.status === 'DRAFT') {
+                <button class="text-button" type="button" (click)="activateOtbPolicy(policy.id)">Activate</button>
+              }
+            </article>
+          }
+        </div>
+      }
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="panel-heading"><div><span class="panel-kicker">PERIOD PLAN</span><h2>Calculate an OTB period</h2><p>All values use the active policy valuation basis and currency.</p></div></div>
+    <form [formGroup]="otbPeriodForm" (ngSubmit)="createOtbPeriod()" class="form-grid">
+      <label>Active policy
+        <select formControlName="otb_policy_id">
+          <option value="">Select policy</option>
+          @for (policy of policies(); track policy.id) { @if (policy.status === 'ACTIVE') { <option [value]="policy.id">{{ policy.code }}</option> } }
+        </select>
+      </label>
+      <label>Currency <input formControlName="currency" maxlength="3"></label>
+      <label>Period start <input type="date" formControlName="period_start"></label>
+      <label>Period end <input type="date" formControlName="period_end"></label>
+      <label>Beginning inventory <input type="number" step="0.0001" min="0" formControlName="beginning_inventory"></label>
+      <label>Planned sales <input type="number" step="0.0001" min="0" formControlName="planned_sales"></label>
+      <label>Planned markdowns <input type="number" step="0.0001" min="0" formControlName="planned_markdowns"></label>
+      <label>Planned ending inventory <input type="number" step="0.0001" min="0" formControlName="planned_ending_inventory"></label>
+      <label>On-order purchases <input type="number" step="0.0001" min="0" formControlName="on_order_purchases"></label>
+      <label>Separate commitments <input type="number" step="0.0001" min="0" formControlName="commitments"></label>
+      <label>Actual receipts <input type="number" step="0.0001" min="0" formControlName="actual_receipts"></label>
+      <div class="form-footer full-span">
+        <p>OTB is a planning control; it does not create requisitions or purchase orders.</p>
+        <button class="primary-button" type="submit" [disabled]="saving()">Calculate period</button>
+      </div>
+    </form>
+  </section>
+
+  <div class="workbench-layout">
+    <section class="panel">
+      <div class="panel-heading"><div><span class="panel-kicker">OTB PERIODS</span><h2>Available budget</h2><p>Choose a period to create a what-if scenario.</p></div></div>
+      @if (periods().length === 0) {
+        <div class="empty-state"><strong>No periods created</strong><p>Calculate a period using an active OTB policy.</p></div>
+      } @else {
+        <div class="record-list">
+          @for (period of periods(); track period.id) {
+            <article class="record-row">
+              <div class="record-main">
+                <strong>{{ period.policy_code }} · {{ period.period_start }}</strong>
+                <span>{{ period.currency }} {{ period.available_budget }} available</span>
+                <small>{{ period.formula_version }} · {{ period.status }}</small>
+              </div>
+              <button type="button" class="text-button" (click)="selectOtbPeriod(period)">Use period</button>
+            </article>
+          }
+        </div>
+      }
+      <form [formGroup]="otbScenarioForm" (ngSubmit)="simulateOtb()" class="form-grid compact-grid">
+        <label class="full-span">Selected period ID
+          <input formControlName="period_id" readonly>
+        </label>
+        <label class="full-span">Scenario planned sales override
+          <input type="number" step="0.0001" min="0" formControlName="planned_sales">
+        </label>
+        <div class="form-footer full-span">
+          <p>Scenario is saved separately; approval means planning approval only.</p>
+          <button class="primary-button" type="submit" [disabled]="saving()">Simulate scenario</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading"><div><span class="panel-kicker">SCENARIO RESULT</span><h2>What-if outcome</h2><p>Reproducible formula and inputs are retained.</p></div></div>
+      @if (lastScenario(); as scenario) {
+        <div class="scenario-result">
+          <span>SIMULATED · {{ scenario.id }}</span>
+          @if (scenarioResult(); as result) {
+            <strong>{{ result.available_budget }}</strong>
+            <p>{{ result.budget_basis }} basis · {{ result.formula_version }}</p>
+            <small>{{ result.warning }}</small>
+          }
+          <button type="button" class="secondary-button" (click)="approveScenario(scenario.id)">Approve for planning only</button>
+        </div>
+      } @else {
+        <div class="empty-state"><span class="empty-icon">∑</span><strong>No scenario selected</strong><p>Simulate an approved period to compare assumptions.</p></div>
+      }
+    </section>
+  </div>
+}
+
+@if (activeTab() === 'PRICING') {
+  <div class="workbench-layout">
+    <section class="panel">
+      <div class="panel-heading"><div><span class="panel-kicker">CHANNEL PRICE BOOK</span><h2>Create a price-list version</h2><p>Scope by legal entity, channel, market, customer and effective time.</p></div></div>
+      <form [formGroup]="priceListForm" (ngSubmit)="createPriceList()" class="form-grid">
+        <label class="full-span">Legal entity
+          <select formControlName="legal_entity_id">
+            <option value="">Select legal entity</option>
+            @for (entity of legalEntities(); track entity.id) { <option [value]="entity.id">{{ entity.legal_name }}</option> }
+          </select>
+        </label>
+        <label>Price-list code <input formControlName="code" maxlength="80"></label>
+        <label>Channel <input formControlName="channel_code" maxlength="60"></label>
+        <label>Market scope <input formControlName="market_scope" maxlength="160"></label>
+        <label>Account reference (optional) <input formControlName="account_reference"></label>
+        <label>Currency <input formControlName="currency" maxlength="3"></label>
+        <label>Effective from <input type="datetime-local" formControlName="effective_from"></label>
+        <label>Effective to <input type="datetime-local" formControlName="effective_to"></label>
+        <div class="form-footer full-span">
+          <p>Only a different authorized approver can publish a draft price-list version.</p>
+          <button class="primary-button" type="submit" [disabled]="saving()">Create draft price list</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading"><div><span class="panel-kicker">PRICE BOOK HISTORY</span><h2>Price lists</h2><p>Select a version to add product lines or publish it.</p></div></div>
+      @if (priceLists().length === 0) {
+        <div class="empty-state"><strong>No price lists yet</strong><p>Create a draft price list to start building channel prices.</p></div>
+      } @else {
+        <div class="record-list">
+          @for (list of priceLists(); track list.id) {
+            <article class="record-row">
+              <div class="record-main">
+                <strong>{{ list.code }} · v{{ list.version_no }}</strong>
+                <span>{{ list.channel_code }} · {{ list.market_scope }} · {{ list.currency }}</span>
+                <small>{{ list.effective_from | date:'d MMM y' }} – {{ list.effective_to ? (list.effective_to | date:'d MMM y') : 'Open end' }}</small>
+              </div>
+              <span class="status-pill" [class.published]="list.status === 'PUBLISHED'">{{ list.status }}</span>
+              <button type="button" class="text-button" (click)="selectPriceList(list)">Select</button>
+              @if (list.status === 'DRAFT') {
+                <button type="button" class="text-button" (click)="publishPriceList(list.id)">Publish</button>
+              }
+            </article>
+          }
+        </div>
+      }
+    </section>
+  </div>
+
+  @if (selectedPriceList(); as selected) {
+    <section class="panel">
+      <div class="panel-heading">
+        <div><span class="panel-kicker">SELECTED PRICE BOOK</span><h2>{{ selected.code }} · v{{ selected.version_no }}</h2><p>{{ selected.channel_code }} · {{ selected.market_scope }} · {{ selected.currency }} · {{ selected.status }}</p></div>
+      </div>
+      @if (selected.status === 'DRAFT') {
+        <form [formGroup]="priceLineForm" (ngSubmit)="addPriceListLine()" class="form-grid compact-grid">
+          <label>Product / style reference <input formControlName="product_reference"></label>
+          <label>List price <input type="number" min="0" step="0.0001" formControlName="list_price"></label>
+          <label>Wholesale price <input type="number" min="0" step="0.0001" formControlName="wholesale_price"></label>
+          <label>Price floor <input type="number" min="0" step="0.0001" formControlName="price_floor"></label>
+          <label>Cost basis <input type="number" min="0" step="0.0001" formControlName="cost_basis"></label>
+          <div class="form-footer full-span"><p>Floor cannot exceed list price; a wholesale price cannot be below the configured floor.</p><button type="submit" class="primary-button" [disabled]="saving()">Add price line</button></div>
+        </form>
+      }
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Product</th><th class="numeric">List price</th><th class="numeric">Wholesale</th><th class="numeric">Floor</th><th class="numeric">Cost basis</th></tr></thead>
+          <tbody>
+            @for (line of priceListLines(); track line.id) {
+              <tr><td>{{ line.product_reference }}</td><td class="numeric">{{ line.list_price }}</td><td class="numeric">{{ line.wholesale_price ?? '—' }}</td><td class="numeric">{{ line.price_floor ?? '—' }}</td><td class="numeric">{{ line.cost_basis ?? '—' }}</td></tr>
+            }
+            @if (priceListLines().length === 0) { <tr><td colspan="5" class="empty-cell">No product prices yet.</td></tr> }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+
+  <div class="workbench-layout">
+    <section class="panel">
+      <div class="panel-heading"><div><span class="panel-kicker">PROMOTION RULE</span><h2>Create promotion</h2><p>Promotion must be tied to a published price list and a declared eligibility scope.</p></div></div>
+      <form [formGroup]="promotionForm" (ngSubmit)="createPromotion()" class="form-grid">
+        <label class="full-span">Published price list
+          <select formControlName="price_list_id">
+            <option value="">Select published price list</option>
+            @for (list of priceLists(); track list.id) { @if (list.status === 'PUBLISHED') { <option [value]="list.id">{{ list.code }} · v{{ list.version_no }} · {{ list.currency }}</option> } }
+          </select>
+        </label>
+        <label>Promotion code <input formControlName="code"></label>
+        <label>Promotion type
+          <select formControlName="promotion_type"><option value="PERCENTAGE">Percentage</option><option value="FIXED_AMOUNT">Fixed amount</option></select>
+        </label>
+        <label>Discount value <input type="number" min="0.0001" step="0.0001" formControlName="discount_value"></label>
+        <label>Stack policy
+          <select formControlName="stack_policy"><option value="NO_STACK">No stacking</option><option value="STACK_WITH_COUPON">Stack with coupon</option><option value="STACK_WITH_MARKDOWN">Stack with markdown</option></select>
+        </label>
+        <label>Starts at <input type="datetime-local" formControlName="starts_at"></label>
+        <label>Ends at <input type="datetime-local" formControlName="ends_at"></label>
+        <label>Margin floor % <input type="number" min="-100" max="100" step="0.0001" formControlName="margin_floor"></label>
+        <label>Budget amount <input type="number" min="0" step="0.0001" formControlName="budget_amount"></label>
+        <label>Funded by <input formControlName="funded_by"></label>
+        <div class="form-footer full-span"><p>Percentage discounts are capped at 100%; promotion dates must be inside the price-list effective period.</p><button class="primary-button" type="submit" [disabled]="saving()">Create draft promotion</button></div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading"><div><span class="panel-kicker">PROMOTION APPROVAL</span><h2>Eligibility & publication</h2><p>Add an inclusion rule before independent approval.</p></div></div>
+      <form [formGroup]="eligibilityForm" (ngSubmit)="addPromotionEligibility()" class="form-grid compact-grid">
+        <label class="full-span">Draft promotion
+          <select formControlName="promotion_id">
+            <option value="">Select promotion</option>
+            @for (promotion of promotions(); track promotion.id) { @if (promotion.status === 'DRAFT') { <option [value]="promotion.id">{{ promotion.code }}</option> } }
+          </select>
+        </label>
+        <label>Scope type
+          <select formControlName="scope_type"><option value="CHANNEL">Channel</option><option value="PRODUCT">Product</option><option value="CATEGORY">Category</option><option value="ACCOUNT">Account</option><option value="LOCATION">Location</option><option value="BRAND">Brand</option></select>
+        </label>
+        <label>Scope reference <input formControlName="scope_reference"></label>
+        <label class="checkbox-field"><input type="checkbox" formControlName="is_exclusion"> Exclusion scope</label>
+        <div class="form-footer full-span"><p>At least one inclusion scope is required. Only a different administrator can approve the promotion.</p><button class="primary-button" type="submit" [disabled]="saving()">Add eligibility</button></div>
+      </form>
+
+      <div class="record-list">
+        @for (promotion of promotions(); track promotion.id) {
+          <article class="record-row">
+            <div class="record-main">
+              <strong>{{ promotion.code }}</strong>
+              <span>{{ promotion.promotion_type }} · {{ promotion.discount_value }} · {{ promotion.stack_policy }}</span>
+              <small>{{ promotion.starts_at | date:'d MMM y' }} – {{ promotion.ends_at | date:'d MMM y' }}</small>
+            </div>
+            <span class="status-pill" [class.published]="promotion.status === 'APPROVED'">{{ promotion.status }}</span>
+            @if (promotion.status === 'DRAFT') {
+              <button type="button" class="text-button" (click)="selectPromotion(promotion)">Select</button>
+              <button type="button" class="text-button" (click)="approvePromotion(promotion.id)">Approve</button>
+            }
+          </article>
+        }
+        @if (promotions().length === 0) { <div class="empty-state"><strong>No promotions yet</strong><p>Approved promotions will appear here.</p></div> }
+      </div>
+    </section>
+  </div>
+}
+
+<div class="footer-note">
+  <span class="info-icon">i</span>
+  <p>Forecasts, OTB simulations and approved price/promotion policies are planning and commercial controls. They do not create purchase orders, accounting entries, tax invoices or live sales transactions. Statutory tax treatment and customer-facing prices remain subject to the relevant legal entity’s approved policies and normal transaction controls.</p>
+</div>

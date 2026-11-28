@@ -1,0 +1,33 @@
+<main class="tenant-page">
+  <section class="tenant-card" aria-labelledby="tenant-title">
+    <div class="tenant-top">
+      <div class="brand-mark" aria-hidden="true">M</div>
+      <button type="button" class="sign-out" (click)="signOut()">Sign out</button>
+    </div>
+    <span class="eyebrow">AUTHENTICATED WORKSPACES</span>
+    <h1 id="tenant-title">Choose your workspace</h1>
+    <p class="tenant-intro">Your account can access the following customer workspaces. Choose one to continue.</p>
+
+    @if (session.memberships().length === 0) {
+      <div class="empty-membership" role="status">
+        <strong>No workspace memberships found</strong>
+        <p>Your account is authenticated, but it is not assigned to an active tenant. Contact your platform administrator.</p>
+      </div>
+    } @else {
+      <div class="tenant-list">
+        @for (tenant of session.memberships(); track tenant.id) {
+          <button class="tenant-option" type="button" (click)="choose(tenant.id)">
+            <span class="tenant-avatar" aria-hidden="true">{{ tenant.name.slice(0, 1).toUpperCase() }}</span>
+            <span class="tenant-details">
+              <strong>{{ tenant.name }}</strong>
+              <small>{{ tenant.code }} · {{ tenant.membership_role }} · {{ tenant.timezone }}</small>
+            </span>
+            <span class="select-arrow" aria-hidden="true">→</span>
+          </button>
+        }
+      </div>
+    }
+
+    <div class="tenant-footnote">Workspace access is checked by the API for every tenant-scoped request.</div>
+  </section>
+</main>

@@ -1,0 +1,202 @@
+<header class="page-heading">
+  <div>
+    <span class="eyebrow">WP-05 · SAMPLE ROOM & FIT REVIEW</span>
+    <h1>Sample development & fit control</h1>
+    <p>Manage sample build rounds and size-specific fit sessions against an approved pattern and immutable measurement baseline.</p>
+  </div>
+  <button class="secondary-button" type="button" (click)="loadStyles()" [disabled]="loading()">Refresh styles</button>
+</header>
+
+@if (errorMessage()) { <p class="notice error" role="alert">{{ errorMessage() }}</p> }
+@if (successMessage()) { <p class="notice success" role="status">{{ successMessage() }}</p> }
+@if (loading()) { <p class="loading-note" role="status">Loading sample-room and fit records…</p> }
+
+<section class="panel style-selector">
+  <label>Select style
+    <select (change)="selectStyle($any($event.target).value)">
+      <option value="">Choose a style</option>
+      @for (style of styles(); track style.id) {
+        <option [value]="style.id">{{ style.style_code }} · {{ style.name }} · {{ style.status }} · Rev {{ style.current_revision }}</option>
+      }
+    </select>
+  </label>
+  @if (selectedStyle(); as style) {
+    <div class="style-context">
+      <strong>{{ style.style_code }} · {{ style.name }}</strong>
+      <span>{{ style.category_code }} · style revision {{ style.current_revision }} · {{ style.status }}</span>
+      <span>Sample requests pin the approved pattern and measurement revisions. Fit model codes must be pseudonymous and contain no direct personal identifiers.</span>
+    </div>
+  }
+</section>
+
+@if (selectedStyle(); as style) {
+  <div class="workspace-grid">
+    <section class="panel">
+      <div class="panel-heading">
+        <div><span class="panel-kicker">01 · SAMPLE REQUEST</span><h2>Request a controlled sample</h2><p>Only the current approved pattern revision for the current style revision is selectable.</p></div>
+      </div>
+      @if (eligiblePatternSets().length > 0 && canManageStyle()) {
+        <form [formGroup]="sampleForm" (ngSubmit)="createSampleRequest()" class="form-grid">
+          <label class="full-span">Approved pattern set and revision
+            <select formControlName="pattern_set_id"><option value="">Select current approved pattern</option>
+              @for (pattern of eligiblePatternSets(); track pattern.id) {
+                <option [value]="pattern.id">{{ pattern.pattern_code }} · {{ pattern.name }} · revision {{ pattern.latest_revision_no }}</option>
+              }
+            </select>
+          </label>
+          <label>Sample type
+            <select formControlName="sample_type">
+              <option value="PROTOTYPE">Prototype</option><option value="FIT">Fit sample</option><option value="SIZE_SET">Size set</option><option value="SALESMAN">Salesman sample</option><option value="PHOTO">Photo sample</option><option value="PRE_PRODUCTION">Pre-production</option><option value="WASH_TEST">Wash test</option><option value="STRIKE_OFF">Strike-off</option><option value="PILOT">Pilot</option><option value="COUNTER">Counter sample</option>
+            </select>
+          </label>
+          <label>Requested quantity<input type="number" min="1" max="200" formControlName="requested_quantity"></label>
+          <label>Requested sizes<input formControlName="requested_size_codes" placeholder="S, M, L"></label>
+          <label>Colour codes<input formControlName="requested_colour_codes" placeholder="NAVY, OLIVE"></label>
+          <label>Required by<input type="date" formControlName="required_by"></label>
+          <label class="full-span">Sample purpose<textarea rows="3" formControlName="purpose" placeholder="Fit validation, size-set approval, photo sample, pre-production verification, etc."></textarea></label>
+          <div class="form-footer full-span"><p>Request and round 1 are created together. The sample-room record does not post material issue/return or inventory movements.</p><button class="primary-button" type="submit" [disabled]="saving()">Create sample request</button></div>
+        </form>
+      } @else {
+        <div class="empty-state"><strong>Current approved pattern required</strong><p>Complete pattern approval for the current style revision before requesting a sample.</p></div>
+      }
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading"><div><span class="panel-kicker">SAMPLE REGISTER</span><h2>Sample requests</h2><p>Open a request to inspect its build rounds, fit observations and decisions.</p></div><span class="count-tag">{{ sampleRequests().length }} records</span></div>
+      <div class="record-list">
+        @for (request of sampleRequests(); track request.id) {
+          <div class="record-row">
+            <div class="record-main">
+              <strong>{{ request.sample_type }} · {{ request.pattern_code || request.id }}</strong>
+              <span>{{ request.purpose }}</span>
+              <small>Style rev {{ request.style_revision_no }} · Round {{ request.current_round_no }} · {{ request.status }} · {{ request.requested_quantity }} requested</small>
+            </div>
+            <span class="status-pill" [class.approved]="request.status === 'FIT_APPROVED'" [class.pending]="request.status === 'AWAITING_FIT'">{{ request.status }}</span>
+            <button class="text-button" type="button" (click)="selectSampleRequest(request)">Open</button>
+          </div>
+        }
+        @if (sampleRequests().length === 0) { <div class="empty-state"><strong>No sample requests yet</strong><p>Choose a style with an approved current pattern and create the first sample request.</p></div> }
+      </div>
+    </section>
+  </div>
+
+  @if (selectedSampleRequest(); as detail) {
+    <section class="panel detail-panel">
+      <div class="panel-heading">
+        <div><span class="panel-kicker">SELECTED SAMPLE REQUEST</span><h2>{{ detail.data.sample_type }} · {{ detail.data.id }}</h2><p>{{ detail.data.purpose }}</p></div>
+        <span class="status-pill" [class.approved]="detail.data.status === 'FIT_APPROVED'" [class.pending]="detail.data.status === 'AWAITING_FIT'">{{ detail.data.status }}</span>
+      </div>
+
+      <div class="source-grid">
+        <div><span>Style revision</span><strong>{{ detail.data.style_revision_no }}</strong></div>
+        <div><span>Pattern revision</span><strong>{{ detail.data.pattern_revision_id }}</strong></div>
+        <div><span>Measurement spec</span><strong>{{ detail.data.measurement_spec_version_id }}</strong></div>
+        <div><span>Requested sizes</span><strong>{{ availableFitSizes().join(' / ') }}</strong></div>
+        <div><span>Requested quantity</span><strong>{{ detail.data.requested_quantity }}</strong></div>
+        <div><span>Required by</span><strong>{{ detail.data.required_by || '—' }}</strong></div>
+      </div>
+
+      <div class="subsection">
+        <div class="subsection-heading"><h3>Sample build rounds</h3><p>Each correction is a new round; earlier builds and their fit results are retained.</p></div>
+        <div class="record-list">
+          @for (round of detail.rounds; track round.id) {
+            <article class="round-card">
+              <div class="record-title"><strong>Round {{ round.round_no }}</strong><span class="status-pill" [class.approved]="round.status === 'COMPLETED'">{{ round.status }}</span></div>
+              <p>{{ round.round_reason }}</p>
+              <div class="round-facts"><span>Planned {{ round.planned_quantity }}</span><span>Actual {{ round.actual_quantity ?? '—' }}</span><span>Started {{ round.started_at | date:'medium' }}</span><span>Completed {{ round.completed_at | date:'medium' }}</span></div>
+              @if (round.completion_summary) { <small>{{ round.completion_summary }}</small> }
+              <div class="button-row">
+                @if (round.status === 'REQUESTED' && round.round_no === detail.data.current_round_no && canManageStyle()) {
+                  <button class="secondary-button" type="button" (click)="startRound(round)" [disabled]="saving()">Start sample build</button>
+                }
+                @if (round.status === 'IN_PROGRESS' && round.round_no === detail.data.current_round_no && canManageStyle()) {
+                  <button class="secondary-button" type="button" (click)="prepareCompletion(round)" [disabled]="saving()">Complete round</button>
+                }
+                @if (round.status === 'COMPLETED' && canManageStyle()) {
+                  <button class="secondary-button" type="button" (click)="prepareFitSession(round)" [disabled]="saving()">Create fit session</button>
+                }
+              </div>
+              @if (activeFitRound()?.id === round.id && round.status === 'IN_PROGRESS') {
+                <form [formGroup]="completionForm" (ngSubmit)="completeRound(round)" class="form-grid compact-form">
+                  <label>Actual quantity<input type="number" min="0" [max]="round.planned_quantity" formControlName="actual_quantity"></label>
+                  <label class="full-span">Build completion summary<textarea rows="2" formControlName="completion_summary" placeholder="Construction steps completed, deviations, rework and sample-room observations"></textarea></label>
+                  <div class="form-footer full-span"><p>Completion advances the sample to fit review; it does not record inventory transactions.</p><button class="primary-button" type="submit" [disabled]="saving()">Complete sample build</button></div>
+                </form>
+              }
+              @if (activeFitRound()?.id === round.id && round.status === 'COMPLETED') {
+                <form [formGroup]="fitSessionForm" (ngSubmit)="createFitSession()" class="form-grid compact-form">
+                  <label>Fit size<select formControlName="fit_size_code"><option value="">Select requested size</option>@for (size of availableFitSizes(); track size) { <option [value]="size">{{ size }}</option> }</select></label>
+                  <label>Fit model code<input formControlName="fit_model_code" placeholder="FIT-M-01" autocomplete="off"></label>
+                  <label>Posture<select formControlName="posture_code"><option value="STANDING">Standing</option><option value="SITTING">Sitting</option><option value="MOVING">Movement</option><option value="OTHER">Other</option></select></label>
+                  <label>Session date<input type="date" formControlName="session_date"></label>
+                  <label class="full-span">Fit condition notes<textarea rows="2" formControlName="condition_notes" placeholder="Garment condition, base layer, footwear, wash/press condition, movement task"></textarea></label>
+                  <div class="form-footer full-span"><p>Use a non-identifying fit model code; do not enter a person's name or direct identifier.</p><button class="primary-button" type="submit" [disabled]="saving()">Create fit session</button></div>
+                </form>
+              }
+            </article>
+          }
+        </div>
+        @if (detail.data.status === 'CORRECTION_REQUIRED' && canManageStyle()) {
+          <form [formGroup]="roundForm" (ngSubmit)="createCorrectionRound()" class="form-grid correction-form">
+            <label>Planned correction quantity<input type="number" min="1" max="200" formControlName="planned_quantity"></label>
+            <label class="full-span">Correction scope and round reason<textarea rows="2" formControlName="round_reason" placeholder="Describe the pattern, construction or fit correction to be verified in the next round"></textarea></label>
+            <div class="form-footer full-span"><p>Only a correction disposition opens a new sample build round.</p><button class="primary-button" type="submit" [disabled]="saving()">Create correction round</button></div>
+          </form>
+        }
+      </div>
+
+      <div class="subsection">
+        <div class="subsection-heading"><h3>Fit sessions and measured observations</h3><p>Each observation stores the approved target and tolerance snapshot alongside the observed value.</p></div>
+        <div class="record-list">
+          @for (fit of detail.fit_sessions; track fit.id) {
+            <article class="fit-card">
+              <div class="record-title"><strong>{{ fit.fit_size_code }} · {{ fit.fit_model_code }}</strong><span class="status-pill" [class.approved]="fit.status === 'DECIDED'" [class.pending]="fit.status === 'SUBMITTED_FOR_REVIEW'">{{ fit.status }}</span></div>
+              <p>{{ fit.session_date | date:'mediumDate' }} · {{ fit.posture_code }} · Round {{ fit.sample_round_id }}</p>
+              <small>{{ fit.condition_notes }}</small>
+              <div class="button-row"><button class="text-button" type="button" (click)="selectFitSession(fit)">Review fit record</button></div>
+            </article>
+          }
+          @if (detail.fit_sessions.length === 0) { <div class="empty-state"><strong>No fit sessions yet</strong><p>Complete a sample build round, then create a size-specific fit session.</p></div> }
+        </div>
+      </div>
+
+      @if (selectedFitSession(); as fit) {
+        <div class="fit-detail">
+          <div class="panel-heading"><div><span class="panel-kicker">FIT RECORD · {{ fit.fit_size_code }}</span><h3>{{ fit.fit_model_code }} · {{ fit.status }}</h3><p>Measurement-spec version {{ fit.measurement_spec_version_id }}</p></div><button class="text-button" type="button" (click)="selectedFitSessionId.set(null)">Close</button></div>
+          @if (fit.observations?.length) {
+            <div class="table-wrap"><table><thead><tr><th>Measurement point</th><th class="numeric">Target</th><th class="numeric">Tolerance − / +</th><th class="numeric">Observed</th><th>Unit</th><th>Result</th><th>Severity</th></tr></thead><tbody>
+              @for (observation of fit.observations; track observation.id) {
+                <tr><td>{{ observation.measurement_point_id }}</td><td class="numeric">{{ observation.nominal_value | number:'1.0-2' }}</td><td class="numeric">{{ observation.tolerance_minus }} / {{ observation.tolerance_plus }}</td><td class="numeric">{{ observation.observed_value | number:'1.0-2' }}</td><td>{{ observation.unit_code }}</td><td><span class="result-pill" [class.good]="observation.within_tolerance" [class.bad]="!observation.within_tolerance">{{ observation.within_tolerance ? 'Within tolerance' : 'Out of tolerance' }}</span></td><td>{{ observation.severity }}</td></tr>
+                @if (observation.finding || observation.corrective_action) { <tr><td colspan="7"><small>{{ observation.finding || '' }} {{ observation.corrective_action || '' }}</small></td></tr> }
+              }
+            </tbody></table></div>
+          } @else { <p class="empty-inline">No observations recorded yet.</p> }
+
+          @if (fit.status === 'DRAFT' && canManageStyle()) {
+            <form [formGroup]="observationsForm" (ngSubmit)="recordObservations()" class="form-grid observation-form">
+              <label class="full-span">Fit observations (JSON array)<textarea rows="9" formControlName="observations_json" spellcheck="false" placeholder='[{"point_code":"CHEST_CIRC","observed_value":100,"issue_code":"NONE","severity":"NONE","finding":null,"corrective_action":null},{"point_code":"BODY_LENGTH","observed_value":70,"issue_code":"NONE","severity":"NONE","finding":null,"corrective_action":null}]'></textarea></label>
+              <div class="form-footer full-span"><p>Point codes must belong to the pinned specification. The server derives nominal values, tolerances, unit and within-tolerance result.</p><button class="secondary-button" type="submit" [disabled]="saving()">Record observations</button><button class="primary-button" type="button" (click)="submitFitSession()" [disabled]="saving()">Submit for independent fit review</button></div>
+            </form>
+          }
+          @if (fit.status === 'SUBMITTED_FOR_REVIEW' && canApprove(fit.created_by)) {
+            <form [formGroup]="decisionForm" (ngSubmit)="decideFitSession()" class="form-grid decision-form">
+              <label>Fit disposition<select formControlName="decision"><option value="APPROVE">Approve</option><option value="APPROVE_WITH_COMMENTS">Approve with comments</option><option value="CORRECTION_REQUIRED">Correction required</option><option value="REJECT">Reject</option></select></label>
+              <label class="full-span">Reason<textarea rows="2" formControlName="reason" placeholder="Record the fit decision and reason"></textarea></label>
+              <label class="full-span">Actions (optional, comma separated)<input formControlName="actions" placeholder="Reduce chest ease, revise sleeve pitch"></label>
+              <div class="form-footer full-span"><p>Fit creators cannot approve their own sessions. Approval is blocked by out-of-tolerance values or major/critical findings.</p><button class="primary-button" type="submit" [disabled]="saving()">Record independent disposition</button></div>
+            </form>
+          }
+          @if (fit.decisions?.length) {
+            <div class="decision-history">
+              @for (decision of fit.decisions; track decision.id) { <div><strong>{{ decision.decision }}</strong><span>{{ decision.reason }}</span><small>{{ decision.decided_at | date:'medium' }} · {{ decision.decided_by }}</small></div> }
+            </div>
+          }
+        </div>
+      }
+    </section>
+  }
+} @else {
+  <section class="panel empty-state"><strong>Select a style to manage samples and fit</strong><p>The sample-room workflow requires an approved pattern revision for the current style revision.</p></section>
+}
+
+<footer class="footer-note"><span class="info-icon">i</span><p>This slice records sample requests, sample build rounds and fit review. It does not create material issue/return, roll or lot consumption, inventory reservation or stock valuation. Those transactions must later use the authoritative WP-07/WP-12 inventory ledger. Fit model codes must be pseudonymous; direct personal identifiers and unnecessary body data must not be entered.</p></footer>

@@ -1,0 +1,42 @@
+name: Local ERP CI and Release Gates
+
+on:
+  push:
+    branches: [main, 'feature/**', 'release/**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stockland-erp-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  local-release-gates:
+    name: Local release gates (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['22.x']
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Runtime version
+        run: node --version
+      - name: Syntax and static checks
+        run: npm run check
+      - name: Build manifest integrity
+        run: npm run verify:manifest
+      - name: Automated integration tests
+        run: npm test
+      - name: Documentation, security-header and HTTP smoke gates
+        run: npm run release:gate

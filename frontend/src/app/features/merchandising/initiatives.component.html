@@ -1,0 +1,379 @@
+<section class="initiative-page" aria-labelledby="initiative-heading">
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">WP-04 · BUSINESS INITIATIVE</span>
+      <h1 id="initiative-heading">Initiatives & opportunities</h1>
+      <p>Start with a business opportunity and evidence—not only a buyer order. Capture the decision, owner and next gate before product development begins.</p>
+    </div>
+    <button type="button" class="primary-button" (click)="showCreateForm.set(!showCreateForm())">
+      {{ showCreateForm() ? 'Close form' : 'New initiative' }}
+    </button>
+  </div>
+
+  <div class="scope-banner">
+    <span class="scope-icon" aria-hidden="true">◎</span>
+    <div>
+      <strong>{{ session.activeTenant()?.name }}</strong>
+      <span>Tenant workspace · {{ session.activeTenant()?.membership_role }}</span>
+    </div>
+    <a routerLink="/product/market-insights" class="text-link">Open market insight register →</a>
+  </div>
+
+  @if (successMessage()) {
+    <div class="notice success" role="status" aria-live="polite">{{ successMessage() }}</div>
+  }
+  @if (errorMessage()) {
+    <div class="notice error" role="alert">{{ errorMessage() }}</div>
+  }
+
+  @if (showCreateForm()) {
+    <form class="initiative-form" [formGroup]="createForm" (ngSubmit)="create()" novalidate>
+      <div class="form-heading">
+        <div>
+          <h2>Capture a business initiative</h2>
+          <p>Record the problem, objective, target market and sponsor. This creates a draft—not a collection, purchase commitment or production order.</p>
+        </div>
+        <span class="draft-label">DRAFT ON SAVE</span>
+      </div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label for="initiative-code">Unique initiative code</label>
+          <input id="initiative-code" formControlName="code" maxlength="80" placeholder="e.g. SS27-URBAN-CASUAL" required>
+          @if (createForm.controls.code.touched && createForm.controls.code.invalid) {
+            <span class="field-error">Use 2–80 uppercase letters/numbers, hyphens or underscores.</span>
+          }
+        </div>
+        <div class="field">
+          <label for="initiative-type">Initiative type</label>
+          <select id="initiative-type" formControlName="initiative_type">
+            @for (type of initiativeTypes; track type.value) {
+              <option [value]="type.value">{{ type.label }}</option>
+            }
+          </select>
+        </div>
+        <div class="field span-two">
+          <label for="initiative-title">Opportunity title</label>
+          <input id="initiative-title" formControlName="title" maxlength="200" required>
+        </div>
+        <div class="field span-two">
+          <label for="initiative-problem">Problem or opportunity statement</label>
+          <textarea id="initiative-problem" formControlName="problem_statement" rows="3" maxlength="10000" required></textarea>
+          @if (createForm.controls.problem_statement.touched && createForm.controls.problem_statement.invalid) {
+            <span class="field-error">Describe the opportunity in at least 10 characters.</span>
+          }
+        </div>
+        <div class="field span-two">
+          <label for="initiative-objective">Expected objective / outcome</label>
+          <textarea id="initiative-objective" formControlName="objective" rows="2" maxlength="10000" required></textarea>
+        </div>
+        <div class="field">
+          <label for="initiative-market">Target market / geography</label>
+          <input id="initiative-market" formControlName="target_market" maxlength="160" placeholder="e.g. Ethiopia · Addis Ababa" required>
+        </div>
+        <div class="field">
+          <label for="initiative-consumer">Target consumer / customer</label>
+          <input id="initiative-consumer" formControlName="target_consumer" maxlength="160" placeholder="Optional">
+        </div>
+        <div class="field span-two">
+          <label for="initiative-benefit">Expected benefit / hypothesis</label>
+          <textarea id="initiative-benefit" formControlName="expected_benefit" rows="2" maxlength="5000" placeholder="State the value hypothesis and what evidence would prove it."></textarea>
+        </div>
+        <div class="field">
+          <label for="initiative-sponsor">Sponsoring legal entity</label>
+          <select id="initiative-sponsor" formControlName="sponsor_entity_id">
+            <option value="">Not assigned yet</option>
+            @for (entity of legalEntities(); track entity.id) {
+              <option [value]="entity.id">{{ entity.legal_name }}</option>
+            }
+          </select>
+          <span class="field-hint">Choose a legal sponsor only when the entity is known.</span>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <span class="form-hint">Drafts require screening and evidence before assessment.</span>
+        <button type="submit" class="primary-button" [disabled]="createForm.invalid || saving()">
+          @if (saving()) { Saving… } @else { Save draft initiative }
+        </button>
+      </div>
+    </form>
+  }
+
+  <div class="work-area">
+    <section class="list-panel" aria-labelledby="initiative-list-heading">
+      <div class="panel-heading">
+        <div>
+          <h2 id="initiative-list-heading">Opportunity pipeline</h2>
+          <p>{{ initiatives().length }} initiatives loaded</p>
+        </div>
+        <button type="button" class="secondary-button" (click)="loadInitiatives()" [disabled]="loading()">Refresh</button>
+      </div>
+
+      @if (loading()) {
+        <div class="loading-state" role="status">Loading initiatives…</div>
+      } @else if (initiatives().length === 0) {
+        <div class="empty-state">
+          <span class="empty-mark" aria-hidden="true">＋</span>
+          <strong>No initiatives recorded</strong>
+          <p>Start with a market opportunity, own-brand idea, buyer programme, category expansion or replenishment hypothesis.</p>
+          <button type="button" class="secondary-button" (click)="showCreateForm.set(true)">Capture the first initiative</button>
+        </div>
+      } @else {
+        <div class="initiative-list">
+          @for (initiative of initiatives(); track initiative.id) {
+            <button
+              type="button"
+              class="initiative-option"
+              [class.selected]="selectedId() === initiative.id"
+              (click)="selectInitiative(initiative)"
+            >
+              <span class="initiative-mark">{{ initiative.code.slice(0, 2) }}</span>
+              <span class="initiative-copy">
+                <strong>{{ initiative.title }}</strong>
+                <small>{{ initiative.code }} · {{ initiative.target_market }}</small>
+                <span class="initiative-meta">{{ initiative.initiative_type.replaceAll('_', ' ') }} · v{{ initiative.current_version }}</span>
+              </span>
+              <span class="status-chip" [attr.data-status]="initiative.status">{{ initiative.status.replaceAll('_', ' ') }}</span>
+            </button>
+          }
+        </div>
+      }
+    </section>
+
+    <section class="detail-panel" aria-labelledby="initiative-detail-heading">
+      @if (loadingDetail()) {
+        <div class="loading-state" role="status">Loading initiative record…</div>
+      } @else if (detail(); as record) {
+        <div class="detail-heading">
+          <div>
+            <span class="eyebrow">INITIATIVE · {{ record.data.code }}</span>
+            <h2 id="initiative-detail-heading">{{ record.data.title }}</h2>
+            <p>{{ record.data.target_market }} · {{ record.data.initiative_type.replaceAll('_', ' ') }}</p>
+          </div>
+          <span class="status-chip large" [attr.data-status]="record.data.status">{{ record.data.status.replaceAll('_', ' ') }}</span>
+        </div>
+
+        <div class="objective-grid">
+          <div>
+            <span class="detail-label">Problem / opportunity</span>
+            <p>{{ record.data.problem_statement }}</p>
+          </div>
+          <div>
+            <span class="detail-label">Expected objective</span>
+            <p>{{ record.data.objective }}</p>
+          </div>
+        </div>
+
+        @if (record.data.expected_benefit) {
+          <div class="benefit-line">
+            <span class="detail-label">Expected benefit / hypothesis</span>
+            <p>{{ record.data.expected_benefit }}</p>
+          </div>
+        }
+
+        <div class="workflow-actions">
+          @if (record.data.status === 'DRAFT') {
+            <div>
+              <strong>Screening gate</strong>
+              <p>Confirm a named sponsor and a sufficiently clear opportunity statement before research.</p>
+            </div>
+            <button type="button" class="primary-button" (click)="submitForScreening()" [disabled]="saving()">Submit for screening</button>
+          } @else if (record.data.status === 'SCREENING' && !canDecide()) {
+            <div>
+              <strong>Independent screening approval required</strong>
+              <p>The initiative creator cannot approve their own work. A different authorized tenant owner or administrator must record the screening decision.</p>
+            </div>
+          } @else if (record.data.status === 'SCREENING' && canDecide()) {
+            <div>
+              <strong>Independent owner / administrator decision</strong>
+              <p>Approve research, park or reject with a recorded reason. The approver must differ from the initiative creator. A matching approved RESEARCH evidence policy is checked before research can be authorized.</p>
+            </div>
+            <button type="button" class="secondary-button" (click)="showDecisionForm.set(!showDecisionForm())">Record screening decision</button>
+          } @else if (record.data.status === 'RESEARCH') {
+            <div>
+              <strong>Evidence sufficiency gate</strong>
+              <p>A matching approved ASSESSMENT evidence policy is enforced when configured. Otherwise, the existing minimum of one sourced market insight applies.</p>
+            </div>
+            <div class="action-pair">
+              <a routerLink="/product/market-insights" class="text-link">Capture market evidence →</a>
+              <button type="button" class="primary-button" (click)="advanceToAssessment()" [disabled]="saving()">Advance to assessment</button>
+            </div>
+          } @else if (record.data.status === 'ASSESSMENT' && !canDecide()) {
+            <div>
+              <strong>Independent assessment approval required</strong>
+              <p>A different authorized tenant owner or administrator must record the assessment decision. The initiator cannot approve their own proposal.</p>
+            </div>
+          } @else if (record.data.status === 'ASSESSMENT' && canDecide()) {
+            <div>
+              <strong>Independent assessment decision</strong>
+              <p>Approve, conditionally approve, return to research, park or reject with a recorded reason.</p>
+            </div>
+            <button type="button" class="secondary-button" (click)="showDecisionForm.set(!showDecisionForm())">Record assessment decision</button>
+          } @else {
+            <div>
+              <strong>Workflow status</strong>
+              <p>This initiative is {{ record.data.status.replaceAll('_', ' ').toLowerCase() }}. Future product-development handover requires an approved commercial range.</p>
+            </div>
+          }
+        </div>
+
+        @if (showDecisionForm() && canDecide()) {
+          <form class="decision-form" [formGroup]="decisionForm" (ngSubmit)="recordDecision()">
+            <h3>Record accountable decision</h3>
+            <div class="field">
+              <label for="decision-value">Decision</label>
+              <select id="decision-value" formControlName="decision">
+                @for (option of decisionOptions(); track option.value) {
+                  <option [value]="option.value">{{ option.label }}</option>
+                }
+              </select>
+            </div>
+            <div class="field">
+              <label for="decision-reason">Decision reason</label>
+              <textarea id="decision-reason" formControlName="reason" rows="3" minlength="10" maxlength="5000" required></textarea>
+            </div>
+            <div class="field">
+              <label for="decision-actions">Conditions / actions (one per line)</label>
+              <textarea id="decision-actions" formControlName="actions" rows="2" maxlength="5000"></textarea>
+            </div>
+            <div class="field">
+              <label for="decision-review">Review date (optional)</label>
+              <input id="decision-review" type="date" formControlName="review_date">
+            </div>
+            <div class="form-actions">
+              <span class="form-hint">The system records approver, stage, reason and exact initiative version.</span>
+              <button type="submit" class="primary-button" [disabled]="decisionForm.invalid || saving()">Save decision</button>
+            </div>
+          </form>
+        }
+
+        @if (record.data.status === 'SCREENING' || record.data.status === 'RESEARCH' || record.data.status === 'ASSESSMENT') {
+          <section class="detail-section evidence-coverage-panel" aria-labelledby="evidence-coverage-heading">
+            <div class="section-title">
+              <div>
+                <h3 id="evidence-coverage-heading">Evidence sufficiency gate</h3>
+                <p>{{ record.data.status === 'SCREENING' ? 'Research-stage policy' : 'Assessment-stage policy' }} for this initiative's type and target market.</p>
+              </div>
+              @if (evidenceCoverage(); as coverageRecord) {
+                <span class="coverage-chip" [attr.data-status]="coverageRecord.evidence_coverage.status">
+                  {{ coverageRecord.evidence_coverage.status.replaceAll('_', ' ') }}
+                </span>
+              }
+            </div>
+            @if (loadingEvidenceCoverage()) {
+              <div class="empty-inline">Evaluating approved evidence requirements…</div>
+            } @else if (evidenceCoverageError()) {
+              <div class="empty-inline">{{ evidenceCoverageError() }}</div>
+            } @else if (evidenceCoverage(); as coverageRecord) {
+              @if (coverageRecord.evidence_coverage.status === 'NOT_CONFIGURED') {
+                <div class="empty-inline">
+                  @if (coverageRecord.stage === 'RESEARCH') {
+                    No approved RESEARCH policy matches this initiative type and market. Screening approval therefore has no additional research-stage evidence threshold configured.
+                  } @else {
+                    No approved ASSESSMENT policy matches this initiative type and market. The existing minimum of one sourced market insight remains in force before assessment.
+                  }
+                  <a routerLink="/product/evidence-policies" class="text-link">Configure evidence policy →</a>
+                </div>
+              } @else {
+                <div class="coverage-summary">
+                  <strong>{{ (coverageRecord.evidence_coverage.coverage_percent ?? 0) | number:'1.0-2' }}%</strong>
+                  <span>{{ coverageRecord.evidence_coverage.mandatory_rules_met }} of {{ coverageRecord.evidence_coverage.mandatory_rules }} mandatory requirements met</span>
+                  <small>{{ coverageRecord.evidence_coverage.policy?.code }} · v{{ coverageRecord.evidence_coverage.policy?.version_no }} · {{ coverageRecord.evidence_coverage.policy?.target_market || 'Tenant-wide policy' }}</small>
+                </div>
+                @for (rule of coverageRecord.evidence_coverage.rules; track rule.requirement_code) {
+                  <article class="coverage-rule">
+                    <div>
+                      <strong>{{ rule.requirement_code }}</strong>
+                      <small>{{ rule.insight_type.replaceAll('_', ' ') }} · {{ rule.qualifying_records }} qualifying / {{ rule.observed_records }} observed · {{ rule.distinct_sources }} distinct sources</small>
+                    </div>
+                    <span [class.rule-met]="rule.status === 'MET'">{{ rule.status }}</span>
+                    @if (rule.gaps.length > 0) {
+                      <small class="rule-gaps">{{ rule.gaps.join(' · ').replaceAll('_', ' ') }}</small>
+                    }
+                  </article>
+                }
+              }
+            }
+          </section>
+        }
+
+        <div class="detail-section">
+          <div class="section-title">
+            <div>
+              <h3>Market evidence</h3>
+              <p>{{ record.insights.length }} sourced insights linked</p>
+            </div>
+            <a routerLink="/product/market-insights" [queryParams]="{ initiative_id: record.data.id }" class="text-link">View / capture evidence →</a>
+          </div>
+          @if (record.insights.length === 0) {
+            <div class="empty-inline">No market evidence is linked yet. Observations, surveys and benchmarks must retain their source and limitations.</div>
+          } @else {
+            @for (insight of record.insights; track insight.id) {
+              <article class="evidence-item">
+                <div>
+                  <strong>{{ insight.title }}</strong>
+                  <p>{{ insight.summary }}</p>
+                  <small>{{ insight.source_name }} · {{ insight.insight_type.replaceAll('_', ' ') }} · {{ insight.geography || 'Geography not specified' }}</small>
+                </div>
+                <span class="confidence-chip">{{ insight.confidence ?? '—' }} confidence</span>
+              </article>
+            }
+          }
+        </div>
+
+        <div class="detail-section">
+          <div class="section-title">
+            <div>
+              <h3>Decision history</h3>
+              <p>Immutable approval trail</p>
+            </div>
+          </div>
+          @if (record.decisions.length === 0) {
+            <div class="empty-inline">No screening or assessment decisions recorded.</div>
+          } @else {
+            @for (decision of record.decisions; track decision.id) {
+              <article class="decision-item">
+                <div>
+                  <strong>{{ decision.decision.replaceAll('_', ' ') }}</strong>
+                  <p>{{ decision.reason }}</p>
+                  <small>{{ decision.stage }} · version {{ record.data.current_version }} · {{ decision.decided_at | date:'d MMM y, HH:mm' }}</small>
+                </div>
+                @if (decision.review_date) {
+                  <span class="confidence-chip">Review {{ decision.review_date | date:'d MMM y' }}</span>
+                }
+              </article>
+            }
+          }
+        </div>
+
+        <div class="detail-section version-section">
+          <div class="section-title">
+            <div>
+              <h3>Initiative revisions</h3>
+              <p>Approved changes create new immutable snapshots</p>
+            </div>
+          </div>
+          @for (version of record.versions; track version.id) {
+            <div class="version-row">
+              <strong>Version {{ version.version_no }}</strong>
+              <span>{{ version.change_reason }}</span>
+              <small>{{ version.created_at | date:'d MMM y, HH:mm' }}</small>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="empty-state detail-empty">
+          <span class="empty-mark" aria-hidden="true">⌁</span>
+          <strong>Select an initiative</strong>
+          <p>Review the opportunity, sourced market evidence, workflow status and approval trail.</p>
+        </div>
+      }
+    </section>
+  </div>
+
+  <div class="legal-note">
+    <strong>Business-control boundary</strong>
+    <p>An initiative is a hypothesis and decision record. It is not market proof, a released collection, approved purchase budget, customer order or production authorization. Evidence source, limitations, confidence and permitted use must remain visible.</p>
+  </div>
+</section>

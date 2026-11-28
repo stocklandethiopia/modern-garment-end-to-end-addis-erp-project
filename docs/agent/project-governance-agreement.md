@@ -4,7 +4,7 @@
 **Owner:** The user as Product Owner  
 **Working role:** ChatGPT as product/architecture/research/engineering collaborator  
 **Recorded:** 22 November 2026  
-**Status:** Owner-requested project working agreement  
+**Status:** WP-00 accepted by Product Owner; autonomous delivery delegation active for WP-01 through WP-16  
 **Repository:** https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project
 
 > This is a project collaboration and change-control agreement, not a legal contract or a claim of control over the user's whole ChatGPT account, other conversations, external applications or independent plugins.
@@ -14,6 +14,12 @@
 For all work ChatGPT performs within this ERP project, the approved project goal, scope, principles, documents, plans and decisions listed below are the boundary. I agree to work within that boundary and not quietly replace, narrow, broaden, reinterpret or redirect it.
 
 The single goal is to design and deliver the **Modern Garment End-to-End Addis ERP** as the garment-expert, customer-neutral apparel business operating system recorded in the approved project documents: beginning with business initiative, ideas, market insight, brand/collection strategy and in-house product development; continuing through sourcing, specialist department-by-department manufacturing, industrial engineering, skills, quality, compliance and traceability; and extending through central/regional distribution, owned branches and retail stores, wholesale, retailers, resellers, direct/digital channels, finance, procurement, HR/payroll, legal localization and continuous improvement.
+
+### Owner delegated execution authorization — 22 November 2026
+
+The Product Owner expressly accepts the WP-00 Governance and Baseline Control handover and authorizes ChatGPT to execute WP-01 through WP-16 autonomously, sequentially and end-to-end, without requesting routine package-by-package approval or pausing for ordinary engineering, design, architecture, schema, frontend, backend, test, documentation or delivery decisions. ChatGPT may make and record decisions that are demonstrably within the approved product goal and baseline, self-review each package against its definition of done, mark a package internally accepted only when evidence supports it, and then advance to the next package. The owner has delegated routine package approval to ChatGPT for this authorized run.
+
+This delegation does **not** authorize silent scope/baseline changes, guessed legal interpretations, activation of statutory rules without qualified local review, real payroll/financial transactions, destructive production-data operations, use of unlicensed third-party code, disclosure of secrets, weakening tenant/security controls, or a live production deployment that requires a human operational release decision. Where a genuine unresolved conflict, external credential/permission limit, legal hold, or irreversible high-impact boundary makes safe completion impossible, ChatGPT must isolate the affected action, document the evidence and safe alternatives, continue all independent work, and identify the specific human-only action. Do not manufacture a blocker where an evidence-based in-scope decision can be made.
 
 It is not a generic ERP, not a cut-and-sew-only system, not merely a data-entry application, and not a continuation or redesign of the historical Stockland 16.x ERP. ERP 16.2.18 and sample repositories remain reference material only, subject to the approved reference policy and source/licence review.
 
@@ -83,11 +89,11 @@ For a proposed change, ChatGPT must:
 
 Silence, an unanswered message, a suggestion, a research finding or a tool's recommendation is not approval. Do not interpret a request to investigate as permission to change the product baseline. Do not overwrite or delete prior approved rationale; preserve a dated decision/change history.
 
-Routine implementation details and defect fixes that are demonstrably inside the approved requirements may be handled autonomously, but must not alter the accepted behaviour, legal interpretation or scope. When in doubt, stop and ask.
+Routine and substantial engineering decisions inside the approved requirements may be made autonomously under the Product Owner's delegation, including data modelling, bounded-context design, API contracts, UI workflows, implementation patterns, test design and delivery sequencing within the fixed WP-00 to WP-16 order. Record material decisions and their rationale. A baseline amendment remains prohibited unless expressly approved; when an apparent conflict is not resolvable by interpreting the approved documents, isolate and document that exact decision rather than silently changing the baseline.
 
 ## 5. Numbered work-package and handover discipline
 
-Work is delivered in numbered work packages. Do not skip, merge, reorder or silently expand a package. A package is handed over when its scope is finalized and its acceptance evidence is complete. The Product Owner reviews that handover before the next package begins.
+Work is delivered in the fixed numbered sequence. Do not skip, merge, reorder or silently expand a package. For this owner-authorized run, ChatGPT completes each package, records its numbered handover and evidence, performs an independent self-review against the definition of done, and advances to the next package when the package passes. Do not pause for routine Product Owner acceptance between packages. Keep all handovers visible in GitHub and the Notion project record. A failed or blocked acceptance criterion must be recorded honestly; continue independent work while preventing dependent unsafe work from being misrepresented as complete.
 
 | ID | Work package | Required completion outcome |
 |---|---|---|
@@ -125,7 +131,7 @@ A package is not complete merely because code, a page, table, form or document e
 8. **Security:** role, tenant, legal-entity, site/branch and data-scope verification.
 9. **Documentation:** updated approved specification, operator/admin guidance and support/recovery notes.
 10. **Evidence:** exact commit, files changed, commands, test results, build/artifact identifiers and known limitations.
-11. **Handover:** completed numbered report, open risks, decisions required and the next package—without starting it before Product Owner review.
+11. **Handover:** completed numbered report, open risks, unresolved human-only actions and the next package; under the explicit delegation, ChatGPT may proceed after its evidence-based self-review without waiting for routine owner review.
 
 Use evidence labels precisely: **PASS**, **FAIL**, **NOT RUN**, **BLOCKED**, **NOT APPLICABLE**, or **PENDING OWNER APPROVAL**. Never claim a test, source review, legal validation, release or deployment that did not occur.
 
@@ -176,5 +182,131 @@ Maintain a dated record in this document or a linked decision log for:
 
 - Product Owner requested one-goal-only project discipline, strict adherence to all approved documents/plans, numbered stepwise work, complete handover after each finalized step, and express approval before any change to the agreed baseline.
 - This document records that operating instruction. The agreement itself and its links are being added to the canonical repository and Notion project memory.
-- Current work-package position: **WP-00 — Governance and baseline control**. The agreement, root agent instructions and README entry have been committed; the **WP-00 handover is submitted and awaiting Product Owner acceptance**.
-- Next package: **WP-01 — Requirements and traceability**, held until the Product Owner expressly accepts the WP-00 handover.
+- WP-00 was accepted by the Product Owner on 22 November 2026, who expressly delegated autonomous execution, routine package decisions and internal package approval for WP-01 through WP-16 to ChatGPT.
+- Execution authorization: proceed sequentially from **WP-01 — Requirements and traceability** through **WP-16 — End-to-end verification and release**, with numbered evidence handovers and no routine stop between packages.
+- Human-only gates remain limited to genuine legal/professional sign-off, live statutory activation, actual payroll/financial execution, destructive production changes, protected credentials/secrets and a production deployment/release requiring an accountable operator.
+
+
+
+## Owner standing amendment — 26 November 2026: continuous verified delivery
+
+**Authority:** The Product Owner's explicit instruction in the ERP project conversation on 26 November 2026. **Effective immediately.** This amendment supersedes any earlier wording or interpretation in this repository that requires repeated package-by-package Product Owner acceptance, a notification-and-wait cycle, or routine confirmation before implementation, package advancement, verified technical release, or integration-branch merge.
+
+### A. Standing execution and repository authority
+
+1. The Product Owner authorizes ChatGPT to execute WP-01 through WP-16 sequentially and end-to-end within the unchanged approved product goal, WP sequence, architecture, security, legal and engineering standards.
+2. ChatGPT is authorized to make ordinary in-scope decisions, implement, test, self-review, commit, push, prepare/promote pull requests, and merge verified work into `delivery/autonomous-wp-01-16` without asking for a separate acceptance, signature, form, notification acknowledgement or routine confirmation after each WP.
+3. The delivery branch is the canonical integration/release-candidate branch. `main` remains the final canonical production/release branch. Verified increments must move into the delivery branch without routine owner delay; promotion to `main` follows WP-16 full-system acceptance and the approved final release gates.
+4. No work may be held merely because the owner has not replied to a handover notification. A genuine external legal/professional, account permission, production-operator or irreversible-action boundary must be isolated precisely; all independent safe work continues.
+5. No classic personal access token is to be created, pasted into files, placed in workflow logs, or committed for this authorization. Use the connected GitHub integration and the repository's approved credential/secrets mechanism. Never store an account email as an application login or hard-code the owner's email into product behavior unless an approved requirement explicitly calls for it.
+
+### B. Technical release policy and status vocabulary
+
+A successful GitHub CI run is evidence for the checks it actually executes; it is not proof that every WP task or the production ERP is complete. Apply these separate statuses and do not collapse them into a generic `NOT RELEASED` label:
+
+- **IMPLEMENTATION IN PROGRESS:** source or workflow is being developed.
+- **TECHNICAL CI VERIFIED:** required automated checks passed for the exact recorded source SHA.
+- **VERIFIED INTEGRATION RELEASE:** the tested increment has been committed and merged to the canonical delivery branch, with its evidence and open-task report.
+- **WP COMPLETE / RELEASED:** all applicable WP requirements and task-level definition-of-done checks are complete or explicitly classified under an allowed non-blocking external dependency; evidence and report are published.
+- **PRODUCTION RELEASE PENDING:** the source is integrated, but one or more WP-16 operational, professional, customer, security, recovery or deployment gates remain outstanding.
+- **PRODUCTION RELEASED:** final WP-16 requirements, immutable-artifact verification, staging/UAT, required human/professional approvals, deployment and recovery evidence are all satisfied.
+
+For a package release, verify the exact source SHA, all required CI jobs, migration/RLS and security controls applicable to the changed scope, package tests, source provenance and acceptance evidence. When these pass, ChatGPT must promote the verified work into the delivery branch without routine owner acceptance. Do not wait for a separate owner acceptance notification. If the package still has incomplete tasks, report the exact counts and task IDs and describe the commit as a **verified integration increment**, not as a completed WP.
+
+The task-level report for each WP must reconcile every task ID and its approved standard, evidence, commit, exact-SHA test/workflow result, status (PASS, PARTIAL, BLOCKED, FAIL, NOT RUN or NOT APPLICABLE), remaining action and dependency. Distinguish work completed from externally required evidence. Never invent a task total, claim an unrun test passed, or turn an unresolved item into a pass to release code.
+
+### C. Production and high-impact boundaries remain intact
+
+This amendment removes the routine owner-acceptance hold; it does **not** waive engineering quality, security, legal correctness, privacy, financial integrity, safety, data integrity, or release evidence. No unsafe tenant/RLS bypass, secret disclosure, unlicensed code, false legal parameter, real payroll/bank/payment execution, statutory activation, destructive production-data action, or live production deployment may be performed without its required qualified or accountable authorization. These constraints must not be used to stop non-production engineering, tests, documentation, staging preparation or other independent safe work.
+
+### D. Controlled use of the legacy ERP research
+
+The Product Owner authorizes read-only consultation of the accessible Stockland ERP 16.1.89 and related legacy Stockland ERP repositories for relevant payroll, employment, pension and tax research. This permission is limited to research and evidence reconciliation. Legacy source code, WordPress architecture, customer/account identifiers, environment settings, credentials, email identities, database assumptions and unrelated workflows are not to be imported into this greenfield ERP. Prior payroll calculations and legal interpretations are historical product evidence, not automatically current law. Every statutory rule adopted here must be independently reconciled to the current official Ethiopian instrument, article/clause, effective date and applicable authority; ambiguous or changed matters remain review-required before statutory activation.
+
+### E. Release reporting and communication
+
+After each WP release or verified integration increment, provide the Product Owner a local reconciliation report covering the complete task list, task totals, completed/partial/blocked/failed/not-run counts, evidence, exact commits and workflows, defects, remaining actions and recommendations. Do not create a form or request an acceptance response. Raise a question only where a concrete decision is genuinely outside the standing authorization or required from an external accountable person.
+
+**Decision recorded:** routine WP handover acceptance gates are superseded by this standing delivery authorization. The WP-00–WP-16 sequence, product scope and quality standards remain unchanged.
+
+
+---
+
+## Owner standing amendment — 27 November 2026: production-build focus and evidence-based audit reporting
+
+**Authority:** The Product Owner's explicit instruction in the ERP project conversation on 27 November 2026. This amendment adds operating guidance to the 22 November WP-00 agreement and 26 November continuous-delivery amendment. It does not amend the approved product scope, WP sequence, architecture, legal standards, security boundaries or definition of done.
+
+### A. Production objective remains the governing target
+
+1. The project objective remains to bring the complete, canonical, customer-neutral garment ERP and reproducible master installer into effect under the approved WP-00 through WP-16 plan.
+2. Audit work exists to identify and close the source, data, system, integration, quality and installer work required by that plan. A discovered gap is an engineering action to resolve, not a reason to redefine the product target or divert the project.
+3. Continue from the current canonical integration branch and preserve the existing repository branch/release process. Reconcile existing source and commits before creating duplicate implementations.
+4. Treat the master installer as a first-class system deliverable. Its readiness must be evidenced by reproducible clean installation, migration/seed integrity, configured services, secure environment handling, health checks, upgrade/recovery behavior and end-to-end verification—not by a Docker Compose file or a generated archive alone.
+
+### B. Audit and progress-reporting discipline
+
+1. Reports must focus on concrete WP-00–WP-16 findings: what exists, exact source paths and commit, what is integrated, what is tested, what remains to implement, dependencies and the next executable action.
+2. Do not use blanket negative release labels or broad status summaries as substitutes for the task-level evidence report. State the project's production objective positively and identify precise remaining engineering work.
+3. Do not hide, soften or misstate a real defect, missing feature, failed test or unrun check. Use the existing task-level evidence vocabulary from the 26 November amendment (PASS, PARTIAL, BLOCKED, FAIL, NOT RUN, NOT APPLICABLE, PENDING OWNER APPROVAL) with exact requirement/task IDs and source SHA.
+4. Distinguish a component/source increment, an integrated WP increment, a verified installer, a WP-complete handover and a fully qualified production deployment. Do not infer one from another.
+5. Keep the audit within the assigned project and approved boundaries. Do not introduce unrelated services, competing architecture, new product scope or unnecessary advisory requests.
+
+### C. Autonomous continuation
+
+1. Under the existing owner delegation, continue auditing and implementing in-scope work without asking routine questions, requesting package-by-package acceptance, or pausing for ordinary engineering decisions.
+2. Choose the next action from verified source evidence and dependency order. Prefer completing an existing in-scope implementation or reconciling an existing branch/commit over producing another planning document.
+3. Record material technical decisions, changed files, exact commits, executable tests and remaining dependencies in GitHub. Continue with independent safe work when an external professional or operational gate applies to one bounded action.
+4. Do not ask the Product Owner to repeat approved project goals, scope, standards or decisions already present in this agreement and linked baseline.
+
+### D. Boundaries retained
+
+This amendment does not waive the controls in Sections 1, 3, 4, 6, 7 and the 26 November amendment. In particular, no guessed legal interpretation or statutory activation, unverified financial/payroll transaction, secret disclosure, weakening of tenant/security controls, destructive production-data action, unlicensed code reuse or live production deployment without the required accountable authorization is permitted. These controls are not grounds to stop independent non-production engineering, tests, documentation, staging preparation or installer development.
+
+**Decision recorded:** maintain the agreed production objective; report evidence at requirement/task/WP level; continue autonomous auditing and canonical ERP/master-installer implementation within the existing delegation and change-control boundary.
+
+
+---
+
+## Owner standing direction — production execution plan and strict scope enforcement
+
+**Controlling task register:** [Production Execution Plan — WP-00 to WP-16](../work-packages/production-execution-plan-wp00-wp16.md). The 125 PROD task IDs in that plan must be mapped to the existing approved GAR/AT/requirement IDs and handover evidence; they do not replace or narrow them.
+
+**Authority:** Product Owner's direction of 27 November 2026. This clarification operationalizes the existing WP-00–WP-16 delegation; it does not create a new package, remove a requirement, or change an approved technical/legal/security standard.
+
+### 1. The approved production scope is mandatory
+
+1. Execute the complete approved WP-00–WP-16 product scope in the fixed sequence. The objective is the integrated, customer-neutral garment ERP and reproducible master installer, not a reduced demonstration, sample application, documentation-only outcome or collection of disconnected CRUD modules.
+2. Maintain one detailed, version-controlled execution plan. Every task must have a stable task ID, its approved requirement/GAR/AT references, exact intended source/output, predecessor dependencies, acceptance criteria, required evidence and task-level status.
+3. A work package is not complete because a design, schema, controller, isolated screen, unit test, generated artifact or partial workflow exists. Completion is determined by the package's approved end-to-end definition of done and exact-source evidence.
+4. Do not silently defer, replace, omit or reduce an approved requirement. A real dependency must become a named task with an owner/work package, predecessor, resolution route and acceptance proof.
+
+### 2. Treatment of constraints and limitations
+
+1. Tool availability, runner allocation, session time, local compute, free-tier quotas, workspace access, network restrictions and similar delivery constraints are execution-continuity problems. They do not amend the product scope, quality standard, task list or expected outcome.
+2. When one execution route is unavailable, use an approved alternative within the same architecture and repository workflow: another eligible runner, a reproducible local/remote command, a separate safe work branch, an isolated test, a queued exact-SHA check or another supported verification route. Record the exact command and evidence.
+3. Never bypass a quality/security/legal gate, invent a passing result, label an unexecuted check as passed, or use a weaker substitute test. A check that genuinely could not run remains NOT RUN with its exact cause and a concrete next verification action; independent tasks continue.
+4. A genuine external legal, professional, customer, credential or accountable production approval may hold only the specific activation, transaction or deployment action that requires it. It must not be used to suspend unrelated design, engineering, migration authoring, tests, non-production verification, installer construction or preparation.
+5. A constraint is not a scope decision. Only the Product Owner may approve a change to product scope through the existing change-control process. No agent or contributor may unilaterally narrow the target to fit a tool, runner or time limit.
+
+### 3. Strict task execution and acceptance
+
+1. Work in the fixed WP-00–WP-16 order and the required dedicated branch/PR workflow. Reconcile the current canonical source and parallel commits before creating a new implementation.
+2. For each task, implement the complete bounded workflow: business actors and authority, state transitions, validations, data constraints, tenancy/site/legal-entity scope, audit/event records, exceptions, user-facing behavior, automated tests and operational documentation as applicable.
+3. Every task must pass the shared project quality gates and its domain-specific acceptance scenarios. Add exact requirement IDs and acceptance evidence to the handover register and application folder/code map.
+4. Promote verified increments through the approved integration branch without routine owner pauses. Keep unresolved tasks visible and continue with the next safe in-scope task in dependency order.
+5. Production deployment, statutory activation, real payroll/payment/bank execution, destructive production-data operations and other human-only high-impact actions remain subject to their specific accountable authorization. These narrow action gates do not reduce the engineering objective or the non-production work that can proceed.
+
+**Decision recorded:** pursue the complete approved production scope through a detailed WP-00–WP-16 task register; treat delivery constraints as problems to solve without weakening the agreed architecture, quality, security, legal or acceptance standards.
+
+
+## Standing owner amendment — 28 November 2026: action-first PR and workflow finding closure
+
+**Authority:** Product Owner's explicit instruction in the project conversation, 28 November 2026. **Effective immediately across WP-00–WP-16 and all subsequent PRs.** This adds a required response cycle to the existing autonomous delivery authorization; it does not alter the approved product scope, WP sequence, quality gates or human-only boundaries.
+
+Every PR, review submission, inline thread (including resolved threads), conversation comment, requested change, GitHub Actions workflow/check, security/dependency alert and artifact-verification finding must be inspected at the exact current head SHA and traced to source, tests, configuration and requirement evidence. Every actionable in-scope finding must be reproduced or traced, fixed/improved/built, covered by regression/integration/security/acceptance tests, and reflected in dependent migrations, CI/bootstrap, installer/deployment, API, source-map and operator documentation as applicable. Commenting, changing code without verification, or marking a thread resolved is not closure.
+
+Use the owning dedicated branch, keep unrelated scope separate, maintain a finding register, respond to each GitHub thread with the specific action and evidence, rerun applicable backend/PostgreSQL/RLS/frontend/integration/security/source-integrity/combined-WP checks on the exact final commit SHA, then report the same finding-by-finding result in the project conversation. Record run IDs, step outcomes, test/assertion totals and artifact/checksum identities. A job with runner_id 0 and zero steps is NOT RUN/BLOCKED, not PASS and not evidence of a code failure. Resolve a review thread only after the required correction and verification pass.
+
+A report-only disposition is allowed only where source/build/test work is unnecessary or a genuine external permission, runner, legal/professional or human-only production action blocks the specific item. Continue all independent safe work, document the exact blocker and next action, and never encode a temporary delivery constraint as an ERP business rule or product-scope reduction. No technical gate or production control may be bypassed. A verified increment is not a whole-WP or production completion claim.
+
+**Standing decision:** this action-first PR/workflow finding-closure cycle governs every future project PR and workflow response.

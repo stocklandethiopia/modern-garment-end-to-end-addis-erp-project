@@ -1,0 +1,135 @@
+<section class="entity-page" aria-labelledby="entity-heading">
+  <div class="page-heading">
+    <div>
+      <span class="eyebrow">ENTERPRISE FOUNDATION</span>
+      <h1 id="entity-heading">Legal entities</h1>
+      <p>Register the legal persons that own contracts, tax obligations and financial ledgers in this tenant.</p>
+    </div>
+    @if (canManage()) {
+      <button type="button" class="primary-button" (click)="showForm.set(!showForm())">
+        {{ showForm() ? 'Close form' : 'Add legal entity' }}
+      </button>
+    }
+  </div>
+
+  <div class="scope-banner">
+    <span class="scope-icon" aria-hidden="true">◎</span>
+    <div>
+      <strong>{{ session.activeTenant()?.name }}</strong>
+      <span>Tenant workspace · {{ session.activeTenant()?.membership_role }}</span>
+    </div>
+  </div>
+
+  @if (successMessage()) {
+    <div class="notice success" role="status" aria-live="polite">{{ successMessage() }}</div>
+  }
+  @if (errorMessage()) {
+    <div class="notice error" role="alert">{{ errorMessage() }}</div>
+  }
+
+  @if (showForm() && canManage()) {
+    <form class="entity-form" [formGroup]="form" (ngSubmit)="create()" novalidate>
+      <div class="form-heading">
+        <div>
+          <h2>Register a legal entity</h2>
+          <p>The record is saved as a draft. It does not confer a business licence or authorize a commercial activity.</p>
+        </div>
+        <span class="draft-label">DRAFT ON SAVE</span>
+      </div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label for="entity-name">Registered legal name</label>
+          <input id="entity-name" formControlName="legal_name" required maxlength="255" autocomplete="organization">
+          @if (form.controls.legal_name.touched && form.controls.legal_name.invalid) {
+            <span class="field-error" role="alert">Enter the registered legal name.</span>
+          }
+        </div>
+
+        <div class="field">
+          <label for="entity-reg">Registration number</label>
+          <input id="entity-reg" formControlName="registration_number" required maxlength="100">
+          @if (form.controls.registration_number.touched && form.controls.registration_number.invalid) {
+            <span class="field-error" role="alert">Registration number is required.</span>
+          }
+        </div>
+
+        <div class="field">
+          <label for="entity-form">Legal form</label>
+          <input id="entity-form" formControlName="legal_form" maxlength="100" placeholder="e.g. PLC, SC, sole proprietorship">
+        </div>
+
+        <div class="field">
+          <label for="entity-tax">Tax identification number</label>
+          <input id="entity-tax" formControlName="tax_identifier" maxlength="100">
+        </div>
+
+        <div class="field">
+          <label for="entity-country">Country code (ISO 3166-1 alpha-2)</label>
+          <input id="entity-country" formControlName="country_code" maxlength="2" required>
+        </div>
+
+        <div class="field">
+          <label for="entity-currency">Base currency (ISO 4217)</label>
+          <input id="entity-currency" formControlName="base_currency" maxlength="3" required>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <span class="form-hint">Only an authorized tenant owner or admin can create the draft.</span>
+        <button type="submit" class="primary-button" [disabled]="form.invalid || saving()">
+          @if (saving()) { Saving… } @else { Save draft legal entity }
+        </button>
+      </div>
+    </form>
+  }
+
+  <div class="table-heading">
+    <div>
+      <h2>Registered entities</h2>
+      <p>{{ entities().length }} loaded in this page</p>
+    </div>
+    <button type="button" class="secondary-button" (click)="load()" [disabled]="loading()">Refresh</button>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state" role="status">Loading legal entities…</div>
+  } @else if (entities().length === 0) {
+    <div class="empty-state">
+      <span class="empty-mark" aria-hidden="true">＋</span>
+      <strong>No legal entities registered</strong>
+      <p>Add the registered companies or organizations that operate in this tenant. Each legal entity remains separate from a brand, branch, warehouse, store or sales channel.</p>
+      @if (canManage()) {
+        <button type="button" class="secondary-button" (click)="showForm.set(true)">Register the first entity</button>
+      }
+    </div>
+  } @else {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Legal name</th>
+            <th scope="col">Registration number</th>
+            <th scope="col">Country</th>
+            <th scope="col">Base currency</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (entity of entities(); track entity.id) {
+            <tr>
+              <td>
+                <strong>{{ entity.legal_name }}</strong>
+                <small>{{ entity.legal_form || 'Legal form not specified' }}</small>
+              </td>
+              <td>{{ entity.registration_number }}</td>
+              <td>{{ entity.country_code }}</td>
+              <td>{{ entity.base_currency }}</td>
+              <td><span class="status-chip" [class.draft]="entity.status === 'DRAFT'">{{ entity.status }}</span></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

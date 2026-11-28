@@ -1,0 +1,218 @@
+<section class="page-heading">
+  <div>
+    <div class="eyebrow">WP-04 · MERCHANDISING CONTROL TOWER</div>
+    <h1>Merchandising decision dashboard</h1>
+    <p>Trace initiative outcomes, frozen range readiness, planning depth and actions requiring review.</p>
+  </div>
+  <button type="button" class="secondary-button" (click)="refresh()" [disabled]="loading()">
+    {{ loading() ? 'Refreshing…' : 'Refresh dashboard' }}
+  </button>
+</section>
+
+@if (errorMessage()) {
+  <div class="notice error" role="alert">{{ errorMessage() }}</div>
+}
+
+@if (loading() && !dashboard()) {
+  <section class="panel loading-state" aria-live="polite">Loading tenant-scoped merchandising records…</section>
+}
+
+@if (dashboard(); as data) {
+  <div class="dashboard-meta">
+    <span>Tenant role: <strong>{{ data.tenant_role }}</strong></span>
+    <span>Generated {{ data.generated_at | date:'d MMM y · HH:mm' }}</span>
+  </div>
+
+  <section class="kpi-grid" aria-label="Verified merchandising indicators">
+    @for (kpi of data.kpis; track kpi.key) {
+      <article class="kpi-card">
+        <span class="kpi-label">{{ kpi.label }}</span>
+        <strong class="kpi-value">{{ formatKpi(kpi.value, kpi.unit) }}</strong>
+        <span class="kpi-status" [class.unavailable]="kpi.status === 'NO_DATA' || kpi.status === 'UNAVAILABLE'">
+          {{ statusLabel(kpi.status) }}
+        </span>
+        @if (kpi.numerator !== null && kpi.denominator !== null) {
+          <small>{{ kpi.numerator | number }} / {{ kpi.denominator | number }}</small>
+        }
+        <p>{{ kpi.definition }}</p>
+        <small class="source-list">Source: {{ kpi.sources.join(', ') }}</small>
+      </article>
+    }
+  </section>
+
+  <div class="dashboard-columns">
+    <section class="panel">
+      <div class="panel-heading">
+        <div>
+          <span class="panel-kicker">INITIATIVE GOVERNANCE</span>
+          <h2>Initiative funnel</h2>
+          <p>Current initiative records by workflow state.</p>
+        </div>
+      </div>
+      @if (data.initiative_funnel.length === 0) {
+        <div class="empty-state">No initiative records have been created in this tenant.</div>
+      } @else {
+        <div class="status-list">
+          @for (item of data.initiative_funnel; track item.status) {
+            <div class="status-row">
+              <span>{{ statusLabel(item.status) }}</span>
+              <strong>{{ item.count | number }}</strong>
+            </div>
+          }
+        </div>
+      }
+      <a class="text-link" routerLink="/product/initiatives">Open initiatives</a>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading">
+        <div>
+          <span class="panel-kicker">PRODUCT MIX</span>
+          <h2>Newness and carry-over</h2>
+          <p>Only frozen range lines are included; planned units are not actual demand.</p>
+        </div>
+      </div>
+      @if (data.range_lifecycle_mix.length === 0) {
+        <div class="empty-state">No frozen range lines are available.</div>
+      } @else {
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Lifecycle</th><th class="numeric">Lines</th><th class="numeric">Planned units</th></tr></thead>
+            <tbody>
+              @for (item of data.range_lifecycle_mix; track item.lifecycle_type) {
+                <tr>
+                  <td>{{ statusLabel(item.lifecycle_type) }}</td>
+                  <td class="numeric">{{ item.range_line_count | number }}</td>
+                  <td class="numeric">{{ item.planned_units | number }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="panel-heading">
+      <div>
+        <span class="panel-kicker">RANGE ARCHITECTURE</span>
+        <h2>Category and tier depth</h2>
+        <p>Range-line counts and planned units by the saved category and target tier.</p>
+      </div>
+      <a class="text-link" routerLink="/product/brand-range">Open brand and range planning</a>
+    </div>
+    @if (data.range_category_depth.length === 0) {
+      <div class="empty-state">Freeze a range plan to populate category and tier depth.</div>
+    } @else {
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Category</th><th>Target tier</th><th class="numeric">Range lines</th><th class="numeric">Planned units</th></tr></thead>
+          <tbody>
+            @for (item of data.range_category_depth; track item.category_code + ':' + item.target_tier) {
+              <tr>
+                <td>{{ item.category_code }}</td>
+                <td>{{ item.target_tier ?? 'Not set' }}</td>
+                <td class="numeric">{{ item.range_line_count | number }}</td>
+                <td class="numeric">{{ item.planned_units | number }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+
+  <div class="dashboard-columns">
+    <section class="panel">
+      <div class="panel-heading">
+        <div>
+          <span class="panel-kicker">APPROVAL WORK QUEUE</span>
+          <h2>Decisions awaiting action</h2>
+          <p>Only tenant owners and administrators receive the tenant approval queue. Self-authored decisions are excluded.</p>
+        </div>
+        <span class="count-tag">{{ data.work_queue.approvals.length }} items</span>
+      </div>
+      @if (data.work_queue.approvals.length === 0) {
+        <div class="empty-state">
+          {{ data.work_queue.approval_scope === 'TENANT_APPROVALS' ? 'No independent approvals are waiting.' : 'Tenant approval actions are restricted to owners and administrators.' }}
+        </div>
+      } @else {
+        <div class="work-list">
+          @for (item of data.work_queue.approvals; track item.type + ':' + item.id) {
+            <article class="work-item">
+              <div>
+                <strong>{{ item.title }}</strong>
+                <span>{{ item.code }} · {{ statusLabel(item.stage) }}</span>
+                <small>{{ item.created_at | date:'d MMM y · HH:mm' }}</small>
+              </div>
+              <a [routerLink]="item.href">Review</a>
+            </article>
+          }
+        </div>
+      }
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading">
+        <div>
+          <span class="panel-kicker">MY WORK</span>
+          <h2>My active records</h2>
+          <p>Initiatives and briefs assigned to the signed-in user.</p>
+        </div>
+        <span class="count-tag">{{ data.work_queue.my_work.length }} items</span>
+      </div>
+      @if (data.work_queue.my_work.length === 0) {
+        <div class="empty-state">No active initiatives or product briefs are assigned to this user.</div>
+      } @else {
+        <div class="work-list">
+          @for (item of data.work_queue.my_work; track item.type + ':' + item.id) {
+            <article class="work-item">
+              <div>
+                <strong>{{ item.title }}</strong>
+                <span>{{ item.code }} · {{ statusLabel(item.stage) }}</span>
+                <small>{{ item.created_at | date:'d MMM y · HH:mm' }}</small>
+              </div>
+              <a [routerLink]="item.href">Open</a>
+            </article>
+          }
+        </div>
+      }
+    </section>
+  </div>
+
+  <section class="panel evidence-panel">
+    <div class="panel-heading">
+      <div>
+        <span class="panel-kicker">EVIDENCE PROVENANCE</span>
+        <h2>Market evidence register</h2>
+        <p>{{ data.evidence_register.source_count | number }} sources · {{ data.evidence_register.insight_count | number }} captured insights · {{ data.evidence_register.approved_policy_count | number }} approved active policies.</p>
+      </div>
+      <a class="text-link" routerLink="/product/market-insights">Open evidence register</a>
+    </div>
+    <div class="unavailable-note">
+      <strong>{{ data.evidence_register.sufficiency_status === 'NOT_CONFIGURED' ? 'Evidence requirements are not configured.' : 'Evidence coverage is evaluated per initiative.' }}</strong>
+      <p>{{ data.evidence_register.sufficiency_reason }}</p>
+      <a class="text-link" routerLink="/product/evidence-policies">Manage evidence requirement policies</a>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-heading">
+      <div>
+        <span class="panel-kicker">DEPENDENCY-AWARE REPORTING</span>
+        <h2>Metrics not yet available</h2>
+        <p>Unavailable indicators are not replaced with zero or estimates.</p>
+      </div>
+    </div>
+    <div class="dependency-list">
+      @for (item of data.unavailable_kpis; track item.key) {
+        <article>
+          <strong>{{ statusLabel(item.key) }}</strong>
+          <span>{{ item.dependency }}</span>
+          <p>{{ item.reason }}</p>
+        </article>
+      }
+    </div>
+  </section>
+}
