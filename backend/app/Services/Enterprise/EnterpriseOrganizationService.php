@@ -589,6 +589,11 @@ class EnterpriseOrganizationService
         }
     }
 
+    /**
+     * Serialize tenant graph mutations without granting app_runtime UPDATE on
+     * create-only organization masters. PostgreSQL requires UPDATE privilege
+     * for SELECT FOR UPDATE, so mutations use this transaction-level lock.
+     */
     private function lockOrganizationGraph(string $tenantId): void
     {
         DB::selectOne(
