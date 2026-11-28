@@ -1,0 +1,169 @@
+# Governance decision, assumption, risk and exception register
+
+**Register ID:** GARE-WP00-2026-11-28  
+**Version:** 1.0  
+**Record date:** 28 November 2026  
+**Canonical baseline:** `delivery/autonomous-wp-01-16` at `0a12c85cbfdc6a18c1bf1b67bf0e543e513b4374`  
+**Execution authority:** WP-00 owner acceptance and autonomous sequential execution authorization recorded on 22 November 2026; standing amendments recorded in the governance agreement  
+**Maintainer:** WP-00 engineering control; each WP lead owns evidence and status updates for their package
+
+## 1. Purpose and control rule
+
+This register makes the currently approved product, governance, architecture and delivery boundaries explicit. It is an engineering control record, not a new product-scope approval and not a substitute for the governance agreement, legal advice, security review or release acceptance.
+
+Every item has:
+- a stable ID and current status;
+- the source of authority and exact evidence reference;
+- affected WPs and risk/impact;
+- an owner role for action;
+- an expiry date or a specific review trigger.
+
+A status is never inferred from a document's existence, a branch, a PR, an artifact or a test that does not cover the relevant control. Updates must be made in the same change that alters the underlying decision, assumption, risk or exception, and the affected WP handover must point to the exact SHA.
+
+### Status vocabulary
+
+| Status | Meaning |
+|---|---|
+| APPROVED | Explicitly accepted by the authority named in the record |
+| ENGINEERING_BASELINE | Approved technical standard governing implementation; not a statutory or business approval |
+| ACTIVE | A current control, assumption or risk that must be applied/monitored |
+| OPEN | A known risk or unresolved question with an assigned action |
+| DRAFT_REVIEW_REQUIRED | A candidate model or relationship awaiting required evidence review |
+| BOUNDED_EXCEPTION | A documented, narrow use outside the canonical product/runtime path; it does not change the target |
+| CLOSED | Evidence shows the item has been resolved; preserve the closure receipt and SHA |
+
+Calendar expiry is used only where a time-bound permission actually exists. Otherwise, the review trigger is explicit; an item must be reviewed when that trigger occurs, at each material architecture/scope change, and at WP16 release-readiness review.
+
+## 2. Authority and approval boundaries
+
+| Work type | Execution authority | Required boundary |
+|---|---|---|
+| Routine in-scope engineering | Autonomous, sequential WP execution under the accepted WP-00 delegation | Implement, fix, improve, test and report; maintain dependencies and exact-SHA evidence. No routine owner-acceptance pause is required. |
+| Architecture and engineering quality | Engineering baseline and package-level engineering acceptance | Changes must meet the approved platform, security, data, test, accessibility and deployment standards; deviations require a logged exception and engineering evidence. |
+| Statutory interpretation and activation | Qualified Ethiopian legal/tax/payroll professionals and the accountable business authority | Engineering may source, model, calculate test cases and prepare configuration; it must not invent legal interpretation, effective dates, rates, exemptions or statutory sign-off. No live payroll/tax activation based only on engineering tests. |
+| Financial authority and execution | Authorized finance/business approver under the relevant controls | Engineering may implement controls and non-production scenarios. It must not authorize or execute payments, journals, credit release, FX rates or other live financial decisions. |
+| Production access, data and release operations | Authorized production/security/data owner | Secrets, break-glass access, destructive data actions, production migrations, production deployment and external data disclosure require their own authorized approval and auditable change record. |
+| Requirements identity / semantic disposition | Delegated WP-01 engineering acceptance, with domain-steward review where meaning, statutory scope or business policy is affected | Candidate links do not establish equivalence, supersession or permission to retire a requirement. All R3 implementation statuses remain `not_started` until code-level acceptance exists. |
+
+The authority boundary is deliberately narrow: professional and production actions remain human-controlled; routine engineering work proceeds within the accepted scope. **No blanket waiver is granted by this register.** A bounded exception does not waive security, legal correctness, product scope, source traceability, engineering quality, acceptance testing or release controls. No current record authorizes live statutory activation, real payroll/financial execution, destructive production operations or production deployment.
+
+## 3. Decision register
+
+| ID | Decision and current disposition | Authority / evidence | Affected WPs | Risk and required control | Review trigger / expiry |
+|---|---|---|---|---|---|
+| D-0001 | **APPROVED** — the target remains a full, customer-neutral garment/apparel end-to-end ERP; WP-00–WP-16 order and approved scope are not narrowed to fit current implementation or CI gaps. | Product Owner acceptance of WP-00 on 22 Nov 2026; `docs/agent/project-governance-agreement.md`; `docs/work-packages/production-execution-plan-wp00-wp16.md` | WP-00–WP-16 | Scope drift or implementation convenience could omit required business capabilities. Any product-scope reduction or substitution must be logged as a change request for explicit authority. | Review only on an explicit scope-change request or material product charter amendment. |
+| D-0002 | **APPROVED** — autonomous sequential execution and routine in-scope package decisions are delegated; report findings with a concrete action (fix, improve or build), exact verification and handover. | WP-00 owner acceptance, 22 Nov 2026; governance agreement and its 27 Nov standing amendment; user direction reaffirmed 28 Nov 2026 | WP-00–WP-16 | A routine pause would stall delivery; uncontrolled scope/legal/production actions would exceed delegation. Apply the boundary table in §2. | Review if delegation is expressly changed; otherwise active through WP16. |
+| D-0003 | **ENGINEERING_BASELINE** — modular monolith; Angular 22, PHP 8.5/Laravel 13, PostgreSQL 18, Redis 8.2, isolated Python 3.15 specialist compute, REST/OpenAPI 3.1. | `docs/architecture/platform-standard.md` blob `6545f740b26226fd524ae0fa62576b2a5c1e86ba` | WP-03–WP-16 | Platform drift, unnecessary services, duplicated business rules and avoidable operational complexity. Record a reasoned architecture decision before changing the baseline. | Revisit only through architecture review, version support/security change or measured capacity need. |
+| D-0004 | **ENGINEERING_BASELINE** — Laravel owns transactional business rules; PostgreSQL is the system of record; Redis remains ephemeral; Python cannot bypass Laravel authorization or database controls. | Platform standard SHA above; `docs/engineering/code-quality.md` blob `56d48713f20e6dbd6bbb9bf3405a075d6b534356` | WP-03–WP-16 | Split-brain data, bypassed business rules and inconsistent authorization. Require server-side transactions, exact money representation, idempotency and source-of-truth tests. | Review on data ownership, consistency or platform architecture change. |
+| D-0005 | **ENGINEERING_BASELINE** — tenant isolation and record/site/entity/department/warehouse/channel scopes are enforced server-side; RLS is required as defense in depth, not a replacement for application authorization. | `docs/security/saas-security.md` blob `305a0c34738e20607868e760cdcd976847af9781`; platform standard | WP-03, WP-08–WP-16 | Cross-tenant or cross-site data disclosure and unauthorized actions. Require adversarial negative tests for list, search, aggregate, export, API, queue/job and background paths. | Revisit on tenant model, authorization model or threat-model change; no expiry. |
+| D-0006 | **APPROVED DELIVERY CONTROL** — delivery/autonomous-wp-01-16 is the active canonical integration branch; main remains unchanged until WP16 promotion conditions are evidenced. | Governance agreement; PR #33 handover refresh merged at 0a12c85cbfdc6a18c1bf1b67bf0e543e513b4374; WP16 release standard | WP-00–WP-16 | Divergent sources of truth and premature promotion. Reconcile every candidate branch to the exact delivery SHA; promotion to main requires complete WP16 evidence and an accountable release decision. | Review at WP16 release promotion or an approved branch strategy change. |
+| D-0007 | **APPROVED SOURCE BOUNDARY** — the v0.3 Node.js/SQLite app and its 45-table model are preserved as source/reference evidence, not the canonical Laravel/Angular/PostgreSQL runtime; concepts must be ported semantically, not copied wholesale. | Intake manifest and `docs/audit/stockland-v0.3-45-table-port-disposition-2026-11-28.md`; WP01 source map | WP-01, WP-03–WP-16 | Legacy runtime assumptions could contaminate the SaaS architecture or lose manufacturing semantics. Keep source bytes/hash and a reviewed disposition for each concept. | Review when a legacy concept is re-evaluated or a new source package is accepted. |
+| D-0008 | **APPROVED SOURCE BOUNDARY** — XPOS material is limited reference material (six MIT source files in the reviewed kit), not a generic/demo POS implementation or an independent target product. | WP12/source-intake inventory and master audit; `docs/audit/wp00-wp16-master-reconciliation-audit-2026-11-28.md` | WP-01, WP-12 | Overclaiming sample source as completed POS could omit ERP-grade order, inventory, finance and offline controls. Reuse only with licence, workflow, security and integration verification. | Review when new POS source is provided or when WP12 scope is implemented. |
+| D-0009 | **INTEGRATED ENGINEERING INCREMENT** — R3 and legacy GAR are distinct identifier systems. Preserve 128 R3 IDs and 120 GAR IDs; candidate graph is a traceability aid, not semantic-equivalence or scope-retirement approval. | CAP-002 PR #32; tested head `6e8788be6849a78115ee138eb68a607cbaea1c03`; merged delivery SHA `bc442495df842f8fb06ae8b8d540145c69155023`; artifact/method/validator and WP01 handover | WP-00, WP-01; dependency for WP-02–WP-16 | False equivalence or hidden orphan scope. Keep each edge `DRAFT_REVIEW_REQUIRED`; CAP-004 performs requirement-to-implementation traceability; no legacy ID or requirement may be retired from the graph alone. | Review edge-by-edge under CAP-004 and on any approved amendment to either source register. |
+| D-0010 | **ENGINEERING_BASELINE** — object bytes are stored through a portable storage abstraction; ERP metadata, ownership, tenant access and audit events remain in PostgreSQL. S3-compatible storage is a future option, not a mandatory development dependency. | Platform standard; security standard; deployment standard | WP-03, WP-05, WP-07, WP-11, WP-12, WP-15, WP-16 | Provider lock-in, broken tenant access, unsafe file handling or loss of provenance. Test interface, private access, integrity, retention, malware/quarantine and restore independently of provider. | Review when an actual storage backend or deployment profile is selected. |
+| D-0011 | **ENGINEERING_BASELINE** — monetary values use exact decimal/minor-unit representation; do not use floating-point for money. FX, tax, costing, journals and payroll calculations are server-side, source-linked and auditable. | Code quality standard SHA `56d48713f20e6dbd6bbb9bf3405a075d6b534356`; WP13/WP14 scope | WP-04, WP-07, WP-13, WP-14 | Rounding errors, forged caller-supplied values and unreconciled ledgers. Use authoritative server inputs, idempotent postings, reversals and reconciliation tests. | Review on accounting policy, currency, valuation or statutory change. |
+| D-0012 | **HUMAN-APPROVAL BOUNDARY** — engineering may prepare statutory/legal and payroll models, but production rules require validated primary sources, qualified interpretation, effective-date confirmation and accountable sign-off. | Governance agreement; WP02 legal source register; WP14 scope; Ethiopian statutory-source register | WP-02, WP-13, WP-14 | Incorrect legal/tax/pension treatment or unlawful payroll/financial operation. Keep affected activation and live execution behind a human/professional approval gate. | Review at every statute, directive, rate or effective-date change and before activation. |
+| D-0013 | **ENGINEERING_BASELINE** — a reproducible master installer and portable deployment/recovery workflow are first-class WP16 deliverables; a working Compose file or CI build alone is not installer/recovery acceptance. | `docs/engineering/development-deployment.md` blob `c77af400eb1022696c654d6e30601eaa05882757`; `docs/release/end-to-end-acceptance-security-deployment.md` blob `ec0282421cad015f7a3ae113cfaba20c7db65266` | WP-16 and all packages | Unreproducible installs, unrecoverable data and hidden environment dependencies. Require immutable image/source digests, SBOM, secure configuration, clean install/upgrade/rollback, backup/restore and evidence. | Review at WP16 installer and release acceptance. |
+
+## 4. Assumption register
+
+| ID | Assumption or unresolved condition | Owner role | Status / evidence | Impacted WPs | Validation action | Review trigger / expiry |
+|---|---|---|---|---|---|---|
+| A-0001 | All collected source/artifact bundles must still be inventoried and reconciled to canonical WP source paths; physical presence alone does not establish integration or acceptance. | WP-00 control + each WP lead | ACTIVE; source-intake inventory and 17 source maps exist, but CAP-004/source placement remains open | WP-00–WP-16 | Compare manifest, file hashes, source maps and target paths; record missing/duplicate/unassigned files and exact dispositions. | Recheck at each source intake and before WP16 packaging. |
+| A-0002 | The 128 R3 and 120 legacy GAR records are separate catalogues; neither register is presumed to be a complete alias/translation of the other. | WP-01 engineering lead | VALIDATED AS IDENTIFIER FACT; CAP-002 crosswalk integrity passed on exact SHA; semantic edges remain draft | WP-01–WP-16 | Maintain source IDs and hashes; complete candidate-edge review and CAP-004 traceability without renumbering. | Revisit when either register or an approved amendment changes. |
+| A-0003 | An artifact marked `not_started` remains unimplemented until target Laravel/Angular/PostgreSQL code and the corresponding acceptance tests prove otherwise. | Each WP lead | ACTIVE; R3 source register status preserved; exact source and application checks are separate evidence classes | WP-01–WP-16 | Link requirement → workflow → code/data/API/UI/event/test/runbook and exact passing SHA before status transition. | Every package acceptance and every status change. |
+| A-0004 | Ethiopia legal, labour, PAYE, pension and related statutory sources may change or require interpretation; no unverified rate/date is safe to activate. | WP-02 legal-source lead + qualified professional | ACTIVE; qualified review and statutory source registry remain required | WP-02, WP-13, WP-14 | Capture primary source, issuer, publication, effective date, supersession and qualified interpretation; hold activation until approved. | Every legal update and before production use. |
+| A-0005 | A specific production host, domain, object store or external AI/provider account is not an architectural prerequisite for development. | Platform architecture lead | ACTIVE engineering design assumption; portable/configurable architecture standard | WP-03, WP-15, WP-16 | Verify no hard-coded host, localhost/127.0.0.1 or provider-specific credential/dependency in delivered runtime; test configurable profiles. | Review when a real deployment profile is selected. |
+| A-0006 | Current CI workflows validate the jobs they define; workflow names do not prove all 125 planned tasks, E2E journeys or production acceptance. | WP-00 + CI owner | ACTIVE; 12 cross-package gates are defined; full E2E and WP16 operational evidence remains outstanding | WP-00–WP-16 | Map each quality gate and task to exact workflow/job/test; record unrun evidence as NOT RUN, not PASS. | Every workflow change and at WP16 readiness. |
+| A-0007 | The public repository is the current collaboration/delivery channel; this does not establish a confirmed root cause for any historical Actions capacity or policy event. | WP-00 control | ACTIVE; repo public per owner decision; billing/Actions root cause not inferred | WP-00–WP-16 | Keep notices factual and use available checks; do not assert unverified billing or runner causes. | Revisit only if repository visibility or CI strategy changes. |
+| A-0008 | Current source code and schemas contain useful foundations, but workflow completeness must be demonstrated per actor, state transition, control, ledger and journey. | Each WP lead | ACTIVE; source-level master audit documents concrete gaps | WP-03–WP-16 | Use end-to-end acceptance scenarios, adversarial/security tests, data reconciliation and operational evidence. | Each WP acceptance and at WP16. |
+
+## 5. Risk register
+
+Risk ratings are engineering triage (Impact × exposure), not quantified actuarial likelihood. They must be re-rated when new test/evidence arrives.
+
+| ID | Risk / consequence | Rating | Owner role | Current mitigation / linked action | Status | Review trigger / target |
+|---|---|---|---|---|---|---|
+| R-0001 | Candidate WP03/WP11/WP14/WP15 branches contain overlapping PostgreSQL migration numbers after delivery migration 000032; independent merges can collide, reorder schema dependencies or invalidate rollback. | HIGH | Database/platform lead | Freeze independent candidate merges; inventory migrations and dependencies; form one ordered, collision-free train with fresh PG18 install/upgrade/rollback and RLS verification. CAP-030. | OPEN | Before any candidate migration integration; CAP-030. |
+| R-0002 | The R3↔GAR graph has 231 candidate edges whose shape labels are not proof of semantic equivalence; missing or false links could hide requirements or imply unsupported scope retirement. | HIGH | WP-01 lead + domain stewards | Preserve both IDs; mark every edge `DRAFT_REVIEW_REQUIRED`; review complete source text and acceptance boundaries; CAP-004 adds owner/task/code/test/runbook traceability. | OPEN | CAP-004; before any alias, supersession or retirement decision. |
+| R-0003 | Tenant/entity/site/department/warehouse/channel/record access may be incomplete across API, list, search, aggregate, export, queue and background paths even where tenant RLS exists. | HIGH | WP-03 security lead | Server-side policy checks, RLS, negative cross-tenant and same-tenant scope tests; CAP-010. | OPEN | Before protected workflow acceptance and each authorization model change. |
+| R-0004 | Business journeys from initiative through product release, sourcing, material issue, production, quality, dispatch/POD, sale, return and close may not yet be end-to-end executable. | HIGH | WP leads / integration lead | Build and test E2E-001–008 and Miret journeys through canonical runtime; CAP-028. | OPEN | Each journey gate and WP16. |
+| R-0005 | Statutory rules, payroll, tax and pension can be inaccurate if source hierarchy, effective date or professional interpretation is missing. | HIGH | WP-02 + qualified legal/payroll reviewer | Source registry, evidence-backed calculations, controlled effective-dated rules and human approval gate; CAP-006/007/024. | OPEN / ACTIVATION HELD | Every statutory change and before production activation. |
+| R-0006 | AP, AR, bank/treasury, FX, valuation, manufacturing cost, tax, reversals and close controls are not yet proven as a reconciled financial subledger. | HIGH | WP-13 finance lead | Implement server-side posting, exact decimals, idempotency, evidence, reversal and reconciliation; CAP-023. | OPEN | Before financial workflow acceptance or live posting. |
+| R-0007 | PLM, SAM, route, supplier, UOM, lot/roll, cutting, WIP, quality and finished-goods records may lose product/material genealogy across departments. | HIGH | WP-05–WP-12 leads | Product/process passport, controlled route snapshots and inventory-ledger movement; CAP-015–020/022. | OPEN | Material/production/quality E2E and acceptance. |
+| R-0008 | Quality states, AQL sampling, containment, disposition, CAPA and release gates could be bypassed or contradicted by older evidence or caller-controlled flags. | HIGH | WP-11 quality lead | State-machine enforcement, authority matrix, atomic CAPA evidence and pre-release hold checks; CAP-021. | OPEN | Before quality/finished-goods acceptance. |
+| R-0009 | Outbox leases, idempotency conflicts, ingestion workers, object retention and device identity may permit duplicate, lost or unauthenticated events. | HIGH | WP-15 integration/security lead | Fenced lease/reclaim, payload-hash conflict, typed import, signed device identity, quarantine and audit; CAP-025/026. | OPEN | Before event/device/agent production use. |
+| R-0010 | The master installer, SBOM, secure configuration, performance, backup/restore, disaster recovery and operational runbooks may not be reproducible or proven. | HIGH | WP-16 release engineering | Immutable artifact digests, install/upgrade/rollback, SBOM/security scans, load/restore drills and auditable runbooks; CAP-027/028. | OPEN | WP16 acceptance. |
+| R-0011 | Pricing, forecast, OTB and promotion workflows can produce commercially invalid results if source lineage, thresholds, stacking or margin floor enforcement is missing. | MEDIUM–HIGH | WP-04 merchandising lead | Approved input lineage, materialized adjustments and enforceable eligibility/margin rules; CAP-014. | OPEN | Before commercial planning and price publication. |
+| R-0012 | Candidate PRs may contain useful fixes but have not been integrated or verified as part of one compatible delivery tree. | HIGH | WP-00 integration lead | Candidate-only status; rebase/test on current delivery SHA; consolidate migration sequence under CAP-030. | OPEN | Each candidate review and before merge. |
+
+## 6. Exception register
+
+These are bounded evidence/use exceptions, not waivers of the target architecture, business scope, security standard or release quality.
+
+| ID | Bounded exception / current status | Allowed use | Prohibited inference or use | Owner role | Expiry / review trigger |
+|---|---|---|---|---|---|
+| E-0001 | **BOUNDED_EXCEPTION** — Stockland v0.3 Node.js/SQLite package is retained as historical source/reference material. | Mine business rules and source concepts; preserve hashes; map each concept to canonical bounded contexts. | Do not treat it as the current SaaS runtime, execute its schema as PostgreSQL migrations, or copy all legacy tables without semantic/security mapping. | WP-01 and relevant WP leads | Re-evaluate per source concept or when a replacement source is accepted. |
+| E-0002 | **BOUNDED_EXCEPTION** — XPOS kit is six reviewed MIT source files used only as limited POS reference. | Inspect relevant retry, offline, barcode and stock-control concepts with licence attribution. | Do not claim a complete POS, use generic/demo UI as target, or treat the six files as an integrated WP12 capability. | WP-12 lead | Expires when WP12 implements and verifies the corresponding target behavior or new source changes scope. |
+| E-0003 | **BOUNDED_EXCEPTION** — the Python/SQLite 19-stage replay is an isolated reference harness. | Use as a behavioral fixture and source-model comparison where relevant. | Do not treat its tests or ledgers as proof of Laravel/PostgreSQL, production concurrency, HTTP/UI or tenant/RLS acceptance. | WP-01 / WP-09 / WP-10 leads | Revisit when equivalent target-runtime tests are integrated. |
+| E-0004 | **BOUNDED_EXCEPTION** — open candidate PRs (including WP03, payroll, agent/device and quality/storage candidates) remain unintegrated until migration and dependency consolidation. | Preserve, review, rebase and cherry-pick through one authorized train. | Do not merge independent migrations that reuse numbers or infer candidate CI results apply to the delivery branch. | WP-00 + database lead | CAP-030 completion or candidate supersession/closure. |
+| E-0005 | **BOUNDED_EXCEPTION** — `main` is not the active delivery baseline; delivery branch is canonical until WP16 promotion. | Continue engineering on the dedicated delivery branch and audit branches. | Do not promote or label a runtime release based only on documentation, a feature branch or a candidate artifact. | WP-00 / WP-16 | WP16 release promotion decision. |
+| E-0006 | **BOUNDED_EXCEPTION** — existing workflow names and passing partial suites are scoped to the jobs they run. | Use exact job evidence for the tested areas and SHA. | Do not describe a workflow as proving all 125 tasks, every end-to-end journey, installer, DR or production UAT unless those tests explicitly run and pass. | WP-00 / WP-16 | Reassess whenever workflows are expanded or renamed. |
+
+## 7. Change control and required record fields
+
+Before changing a decision or closing a risk/exception, record:
+1. change reason and the source evidence;
+2. affected decision/assumption/risk/exception IDs;
+3. exact branch, commit SHA, files and relevant database migrations;
+4. exact workflow, job, test count and results;
+5. human/professional approval receipt where §2 requires it;
+6. the updated WP source map and handover row;
+7. review trigger or expiry for any new assumption or exception.
+
+A PR may be internally engineering-accepted without routine owner acceptance when it is within the delegated scope and its exact gates pass. This does not authorize the human-only actions in §2.
+
+## 8. Current CAP checkpoint at publication
+
+| CAP | Current status |
+|---|---|
+| CAP-001 | CLOSED — merged delivery evidence-ledger and governance checkpoint; PR #31; final tested head `c0175bded5113c4ec8b98b4589e641e310b57a0c`; merged SHA `217aa9848e1499617aeab76d77349f4bb1805066`; ERP CI #46131518062 and WP verification #46131518069 passed. |
+| CAP-002 | CLOSED FOR STRUCTURAL IDENTIFIER RECONCILIATION; SEMANTIC REVIEW OPEN — PR #32 tested head `6e8788be6849a78115ee138eb68a607cbaea1c03`; delivery merge `bc442495df842f8fb06ae8b8d540145c69155023`; ERP CI #46154426395, full WP verification #46154426366 and R3 source workflow #46154426369 passed. PR #33 handover refresh tested head `37d88f175fffb805d4de38d108045ab8e8859825` merged at `0a12c85cbfdc6a18c1bf1b67bf0e543e513b4374`; ERP #46162557764, WP #46162557766 and R3 source #46162557765 passed. All 231 semantic edges remain DRAFT_REVIEW_REQUIRED; no equivalence, supersession or scope retirement is approved. |
+| CAP-003 | ACTIVE — controlled register and strengthened executable validator are on fresh branch work/wp00-cap-003-governance-register-current-delivery-2026-11-28, rooted at current delivery 0a12c85cbfdc6a18c1bf1b67bf0e543e513b4374; exact-head verification and final WP-00 handover remain pending. |
+| CAP-004 | NEXT DEPENDENT ACTION — held until CAP-002's 231 candidate associations receive requirement-level semantic review and a recorded disposition; then trace accepted requirements to owners, workflows, APIs, data, UI, events, tests, exact evidence and runbooks. |
+
+## 9. Source evidence index
+
+| Source | Exact evidence |
+|---|---|
+| Governance / delegation | `docs/agent/project-governance-agreement.md`, blob SHA `36d5eff9490226c3a27eddc99095ea21c02c450f` |
+| Product/build plan | `docs/work-packages/production-execution-plan-wp00-wp16.md`, blob SHA `ce2e761071053f5acb35043f6fb176b4ddcf63e9` |
+| Platform architecture | `docs/architecture/platform-standard.md`, blob SHA `6545f740b26226fd524ae0fa62576b2a5c1e86ba` |
+| Code quality | `docs/engineering/code-quality.md`, blob SHA `56d48713f20e6dbd6bbb9bf3405a075d6b534356` |
+| SaaS security | `docs/security/saas-security.md`, blob SHA `305a0c34738e20607868e760cdcd976847af9781` |
+| Deployment baseline | `docs/engineering/development-deployment.md`, blob SHA `c77af400eb1022696c654d6e30601eaa05882757` |
+| WP16 acceptance | `docs/release/end-to-end-acceptance-security-deployment.md`, blob SHA `ec0282421cad015f7a3ae113cfaba20c7db65266` |
+| CAP master audit | [PR #30](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/pull/30), audit head `12707a51a76c51110d07e9d4375eac1c2ec37d60` |
+| CAP execution ledger | `docs/audit/corrective-action-execution-ledger-2026-11-28.md` |
+| WP handover register | `docs/work-packages/handover-register.md` |
+
+**Register review:** at the next scope or architecture decision, legal/statutory update, candidate migration integration, security model change, or WP16 release-readiness review.
+## 10. Exact delivery and candidate-branch observation — 28 November 2026
+
+**Current canonical integration baseline:** delivery/autonomous-wp-01-16 at 0a12c85cbfdc6a18c1bf1b67bf0e543e513b4374. This includes CAP-002 structural integration and the CAP-002 handover refresh from PR #33. PR #33 tested head was 37d88f175fffb805d4de38d108045ab8e8859825, with tree 7a687a8954be0d9bf198ecee742f300f4e994439; merge tree is identical. Exact-head ERP CI #46162557764, combined WP verification #46162557766, and WP-01 R3 source verification #46162557765 all passed. Each workflow ran on the exact PR #33 head. PR #33 was documentation/handover-only; it did not change runtime code or migrations. The main branch remains untouched.
+
+**Earlier CAP-003 draft disposition:** the pre-existing branch work/wp00-cap-003-governance-register-2026-11-28 at 6eff19b55e300f7bf2c377274acff1e89e3193ec diverged from the current delivery baseline: 13 commits ahead and 9 behind, with merge-base bc442495df842f8fb06ae8b8d540145c69155023. No PR or exact-head workflow runs were found for that head. Its useful register and validator source were inspected and selectively carried forward; its ancestry was not merged. This CAP-003 implementation is being rebuilt on a clean branch rooted at the exact current delivery SHA above.
+
+**Candidate PR inventory observed against the current delivery branch:**
+
+| Candidate PR | Scope | Head SHA | Base SHA observed | State at observation | Integration disposition |
+|---|---|---|---|---|---|
+| #13 | WP-03 platform operator/scoped-access | 735d404fdf996e58bd07140cd900dc55c50c13ed | f948bb85de4194ae18dc8ee8c974c3ad0986623 | Open draft; stale base; not mergeable | Reconcile/rebase only after WP-03 dependency and migration review |
+| #20 | WP-14 Ethiopia payroll candidate | 4b89e9f7cbbc939d3080b70e3fc48b247e72abb5 | fc01eced62b97c4ec27f0075264fc8ba0fb11851 | Open draft; stale base; not mergeable | Source/legal review and migration consolidation; no statutory activation |
+| #23 | WP-15 agent/device grants | 8497cfc76200e1263f0f5ce47afdb668773758bc | fc01eced62b97c4ec27f0075264fc8ba0fb11851 | Open draft; stale base; not mergeable | Preserve as candidate until rebase and migration sequence |
+| #27 | WP-15/WP-16 private storage and RLS | b6e5486324e0eca18c065b253d1640ea7e6f2416 | fc01eced62b97c4ec27f0075264fc8ba0fb11851 | Open draft; stale base; not mergeable | Candidate-only; revalidate against current delivery and CAP-030 |
+| #29 | WP-03 organization structure | c716757e3b0fe091b2e6223b416237d32e455c8e | 3438ab47240c10ce5ea5f1f772c1570cc2191134 | Open draft; stale base; not mergeable | Candidate-only; rebase and reconcile shared WP-03 migrations |
+
+These PR states and SHAs are an observation snapshot, not a permanent property; refresh before any candidate merge. The migration conflict register remains active: do not merge independent candidates that reuse or conflict with migration numbers. CAP-030 owns the single dependency-ordered migration train.
+
+**CAP-003 state at publication:** the register and validator are authored on work/wp00-cap-003-governance-register-current-delivery-2026-11-28 from baseline 0a12c85cbfdc6a18c1bf1b67bf0e543e513b4374. Exact-head CI and handover verification remain pending. CAP-002 semantic mapping remains open; CAP-004 cannot infer approval from the structural graph.

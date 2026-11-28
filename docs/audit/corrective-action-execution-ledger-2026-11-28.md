@@ -3,8 +3,8 @@
 **Project:** Modern Garment End-to-End Addis ERP  
 **Record date:** 28 November 2026  
 **Control item:** CAP-001–CAP-030 — sequenced corrective-action execution ledger  
-**Working branch:** `work/wp01-cap-002-evidence-closeout-2026-11-28` (WP-01 evidence/handover refresh)  
-**Canonical delivery baseline after CAP-002 integration:** `delivery/autonomous-wp-01-16` at `bc442495df842f8fb06ae8b8d540145c69155023`  
+**Working branch:** `work/wp00-cap-003-governance-register-current-delivery-2026-11-28` (CAP-003 implementation from exact current delivery baseline)  
+**Canonical delivery baseline for CAP-003:** `delivery/autonomous-wp-01-16` at `0a12c85cbfdc6a18c1bf1b67bf0e543e513b4374`  
 **Default branch:** `main` at `adca71a053290eb768987a7644d4b13c267cf2a9`  
 **Master audit:** [PR #30](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/pull/30), audit head `12707a51a76c51110d07e9d4375eac1c2ec37d60`.
 
@@ -121,9 +121,9 @@ Compare results against delivery SHA `3438ab47240c10ce5ea5f1f772c1570cc2191134`:
 | CAP | WP | Priority | Status at this ledger revision | Dependency / next gate |
 |---|---|---:|---|---|
 | CAP-001 | WP-00 | P0 | CLOSED / MERGED — exact PR-head ERP and WP checks passed; merge SHA and identical tree recorded | Closed on delivery merge `217aa9848e1499617aeab76d77349f4bb1805066`; separate delivery push run not asserted |
-| CAP-002 | WP-00/WP-01 | P0 | INTEGRATED — PR #32 merged at `bc442495df842f8fb06ae8b8d540145c69155023`; exact-head ERP, combined WP and WP-01 source-package checks PASS; semantic association review OPEN | Review all 231 candidate associations against full requirement statements and acceptance boundaries; preserve DRAFT_REVIEW_REQUIRED until decision evidence is recorded. CAP-004 depends on approved identity/alias mappings |
-| CAP-003 | WP-00 | P1 | NOT STARTED | Build decision/assumption/risk/exception register from accepted evidence |
-| CAP-004 | WP-01 | P0 | NOT STARTED — dependency held | Start only after CAP-002 semantic review approves the identity/alias relationships; then trace every R3 ID to owners, tasks, code, data and tests |
+| CAP-002 | WP-00/WP-01 | P0 | STRUCTURAL IDENTIFIER RECONCILIATION INTEGRATED — PR #32 at `bc442495df842f8fb06ae8b8d540145c69155023`; PR #33 refreshed the handover at `0a12c85cbfdc6a18c1bf1b67bf0e543e513b4374`; exact ERP/WP/source checks PASS; semantic association review OPEN | Review all 231 candidate associations against full requirement statements and acceptance boundaries; preserve `DRAFT_REVIEW_REQUIRED` until each decision is recorded. CAP-004 remains dependency-held |
+| CAP-003 | WP-00 | P1 | ACTIVE — register, source-pin validator and validator tests implemented on a fresh branch from current delivery; exact-head ERP/WP verification pending | Complete exact-head validator tests, seven source-blob checks, ERP CI, combined WP workflow and synchronized WP-00/WP-01 handover before closing |
+| CAP-004 | WP-01 | P0 | NOT STARTED — dependency held | Start only after CAP-002 semantic review records accepted/rejected/partial disposition for all candidate associations; then trace each approved requirement to owners, tasks, code, data and tests |
 | CAP-005 | WP-01 | P1 | NOT STARTED | Measurable NFR catalogue and verification methods |
 | CAP-006 | WP-02 | P0 | NOT STARTED | Official primary source bytes, dates, hashes and authority inventory |
 | CAP-007 | WP-02/WP-13/WP-14 | P0 | NOT STARTED | Effective-dated configurable statutory rules; qualified Ethiopian review before activation |
@@ -203,3 +203,20 @@ The exact PR-head validator, ERP CI, combined WP verification and dedicated WP-0
 - Dedicated WP-01 source verification [#46154426369](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/46154426369): SUCCESS; source archive/checksum validation, 20/20 tests and strict audits A01–A10/F01–F07 passed.
 - CAP-002 state: automated source/graph-integrity implementation integrated and verified; semantic review of the 231 proposed associations remains OPEN. All candidate edges remain `DRAFT_REVIEW_REQUIRED`; the 128 R3 implementation flags remain `not_started`; all 120 legacy GAR IDs are preserved.
 - CAP-003 is the next independent WP-00 action; CAP-004 remains gated by CAP-002 semantic review.
+
+## 9. CAP-003 execution record — current delivery baseline — 28 November 2026
+
+| Item | Evidence / disposition |
+|---|---|
+| Baseline | Exact canonical delivery 0a12c85cbfdc6a18c1bf1b67bf0e543e513b4374; current work branch work/wp00-cap-003-governance-register-current-delivery-2026-11-28 created directly from that commit. |
+| Earlier draft reconciliation | The pre-existing work/wp00-cap-003-governance-register-2026-11-28 branch at 6eff19b55e300f7bf2c377274acff1e89e3193ec diverged by 13 ahead / 9 behind, merge base bc442495df842f8fb06ae8b8d540145c69155023; no associated PR or exact-head workflow runs were found. Its history was not merged; only inspected source content was selectively reused. |
+| Register | docs/governance/decision-assumption-risk-exception-register-2026-11-28.md; 13 decisions, 8 assumptions, 12 risks and 6 bounded exceptions. It states source authority, affected WPs, owner roles, risks/controls, validation and review triggers. No exception is a blanket waiver. |
+| Source pins | Seven exact Git blob SHAs pinned: governance agreement, WP execution plan, architecture standard, code-quality standard, SaaS security, deployment standard and WP16 release acceptance. The validator recomputes Git blob SHA-1 from file bytes on every run. |
+| Executable verification | scripts/verify-wp00-governance-register.mjs validates exact section/table schemas, required columns, record counts, sequential and unique IDs, non-empty mandatory fields, explicit bounded-exception status, CAP baseline/statuses, PR33 verification receipts and seven source blob hashes. |
+| Validator tests | tests/governance-register.test.mjs exercises valid structure, missing mandatory fields, duplicate/out-of-order IDs and stale delivery baseline. GitHub Actions runs these tests before the source-pin validator. |
+| Workflow gate | .github/workflows/wp01-16-completion-verification.yml adds the mandatory WP-00 governance job; the combined release-candidate job requires it alongside backend, Angular and WP-01 source-package gates. Script and test paths are included in workflow path filters. |
+| CAP-002 boundary | 128 R3 IDs, 120 legacy GAR IDs and 231 draft edges remain preserved. Every edge remains DRAFT_REVIEW_REQUIRED; no semantic equivalence, supersession or retirement is inferred. CAP-004 remains dependency-held pending review. |
+| Candidate branches | Candidate PRs #13/#20/#23/#27/#29 were rechecked against current delivery; each remains open/draft with a stale base and is not mergeable. Their exact base/head SHAs and handling are in register §10. CAP-030 must consolidate migration numbering before any migration-bearing candidate integration. |
+| Verification status | PENDING EXACT-HEAD RUNS — branch prepared; no CAP-003 run is claimed yet. Close only after validator tests, source-pin verification, ERP CI and combined WP workflow pass on the final exact PR head and WP-00/WP-01 handovers point to the tested/merged SHA. |
+
+CAP-003 does not alter runtime business code, database schema, statutory rules, tenant/RLS policy or production data. CAP-003 implementation consists of governance control documentation, a deterministic validator, tests and CI enforcement. Professional/legal, finance, security and production-operation approval boundaries remain unchanged.
