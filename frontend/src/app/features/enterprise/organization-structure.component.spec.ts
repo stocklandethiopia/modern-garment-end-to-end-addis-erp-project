@@ -108,6 +108,12 @@ describe('OrganizationStructureComponent', () => {
     fixture.detectChanges();
     flushInitial(fixture);
 
+    const component = fixture.componentInstance;
+    expect(component.entityName(null)).toBe('Not assigned');
+    expect(component.siteName(null)).toBe('Not assigned');
+    expect(component.entityName('missing-entity')).toBe('Assigned');
+    expect(component.siteName('missing-site')).toBe('Assigned');
+
     const text = fixture.nativeElement.textContent as string;
     expect(text).toContain('Organization structure');
     expect(text).toContain('Factory Operations');
