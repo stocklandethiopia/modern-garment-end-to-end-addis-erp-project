@@ -121,7 +121,7 @@ Compare results against delivery SHA `3438ab47240c10ce5ea5f1f772c1570cc2191134`:
 | CAP | WP | Priority | Status at this ledger revision | Dependency / next gate |
 |---|---|---:|---|---|
 | CAP-001 | WP-00 | P0 | CLOSED / MERGED — exact PR-head ERP and WP checks passed; merge SHA and identical tree recorded | Closed on delivery merge `217aa9848e1499617aeab76d77349f4bb1805066`; separate delivery push run not asserted |
-| CAP-002 | WP-00/WP-01 | P0 | IN REVIEW — 128-R3/120-GAR draft candidate crosswalk, method, seven-column gzip data artifact and exact CI validator committed on dedicated WP-01 branch; PR-head checks pending | Review every candidate edge against both full requirement statements and acceptance boundaries; then run exact-head ERP CI plus configured WP-01 verification before merge/closure |
+| CAP-002 | WP-00/WP-01 | P0 | IN REVIEW — 128-R3/120-GAR draft candidate graph (231 edges), method, seven-column gzip data artifact and exact CI validator committed on dedicated WP-01 branch; PR-head checks pending | Review every candidate edge against both full requirement statements and acceptance boundaries; then run exact-head ERP CI plus configured WP-01 verification before merge/closure |
 | CAP-003 | WP-00 | P1 | NOT STARTED | Build decision/assumption/risk/exception register from accepted evidence |
 | CAP-004 | WP-01 | P0 | NOT STARTED | Depends on the CAP-002 canonical identity/alias crosswalk |
 | CAP-005 | WP-01 | P1 | NOT STARTED | Measurable NFR catalogue and verification methods |
@@ -181,8 +181,8 @@ The evidence above is tied only to SHA `31fc6068e29200651c42db75d996e7b4187e6933
 |---|---|
 | Objective | Preserve both requirement namespaces and establish a draft candidate relationship graph rather than treating 128 minus 120 as eight missing rows |
 | Baseline | Delivery SHA `217aa9848e1499617aeab76d77349f4bb1805066`; R3 source archive SHA-256 `44f69b36d6ed389633d4e305dacfa825fbdffb99d78cc903e3f050761811a6e7`; legacy GAR matrix blob `296897f5356461414761151050b29dd2d7815247` |
-| Crosswalk artifact | `docs/requirements/wp01-r3-gar-crosswalk-2026-11-28.tsv.gz`; gzip SHA-256 `8d6e9c384be8911d9d32b3e1ffa45274bb63b2a7ab40b8beda0f86992959bb24`; uncompressed TSV SHA-256 `74c7a93f69491cd9a7b8f718f2a070c53477bcb9cda5705aaa3a5f43352a5122` |
-| Proposed relationships | 128 R3 rows; 120 distinct legacy IDs; 169 candidate edges: 61 SPLIT, 47 PARTIAL, 18 CONSOLIDATED, 2 R3_ADDITION, 0 EXACT; labels describe graph topology only |
+| Crosswalk artifact | `docs/requirements/wp01-r3-gar-crosswalk-2026-11-28.tsv.gz`; gzip SHA-256 `2e5f368bc6b2675269a5ca99b75ff8890954194091c880721b14a51023de0bf3`; uncompressed TSV SHA-256 `5c485ab7dc4ddf5e48a754acfa1ae5857841b4e52bf36b3f43c06bfb6b3cd628` |
+| Proposed relationships | 128 R3 rows; 120 distinct legacy IDs; 231 candidate edges: 101 SPLIT, 16 PARTIAL, 9 CONSOLIDATED, 2 R3_ADDITION, 0 EXACT; labels describe graph topology only |
 | Scope safeguards | No ID deletion/renumbering, no requirement-text changes, no status transition; all canonical R3 implementation statuses remain `not_started` |
 | Source-package tests | Local rerun: source validator PASS; 20/20 Node tests PASS; strict audit A01–A10 and F01–F07 PASS |
 | Crosswalk-specific validation | Local dataset integrity PASS; repository validator `scripts/verify-wp01-r3-gar-crosswalk.mjs` is added to the WP-01 source-package job |
