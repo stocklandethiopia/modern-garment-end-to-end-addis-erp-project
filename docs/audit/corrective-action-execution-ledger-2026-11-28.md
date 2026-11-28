@@ -181,7 +181,7 @@ The evidence above is tied only to SHA `31fc6068e29200651c42db75d996e7b4187e6933
 |---|---|
 | Objective | Preserve both requirement namespaces and establish a reviewed semantic relationship model rather than treating 128 minus 120 as eight missing rows |
 | Baseline | Delivery SHA `217aa9848e1499617aeab76d77349f4bb1805066`; R3 source archive SHA-256 `44f69b36d6ed389633d4e305dacfa825fbdffb99d78cc903e3f050761811a6e7`; legacy GAR matrix blob `296897f5356461414761151050b29dd2d7815247` |
-| Crosswalk artifact | `docs/requirements/wp01-r3-gar-crosswalk-2026-11-28.tsv.gz`; gzip SHA-256 `3d8a617f95c5b5a391e9f3a0740f88608ce907913f675218255fa8f78a910832`; uncompressed TSV SHA-256 `f5cc4ff6c5accc93fdb4d6290b372faefbe5ec85146e9c8cdb4dbac884b48e70` |
+| Crosswalk artifact | `docs/requirements/wp01-r3-gar-crosswalk-2026-11-28.tsv.gz`; gzip SHA-256 `8d6e9c384be8911d9d32b3e1ffa45274bb63b2a7ab40b8beda0f86992959bb24`; uncompressed TSV SHA-256 `74c7a93f69491cd9a7b8f718f2a070c53477bcb9cda5705aaa3a5f43352a5122` |
 | Proposed relationships | 128 R3 rows; 120 distinct legacy IDs; 169 proposed links: 61 SPLIT, 47 PARTIAL, 18 CONSOLIDATED, 2 R3_ADDITION, 0 EXACT |
 | Scope safeguards | No ID deletion/renumbering, no requirement-text changes, no status transition; all canonical R3 implementation statuses remain `not_started` |
 | Source-package tests | Local rerun: source validator PASS; 20/20 Node tests PASS; strict audit A01–A10 and F01–F07 PASS |
