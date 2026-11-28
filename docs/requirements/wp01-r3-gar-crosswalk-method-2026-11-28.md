@@ -1,6 +1,6 @@
 # WP-01 R3 ↔ legacy GAR requirement crosswalk — engineering proposal
 
-**Status:** DRAFT — the semantic relationships are proposed for review; neither source register is replaced or retired.  
+**Status:** DRAFT — candidate associations and graph-shape labels are proposed for requirement-steward review; neither source register is replaced or retired.  
 **Work package:** WP-01, with source ownership distributed across WP-02–WP-16.  
 **Prepared:** 28 November 2026.  
 **Working baseline:** `delivery/autonomous-wp-01-16` at `217aa9848e1499617aeab76d77349f4bb1805066`.
@@ -13,7 +13,7 @@ The preserved repository matrix at `docs/requirements/requirements-traceability.
 
 This crosswalk preserves every R3 ID and every legacy GAR ID. It adds no new runtime capability, removes no approved scope, changes no requirement text and does not classify any requirement as implemented. R3 remains the stable canonical requirement namespace for the engineering traceability path; the legacy GAR identifiers are preserved as source aliases where a semantic relationship is proposed.
 
-## 2. Draft semantic relationship model
+## 2. Draft candidate relationship graph
 
 The file `wp01-r3-gar-crosswalk-2026-11-28.tsv.gz` has one row per R3 record and records its WP allocation, related legacy GAR IDs, relationship class, exact R3 acceptance-scenario ID, implementation status and review status. Its controlled seven-column TSV header is `r3_requirement_id`, `r3_work_package`, `legacy_gar_ids`, `match_classification`, `r3_acceptance_scenario_id`, `canonical_implementation_status`, and `review_status`. Multiple legacy IDs may be related to one R3 record, and one legacy GAR record may be represented across multiple R3 records. The initial candidate associations were built from the R3 requirement statements and bounded-context ownership against the legacy GAR register. A deterministic normalization then retained the strongest first candidate for each R3 row and added additional pre-identified candidate edges where needed so that every one of the 120 legacy GAR IDs retained at least one proposed relationship. This normalization improves coverage but does not prove semantic equivalence. The `match_classification` values below are provisional graph-shape labels derived from the current edge topology; they are not approved equivalence, supersession, retirement or implementation decisions. Each edge must be reviewed against both complete requirement statements, actors, triggers, workflow, data/evidence, authorization/control and acceptance boundaries.
 
@@ -25,7 +25,7 @@ The file `wp01-r3-gar-crosswalk-2026-11-28.tsv.gz` has one row per R3 record and
 | `PARTIAL` | A provisional relationship whose graph shape does not meet the split/consolidated rules; scope overlap and completeness still require human/domain-steward review. |
 | `R3_ADDITION` | R3 requirement has no direct legacy GAR predecessor and is preserved as additional canonical scope. |
 
-Current proposal counts: **61 SPLIT, 47 PARTIAL, 18 CONSOLIDATED, 2 R3_ADDITION, 0 EXACT** across 128 R3 records. These counts describe the current candidate graph topology and must not be interpreted as approved semantic classifications. The uncompressed TSV SHA-256 is `74c7a93f69491cd9a7b8f718f2a070c53477bcb9cda5705aaa3a5f43352a5122`; the repository gzip artifact SHA-256 is `8d6e9c384be8911d9d32b3e1ffa45274bb63b2a7ab40b8beda0f86992959bb24`. There are 169 proposed relationships. Both additions are explicit: `PLT-002` (subscription, plan limits and feature entitlements) and `DWR-006` (the controlled ERP evolution workflow). The inverse coverage check finds a proposed relationship for all 120 legacy GAR IDs; this is traceability coverage only, not proof that every legacy requirement is fully satisfied by its mapped R3 records.
+Current proposal counts: **61 SPLIT, 47 PARTIAL, 18 CONSOLIDATED, 2 R3_ADDITION, 0 EXACT** across 128 R3 records. These counts describe the current candidate graph topology and must not be interpreted as approved semantic classifications. The uncompressed TSV SHA-256 is `74c7a93f69491cd9a7b8f718f2a070c53477bcb9cda5705aaa3a5f43352a5122`; the repository gzip artifact SHA-256 is `8d6e9c384be8911d9d32b3e1ffa45274bb63b2a7ab40b8beda0f86992959bb24`. There are 169 candidate edges. Both additions are explicit: `PLT-002` (subscription, plan limits and feature entitlements) and `DWR-006` (the controlled ERP evolution workflow). The inverse coverage check finds a proposed relationship for all 120 legacy GAR IDs; this is traceability coverage only, not proof that every legacy requirement is fully satisfied by its mapped R3 records.
 
 ## 3. Control and non-claims
 
@@ -48,4 +48,4 @@ The GitHub WP-01–WP-16 verification workflow will run the crosswalk-specific v
 
 ## 5. CAP-002 exit conditions
 
-CAP-002 may be closed when the crosswalk is checked against the exact preserved R3 archive and legacy matrix, all 128 R3 records and all 120 legacy GAR IDs have an explicit and justified disposition, no unknown/duplicate/unmapped identifiers remain, the proposed semantic relationships have been reviewed under the delegated WP-01 acceptance authority, and exact-head ERP/WP verification passes. Any later material scope retirement still requires explicit Product Owner approval. CAP-004 must then extend the approved crosswalk to owners, WP tasks, source paths, data tables, migrations, APIs, UI, events, tests, evidence and runbooks.
+CAP-002 may be closed when the crosswalk is checked against the exact preserved R3 archive and legacy matrix, all 128 R3 records and all 120 legacy GAR IDs have an explicit and justified disposition, no unknown/duplicate/unmapped identifiers remain, each candidate edge has been reviewed against both complete requirement statements under the delegated WP-01 acceptance authority, and exact-head ERP/WP verification passes. Any later material scope retirement still requires explicit Product Owner approval. CAP-004 must then extend the approved crosswalk to owners, WP tasks, source paths, data tables, migrations, APIs, UI, events, tests, evidence and runbooks.
