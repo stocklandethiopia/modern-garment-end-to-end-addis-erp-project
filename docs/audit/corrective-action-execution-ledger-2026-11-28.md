@@ -121,7 +121,7 @@ Compare results against delivery SHA `3438ab47240c10ce5ea5f1f772c1570cc2191134`:
 | CAP | WP | Priority | Status at this ledger revision | Dependency / next gate |
 |---|---|---:|---|---|
 | CAP-001 | WP-00 | P0 | CLOSED / MERGED — exact PR-head ERP and WP checks passed; merge SHA and identical tree recorded | Closed on delivery merge `217aa9848e1499617aeab76d77349f4bb1805066`; separate delivery push run not asserted |
-| CAP-002 | WP-00/WP-01 | P0 | IN REVIEW — 128-R3/120-GAR draft semantic crosswalk, method, gzip data artifact and exact CI validator committed on dedicated WP-01 branch; PR-head checks pending | Review semantic relationships and run exact-head ERP CI plus configured WP-01 verification before merge/closure |
+| CAP-002 | WP-00/WP-01 | P0 | IN REVIEW — 128-R3/120-GAR draft candidate crosswalk, method, seven-column gzip data artifact and exact CI validator committed on dedicated WP-01 branch; PR-head checks pending | Review semantic relationships and run exact-head ERP CI plus configured WP-01 verification before merge/closure |
 | CAP-003 | WP-00 | P1 | NOT STARTED | Build decision/assumption/risk/exception register from accepted evidence |
 | CAP-004 | WP-01 | P0 | NOT STARTED | Depends on the CAP-002 canonical identity/alias crosswalk |
 | CAP-005 | WP-01 | P1 | NOT STARTED | Measurable NFR catalogue and verification methods |
@@ -179,14 +179,14 @@ The evidence above is tied only to SHA `31fc6068e29200651c42db75d996e7b4187e6933
 
 | Field | Current evidence |
 |---|---|
-| Objective | Preserve both requirement namespaces and establish a reviewed semantic relationship model rather than treating 128 minus 120 as eight missing rows |
+| Objective | Preserve both requirement namespaces and establish a draft candidate relationship graph rather than treating 128 minus 120 as eight missing rows |
 | Baseline | Delivery SHA `217aa9848e1499617aeab76d77349f4bb1805066`; R3 source archive SHA-256 `44f69b36d6ed389633d4e305dacfa825fbdffb99d78cc903e3f050761811a6e7`; legacy GAR matrix blob `296897f5356461414761151050b29dd2d7815247` |
 | Crosswalk artifact | `docs/requirements/wp01-r3-gar-crosswalk-2026-11-28.tsv.gz`; gzip SHA-256 `8d6e9c384be8911d9d32b3e1ffa45274bb63b2a7ab40b8beda0f86992959bb24`; uncompressed TSV SHA-256 `74c7a93f69491cd9a7b8f718f2a070c53477bcb9cda5705aaa3a5f43352a5122` |
-| Proposed relationships | 128 R3 rows; 120 distinct legacy IDs; 169 proposed links: 61 SPLIT, 47 PARTIAL, 18 CONSOLIDATED, 2 R3_ADDITION, 0 EXACT |
+| Proposed relationships | 128 R3 rows; 120 distinct legacy IDs; 169 candidate edges: 61 SPLIT, 47 PARTIAL, 18 CONSOLIDATED, 2 R3_ADDITION, 0 EXACT; labels describe graph topology only |
 | Scope safeguards | No ID deletion/renumbering, no requirement-text changes, no status transition; all canonical R3 implementation statuses remain `not_started` |
 | Source-package tests | Local rerun: source validator PASS; 20/20 Node tests PASS; strict audit A01–A10 and F01–F07 PASS |
 | Crosswalk-specific validation | Local dataset integrity PASS; repository validator `scripts/verify-wp01-r3-gar-crosswalk.mjs` is added to the WP-01 source-package job |
 | Current disposition | **IN REVIEW** — draft crosswalk, method and CI wiring are on `work/wp01-cap-002-requirement-crosswalk-2026-11-28`; exact PR-head verification pending |
 
-CAP-002 remains open until the exact PR-head validator and required ERP/WP checks pass, the semantic relationships are reviewed under delegated WP-01 acceptance, and the WP handover is refreshed with exact run/commit evidence. CAP-004 depends on this identity/alias model.
+CAP-002 remains open until the exact PR-head validator and required ERP/WP checks pass, each candidate edge is reviewed against both complete requirements under delegated WP-01 acceptance, and the WP handover is refreshed with exact run/commit evidence. CAP-004 depends on this identity/alias model.
 
