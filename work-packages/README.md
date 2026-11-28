@@ -35,3 +35,7 @@ Every WP map must be completed with: source path and provenance, target code/sch
 
 **Canonical integration branch:** `delivery/autonomous-wp-01-16`.  
 **Production promotion branch:** `main` only after WP-16 and accountable release authorization.  
+
+
+## Detailed legacy table migration map
+The complete 45-table legacy SQLite-to-canonical PostgreSQL disposition, including source column inventory, target WP, existing schema equivalents, missing subledgers and data-migration controls, is recorded in `docs/audit/stockland-v0.3-45-table-port-disposition-2026-11-28.md`. Do not create or import a generic 45-table clone; implement the decomposed domain models and acceptance gates in the WP maps.
