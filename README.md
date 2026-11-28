@@ -48,7 +48,7 @@ Exact supported patch versions are recorded in the platform standard and must be
 ## Application foundation and verified integration delivery
 
 **Canonical integration branch:** `delivery/autonomous-wp-01-16`  
-**Latest integrated commit:** `bd41c83e141835db3c0f03ac8d711096728a07b4`  
+**Latest canonical delivery commit:** `3438ab47240c10ce5ea5f1f772c1570cc2191134`  
 **Latest WP-03 integration:** [PR #9 — platform lifecycle and entitlement foundation](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/pull/9), merged into delivery at `bd41c83e141835db3c0f03ac8d711096728a07b4`.  
 **Default branch:** `main` remains unchanged.
 
@@ -61,7 +61,7 @@ Combined candidate artifact: `modern-garment-addis-erp-wp01-wp16-candidate`, ID 
 
 The repository now contains Laravel backend foundations and candidate services/migrations for enterprise identity, platform tenant lifecycle/entitlements, merchandising, PLM, IE, sourcing/material genealogy, route/MES execution, quality/CAPA, distribution, finance/payroll review, documents/integrations and governed agents. Angular executable user journeys are currently concentrated in authentication, enterprise setup, merchandising and initial product development. See the [application folder/code map](docs/architecture/application-folder-code-map.md) for exact file paths.
 
-**Current execution checkpoint:** WP-03 remains the active package. The tenant lifecycle/platform entitlement foundation is integrated on delivery at `bd41c83e141835db3c0f03ac8d711096728a07b4` after exact-head verification (93 backend tests / 1,079 assertions, 27 Angular tests, PostgreSQL 18 migrations/forced RLS and combined candidate artifact). The separate platform tenant-register read audit is the next WP-03 increment on `agent/chatgpt-wp03-continuation-2026-11-27` and still requires exact-head CI. Remaining work includes tenant export/retention/legal hold/recovery, platform grant expiry/revocation, feature-gate enforcement, scoped roles/target checks, MFA/OIDC/SSO, invitation/domain-role/ownership UI, operator bootstrap/recovery and full acceptance evidence. Owner succession, one-active-owner protection and safe voluntary leave are merged and CI-verified.
+**Current corrective-action checkpoint:** Wave 0 is active. CAP-001 is being executed on `work/wp00-cap-001-evidence-ledger-2026-11-28`, created from canonical delivery SHA `3438ab47240c10ce5ea5f1f772c1570cc2191134`. The CAP ledger at `docs/audit/corrective-action-execution-ledger-2026-11-28.md` records the live PR/branch inventory, candidate migration collisions, exact-SHA evidence and next dependency. CAP-002 is next only after CAP-001's final exact-head CI and WP/source verification pass. The WP-03 platform lifecycle/entitlement foundation integrated by PR #9 at `bd41c83e141835db3c0f03ac8d711096728a07b4` remains historical verified functionality; WP-03 is still partial, and its open candidates are not integrated. See `docs/work-packages/handover-register.md` for current numbered handover.
 
 **Release wording:** successful CI is technical evidence for the exact checks and SHA only. It does not mean WP-01–WP-16 are all complete. Full factory/store/customer E2E, independent security review, production concurrency/load/soak, backup/restore/DR/rollback, external integration UAT, professional/statutory sign-offs, staging/UAT and accountable production deployment remain WP-16 gates. No production release is claimed.
 
