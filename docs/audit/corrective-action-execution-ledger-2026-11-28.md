@@ -3,14 +3,14 @@
 **Project:** Modern Garment End-to-End Addis ERP  
 **Record date:** 28 November 2026  
 **Control item:** CAP-001–CAP-030 — sequenced corrective-action execution ledger  
-**Working branch:** `work/wp01-cap-002-requirement-crosswalk-2026-11-28`  
-**Canonical delivery baseline after CAP-001:** `delivery/autonomous-wp-01-16` at `217aa9848e1499617aeab76d77349f4bb1805066`  
+**Working branch:** `work/wp01-cap-002-evidence-closeout-2026-11-28` (WP-01 evidence/handover refresh)  
+**Canonical delivery baseline after CAP-002 integration:** `delivery/autonomous-wp-01-16` at `bc442495df842f8fb06ae8b8d540145c69155023`  
 **Default branch:** `main` at `adca71a053290eb768987a7644d4b13c267cf2a9`  
 **Master audit:** [PR #30](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/pull/30), audit head `12707a51a76c51110d07e9d4375eac1c2ec37d60`.
 
 ## 1. Control and evidence rules
 
-This ledger operationalizes CAP-001 and is the current index for the subsequent CAP actions. The full action definitions, exit conditions, WP-level gap details and dependency waves remain in the [WP-00–WP-16 master reconciliation audit](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/blob/audit/wp00-wp16-master-reconciliation-2026-11-28/docs/audit/wp00-wp16-master-reconciliation-audit-2026-11-28.md).
+This ledger records the ordered CAP-001–CAP-030 execution sequence and is the current index for implementation, evidence and handover status. The full action definitions, exit conditions, WP-level gap details and dependency waves remain in the [WP-00–WP-16 master reconciliation audit](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/blob/audit/wp00-wp16-master-reconciliation-2026-11-28/docs/audit/wp00-wp16-master-reconciliation-audit-2026-11-28.md).
 
 - A branch, PR, source file, migration or artifact is not proof that its change is integrated or accepted.
 - A CI result is bound to the exact SHA and workflow run. Never transfer a PASS to another commit.
@@ -121,9 +121,9 @@ Compare results against delivery SHA `3438ab47240c10ce5ea5f1f772c1570cc2191134`:
 | CAP | WP | Priority | Status at this ledger revision | Dependency / next gate |
 |---|---|---:|---|---|
 | CAP-001 | WP-00 | P0 | CLOSED / MERGED — exact PR-head ERP and WP checks passed; merge SHA and identical tree recorded | Closed on delivery merge `217aa9848e1499617aeab76d77349f4bb1805066`; separate delivery push run not asserted |
-| CAP-002 | WP-00/WP-01 | P0 | IN REVIEW — 128-R3/120-GAR draft candidate graph (231 edges), method, seven-column gzip data artifact and exact CI validator committed on dedicated WP-01 branch; PR-head checks pending | Review every candidate edge against both full requirement statements and acceptance boundaries; then run exact-head ERP CI plus configured WP-01 verification before merge/closure |
+| CAP-002 | WP-00/WP-01 | P0 | INTEGRATED — PR #32 merged at `bc442495df842f8fb06ae8b8d540145c69155023`; exact-head ERP, combined WP and WP-01 source-package checks PASS; semantic association review OPEN | Review all 231 candidate associations against full requirement statements and acceptance boundaries; preserve DRAFT_REVIEW_REQUIRED until decision evidence is recorded. CAP-004 depends on approved identity/alias mappings |
 | CAP-003 | WP-00 | P1 | NOT STARTED | Build decision/assumption/risk/exception register from accepted evidence |
-| CAP-004 | WP-01 | P0 | NOT STARTED | Depends on the CAP-002 canonical identity/alias crosswalk |
+| CAP-004 | WP-01 | P0 | NOT STARTED — dependency held | Start only after CAP-002 semantic review approves the identity/alias relationships; then trace every R3 ID to owners, tasks, code, data and tests |
 | CAP-005 | WP-01 | P1 | NOT STARTED | Measurable NFR catalogue and verification methods |
 | CAP-006 | WP-02 | P0 | NOT STARTED | Official primary source bytes, dates, hashes and authority inventory |
 | CAP-007 | WP-02/WP-13/WP-14 | P0 | NOT STARTED | Effective-dated configurable statutory rules; qualified Ethiopian review before activation |
@@ -186,7 +186,20 @@ The evidence above is tied only to SHA `31fc6068e29200651c42db75d996e7b4187e6933
 | Scope safeguards | No ID deletion/renumbering, no requirement-text changes, no status transition; all canonical R3 implementation statuses remain `not_started` |
 | Source-package tests | Local rerun: source validator PASS; 20/20 Node tests PASS; strict audit A01–A10 and F01–F07 PASS |
 | Crosswalk-specific validation | Local dataset integrity PASS; repository validator `scripts/verify-wp01-r3-gar-crosswalk.mjs` is added to the WP-01 source-package job |
-| Current disposition | **IN REVIEW** — draft crosswalk, method and CI wiring are on `work/wp01-cap-002-requirement-crosswalk-2026-11-28`; exact PR-head verification pending |
+| Current disposition | **INTEGRATED / AUTOMATED VERIFICATION PASS; SEMANTIC REVIEW OPEN** — PR #32 merged at `bc442495df842f8fb06ae8b8d540145c69155023`; exact tested tree and merge tree match; every proposed association remains draft pending requirement-level review |
 
-CAP-002 remains open until the exact PR-head validator and required ERP/WP checks pass, each candidate edge is reviewed against both complete requirements under delegated WP-01 acceptance, and the WP handover is refreshed with exact run/commit evidence. CAP-004 depends on this identity/alias model.
+The exact PR-head validator, ERP CI, combined WP verification and dedicated WP-01 source-package checks have now passed; PR #32 is integrated at `bc442495df842f8fb06ae8b8d540145c69155023`, with the same tree as tested head `6e8788be6849a78115ee138eb68a607cbaea1c03`. CAP-002 remains open only for semantic review of all proposed associations and the recorded acceptance decision. CAP-004 depends on that semantic identity/alias disposition.
 
+
+
+## 8. CAP-002 exact-head verification and delivery integration — 28 November 2026
+
+- PR: [#32 — docs(WP-01): reconcile R3 and legacy GAR requirement identities](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/pull/32); state MERGED.
+- Tested candidate SHA: `6e8788be6849a78115ee138eb68a607cbaea1c03`.
+- Delivery merge SHA: `bc442495df842f8fb06ae8b8d540145c69155023`.
+- Candidate Git tree and merge Git tree: `404363a4c89638019a6379500d95da7a89481a95` (identical).
+- ERP CI [#46154426395](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/46154426395): SUCCESS. Job logs: 93 Laravel tests / 1,081 assertions; 27 Angular tests / 7 spec files; PostgreSQL migrations/RLS, PHP format/syntax, dependency checks and Angular production build passed.
+- Combined WP verification [#46154426366](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/46154426366): SUCCESS; all four jobs passed. Includes WP-01 archive verification, crosswalk validator and combined artifact assembly.
+- Dedicated WP-01 source verification [#46154426369](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/46154426369): SUCCESS; source archive/checksum validation, 20/20 tests and strict audits A01–A10/F01–F07 passed.
+- CAP-002 state: automated source/graph-integrity implementation integrated and verified; semantic review of the 231 proposed associations remains OPEN. All candidate edges remain `DRAFT_REVIEW_REQUIRED`; the 128 R3 implementation flags remain `not_started`; all 120 legacy GAR IDs are preserved.
+- CAP-003 is the next independent WP-00 action; CAP-004 remains gated by CAP-002 semantic review.
