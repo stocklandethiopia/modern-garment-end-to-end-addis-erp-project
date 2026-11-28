@@ -33,7 +33,7 @@ class DomainRlsSecurityTest extends TestCase
             'integration_outbox_events', 'agent_run_audits', 'agent_action_proposals',
             'agent_approval_decisions', 'agent_action_events', 'device_scan_events',
             'receipt_line_material_lots', 'finished_goods_lots', 'finished_goods_transactions',
-            'finished_goods_reservations', 'finance_journal_postings', 'finance_journal_reversals', 'customer_credit_decisions', 'tenant_domain_role_assignments',
+            'finished_goods_reservations', 'finance_journal_postings', 'finance_journal_reversals', 'customer_credit_decisions', 'tenant_domain_role_assignments', 'platform_operator_grants', 'platform_tenant_entitlements', 'platform_audit_events',
         ];
 
         foreach ($tables as $table) {
@@ -47,6 +47,37 @@ class DomainRlsSecurityTest extends TestCase
             self::assertNotNull($row, "Expected tenant-owned table {$table} to exist.");
             self::assertTrue((bool) $row->enabled, "RLS is not enabled on {$table}.");
             self::assertTrue((bool) $row->forced, "RLS is not forced on {$table}.");
+        }
+    }
+
+    public function test_every_tenant_owned_table_has_forced_rls(): void
+    {
+        if (DB::connection()->getDriverName() !== 'pgsql') {
+            $this->markTestSkipped('PostgreSQL RLS inventory verification requires PostgreSQL.');
+        }
+
+        $tables = DB::connection('pgsql_test_admin')->select(<<<'SQL'
+SELECT c.relname, c.relrowsecurity, c.relforcerowsecurity
+  FROM pg_class c
+  JOIN pg_namespace n ON n.oid = c.relnamespace
+ WHERE n.nspname = 'public'
+   AND c.relkind IN ('r', 'p')
+   AND EXISTS (
+       SELECT 1
+         FROM pg_attribute a
+        WHERE a.attrelid = c.oid
+          AND a.attname = 'tenant_id'
+          AND a.attnum > 0
+          AND NOT a.attisdropped
+   )
+ ORDER BY c.relname
+SQL);
+
+        self::assertNotEmpty($tables, 'The database must contain tenant-owned tables for the RLS inventory.');
+
+        foreach ($tables as $table) {
+            self::assertTrue((bool) $table->relrowsecurity, $table->relname.' must enable RLS.');
+            self::assertTrue((bool) $table->relforcerowsecurity, $table->relname.' must force RLS.');
         }
     }
 
