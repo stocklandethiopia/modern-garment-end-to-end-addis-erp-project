@@ -15,7 +15,7 @@ This crosswalk preserves every R3 ID and every legacy GAR ID. It adds no new run
 
 ## 2. Draft semantic relationship model
 
-The file `wp01-r3-gar-crosswalk-2026-11-28.tsv.gz` has one row per R3 record and records its WP allocation, related legacy GAR IDs, relationship class, exact R3 acceptance-scenario ID, implementation status and review status. Multiple legacy IDs may be related to one R3 record, and one legacy GAR record may be represented across multiple R3 records. Links were assessed by business outcome, actors, trigger, workflow, data/evidence, authorization/control and package allocation—not by matching prefixes or numeric suffixes.
+The file `wp01-r3-gar-crosswalk-2026-11-28.tsv.gz` has one row per R3 record and records its WP allocation, related legacy GAR IDs, relationship class, exact R3 acceptance-scenario ID, implementation status and review status. Its controlled seven-column TSV header is `r3_requirement_id`, `r3_work_package`, `legacy_gar_ids`, `match_classification`, `r3_acceptance_scenario_id`, `canonical_implementation_status`, and `review_status`. Multiple legacy IDs may be related to one R3 record, and one legacy GAR record may be represented across multiple R3 records. Links were assessed by business outcome, actors, trigger, workflow, data/evidence, authorization/control and package allocation—not by matching prefixes or numeric suffixes.
 
 | Class | Meaning |
 |---|---|
@@ -25,7 +25,7 @@ The file `wp01-r3-gar-crosswalk-2026-11-28.tsv.gz` has one row per R3 record and
 | `PARTIAL` | The requirements overlap, but one is broader, narrower or has different actors, controls, data/evidence or acceptance boundaries. |
 | `R3_ADDITION` | R3 requirement has no direct legacy GAR predecessor and is preserved as additional canonical scope. |
 
-Current proposal counts: **61 SPLIT, 47 PARTIAL, 18 CONSOLIDATED, 2 R3_ADDITION, 0 EXACT** across 128 R3 records. The uncompressed TSV SHA-256 is `f5cc4ff6c5accc93fdb4d6290b372faefbe5ec85146e9c8cdb4dbac884b48e70`; the repository gzip artifact SHA-256 is `3d8a617f95c5b5a391e9f3a0740f88608ce907913f675218255fa8f78a910832`. There are 169 proposed relationships. Both additions are explicit: `PLT-002` (subscription, plan limits and feature entitlements) and `DWR-006` (the controlled ERP evolution workflow). The inverse coverage check finds a proposed relationship for all 120 legacy GAR IDs; this is traceability coverage only, not proof that every legacy requirement is fully satisfied by its mapped R3 records.
+Current proposal counts: **61 SPLIT, 47 PARTIAL, 18 CONSOLIDATED, 2 R3_ADDITION, 0 EXACT** across 128 R3 records. The uncompressed TSV SHA-256 is `74c7a93f69491cd9a7b8f718f2a070c53477bcb9cda5705aaa3a5f43352a5122`; the repository gzip artifact SHA-256 is `8d6e9c384be8911d9d32b3e1ffa45274bb63b2a7ab40b8beda0f86992959bb24`. There are 169 proposed relationships. Both additions are explicit: `PLT-002` (subscription, plan limits and feature entitlements) and `DWR-006` (the controlled ERP evolution workflow). The inverse coverage check finds a proposed relationship for all 120 legacy GAR IDs; this is traceability coverage only, not proof that every legacy requirement is fully satisfied by its mapped R3 records.
 
 ## 3. Control and non-claims
 
