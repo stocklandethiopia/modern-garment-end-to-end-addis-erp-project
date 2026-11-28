@@ -17,7 +17,7 @@
 | `source-intake/stockland-garment-erp-local-v0.3.0/source/` | Preserved original application source and artifacts | Historical source/reference only |
 
 ## Actual domain-to-code locations
-- WP-03 tenant/identity and org structure: `backend/app/Http/Controllers/Enterprise/`, `backend/app/Services/{Tenant,Authorization,Enterprise}/`, `backend/app/Http/Middleware/`, `backend/database/migrations/2026_11_27_000035_create_organization_structure_masters.php` (candidate PR #29), `backend/tests/Feature/EnterpriseOrganizationStructureTest.php`, `frontend/src/app/features/{auth,enterprise}/` and route `/enterprise/organization-structure`.
+- WP-03 requirement/acceptance ledger: `docs/verification/WP03-implementation-acceptance-matrix.md`.\n- WP-03 tenant/identity and org structure: `backend/app/Http/Controllers/Enterprise/`, `backend/app/Services/{Tenant,Authorization,Enterprise}/`, `backend/app/Http/Middleware/`, `backend/database/migrations/2026_11_27_000035_create_organization_structure_masters.php` (candidate PR #29), `backend/tests/Feature/EnterpriseOrganizationStructureTest.php`, `frontend/src/app/features/{auth,enterprise}/` and route `/enterprise/organization-structure`.
 - WP-04 merchandising: `backend/app/Http/Controllers/Merchandising/`, `backend/app/Services/Merchandising/`, `frontend/src/app/features/merchandising/`.
 - WP-05 PLM: `backend/app/Http/Controllers/ProductDevelopment/`, `backend/app/Services/ProductDevelopment/`, `frontend/src/app/features/product-development/`.
 - WP-06/WP-10 IE: `backend/app/Http/Controllers/Planning/`, `backend/app/Services/Planning/`.
