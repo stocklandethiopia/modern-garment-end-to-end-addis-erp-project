@@ -18,7 +18,7 @@ test('governance register contains the complete, uniquely numbered control recor
 });
 
 test('governance validator rejects a missing mandatory decision field', () => {
-  const originalRow = register.split(/\\r?\\n/).find(line => line.startsWith('| D-0001 |'));
+  const originalRow = register.split('\n').find(line => line.startsWith('| D-0001 |'));
   assert.ok(originalRow);
   const cells = originalRow.split('|');
   cells[3] = ' ';

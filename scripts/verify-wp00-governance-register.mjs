@@ -90,7 +90,8 @@ export function validateRegisterText(markdown) {
   const errors = [];
   const counts = {};
   const allIds = [];
-  const baselineMatch = markdown.match(/^\\*\\*Canonical baseline:\\*\\*.*?([0-9a-f]{40})/m);
+  const canonicalLine = markdown.split('\n').find(line => line.startsWith('**Canonical baseline:**'));
+  const baselineMatch = canonicalLine ? canonicalLine.match(/[0-9a-f]{40}/) : null;
   if (!baselineMatch || baselineMatch[1] !== DELIVERY_BASELINE) {
     errors.push('canonical delivery baseline does not match ' + DELIVERY_BASELINE);
   }
