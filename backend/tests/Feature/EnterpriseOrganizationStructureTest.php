@@ -138,6 +138,7 @@ class EnterpriseOrganizationStructureTest extends TestCase
             'unit_type' => 'DEPARTMENT',
             'legal_entity_id' => $this->legalEntityA,
             'valid_from' => '2026-01-01',
+            'reason' => 'Create an organizational unit for the approved operating model.',
         ], $overrides);
 
         $response = $this->postJson('/api/v1/enterprise/organization-units', $payload);
@@ -156,6 +157,7 @@ class EnterpriseOrganizationStructureTest extends TestCase
             'position_class' => 'MANAGEMENT',
             'valid_from' => '2026-01-01',
             'valid_to' => '2026-12-31',
+            'reason' => 'Create a vacant-capable job position for the approved operating model.',
         ]);
         $response->assertCreated();
 
@@ -185,6 +187,7 @@ class EnterpriseOrganizationStructureTest extends TestCase
             'legal_entity_id' => $this->legalEntityA,
             'business_site_id' => $this->siteA,
             'valid_from' => '2026-01-01',
+            'reason' => 'Establish the Factory Operations unit for the approved operating structure.',
         ])->assertCreated()
             ->assertJsonPath('data.unit_code', 'FACTORY-OPS')
             ->assertJsonPath('data.status', 'ACTIVE');
@@ -203,6 +206,7 @@ class EnterpriseOrganizationStructureTest extends TestCase
             'tenant_id' => $this->tenantA,
             'action' => 'ORGANIZATION_UNIT_CREATED',
             'object_id' => $unitId,
+            'reason' => 'Establish the Factory Operations unit for the approved operating structure.',
         ], 'pgsql_test_admin');
 
         $this->assertDatabaseHas('integration_outbox_events', [
@@ -277,6 +281,7 @@ class EnterpriseOrganizationStructureTest extends TestCase
             'job_family' => 'OPERATIONS',
             'position_class' => 'MANAGEMENT',
             'valid_from' => '2026-01-01',
+            'reason' => 'Attempt a prohibited identity link on the position slot.',
             'user_id' => $this->ownerA,
         ])->assertUnprocessable();
 
@@ -445,6 +450,7 @@ class EnterpriseOrganizationStructureTest extends TestCase
             'position_code' => 'CROSS-TENANT-POS',
             'title' => 'Cross tenant position',
             'valid_from' => '2026-01-01',
+            'reason' => 'Attempt to bind a position to an organizational unit in another tenant.',
         ])->assertUnprocessable();
 
         $this->assertDatabaseMissing('job_positions', [
