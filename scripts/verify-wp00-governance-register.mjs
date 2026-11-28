@@ -12,7 +12,7 @@ export const SOURCE_PINS = [
   ['docs/architecture/platform-standard.md', '6545f740b26226fd524ae0fa62576b2a5c1e86ba'],
   ['docs/engineering/code-quality.md', '56d48713f20e6dbd6bbb9bf3405a075d6b534356'],
   ['docs/security/saas-security.md', '305a0c34738e20607868e760cdcd976847af9781'],
-  ['docs/engineering/development-deployment.md', 'c77af400eb1022696c654d6d30601eaa05882757'],
+  ['docs/engineering/development-deployment.md', 'c77af400eb1022696c654d6e30601eaa05882757'],
   ['docs/release/end-to-end-acceptance-security-deployment.md', 'ec0282421cad015f7a3ae113cfaba20c7db65266']
 ];
 
@@ -93,7 +93,7 @@ export function validateRegisterText(markdown) {
   const allIds = [];
   const canonicalLine = markdown.split('\n').find(line => line.startsWith('**Canonical baseline:**'));
   const baselineMatch = canonicalLine ? canonicalLine.match(/[0-9a-f]{40}/) : null;
-  if (!baselineMatch || baselineMatch[1] !== DELIVERY_BASELINE) {
+  if (!baselineMatch || baselineMatch[0] !== DELIVERY_BASELINE) {
     errors.push('canonical delivery baseline does not match ' + DELIVERY_BASELINE);
   }
 
