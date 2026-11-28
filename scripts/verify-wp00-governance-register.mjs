@@ -7,16 +7,16 @@ const registerPath = 'docs/governance/decision-assumption-risk-exception-registe
 const register = fs.readFileSync(path.join(root, registerPath), 'utf8');
 const fail = message => { console.error('FAIL WP-00 governance register: ' + message); process.exit(1); };
 
-const expected = {
-  'D-': 13,
-  'A-': 8,
-  'R-': 12,
-  'E-': 6
-};
+const patterns = [
+  [/^\| (D-\d{4}) \|/gm, 13, 'decision'],
+  [/^\| (A-\d{4}) \|/gm, 8, 'assumption'],
+  [/^\| (R-\d{4}) \|/gm, 12, 'risk'],
+  [/^\| (E-\d{4}) \|/gm, 6, 'exception']
+];
 const ids = [];
-for (const [prefix, count] of Object.entries(expected)) {
-  const found = [...register.matchAll(new RegExp('^\\\\| (' + prefix.replace('-', '\\\\-') + '\\\\d{4}) \\\\|', 'gm'))].map(match => match[1]);
-  if (found.length !== count) fail(prefix + ' record count: expected ' + count + ', found ' + found.length);
+for (const [pattern, expectedCount, label] of patterns) {
+  const found = [...register.matchAll(pattern)].map(match => match[1]);
+  if (found.length !== expectedCount) fail(label + ' count: expected ' + expectedCount + ', found ' + found.length);
   ids.push(...found);
 }
 if (new Set(ids).size !== ids.length) fail('register IDs are not globally unique');
@@ -62,9 +62,9 @@ for (const [relative, expectedSha] of sourceFiles) {
   const absolute = path.join(root, relative);
   if (!fs.existsSync(absolute)) fail('source evidence file missing: ' + relative);
   const bytes = fs.readFileSync(absolute);
+  const header = Buffer.from('blob ' + bytes.length + '\0', 'utf8');
   const actual = crypto.createHash('sha1')
-    .update('blob ' + bytes.length + '\\0', 'utf8')
-    .update(bytes)
+    .update(Buffer.concat([header, bytes]))
     .digest('hex');
   if (actual !== expectedSha) fail('source blob SHA mismatch for ' + relative + ': expected ' + expectedSha + ', found ' + actual);
 }
@@ -79,8 +79,7 @@ for (const value of expectedStatuses) {
   if (!register.includes(value)) fail('CAP checkpoint stale or missing: ' + value);
 }
 
-const lines = register.split(/\r?\n/);
-const records = lines.filter(line => /^\| [DARE]-\d{4} \|/.test(line));
+const records = register.split(/\r?\n/).filter(line => /^\| [DARE]-\d{4} \|/.test(line));
 if (records.some(line => !line.endsWith('|'))) fail('one or more governance record rows are not complete Markdown table rows');
 
 console.log('PASS WP-00 governance register integrity');
