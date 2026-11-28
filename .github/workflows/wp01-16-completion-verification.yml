@@ -20,6 +20,8 @@ on:
       - 'frontend/**'
       - 'work-packages/**'
       - 'docs/**'
+      - 'scripts/**'
+      - 'tests/**'
       - '.github/workflows/wp01-16-completion-verification.yml'
   workflow_dispatch:
 

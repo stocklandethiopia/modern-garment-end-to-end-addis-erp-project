@@ -18,10 +18,11 @@ test('governance register contains the complete, uniquely numbered control recor
 });
 
 test('governance validator rejects a missing mandatory decision field', () => {
-  const corrupted = register.replace(
-    'Product Owner acceptance of WP-00 on 22 Nov 2026;',
-    ''
-  );
+  const originalRow = register.split(/\\r?\\n/).find(line => line.startsWith('| D-0001 |'));
+  assert.ok(originalRow);
+  const cells = originalRow.split('|');
+  cells[3] = ' ';
+  const corrupted = register.replace(originalRow, cells.join('|'));
   assert.notEqual(corrupted, register);
   assert.ok(validateRegisterText(corrupted).errors.some(error => error.includes('empty required field')));
 });
