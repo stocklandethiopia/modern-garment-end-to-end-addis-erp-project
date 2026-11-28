@@ -576,7 +576,7 @@ class EnterpriseOrganizationStructureTest extends TestCase
     {
         $migration = require database_path('migrations/2026_11_27_000035_create_organization_structure_masters.php');
 
-        $this->expectException(\\RuntimeException::class);
+        $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Migration 000035 is forward-only');
 
         $migration->down();
