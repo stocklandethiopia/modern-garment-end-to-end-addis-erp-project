@@ -108,3 +108,7 @@ ChatGPT Memory is conversational personalization/context, not the ERP database. 
 5. WP-16 remains open for full end-to-end, security, performance, backup/restore, staging/UAT, rollback and approved release.
 
 **No new external source upload was requested or performed.** The next work should be analysis, implementation, reconciliation and verification of the already committed material.
+
+
+## 8. Detailed 45-table source port map
+The exact 45 table names, source columns, canonical destination domains, analogs already present, missing schema/workflows and data conversion controls are documented in `docs/audit/stockland-v0.3-45-table-port-disposition-2026-11-28.md`. This table-level crosswalk must be used when implementing the collected schema; it prohibits a direct single-company SQLite schema clone.
