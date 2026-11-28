@@ -22,5 +22,14 @@ R3 declares 128 requirements across 24 bounded contexts, 45 candidate-source map
 - `frontend/src/app/features/{domain}/`
 - `backend/tests/Feature/`, `backend/tests/Unit/`, `frontend/src/app/**/*.spec.ts`
 
+## CAP-002 — R3 ↔ legacy GAR identity reconciliation
+
+- Preserved R3 archive SHA-256: `44f69b36d6ed389633d4e305dacfa825fbdffb99d78cc903e3f050761811a6e7`; source facts: 128 requirements, 24 bounded contexts, 45 candidate-source mappings, 20 package tests.
+- Preserved legacy GAR inventory: 120 unique IDs across 13 prefixes. This is a distinct earlier identifier register, not a one-to-one count expectation for R3.
+- Draft relationship artifact: `docs/requirements/wp01-r3-gar-crosswalk-2026-11-28.tsv.gz`; uncompressed SHA-256 `f5cc4ff6c5accc93fdb4d6290b372faefbe5ec85146e9c8cdb4dbac884b48e70`; gzip SHA-256 `3d8a617f95c5b5a391e9f3a0740f88608ce907913f675218255fa8f78a910832`.
+- Proposal: 169 links; 61 SPLIT, 47 PARTIAL, 18 CONSOLIDATED, 2 R3_ADDITION, 0 EXACT. All 120 GAR IDs and 128 R3 IDs are retained. PLT-002 and DWR-006 are explicit additions without a direct legacy GAR predecessor.
+- Method: `docs/requirements/wp01-r3-gar-crosswalk-method-2026-11-28.md`. Repository validator: `scripts/verify-wp01-r3-gar-crosswalk.mjs`; it is invoked by `.github/workflows/wp01-16-completion-verification.yml` in `wp01-source-package`.
+- Local source-package evidence on 28 November: source validator PASS; 20/20 tests PASS; strict audit A01–A10/F01–F07 PASS. Crosswalk-specific integrity was verified locally against all 128 R3 IDs, 120 legacy IDs, allowed relationship classes and unchanged `not_started` states. Exact repository PR-head CI is still pending.
+
 ## Remaining build / verification
-Reconcile the 128 R3 records with approved GAR requirements and accepted amendments, resolve the recorded count/identifier deltas, bind each requirement to role/workflow/data/security/API/table/migration/UI/event/test/owner, and eliminate orphan requirements/tests. Keep implementation status at `not_started` until exact code paths and passing acceptance evidence exist.
+Review and close the proposed relationships under the delegated WP-01 acceptance authority after exact PR-head validation. Preserve all 120 legacy IDs and all 128 R3 IDs. No mapping changes implementation state. CAP-004 must link each R3 requirement and acceptance scenario to accountable owner, WP task, executable workflow, data/schema, migrations, APIs, UI, events, automated tests, evidence and operational runbooks. Keep all implementation statuses at `not_started` until exact code paths and passing acceptance evidence exist.
