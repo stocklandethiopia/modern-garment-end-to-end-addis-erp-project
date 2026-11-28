@@ -114,6 +114,15 @@
           <label for="unit-to">Effective to (optional)</label>
           <input id="unit-to" type="date" formControlName="valid_to">
         </div>
+        <div class="field field-wide">
+          <label for="unit-reason">Reason for creating this organizational unit</label>
+          <textarea id="unit-reason" formControlName="reason" rows="3" minlength="10" maxlength="1000" required
+            aria-describedby="unit-reason-hint"></textarea>
+          <span id="unit-reason-hint" class="field-hint">Required for the audit trail (10–1000 characters).</span>
+          @if (unitForm.controls.reason.touched && unitForm.controls.reason.invalid) {
+            <span class="field-error" role="alert">Provide an audit reason of at least 10 characters.</span>
+          }
+        </div>
       </div>
       <div class="form-actions">
         <span class="form-hint">Tenant OWNER/ADMIN configuration access required. A unit does not confer financial authority.</span>
@@ -262,6 +271,15 @@
                 <div class="field">
                   <label for="position-to">Effective to</label>
                   <input id="position-to" type="date" formControlName="valid_to">
+                </div>
+                <div class="field field-wide">
+                  <label for="position-reason">Reason for creating this job position</label>
+                  <textarea id="position-reason" formControlName="reason" rows="3" minlength="10" maxlength="1000" required
+                    aria-describedby="position-reason-hint"></textarea>
+                  <span id="position-reason-hint" class="field-hint">Required for the audit trail (10–1000 characters).</span>
+                  @if (positionForm.controls.reason.touched && positionForm.controls.reason.invalid) {
+                    <span class="field-error" role="alert">Provide an audit reason of at least 10 characters.</span>
+                  }
                 </div>
               </div>
               <div class="form-actions">
