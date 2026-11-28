@@ -28,6 +28,7 @@ class EnterpriseOrganizationService
             }
         }
         $this->applyEffectiveDateFilter($query, $filters['valid_on'] ?? null);
+
         return $query->orderBy('unit_code')->orderBy('id')
             ->paginate($this->pageSize($filters), ['*'], 'page', (int) ($filters['page'] ?? 1));
     }
@@ -63,6 +64,7 @@ class EnterpriseOrganizationService
                         ->orWhereDate('job_positions.valid_to', '>=', $filters['valid_on']);
                 });
         }
+
         return $query->orderBy('job_positions.position_code')->orderBy('job_positions.id')
             ->paginate($this->pageSize($filters), [
                 'job_positions.*',
@@ -94,6 +96,7 @@ class EnterpriseOrganizationService
                         ->orWhereDate('org_unit_manager_assignments.valid_to', '>=', $filters['valid_on']);
                 });
         }
+
         return $query->orderByDesc('org_unit_manager_assignments.valid_from')
             ->orderByDesc('org_unit_manager_assignments.id')
             ->paginate($this->pageSize($filters), [
@@ -248,6 +251,7 @@ class EnterpriseOrganizationService
                         ->orWhereDate('position_reporting_relations.valid_to', '>=', $filters['valid_on']);
                 });
         }
+
         return $query->orderByDesc('position_reporting_relations.valid_from')
             ->orderByDesc('position_reporting_relations.id')
             ->paginate($this->pageSize($filters), [
@@ -587,7 +591,7 @@ class EnterpriseOrganizationService
     private function lockOrganizationGraph(string $tenantId): void
     {
         DB::selectOne(
-            "SELECT pg_advisory_xact_lock(hashtextextended(?::text, 0))",
+            'SELECT pg_advisory_xact_lock(hashtextextended(?::text, 0))',
             ['organization-graph:'.$tenantId],
         );
     }
