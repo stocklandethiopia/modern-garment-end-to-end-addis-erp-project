@@ -193,6 +193,7 @@ class EnterpriseOrganizationService
                     'manager_position_id' => $manager->id,
                     'valid_from' => $data['valid_from'],
                     'valid_to' => $data['valid_to'] ?? null,
+                    'reason' => trim($data['reason']),
                 ],
                 'OrganizationUnitManagerAssigned.v1',
             );
@@ -327,6 +328,7 @@ class EnterpriseOrganizationService
                     'business_site_id' => $data['business_site_id'] ?? null,
                     'valid_from' => $data['valid_from'],
                     'valid_to' => $data['valid_to'] ?? null,
+                    'reason' => trim($data['reason']),
                 ],
                 'OrganizationUnitCreated.v1',
             );
@@ -393,6 +395,7 @@ class EnterpriseOrganizationService
                     'position_class' => $data['position_class'] ?? 'PROFESSIONAL',
                     'valid_from' => $data['valid_from'],
                     'valid_to' => $data['valid_to'] ?? null,
+                    'reason' => trim($data['reason']),
                 ],
                 'JobPositionCreated.v1',
             );
@@ -506,6 +509,7 @@ class EnterpriseOrganizationService
                     'reporting_type' => $data['reporting_type'],
                     'valid_from' => $data['valid_from'],
                     'valid_to' => $data['valid_to'] ?? null,
+                    'reason' => trim($data['reason']),
                 ],
                 'PositionReportingRelationCreated.v1',
             );
@@ -651,6 +655,14 @@ SQL, [
         array $attributes,
         string $eventType,
     ): void {
+        $reason = trim((string) ($attributes['reason'] ?? ''));
+
+        if (mb_strlen($reason) < 10 || mb_strlen($reason) > 1000) {
+            throw ValidationException::withMessages([
+                'reason' => 'An audit reason of 10 to 1000 characters is required.',
+            ]);
+        }
+
         $now = now();
         $correlationId = (string) Str::uuid();
 
@@ -662,7 +674,7 @@ SQL, [
             'object_type' => $aggregateType,
             'object_id' => $aggregateId,
             'scope' => json_encode($attributes, JSON_THROW_ON_ERROR),
-            'reason' => 'Authorized tenant administrator changed enterprise organization structure',
+            'reason' => $reason,
             'correlation_id' => $correlationId,
             'occurred_at' => $now,
             'created_at' => $now,
