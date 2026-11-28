@@ -60,6 +60,9 @@ Every pull request should run:
 
 The pipeline must fail closed for required checks. A skipped test is not a pass.
 
+
+For the public-repository standard hosted-runner policy, optional manual self-hosted fallback, and exact-SHA continuity, follow the [CI Runner Continuity and Exact-Head Verification standard](ci-runner-continuity.md). Standard GitHub-hosted runners are free and unlimited for this public repository. Delivery pull requests use the combined WP verification workflow to avoid duplicate backend/frontend execution and unnecessary artifact churn.
+
 ## 6. Release and deployment
 
 - Build once and promote the same immutable image/artifact through environments.
