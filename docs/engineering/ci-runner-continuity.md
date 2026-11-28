@@ -18,7 +18,7 @@ The combined packaging job was skipped because its required verification jobs di
 
 Earlier runs #45900565705 and #45900565706 did execute successfully: the ERP CI backend and frontend steps completed, and the combined verification completed backend, frontend, WP-01 integrity and candidate packaging. This confirms that the source and workflow have previously executed on hosted runners; it does not prove the later source SHAs.
 
-The connector does not expose the repository owner's billing usage or the precise Actions policy decision for the later runs. Treat included-compute exhaustion, spending budgets/payment configuration, Actions policy and a temporary GitHub service-capacity condition as investigation paths, not as a confirmed root cause.
+The repository is now confirmed public. For current and future runs using standard GitHub-hosted runner labels such as `ubuntu-latest`, GitHub Actions usage is free and unlimited for public repositories and does not draw from the account's included compute allowance. The later `runner_id: 0` results are historical runner-allocation failures; they are not evidence that included compute was exhausted. The available run records do not identify their precise cause. If the failure recurs, verify repository Actions permissions and runner eligibility, then compare the run timestamp with GitHub Status. Keep the cause unconfirmed unless contemporaneous diagnostics establish it. Do not use GitHub-hosted larger runners: those remain billable even for public repositories.
 
 ### 2.1 Cross-PR retry sweep — 28 November 2026
 
@@ -47,22 +47,25 @@ The latest PR #13 retry of combined WP verification was #46077281009. Its final 
 
 ### 2.2 Alternate runner route — operational handoff
 
-The workflows already contain the safe manual `workflow_dispatch` runner selector. The repository-connected GitHub actions available to this project session can inspect runs and rerun failed jobs, but cannot register a new self-hosted runner or initiate a `workflow_dispatch` with its `execution_runner` input. The controlled fallback therefore requires a repository administrator to perform the documented runner registration on a disposable Linux x64 VM, confirm that the runner is Idle with labels `self-hosted, linux, x64, erp-ci`, then manually dispatch both workflows for a trusted frozen branch/SHA with `execution_runner=self-hosted-linux-x64`.
+The workflows already contain the safe manual `workflow_dispatch` runner selector. The repository-connected GitHub actions available to this project session can inspect runs and rerun failed jobs, but cannot register a new self-hosted runner or initiate a `workflow_dispatch` with its `execution_runner` input. This self-hosted route is an optional, owner-operated contingency only; it is not required for the current public-repository standard GitHub-hosted path. Use it only when the repository owner deliberately chooses to supply and operate separate runner infrastructure. If selected, a repository administrator must register a disposable Linux x64 VM, confirm that the runner is Idle with labels `self-hosted, linux, x64, erp-ci`, then manually dispatch both workflows for a trusted frozen branch/SHA with `execution_runner=self-hosted-linux-x64`.
 
 Do not route automatic pull-request events to a self-hosted machine, do not post or store registration tokens in the repository/chat, and do not broaden runner access across projects. After dispatch, record the run IDs, exact head SHA, runner name, executed steps, test counts and artifact checksums. If the runner is not provisioned, preserve the job state as NOT RUN and continue safe source work.
 
-## 3. Hosted-compute and policy checks
+## 3. Public-repository standard hosted-runner policy
 
-For a private repository, GitHub-hosted runner usage draws on the repository owner's included compute allowance. GitHub's current billing documentation lists $12 USD of included monthly compute for GitHub Free; this is a monetary allowance rather than a fixed minutes quota. Standard Linux runner use is currently priced at $0.006 per minute as a reference rate. Eligible cloud sandbox compute also draws from the shared included compute amount. If the included amount is consumed and there is no valid payment method, further usage is blocked; configured budgets can also limit additional spend.
+The repository's current visibility is confirmed as **public**. Under GitHub's current billing policy, standard GitHub-hosted runners in public repositories are free and unlimited and do not draw down the account's included compute allowance. The workflows in this branch default to the standard `ubuntu-latest` runner for push, pull-request and default manual-dispatch execution.
 
-The repository owner should inspect:
+Do not select GitHub-hosted larger runners for this project: larger runners remain billable even for public repositories. Private-repository included-compute exhaustion, payment configuration and spending budgets are not the operating explanation for the current public-repository standard-runner path. Do not add a payment method, increase a budget or change a spending limit to run these standard public-repository workflows.
 
-1. GitHub account **Settings → Billing & licensing → Usage** and the current billing cycle's Actions/compute usage.
-2. **Budgets and alerts**, any Actions spending limit, and whether a valid payment method is configured. Do not add a payment method or increase a budget without the owner's separate financial decision.
-3. Repository **Settings → Actions → General** for whether Actions and standard GitHub-hosted runners are allowed, and whether any account or repository policy limits workflows.
-4. GitHub Status for a service incident matching the run timestamps.
+If a standard hosted job again fails before its first step, inspect:
 
-References: [GitHub Actions billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions), [Actions billing and usage](https://docs.github.com/en/actions/concepts/billing-and-usage).
+1. Repository **Settings → Actions → General** to confirm Actions are enabled and the selected standard runner/workflow is permitted.
+2. The workflow run's exact event, ref, job conclusion, runner assignment and step list.
+3. GitHub Status for an incident matching the run timestamp.
+
+A job with `runner_id: 0`, no runner name and no executed steps remains **NOT RUN**; it is not a test result or proof of a particular billing, policy or capacity cause.
+
+References: [GitHub Actions billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions), [Actions billing and usage](https://docs.github.com/en/actions/concepts/billing-and-usage), [Choosing the runner for a job](https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job).
 
 ## 4. Workflow routing and hosted-minute efficiency
 
@@ -89,7 +92,7 @@ The machine must have:
 
 Security controls:
 
-- Restrict the runner to this private repository; do not share it across unrelated projects.
+- Restrict the runner registration to this repository only; do not share it across unrelated projects. This optional runner is not required while the standard public-repository hosted route is available.
 - Prefer a disposable VM or a runner image that is reset between verification sessions. GitHub recommends ephemeral runners for autoscaling; a persistent workstation runner does not provide a guaranteed clean environment.
 - Run under a dedicated least-privilege OS account. Do not store production credentials, payroll files, customer data, deployment SSH keys or personal browser sessions on it.
 - Keep production secrets out of CI verification. Keep runner network access limited to source/package access and required test services.
@@ -127,4 +130,4 @@ For each integrated candidate, retain:
 - Combined candidate artifact, SHA-256 checksum, workflow run and expiry.
 - A destination-branch verification run for the merge SHA.
 
-An earlier successful run remains historical evidence for its own SHA only. Runner availability is repaired through account settings or the configured runner; tests, security checks, artifact provenance and product scope are not weakened.
+An earlier successful run remains historical evidence for its own SHA only. For the public-repository path, investigate standard runner eligibility and GitHub service status when allocation fails; the optional self-hosted route may be used only by explicit owner choice. Tests, security checks, artifact provenance and product scope are not weakened.
