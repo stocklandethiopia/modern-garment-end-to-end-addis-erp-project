@@ -14,3 +14,7 @@
 
 ## Remaining build / verification
 Implement person/employment/contracts/assignments, HR position/org connection, recruitment/onboarding, skills/training, time/attendance, shift/leave/overtime, benefits/pension, grievance/due process, exit/final pay, secured evidence and audit. Add distinct payee classification for employee, contractor, creator, reseller, subcontractor and supplier; effective-dated Ethiopian rules, independent source hashes, payroll-to-GL and remittance reconciliation. Do not activate candidate tax/pension parameters until qualified legal/payroll review and exact rule-vector approval.
+
+
+## Candidate verification checkpoint — 28 November 2026
+PR #20 head `4b89e9f7cbbc939d3080b70e3fc48b247e72abb5` remains stale/diverged against current delivery (69 ahead / 63 behind; merge base `fc01eced62b97c4ec27f0075264fc8ba0fb11851`). Its associated ERP CI #46024115391 and WP verification #46024115411 concluded FAILURE, but job details returned no step summaries (`steps: null`); the available evidence does not establish that PHP, PostgreSQL, application or source tests actually ran. Rebase and verify on a fresh exact head before assigning a code-test disposition. Candidate migration identities 000033, 000034 and 000036 collide with other work. Both employee-master release and statutory activation remain false; no legal or professional approval is implied. See CAP-006/007/024/030 in the execution ledger.

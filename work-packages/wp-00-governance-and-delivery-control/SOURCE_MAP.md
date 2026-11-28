@@ -8,7 +8,9 @@
 - `docs/product/apparel-business-operating-system-charter.md` and `docs/product/domain-map.md` — product objective and bounded contexts.
 - `docs/work-packages/production-execution-plan-wp00-wp16.md` — 125 numbered corrective/build tasks.
 - `docs/work-packages/handover-register.md` — package status and next actions.
-- `docs/audit/wp00-wp16-source-level-gap-audit-2026-11-27.md` — baseline source-level gap findings.
+- `docs/audit/wp00-wp16-source-level-gap-audit-2026-11-27.md` — historical detailed source-level gap evidence.
+- `docs/audit/wp00-wp16-master-reconciliation-audit-2026-11-28.md` on audit PR #30 — controlling 125-task reconciliation and CAP-001–030 master action plan.
+- `docs/audit/corrective-action-execution-ledger-2026-11-28.md` — live PR/branch/migration inventory, evidence register, finding dispositions and CAP execution status.
 - Intake evidence under `source-intake/stockland-garment-erp-local-v0.3.0/` — historical source reports and owner-supplied evidence, not overriding canonical policy.
 
 ## Canonical target paths
@@ -21,7 +23,7 @@
 - `work-packages/` — per-WP source maps, manifests, and exact evidence pointers.
 
 ## Remaining build / verification
-Reconcile every new source/candidate branch against the current `delivery` SHA before integration; maintain task-level evidence and dependency links; keep decisions, findings, PR replies and package handovers aligned. No routine planning artefact can substitute for implementation, tests, owner approvals, or release evidence.
+CAP-001 working checkpoint: delivery baseline `3438ab47240c10ce5ea5f1f772c1570cc2191134`; active branch `work/wp00-cap-001-evidence-ledger-2026-11-28`. Reconcile every new source/candidate branch against the exact current `delivery` SHA before integration; maintain the CAP ledger, task-level evidence and dependency links; keep decisions, findings, PR replies, source maps and package handovers aligned. No routine planning artefact can substitute for implementation, tests, owner approvals, or release evidence.
 
 ## Gate
 WP-00 is accepted. Every later package still needs its own implementation evidence and handover. `main` remains unchanged until WP-16 promotion criteria and accountable release approval are satisfied.

@@ -31,7 +31,7 @@ Before doing any work in this repository, read:
 
 ## Git workflow and clean-source rules
 
-- Use a dedicated `work/wpNN-...` branch created from the current `delivery/autonomous-wp-01-16` head for the active work package. The current branch is `work/wp03-identity-platform-completion-2026-11-26`.
+- Use a dedicated `work/wpNN-...` branch created from the current `delivery/autonomous-wp-01-16` head for the active work package. The active WP/CAP and current working branch are recorded in `docs/work-packages/handover-register.md`; never assume a branch from an older handover is still current.
 - Commit and push working edits only to the dedicated work branch. Do not create working commits directly on `delivery/autonomous-wp-01-16` or `main`.
 - Open the integration PR to `delivery/autonomous-wp-01-16` only after the change has a numbered scope, updated path map/task record, exact-head tests and security review appropriate to the change.
 - The 26 November standing owner amendment authorizes verified integration merges without another routine owner acceptance form or notification response. This does not waive technical gates, complete WP definitions of done, legal/professional review or production deployment approval.
