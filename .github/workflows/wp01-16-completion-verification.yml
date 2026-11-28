@@ -237,6 +237,9 @@ jobs:
           node --test
           node scripts/audit-quality.mjs --strict --markdown docs/WP01_AUDIT_RESULT_CI.md
 
+      - name: Verify R3-to-GAR semantic crosswalk
+        run: node scripts/verify-wp01-r3-gar-crosswalk.mjs
+
   combined-release-candidate:
     name: Assemble combined ERP repository candidate
     needs: [backend-postgresql, frontend-angular, wp01-source-package]
