@@ -100,6 +100,7 @@ class EnterpriseOrganizationController extends Controller
             'unit_name' => ['required', 'string', 'max:180'],
             'unit_type' => ['required', Rule::in(self::UNIT_TYPES)],
             'valid_from' => ['required', 'date_format:Y-m-d'],
+            'reason' => ['required', 'string', 'min:10', 'max:1000'],
             'valid_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:valid_from'],
         ]);
 
@@ -167,6 +168,7 @@ class EnterpriseOrganizationController extends Controller
             'grade' => ['nullable', 'string', 'max:80'],
             'position_class' => ['sometimes', Rule::in(self::POSITION_CLASSES)],
             'valid_from' => ['required', 'date_format:Y-m-d'],
+            'reason' => ['required', 'string', 'min:10', 'max:1000'],
             'valid_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:valid_from'],
             // A job slot is not an employee or login identity. Incumbency is
             // deliberately excluded until the authoritative people model exists.
