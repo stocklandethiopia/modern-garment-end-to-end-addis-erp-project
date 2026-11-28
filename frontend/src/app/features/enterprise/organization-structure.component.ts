@@ -542,10 +542,10 @@ export class OrganizationStructureComponent {
     }).subscribe({
       next: ({ data }) => {
         if (this.session.activeTenant()?.id !== tenantId || this.selectedUnitId() !== unitId) return;
+        this.positionSearch.setValue(data.position_code);
         this.loadPositionPage(tenantId, 1, unitId);
         this.savingPosition.set(false);
         this.showPositionForm.set(false);
-        this.positionSearch.setValue(data.position_code);
         this.positionForm.reset({
           position_code: '',
           title: '',
