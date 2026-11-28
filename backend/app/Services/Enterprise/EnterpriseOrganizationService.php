@@ -114,13 +114,11 @@ class EnterpriseOrganizationService
             $unit = DB::table('org_units')
                 ->where('tenant_id', $tenantId)
                 ->where('id', $orgUnitId)
-                ->lockForUpdate()
                 ->first();
 
             $manager = DB::table('job_positions')
                 ->where('tenant_id', $tenantId)
                 ->where('id', $data['manager_position_id'])
-                ->lockForUpdate()
                 ->first();
 
             if ($unit === null || $unit->status !== 'ACTIVE') {
@@ -275,8 +273,7 @@ class EnterpriseOrganizationService
                 $parent = DB::table('org_units')
                     ->where('tenant_id', $tenantId)
                     ->where('id', $data['parent_id'])
-                    ->lockForUpdate()
-                    ->first();
+                        ->first();
 
                 if ($parent === null || $parent->status !== 'ACTIVE') {
                     throw ValidationException::withMessages([
@@ -341,10 +338,11 @@ class EnterpriseOrganizationService
     public function createPosition(string $tenantId, string $actorId, array $data): object
     {
         return DB::transaction(function () use ($tenantId, $actorId, $data): object {
+            $this->lockOrganizationGraph($tenantId);
+
             $unit = DB::table('org_units')
                 ->where('tenant_id', $tenantId)
                 ->where('id', $data['org_unit_id'])
-                ->lockForUpdate()
                 ->first();
 
             if ($unit === null || $unit->status !== 'ACTIVE') {
@@ -420,7 +418,6 @@ class EnterpriseOrganizationService
                 ->where('tenant_id', $tenantId)
                 ->whereIn('id', [$data['subject_position_id'], $data['manager_position_id']])
                 ->orderBy('id')
-                ->lockForUpdate()
                 ->get()
                 ->keyBy('id');
 
