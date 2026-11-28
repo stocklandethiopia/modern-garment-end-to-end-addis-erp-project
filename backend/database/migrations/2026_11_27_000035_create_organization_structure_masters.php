@@ -155,12 +155,8 @@ SQL);
 
     public function down(): void
     {
-        if (DB::connection()->getDriverName() !== 'pgsql') {
-            return;
-        }
-
-        foreach ($this->tables as $table) {
-            DB::statement("DROP TABLE IF EXISTS public.{$table}");
-        }
+        throw new \\RuntimeException(
+            'Migration 000035 is forward-only; do not drop tenant organization structure or its reporting history.',
+        );
     }
 };
