@@ -3,6 +3,7 @@
 **Project:** Modern Garment End-to-End Addis ERP  
 **Package:** WP-01 — Requirements and traceability  
 **Status:** COMPLETED — design baseline and traceability catalogue prepared; implementation evidence is delivered in later packages  
+**Identifier reconciliation (28 November 2026):** This 120-row table is the preserved legacy GAR catalogue; it is not a one-to-one copy of the newer R3 register. The verified R3 package contains 128 different canonical requirement IDs across 24 bounded contexts. The provisional candidate relationships are recorded separately in `docs/requirements/wp01-r3-gar-crosswalk-2026-11-28.tsv.gz` with method and validation in the adjacent crosswalk note. The 128 and 120 counts describe different identifier systems and must not be subtracted as an unexplained eight-row gap. The crosswalk is a draft candidate relationship graph; its SPLIT/PARTIAL/CONSOLIDATED labels currently describe graph topology, not approved semantic equivalence or scope retirement. Every proposed link requires full requirement-level review. It is not evidence of implementation; every R3 canonical implementation status remains `not_started`.  
 **Authority:** Product Owner's express autonomous WP-01–WP-16 delegation, 22 November 2026  
 **Baseline:** `docs/agent/project-governance-agreement.md`, `docs/product/domain-map.md`, apparel operating-system charter, distribution/channel charter, platform, security, localization, payroll and engineering standards.
 
@@ -297,3 +298,13 @@ A delivery package may be called complete only when:
 **Open dependencies:** WP-02 must resolve official-law source/version and applicability status; WP-03 establishes tenant, identity and audit foundations; downstream packages deliver each mapped workflow in order.
 
 **Decision:** WP-01 is internally accepted under the Product Owner's autonomous delegation. Proceed to WP-02 without a routine owner pause.
+
+## 9. CAP-002 R3 ↔ legacy GAR reconciliation
+
+The original 120 GAR identifiers and their requirement text remain unchanged. The separate R3 package retains all 128 R3 identifiers and all 24 approved bounded contexts; the crosswalk records **231 candidate associations** across 101 SPLIT, 16 PARTIAL, 9 CONSOLIDATED and 2 R3_ADDITION relationships (0 EXACT). The two provisional R3 additions are PLT-002 (subscription/plan-limit/feature-entitlement scope) and DWR-006 (controlled ERP evolution workflow). They are not forced into unrelated GAR IDs.
+
+The crosswalk artifact is `docs/requirements/wp01-r3-gar-crosswalk-2026-11-28.tsv.gz`; inspect with `gzip -dc docs/requirements/wp01-r3-gar-crosswalk-2026-11-28.tsv.gz`. The method, source hashes, interpretation and non-claims are in `docs/requirements/wp01-r3-gar-crosswalk-method-2026-11-28.md`. The repeatable repository validator is `scripts/verify-wp01-r3-gar-crosswalk.mjs` and is wired into the configured WP-01 source-package workflow.
+
+Source package checks rerun locally on 28 November 2026: 20/20 package tests passed; strict audit A01–A10 and F01–F07 passed. The crosswalk dataset was also validated locally against the preserved R3 source and the full 120-ID legacy inventory. Exact PR-head ERP CI and WP workflow results are pending and will govern the repository integration decision.
+
+**Boundary:** This reconciliation preserves both registers and changes no requirement text, delivery status, approved product scope, statutory interpretation or owner authority. Every R3 implementation status remains `not_started`. CAP-004 extends this relationship map to accountable owners, tasks, code paths, schemas, migrations, APIs, UI, events, tests, runbooks and exact-SHA acceptance evidence.

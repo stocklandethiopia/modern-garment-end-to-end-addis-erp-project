@@ -22,8 +22,14 @@
 - `docs/audit/`
 - `work-packages/` — per-WP source maps, manifests, and exact evidence pointers.
 
+## Corrective-action execution checkpoint — 28 November 2026
+
+- **CAP-001 closed:** PR #31 was merged to canonical delivery at `217aa9848e1499617aeab76d77349f4bb1805066`. Final PR head `c0175bded5113c4ec8b98b4589e641e310b57a0c` passed ERP CI #46131518062 and configured WP verification #46131518069. Candidate and merge commit trees are identical. The changes were documentation/evidence-ledger and handover only; no application code or migrations changed. The workflow lookup in this execution exposed PR-triggered runs; a separate direct push-side run is not asserted.
+- **CAP-002 active:** `work/wp01-cap-002-requirement-crosswalk-2026-11-28`, based on delivery SHA `217aa9848e1499617aeab76d77349f4bb1805066`. It preserves 128 R3 requirement IDs and 120 legacy GAR IDs, drafts 231 provisional candidate edges whose topology labels are not semantic approval, adds an exact CI validator and updates WP-01 handover. Exact PR-head verification is pending.
+- **Master audit:** PR #30 remains the controlling audit document; exact head `12707a51a76c51110d07e9d4375eac1c2ec37d60` passed ERP CI #46122655184 and WP verification #46122655071. It remains a separate open audit PR.
+
 ## Remaining build / verification
-CAP-001 working checkpoint: delivery baseline `3438ab47240c10ce5ea5f1f772c1570cc2191134`; active branch `work/wp00-cap-001-evidence-ledger-2026-11-28`. Reconcile every new source/candidate branch against the exact current `delivery` SHA before integration; maintain the CAP ledger, task-level evidence and dependency links; keep decisions, findings, PR replies, source maps and package handovers aligned. No routine planning artefact can substitute for implementation, tests, owner approvals, or release evidence.
+Complete CAP-002 exact-head ERP/WP verification and relationship review before handover closure. Then continue in audit dependency order. Reconcile every candidate branch against the exact current `delivery` SHA; preserve migration sequencing, task evidence and WP handovers. Planning records do not substitute for implementation, tests, professional approval or release evidence.
 
 ## Gate
 WP-00 is accepted. Every later package still needs its own implementation evidence and handover. `main` remains unchanged until WP-16 promotion criteria and accountable release approval are satisfied.

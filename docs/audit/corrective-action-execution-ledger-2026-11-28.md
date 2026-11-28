@@ -2,9 +2,9 @@
 
 **Project:** Modern Garment End-to-End Addis ERP  
 **Record date:** 28 November 2026  
-**Control item:** CAP-001 — repository, branch, PR and evidence-ledger reconciliation  
-**Working branch:** `work/wp00-cap-001-evidence-ledger-2026-11-28`  
-**Canonical delivery baseline:** `delivery/autonomous-wp-01-16` at `3438ab47240c10ce5ea5f1f772c1570cc2191134`  
+**Control item:** CAP-001–CAP-030 — sequenced corrective-action execution ledger  
+**Working branch:** `work/wp01-cap-002-requirement-crosswalk-2026-11-28`  
+**Canonical delivery baseline after CAP-001:** `delivery/autonomous-wp-01-16` at `217aa9848e1499617aeab76d77349f4bb1805066`  
 **Default branch:** `main` at `adca71a053290eb768987a7644d4b13c267cf2a9`  
 **Master audit:** [PR #30](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/pull/30), audit head `12707a51a76c51110d07e9d4375eac1c2ec37d60`.
 
@@ -31,7 +31,7 @@ This ledger operationalizes CAP-001 and is the current index for the subsequent 
 | Audit PR checks | [ERP CI #46122655184](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/46122655184) — **SUCCESS**; [WP verification #46122655071](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/46122655071) — **SUCCESS**, both on audit head `12707a51a76c51110d07e9d4375eac1c2ec37d60` |
 | Working correction branch | `work/wp00-cap-001-evidence-ledger-2026-11-28`, created directly from delivery SHA `3438ab47240c10ce5ea5f1f772c1570cc2191134` |
 | Application-code change | None in CAP-001; documentation and evidence-index corrections only |
-| Current disposition | **IN PROGRESS — final exact-head PR checks and handover verification required** |
+| Current disposition | **CLOSED / MERGED** — PR #31 final head `c0175bded5113c4ec8b98b4589e641e310b57a0c` passed ERP CI #46131518062 and configured WP verification #46131518069; merged delivery SHA `217aa9848e1499617aeab76d77349f4bb1805066`; merge tree equals tested candidate tree |
 
 ### 2.1 Live open pull-request inventory
 
@@ -120,8 +120,8 @@ Compare results against delivery SHA `3438ab47240c10ce5ea5f1f772c1570cc2191134`:
 
 | CAP | WP | Priority | Status at this ledger revision | Dependency / next gate |
 |---|---|---:|---|---|
-| CAP-001 | WP-00 | P0 | PASS FOR PR SCOPE — inventory, stale-reference correction and handover are recorded; current PR head's exact checks are authoritative; delivery integration/post-merge CI remains open | Merge only after the current PR head passes both workflows; then verify the merge SHA before CAP-002 |
-| CAP-002 | WP-00/WP-01 | P0 | NOT STARTED | Start after CAP-001 is exact-head verified; reconcile R3 128 against GAR 120 |
+| CAP-001 | WP-00 | P0 | CLOSED / MERGED — exact PR-head ERP and WP checks passed; merge SHA and identical tree recorded | Closed on delivery merge `217aa9848e1499617aeab76d77349f4bb1805066`; separate delivery push run not asserted |
+| CAP-002 | WP-00/WP-01 | P0 | IN REVIEW — 128-R3/120-GAR draft candidate graph (231 edges), method, seven-column gzip data artifact and exact CI validator committed on dedicated WP-01 branch; PR-head checks pending | Review every candidate edge against both full requirement statements and acceptance boundaries; then run exact-head ERP CI plus configured WP-01 verification before merge/closure |
 | CAP-003 | WP-00 | P1 | NOT STARTED | Build decision/assumption/risk/exception register from accepted evidence |
 | CAP-004 | WP-01 | P0 | NOT STARTED | Depends on the CAP-002 canonical identity/alias crosswalk |
 | CAP-005 | WP-01 | P1 | NOT STARTED | Measurable NFR catalogue and verification methods |
@@ -151,14 +151,11 @@ Compare results against delivery SHA `3438ab47240c10ce5ea5f1f772c1570cc2191134`:
 | CAP-029 | Cross-WP | P1 | NOT STARTED | OpenAPI, error/pagination/correlation contracts, UX/evidence consistency |
 | CAP-030 | Cross-WP | P0 | OPEN — migration collision recorded | Consolidated unique migration train; gate candidate integrations |
 
-## 5. CAP-001 exit criteria
+## 5. CAP-001 closeout
 
-CAP-001 is not complete merely because this file exists. Close it only when:
-1. the inventory and stale-map corrections are present in the final PR head;
-2. the exact final PR head has the required ERP CI and combined WP/source verification executed successfully;
-3. the handover register and WP-00 source map point to the exact commit, PR and run evidence;
-4. the branch inventory and candidate migration list are reconciled against the same final observation; and
-5. CAP-002 starts only after that evidence is recorded.
+CAP-001 is closed on PR #31. Final candidate head `c0175bded5113c4ec8b98b4589e641e310b57a0c` passed ERP CI [#46131518062](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/46131518062) and configured WP/source verification [#46131518069](https://github.com/stocklandethiopia/modern-garment-end-to-end-addis-erp-project/actions/runs/46131518069). It merged to delivery as `217aa9848e1499617aeab76d77349f4bb1805066`; the merge commit tree is identical to the exact tested PR-head tree. The PR changed documentation/evidence/handover only.
+
+The workflow-run lookup available to this execution exposes PR-triggered runs; it does not establish a separate post-merge push-run result. No direct push-side PASS is claimed. The separate PR #1 synthetic merge-preview style finding remains tracked for CAP-021 and was not a failure on the CAP-001 tested tree.
 
 ## 6. Next dependency
 
@@ -176,4 +173,20 @@ The first complete candidate snapshot, PR #31 head `31fc6068e29200651c42db75d996
 - The PR's changed files remain documentation-only; no backend, frontend, migration or runtime files are modified.
 
 The evidence above is tied only to SHA `31fc6068e29200651c42db75d996e7b4187e6933`. This evidence-ledger amendment creates a new PR head; do not transfer the PASS to that new SHA. Re-run ERP CI and the configured WP/source verification on the final amended head. The live PR #31 check results are the authority for that final head.
+
+
+## 7. CAP-002 execution record — 28 November 2026
+
+| Field | Current evidence |
+|---|---|
+| Objective | Preserve both requirement namespaces and establish a draft candidate relationship graph rather than treating 128 minus 120 as eight missing rows |
+| Baseline | Delivery SHA `217aa9848e1499617aeab76d77349f4bb1805066`; R3 source archive SHA-256 `44f69b36d6ed389633d4e305dacfa825fbdffb99d78cc903e3f050761811a6e7`; legacy GAR matrix blob `296897f5356461414761151050b29dd2d7815247` |
+| Crosswalk artifact | `docs/requirements/wp01-r3-gar-crosswalk-2026-11-28.tsv.gz`; gzip SHA-256 `2e5f368bc6b2675269a5ca99b75ff8890954194091c880721b14a51023de0bf3`; uncompressed TSV SHA-256 `5c485ab7dc4ddf5e48a754acfa1ae5857841b4e52bf36b3f43c06bfb6b3cd628` |
+| Proposed relationships | 128 R3 rows; 120 distinct legacy IDs; 231 candidate edges: 101 SPLIT, 16 PARTIAL, 9 CONSOLIDATED, 2 R3_ADDITION, 0 EXACT; labels describe graph topology only |
+| Scope safeguards | No ID deletion/renumbering, no requirement-text changes, no status transition; all canonical R3 implementation statuses remain `not_started` |
+| Source-package tests | Local rerun: source validator PASS; 20/20 Node tests PASS; strict audit A01–A10 and F01–F07 PASS |
+| Crosswalk-specific validation | Local dataset integrity PASS; repository validator `scripts/verify-wp01-r3-gar-crosswalk.mjs` is added to the WP-01 source-package job |
+| Current disposition | **IN REVIEW** — draft crosswalk, method and CI wiring are on `work/wp01-cap-002-requirement-crosswalk-2026-11-28`; exact PR-head verification pending |
+
+CAP-002 remains open until the exact PR-head validator and required ERP/WP checks pass, each candidate edge is reviewed against both complete requirements under delegated WP-01 acceptance, and the WP handover is refreshed with exact run/commit evidence. CAP-004 depends on this identity/alias model.
 
