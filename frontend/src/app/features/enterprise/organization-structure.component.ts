@@ -485,10 +485,10 @@ export class OrganizationStructureComponent {
     }).subscribe({
       next: ({ data }) => {
         if (this.session.activeTenant()?.id !== tenantId) return;
+        this.unitSearch.setValue(data.unit_code);
         this.loadUnitPage(tenantId, 1);
         this.savingUnit.set(false);
         this.showUnitForm.set(false);
-        this.unitSearch.setValue(data.unit_code);
         this.selectedUnitId.set(null);
         this.selectedUnitRecord.set(null);
         this.unitForm.reset({
