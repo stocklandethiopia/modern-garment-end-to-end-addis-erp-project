@@ -14,11 +14,17 @@ use Tests\TestCase;
 class EnterpriseOrganizationStructureTest extends TestCase
 {
     private string $tenantA;
+
     private string $tenantB;
+
     private string $ownerA;
+
     private string $memberA;
+
     private string $ownerB;
+
     private string $legalEntityA;
+
     private string $siteA;
 
     protected function setUp(): void
