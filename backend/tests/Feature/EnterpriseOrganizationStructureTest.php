@@ -572,6 +572,16 @@ class EnterpriseOrganizationStructureTest extends TestCase
         ])->assertCreated();
     }
 
+    public function test_organization_schema_migration_cannot_be_rolled_back_to_delete_tenant_history(): void
+    {
+        $migration = require database_path('migrations/2026_11_27_000035_create_organization_structure_masters.php');
+
+        $this->expectException(\\RuntimeException::class);
+        $this->expectExceptionMessage('Migration 000035 is forward-only');
+
+        $migration->down();
+    }
+
     public function test_runtime_table_privileges_and_forced_rls_are_restricted(): void
     {
         $runtime = DB::connection('pgsql');
