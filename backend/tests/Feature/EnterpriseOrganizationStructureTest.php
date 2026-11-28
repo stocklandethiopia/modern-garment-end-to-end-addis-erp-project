@@ -241,6 +241,7 @@ class EnterpriseOrganizationStructureTest extends TestCase
             'unit_name' => 'Unauthorized Unit',
             'unit_type' => 'DEPARTMENT',
             'valid_from' => '2026-01-01',
+            'reason' => 'Unauthorized member must not be allowed to change the organization structure.',
         ])->assertForbidden();
     }
 
@@ -318,6 +319,25 @@ class EnterpriseOrganizationStructureTest extends TestCase
             'event_type' => 'JobPositionCreated.v1',
             'aggregate_id' => $positionId,
         ], 'pgsql_test_admin');
+
+        $this->assertDatabaseHas('audit_events', [
+            'tenant_id' => $this->tenantA,
+            'action' => 'JOB_POSITION_CREATED',
+            'object_id' => $positionId,
+            'reason' => 'Create a vacant-capable job position for the approved operating model.',
+        ], 'pgsql_test_admin');
+
+        $positionPayload = DB::connection('pgsql_test_admin')
+            ->table('integration_outbox_events')
+            ->where('tenant_id', $this->tenantA)
+            ->where('event_type', 'JobPositionCreated.v1')
+            ->where('aggregate_id', $positionId)
+            ->value('payload');
+
+        $this->assertSame(
+            'Create a vacant-capable job position for the approved operating model.',
+            json_decode((string) $positionPayload, true, 512, JSON_THROW_ON_ERROR)['attributes']['reason'],
+        );
     }
 
     public function test_unit_manager_assignment_is_effective_dated_and_position_scoped(): void
@@ -348,6 +368,7 @@ class EnterpriseOrganizationStructureTest extends TestCase
             'tenant_id' => $this->tenantA,
             'action' => 'ORG_UNIT_MANAGER_POSITION_ASSIGNED',
             'object_id' => $assignmentId,
+            'reason' => 'Appoint the designated head position for this unit.',
         ], 'pgsql_test_admin');
 
         $this->assertDatabaseHas('integration_outbox_events', [
@@ -435,6 +456,41 @@ class EnterpriseOrganizationStructureTest extends TestCase
             'valid_to' => '2026-12-31',
             'reason' => 'Too short',
         ])->assertUnprocessable();
+    }
+
+    public function test_organization_unit_and_position_creation_require_a_specific_audit_reason(): void
+    {
+        $this->actAs($this->ownerA, $this->tenantA);
+
+        $this->postJson('/api/v1/enterprise/organization-units', [
+            'unit_code' => 'NO-REASON',
+            'unit_name' => 'Missing reason unit',
+            'unit_type' => 'DEPARTMENT',
+            'legal_entity_id' => $this->legalEntityA,
+            'valid_from' => '2026-01-01',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['reason']);
+
+        $unitId = $this->createUnit('REASON-TEST-POSITION');
+
+        $this->postJson('/api/v1/enterprise/job-positions', [
+            'org_unit_id' => $unitId,
+            'position_code' => 'NO-REASON-POS',
+            'title' => 'Position without reason',
+            'position_class' => 'PROFESSIONAL',
+            'valid_from' => '2026-01-01',
+            'reason' => 'Too short',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['reason']);
+
+        $this->assertDatabaseMissing('org_units', [
+            'tenant_id' => $this->tenantA,
+            'unit_code' => 'NO-REASON',
+        ], 'pgsql_test_admin');
+        $this->assertDatabaseMissing('job_positions', [
+            'tenant_id' => $this->tenantA,
+            'position_code' => 'NO-REASON-POS',
+        ], 'pgsql_test_admin');
     }
 
     public function test_tenant_scoped_lists_and_foreign_keys_do_not_cross_tenants(): void
