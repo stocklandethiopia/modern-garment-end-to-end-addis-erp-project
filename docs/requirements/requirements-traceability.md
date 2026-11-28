@@ -301,7 +301,7 @@ A delivery package may be called complete only when:
 
 ## 9. CAP-002 R3 ↔ legacy GAR reconciliation
 
-The original 120 GAR identifiers and their requirement text remain unchanged. The separate R3 package retains all 128 R3 identifiers and all 24 approved bounded contexts; the crosswalk records **169 candidate associations** across 61 SPLIT, 47 PARTIAL, 18 CONSOLIDATED and 2 R3_ADDITION relationships (0 EXACT). The two provisional R3 additions are PLT-002 (subscription/plan-limit/feature-entitlement scope) and DWR-006 (controlled ERP evolution workflow). They are not forced into unrelated GAR IDs.
+The original 120 GAR identifiers and their requirement text remain unchanged. The separate R3 package retains all 128 R3 identifiers and all 24 approved bounded contexts; the crosswalk records **231 candidate associations** across 101 SPLIT, 16 PARTIAL, 9 CONSOLIDATED and 2 R3_ADDITION relationships (0 EXACT). The two provisional R3 additions are PLT-002 (subscription/plan-limit/feature-entitlement scope) and DWR-006 (controlled ERP evolution workflow). They are not forced into unrelated GAR IDs.
 
 The crosswalk artifact is `docs/requirements/wp01-r3-gar-crosswalk-2026-11-28.tsv.gz`; inspect with `gzip -dc docs/requirements/wp01-r3-gar-crosswalk-2026-11-28.tsv.gz`. The method, source hashes, interpretation and non-claims are in `docs/requirements/wp01-r3-gar-crosswalk-method-2026-11-28.md`. The repeatable repository validator is `scripts/verify-wp01-r3-gar-crosswalk.mjs` and is wired into the configured WP-01 source-package workflow.
 
