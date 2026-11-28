@@ -26,7 +26,7 @@ R3 declares 128 requirements across 24 bounded contexts, 45 candidate-source map
 
 - Preserved R3 archive SHA-256: `44f69b36d6ed389633d4e305dacfa825fbdffb99d78cc903e3f050761811a6e7`; source facts: 128 requirements, 24 bounded contexts, 45 candidate-source mappings, 20 package tests.
 - Preserved legacy GAR inventory: 120 unique IDs across 13 prefixes. This is a distinct earlier identifier register, not a one-to-one count expectation for R3.
-- Draft relationship artifact: `docs/requirements/wp01-r3-gar-crosswalk-2026-11-28.tsv.gz`; uncompressed SHA-256 `f5cc4ff6c5accc93fdb4d6290b372faefbe5ec85146e9c8cdb4dbac884b48e70`; gzip SHA-256 `3d8a617f95c5b5a391e9f3a0740f88608ce907913f675218255fa8f78a910832`.
+- Draft relationship artifact: `docs/requirements/wp01-r3-gar-crosswalk-2026-11-28.tsv.gz`; uncompressed SHA-256 `74c7a93f69491cd9a7b8f718f2a070c53477bcb9cda5705aaa3a5f43352a5122`; gzip SHA-256 `8d6e9c384be8911d9d32b3e1ffa45274bb63b2a7ab40b8beda0f86992959bb24`.
 - Proposal: 169 links; 61 SPLIT, 47 PARTIAL, 18 CONSOLIDATED, 2 R3_ADDITION, 0 EXACT. All 120 GAR IDs and 128 R3 IDs are retained. PLT-002 and DWR-006 are explicit additions without a direct legacy GAR predecessor.
 - Method: `docs/requirements/wp01-r3-gar-crosswalk-method-2026-11-28.md`. Repository validator: `scripts/verify-wp01-r3-gar-crosswalk.mjs`; it is invoked by `.github/workflows/wp01-16-completion-verification.yml` in `wp01-source-package`.
 - Local source-package evidence on 28 November: source validator PASS; 20/20 tests PASS; strict audit A01–A10/F01–F07 PASS. Crosswalk-specific integrity was verified locally against all 128 R3 IDs, 120 legacy IDs, allowed relationship classes and unchanged `not_started` states. Exact repository PR-head CI is still pending.
