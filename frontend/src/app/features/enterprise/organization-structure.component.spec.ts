@@ -135,6 +135,7 @@ describe('OrganizationStructureComponent', () => {
       unit_type: 'DEPARTMENT',
       valid_from: '2026-01-01',
       valid_to: '',
+      reason: 'Create the Quality Assurance organizational unit for factory governance.',
     });
     component.createUnit();
 
@@ -168,6 +169,51 @@ describe('OrganizationStructureComponent', () => {
     fixture.detectChanges();
     expect(component.units().some((item) => item.id === 'unit-2')).toBe(true);
     expect(fixture.nativeElement.textContent).toContain('Organizational unit created');
+  });
+
+  it('creates a vacant-capable position with an audit reason and reloads the filtered register', () => {
+    const fixture = TestBed.createComponent(OrganizationStructureComponent);
+    fixture.detectChanges();
+    flushInitial(fixture);
+
+    const component = fixture.componentInstance;
+    component.positionForm.patchValue({
+      position_code: 'QUALITY-LEAD',
+      title: 'Quality Assurance Lead',
+      job_family: 'QUALITY',
+      grade: 'M2',
+      position_class: 'MANAGEMENT',
+      valid_from: '2026-01-01',
+      valid_to: '',
+      reason: 'Create the Quality Assurance Lead slot for the approved factory organization.',
+    });
+    component.createPosition();
+
+    const request = http.expectOne('/api/v1/enterprise/job-positions');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body.position_code).toBe('QUALITY-LEAD');
+    expect(request.request.body.reason).toBe('Create the Quality Assurance Lead slot for the approved factory organization.');
+
+    const created: JobPosition = {
+      ...position,
+      id: 'position-2',
+      position_code: 'QUALITY-LEAD',
+      title: 'Quality Assurance Lead',
+      job_family: 'QUALITY',
+      grade: 'M2',
+    };
+    request.flush({ data: created });
+
+    const reload = http.expectOne((candidate) => candidate.url === '/api/v1/enterprise/job-positions'
+      && candidate.params.get('page') === '1'
+      && candidate.params.get('per_page') === '25'
+      && candidate.params.get('org_unit_id') === 'unit-1'
+      && candidate.params.get('q') === 'QUALITY-LEAD');
+    reload.flush(page([created]));
+
+    fixture.detectChanges();
+    expect(component.positions().some((item) => item.id === 'position-2')).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('Job position created as a vacant-capable slot');
   });
 
   it('requests later pages and applies tenant-scoped search filters to all organization registers', () => {
